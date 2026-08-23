@@ -143,6 +143,7 @@
     "questions": "بنك الأسئلة",
     "students": "الطلاب",
     "lessons": "الدروس",
+    "generallessons": "الدروس العامة",
     "billing": "المالية والاشتراكات",
     "userSettings": "إعدادات المستخدم",
     "expandSidebar": "توسيع الشريط الجانبي",
@@ -2215,8 +2216,8 @@
     },
     "overview": {
       "title": "نظرة عامة",
-      "subtitle": "تابع تقدمك الدراسي، مجموع درجاتك، وإحصائيات حسابك",
-      "totalExamScores": "مجموع الدرجات",
+      "subtitle": "تابع تقدمك الدراسي، مستواك العام، وإحصائيات حسابك",
+      "generalPerformance": "المستوى العام",
       "coursesEnrolled": "الدورات المشترك بها",
       "walletBalance": "رصيد المحفظة",
       "examsSolved": "الاختبارات المنجزة",
@@ -2559,6 +2560,8 @@
       "sectionsCount": "{count, plural, =0 {لا فصول} zero {لا فصول} one {فصل واحد} two {فصلين} few {{count} فصول} many {{count} فصلاً} other {{count} فصل}}",
       "lessonsCount": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{count} دروس} many {{count} درساً} other {{count} درس}}",
       "totalProgress": "تم إنجاز {progress}٪",
+      "collapseSidebar": "طي القائمة الجانبية",
+      "expandSidebar": "توسيع محتوى الدورة",
       "showCertificate": "عرض الشهادة",
       "certificateModal": {
         "title": "شهادة إتمام الدورة التدريبية",

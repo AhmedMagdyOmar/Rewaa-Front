@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import { getStoredExams } from "@/lib/exams-storage";
@@ -395,252 +396,324 @@ export function StudentCourseMainView({
               </div>
             )}
 
-            {/* Lesson Details & Notes (Markdown) */}
-            <div className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-card border border-border/80 space-y-4 shadow-xs">
-              <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                  <FileText className="size-5 text-primary" />
-                  <span>{t("lesson.description")}</span>
-                </h2>
-              </div>
-
-              {selectedLesson.description || selectedLesson.writtenText ? (
-                <div className="prose prose-sm sm:prose-base max-w-none">
-                  <MarkdownViewer
-                    content={selectedLesson.description || selectedLesson.writtenText || ""}
-                    isRtl={isRtl}
-                  />
-                </div>
-              ) : (
-                <p className="text-xs sm:text-sm text-muted-foreground italic py-4 text-center border border-dashed rounded-xl">
-                  {t("lesson.noMediaOrNotes")}
-                </p>
-              )}
-            </div>
-
-            {/* Attached Files & Downloadable Resources */}
-            {allAttachments.length > 0 && (
-              <div className="p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-card border border-border/80 space-y-4 shadow-xs">
-                <div className="flex items-center justify-between border-b border-border/60 pb-3">
-                  <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
-                    <Paperclip className="size-5 text-primary" />
-                    <span>
-                      {t("lesson.attachedFiles")} ({allAttachments.length})
-                    </span>
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {allAttachments.map((file, idx) => (
-                    <div
-                      key={file.id || `file-${idx}`}
-                      className="flex items-center justify-between p-3.5 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors gap-3"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
-                          <FileText className="size-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="text-xs sm:text-sm font-bold text-foreground truncate cursor-default">
-                                {file.title}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs text-xs">
-                              {file.title}
-                            </TooltipContent>
-                          </Tooltip>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">
-                            {t("lesson.fileSize", {
-                              size: formatFileSize(file.sizeInBytes),
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="gap-1.5 text-xs font-semibold shrink-0"
-                      >
-                        <a href={file.fileUrl} download target="_blank" rel="noopener noreferrer">
-                          <Download className="size-3.5" />
-                          <span>{t("lesson.downloadFile")}</span>
-                        </a>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Section Linked Exam Banner if the section containing this lesson is linked to an exam */}
+            {/* Unified Tabs Container for Lesson Details: Description, Attachments, Linked Exam */}
             {(() => {
               const currentSection = course.sections.find((s) =>
                 s.lessons.some((l) => l.id === selectedLesson.id),
               );
-              if (
-                !currentSection ||
-                !currentSection.isLinkedToExam ||
-                !currentSection.linkedExamId ||
-                !isExamPublished(currentSection.linkedExamId)
-              ) {
-                return null;
-              }
-              const isExamPassed = passedExamIds.includes(currentSection.linkedExamId);
-              const examTitle = getExamTitle(
-                currentSection.linkedExamId,
-                currentSection.linkedExamTitle,
+              const hasSectionExam = Boolean(
+                currentSection?.isLinkedToExam &&
+                currentSection?.linkedExamId &&
+                isExamPublished(currentSection.linkedExamId),
               );
+              const hasLessonDirectExam = Boolean(
+                selectedLesson.isLinkedToExam &&
+                selectedLesson.linkedExamId &&
+                isExamPublished(selectedLesson.linkedExamId) &&
+                selectedLesson.linkedExamId !== currentSection?.linkedExamId,
+              );
+              const hasLinkedExam = hasSectionExam || hasLessonDirectExam;
+
+              const isSectionExamPassed =
+                hasSectionExam && currentSection?.linkedExamId
+                  ? passedExamIds.includes(currentSection.linkedExamId)
+                  : false;
+              const sectionExamTitle =
+                hasSectionExam && currentSection?.linkedExamId
+                  ? getExamTitle(currentSection.linkedExamId, currentSection.linkedExamTitle)
+                  : "";
+
+              const isLessonDirectExamPassed =
+                hasLessonDirectExam && selectedLesson.linkedExamId
+                  ? passedExamIds.includes(selectedLesson.linkedExamId)
+                  : false;
+              const lessonDirectExamTitle =
+                hasLessonDirectExam && selectedLesson.linkedExamId
+                  ? getExamTitle(selectedLesson.linkedExamId, selectedLesson.linkedExamTitle)
+                  : "";
+
+              const examCount = (hasSectionExam ? 1 : 0) + (hasLessonDirectExam ? 1 : 0);
 
               return (
-                <div
-                  className={cn(
-                    "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border text-foreground transition-all",
-                    isExamPassed
-                      ? "bg-emerald-500/10 border-emerald-500/30"
-                      : "bg-amber-500/10 border-amber-500/30",
-                  )}
-                >
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div
-                      className={cn(
-                        "p-3 rounded-xl shrink-0",
-                        isExamPassed
-                          ? "bg-emerald-500/20 text-emerald-700"
-                          : "bg-amber-500/20 text-amber-700",
-                      )}
-                    >
-                      <FileSpreadsheet className="size-6" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span
-                          className={cn(
-                            "text-xs font-semibold",
-                            isExamPassed ? "text-emerald-700" : "text-amber-700",
-                          )}
+                <div className="bg-card rounded-2xl sm:rounded-3xl border border-border/80 shadow-xs overflow-hidden">
+                  <Tabs defaultValue="description" className="w-full">
+                    {/* Tabs Header */}
+                    <div className="p-3 sm:p-4 border-b border-border/80 bg-muted/20">
+                      <TabsList className="w-full justify-start overflow-x-auto p-1 bg-muted/80 gap-1 h-auto scrollbar-none">
+                        <TabsTrigger
+                          value="description"
+                          className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                         >
-                          {t("lesson.linkedExam")}
-                        </span>
-                        {isExamPassed ? (
-                          <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0">
-                            {t("locked.examPassed")}
-                          </Badge>
-                        ) : currentSection.isRequiredPassExamForNextSection ? (
-                          <Badge
-                            variant="outline"
-                            className="bg-amber-500/20 border-amber-500/30 text-amber-800 text-[10px] px-1.5 py-0 font-bold"
+                          <FileText className="size-4" />
+                          <span>{t("lesson.description")}</span>
+                        </TabsTrigger>
+
+                        <TabsTrigger
+                          value="attachments"
+                          className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                        >
+                          <Paperclip className="size-4" />
+                          <span>{t("lesson.attachedFiles")}</span>
+                          {allAttachments.length > 0 && (
+                            <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
+                              {allAttachments.length}
+                            </span>
+                          )}
+                        </TabsTrigger>
+
+                        {hasLinkedExam && (
+                          <TabsTrigger
+                            value="exams"
+                            className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
                           >
-                            {t("locked.examRequired")}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className="text-sm sm:text-base font-bold text-foreground mt-1 truncate cursor-default">
-                            {examTitle}
+                            <FileSpreadsheet className="size-4" />
+                            <span>{t("lesson.linkedExam")}</span>
+                            {examCount > 0 && (
+                              <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
+                                {examCount}
+                              </span>
+                            )}
+                          </TabsTrigger>
+                        )}
+                      </TabsList>
+                    </div>
+
+                    {/* Tab Contents */}
+                    <div className="p-6 sm:p-8">
+                      {/* TAB 1: Description / Notes */}
+                      <TabsContent
+                        value="description"
+                        className="space-y-4 mt-0 focus-visible:outline-hidden"
+                      >
+                        {selectedLesson.description || selectedLesson.writtenText ? (
+                          <div className="prose prose-sm sm:prose-base max-w-none">
+                            <MarkdownViewer
+                              content={
+                                selectedLesson.description || selectedLesson.writtenText || ""
+                              }
+                              isRtl={isRtl}
+                            />
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-md text-xs">
-                          {examTitle}
-                        </TooltipContent>
-                      </Tooltip>
-                      {currentSection.isRequiredPassExamForNextSection && !isExamPassed && (
-                        <p className="text-[11px] text-amber-700/90 mt-0.5">
-                          {t("locked.mustPassExam")}
-                        </p>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-muted-foreground italic py-6 text-center border border-dashed rounded-xl">
+                            {t("lesson.noMediaOrNotes")}
+                          </p>
+                        )}
+                      </TabsContent>
+
+                      {/* TAB 2: Attached Files */}
+                      <TabsContent
+                        value="attachments"
+                        className="space-y-4 mt-0 focus-visible:outline-hidden"
+                      >
+                        {allAttachments.length > 0 ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {allAttachments.map((file, idx) => (
+                              <div
+                                key={file.id || `file-${idx}`}
+                                className="flex items-center justify-between p-3.5 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors gap-3"
+                              >
+                                <div className="flex items-center gap-3 min-w-0 flex-1">
+                                  <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
+                                    <FileText className="size-5" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-xs sm:text-sm font-bold text-foreground truncate cursor-default">
+                                          {file.title}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs text-xs">
+                                        {file.title}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                    <div className="text-[11px] text-muted-foreground mt-0.5">
+                                      {t("lesson.fileSize", {
+                                        size: formatFileSize(file.sizeInBytes),
+                                      })}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <Button
+                                  asChild
+                                  variant="outline"
+                                  size="sm"
+                                  className="gap-1.5 text-xs font-semibold shrink-0"
+                                >
+                                  <a
+                                    href={file.fileUrl}
+                                    download
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                  >
+                                    <Download className="size-3.5" />
+                                    <span>{t("lesson.downloadFile")}</span>
+                                  </a>
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-xs sm:text-sm text-muted-foreground italic py-6 text-center border border-dashed rounded-xl">
+                            {locale === "ar"
+                              ? "لا توجد ملفات مرفقة لهذا الدرس."
+                              : "No attachments available for this lesson."}
+                          </p>
+                        )}
+                      </TabsContent>
+
+                      {/* TAB 3: Linked Exam(s) */}
+                      {hasLinkedExam && (
+                        <TabsContent
+                          value="exams"
+                          className="space-y-4 mt-0 focus-visible:outline-hidden"
+                        >
+                          {/* Section Linked Exam */}
+                          {hasSectionExam && currentSection?.linkedExamId && (
+                            <div
+                              className={cn(
+                                "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border text-foreground transition-all",
+                                isSectionExamPassed
+                                  ? "bg-emerald-500/10 border-emerald-500/30"
+                                  : "bg-amber-500/10 border-amber-500/30",
+                              )}
+                            >
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div
+                                  className={cn(
+                                    "p-3 rounded-xl shrink-0",
+                                    isSectionExamPassed
+                                      ? "bg-emerald-500/20 text-emerald-700"
+                                      : "bg-amber-500/20 text-amber-700",
+                                  )}
+                                >
+                                  <FileSpreadsheet className="size-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span
+                                      className={cn(
+                                        "text-xs font-semibold",
+                                        isSectionExamPassed ? "text-emerald-700" : "text-amber-700",
+                                      )}
+                                    >
+                                      {t("lesson.linkedExam")}
+                                    </span>
+                                    {isSectionExamPassed ? (
+                                      <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0">
+                                        {t("locked.examPassed")}
+                                      </Badge>
+                                    ) : currentSection.isRequiredPassExamForNextSection ? (
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-amber-500/20 border-amber-500/30 text-amber-800 text-[10px] px-1.5 py-0 font-bold"
+                                      >
+                                        {t("locked.examRequired")}
+                                      </Badge>
+                                    ) : null}
+                                  </div>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="text-sm sm:text-base font-bold text-foreground mt-1 truncate cursor-default">
+                                        {sectionExamTitle}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-md text-xs">
+                                      {sectionExamTitle}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                  {currentSection.isRequiredPassExamForNextSection &&
+                                    !isSectionExamPassed && (
+                                      <p className="text-[11px] text-amber-700/90 mt-0.5">
+                                        {t("locked.mustPassExam")}
+                                      </p>
+                                    )}
+                                </div>
+                              </div>
+
+                              <Button
+                                asChild
+                                className={cn(
+                                  "font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center",
+                                  isSectionExamPassed
+                                    ? "bg-emerald-600 hover:bg-emerald-700 text-white"
+                                    : "bg-amber-600 hover:bg-amber-700 text-white",
+                                )}
+                              >
+                                <Link
+                                  href={`/student-dashboard/exams/${currentSection.linkedExamId}`}
+                                >
+                                  <span>
+                                    {isSectionExamPassed
+                                      ? t("lesson.takeLinkedExam")
+                                      : t("locked.takeExamCta")}
+                                  </span>
+                                  <FileCheck className="size-4 rtl:rotate-180" />
+                                </Link>
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Direct Lesson Linked Exam (if any) */}
+                          {hasLessonDirectExam && selectedLesson.linkedExamId && (
+                            <div
+                              className={cn(
+                                "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border text-foreground",
+                                isLessonDirectExamPassed
+                                  ? "bg-emerald-500/10 border-emerald-500/30"
+                                  : "bg-amber-500/10 border-amber-500/30",
+                              )}
+                            >
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div
+                                  className={cn(
+                                    "p-3 rounded-xl shrink-0",
+                                    isLessonDirectExamPassed
+                                      ? "bg-emerald-500/20 text-emerald-700"
+                                      : "bg-amber-500/20 text-amber-700",
+                                  )}
+                                >
+                                  <FileSpreadsheet className="size-6" />
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-semibold text-amber-700">
+                                    {t("lesson.linkedExam")}
+                                  </div>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate cursor-default">
+                                        {lessonDirectExamTitle}
+                                      </div>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="top" className="max-w-md text-xs">
+                                      {lessonDirectExamTitle}
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                              </div>
+
+                              <Button
+                                asChild
+                                className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center"
+                              >
+                                <Link
+                                  href={`/student-dashboard/exams/${selectedLesson.linkedExamId}`}
+                                >
+                                  <span>{t("lesson.takeLinkedExam")}</span>
+                                  <FileCheck className="size-4 rtl:rotate-180" />
+                                </Link>
+                              </Button>
+                            </div>
+                          )}
+                        </TabsContent>
                       )}
                     </div>
-                  </div>
-
-                  <Button
-                    asChild
-                    className={cn(
-                      "font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center",
-                      isExamPassed
-                        ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                        : "bg-amber-600 hover:bg-amber-700 text-white",
-                    )}
-                  >
-                    <Link href={`/student-dashboard/exams/${currentSection.linkedExamId}`}>
-                      <span>
-                        {isExamPassed ? t("lesson.takeLinkedExam") : t("locked.takeExamCta")}
-                      </span>
-                      <FileCheck className="size-4 rtl:rotate-180" />
-                    </Link>
-                  </Button>
+                  </Tabs>
                 </div>
               );
             })()}
-
-            {/* Lesson-specific Linked Exam Button Banner (if lesson itself has a linked exam distinct from section) */}
-            {selectedLesson.isLinkedToExam &&
-              selectedLesson.linkedExamId &&
-              isExamPublished(selectedLesson.linkedExamId) &&
-              (() => {
-                const currentSection = course.sections.find((s) =>
-                  s.lessons.some((l) => l.id === selectedLesson.id),
-                );
-                if (currentSection?.linkedExamId === selectedLesson.linkedExamId) {
-                  return null; // Already shown in section exam banner above
-                }
-                const isLessonExamPassed = passedExamIds.includes(selectedLesson.linkedExamId);
-                const examTitle = getExamTitle(
-                  selectedLesson.linkedExamId,
-                  selectedLesson.linkedExamTitle,
-                );
-                return (
-                  <div
-                    className={cn(
-                      "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border text-foreground",
-                      isLessonExamPassed
-                        ? "bg-emerald-500/10 border-emerald-500/30"
-                        : "bg-amber-500/10 border-amber-500/30",
-                    )}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div
-                        className={cn(
-                          "p-3 rounded-xl shrink-0",
-                          isLessonExamPassed
-                            ? "bg-emerald-500/20 text-emerald-700"
-                            : "bg-amber-500/20 text-amber-700",
-                        )}
-                      >
-                        <FileSpreadsheet className="size-6" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="text-xs font-semibold text-amber-700">
-                          {t("lesson.linkedExam")}
-                        </div>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="text-sm sm:text-base font-bold text-foreground mt-0.5 truncate cursor-default">
-                              {examTitle}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-md text-xs">
-                            {examTitle}
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                    </div>
-
-                    <Button
-                      asChild
-                      className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center"
-                    >
-                      <Link href={`/student-dashboard/exams/${selectedLesson.linkedExamId}`}>
-                        <span>{t("lesson.takeLinkedExam")}</span>
-                        <FileCheck className="size-4 rtl:rotate-180" />
-                      </Link>
-                    </Button>
-                  </div>
-                );
-              })()}
 
             {/* Bottom Lesson Navigation (Previous / Next Lesson) */}
             <div className="flex items-center justify-between gap-3 pt-2">

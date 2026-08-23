@@ -8,7 +8,7 @@ import { DashboardCard } from "../overview/dashboard-card";
 import { Link } from "@/i18n/routing";
 import { getStoredExams } from "@/lib/exams-storage";
 import { getPassedExams, recordExamPass } from "@/lib/student-course-progress";
-import { Exam, Question, QuestionDifficulty } from "@/types/exam";
+import { Exam, Question } from "@/types/exam";
 import {
   ArrowLeft,
   Award,
@@ -46,12 +46,6 @@ interface EvaluatedQuestion {
   isCorrect: boolean;
   earnedPoints: number;
 }
-
-const DIFFICULTY_COLORS: Record<QuestionDifficulty, string> = {
-  easy: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  medium: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  hard: "bg-rose-500/10 text-rose-700 border-rose-500/20",
-};
 
 export function StudentExamResultClient({ examId }: StudentExamResultClientProps) {
   const locale = useLocale();
@@ -118,11 +112,6 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
       ? tExams(`category.${key}` as Parameters<typeof tExams>[0])
       : cat;
-  };
-
-  const formatDifficulty = (d: QuestionDifficulty) => {
-    const key = `questions.difficulty.${d}` as Parameters<typeof tDetails>[0];
-    return tDetails.has(key) ? tDetails(key) : d;
   };
 
   // Generate deterministic student answers & evaluations
@@ -297,13 +286,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
   // ── Mode 2: Active Exam Taking Workspace ────────────────────────────────────
   if (activeMode === "taking") {
-    return (
-      <StudentExamTakingView
-        exam={exam}
-        onSubmitExam={handleSubmitExam}
-        formatDifficulty={formatDifficulty}
-      />
-    );
+    return <StudentExamTakingView exam={exam} onSubmitExam={handleSubmitExam} />;
   }
 
   // ── Mode 3: Completed Exam Results & Review ─────────────────────────────────
@@ -616,13 +599,6 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
                         <Badge variant="secondary" className="text-[10px]">
                           {tDetails(`questions.type.${q.type}` as Parameters<typeof tDetails>[0])}
-                        </Badge>
-
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] ${DIFFICULTY_COLORS[q.difficulty]}`}
-                        >
-                          {formatDifficulty(q.difficulty)}
                         </Badge>
                       </div>
 

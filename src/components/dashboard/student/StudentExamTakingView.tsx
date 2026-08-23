@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { Exam, Question, QuestionDifficulty } from "@/types/exam";
+import { Exam, Question } from "@/types/exam";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -39,20 +39,9 @@ interface FlattenedQuestion {
 interface StudentExamTakingViewProps {
   exam: Exam;
   onSubmitExam: (answers: Record<string, string>) => void;
-  formatDifficulty: (d: QuestionDifficulty) => string;
 }
 
-const DIFFICULTY_COLORS: Record<QuestionDifficulty, string> = {
-  easy: "bg-emerald-500/10 text-emerald-700 border-emerald-500/20",
-  medium: "bg-amber-500/10 text-amber-700 border-amber-500/20",
-  hard: "bg-rose-500/10 text-rose-700 border-rose-500/20",
-};
-
-export function StudentExamTakingView({
-  exam,
-  onSubmitExam,
-  formatDifficulty,
-}: StudentExamTakingViewProps) {
+export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingViewProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
 
@@ -277,13 +266,6 @@ export function StudentExamTakingView({
 
                 <Badge variant="secondary" className="text-[10px]">
                   {tDetails(`questions.type.${currentQ.type}` as Parameters<typeof tDetails>[0])}
-                </Badge>
-
-                <Badge
-                  variant="outline"
-                  className={`text-[10px] ${DIFFICULTY_COLORS[currentQ.difficulty]}`}
-                >
-                  {formatDifficulty(currentQ.difficulty)}
                 </Badge>
               </div>
 

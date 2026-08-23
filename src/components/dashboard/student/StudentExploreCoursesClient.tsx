@@ -94,19 +94,24 @@ export function StudentExploreCoursesClient() {
     return new Set(enrolledIds);
   }, [enrolledIds]);
 
+  // Available courses: ONLY courses that the student is NOT enrolled in
+  const availableCourses = React.useMemo(() => {
+    return courses.filter((course) => !enrolledCourseIds.has(course.id));
+  }, [courses, enrolledCourseIds]);
+
   // Filter Logic (Search by course title, subject, grade, teacher name)
   const filteredCourses = React.useMemo(() => {
-    if (!searchQuery.trim()) return courses;
+    if (!searchQuery.trim()) return availableCourses;
     const query = searchQuery.toLowerCase().trim();
 
-    return courses.filter((course) => {
+    return availableCourses.filter((course) => {
       const matchesTitle = course.title.toLowerCase().includes(query);
       const matchesSubject = course.subject?.toLowerCase().includes(query);
       const matchesGrade = course.grade?.toLowerCase().includes(query);
       const matchesTeacher = course.teacherName?.toLowerCase().includes(query);
       return matchesTitle || matchesSubject || matchesGrade || matchesTeacher;
     });
-  }, [courses, searchQuery]);
+  }, [availableCourses, searchQuery]);
 
   // Sort Logic
   const sortedCourses = React.useMemo(() => {
@@ -192,7 +197,7 @@ export function StudentExploreCoursesClient() {
               {t("title")}
             </h1>
             <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {t("totalAvailable", { count: courses.length })}
+              {t("totalAvailable", { count: availableCourses.length })}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1 ps-12">{t("subtitle")}</p>

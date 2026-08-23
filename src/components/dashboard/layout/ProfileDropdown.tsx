@@ -13,6 +13,8 @@ import { LogOut, Settings, User } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import * as React from "react";
+import { getStoredStudents } from "@/lib/students-storage";
 
 interface ProfileDropdownProps {
   user: UserResponseDto & {
@@ -59,6 +61,28 @@ export function ProfileDropdown({
   const profileHref = isStudent ? "/student-dashboard/profile" : "/dashboard/profile";
   const settingsHref = isStudent ? "/student-dashboard/settings" : "/dashboard/settings";
 
+  // If student, check for active student avatar from local storage
+  const [studentAvatar, setStudentAvatar] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isStudent) {
+      const syncStudentAvatar = () => {
+        const students = getStoredStudents(locale);
+        const active = students[0];
+        if (active?.image) {
+          setStudentAvatar(active.image);
+        }
+      };
+      syncStudentAvatar();
+      window.addEventListener("rewaa_students_updated", syncStudentAvatar);
+      return () => {
+        window.removeEventListener("rewaa_students_updated", syncStudentAvatar);
+      };
+    }
+  }, [isStudent, locale]);
+
+  const effectiveAvatar = isStudent && studentAvatar ? studentAvatar : user.avatarUrl;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -90,14 +114,21 @@ export function ProfileDropdown({
           </div>
           <div
             className={cn(
-              "flex size-8 group-data-[collapsible=icon]:size-10 shrink-0 items-center justify-center rounded-full border overflow-hidden transition-colors",
+              "relative flex size-8 group-data-[collapsible=icon]:size-10 shrink-0 items-center justify-center rounded-full border overflow-hidden transition-colors",
               isLight
                 ? "bg-muted border-border text-foreground"
                 : "bg-white/10 border-white/20 text-white",
             )}
           >
-            {user.avatarUrl ? (
-              <Image src={user.avatarUrl} alt={fullName} className="h-full w-full object-cover" />
+            {effectiveAvatar ? (
+              <Image
+                src={effectiveAvatar}
+                alt={fullName}
+                fill
+                sizes="40px"
+                className="object-cover"
+                unoptimized
+              />
             ) : firstName && lastName ? (
               <span className="text-xs font-bold uppercase">
                 {firstName.charAt(0) + lastName.charAt(0)}

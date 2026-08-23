@@ -1,13 +1,13 @@
 "use client";
 
-import { Award, BookOpen, FileCheck2, HelpCircle, Wallet } from "lucide-react";
+import { BookOpen, FileCheck2, HelpCircle, TrendingUp, Wallet } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { getEnrolledCourseIds } from "@/lib/student-enrollment-storage";
 import React from "react";
 
 interface StudentGeneralOverviewProps {
-  totalExamScores?: number;
+  generalPerformance?: number;
   coursesCount?: number;
   walletBalance?: number;
   examsSolved?: number;
@@ -16,7 +16,7 @@ interface StudentGeneralOverviewProps {
 }
 
 export function StudentGeneralOverview({
-  totalExamScores = 1250,
+  generalPerformance: propGeneralPerformance,
   coursesCount: propCoursesCount,
   walletBalance = 350,
   examsSolved = 12,
@@ -48,6 +48,13 @@ export function StudentGeneralOverview({
   const correctPct = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
   const wrongPct = 100 - correctPct;
 
+  const performancePercentage =
+    propGeneralPerformance !== undefined
+      ? propGeneralPerformance
+      : correctPct > 0
+        ? correctPct
+        : 88;
+
   return (
     <section className="space-y-4">
       {/* Header */}
@@ -60,22 +67,21 @@ export function StudentGeneralOverview({
 
       {/* 5 Stats Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        {/* Card 1: Total Exam Scores / مجموع الدرجات */}
+        {/* Card 1: General Performance / المستوى العام */}
         <DashboardCard className="p-5 flex flex-col justify-between gap-3 bg-card hover:border-amber-500/40 transition-colors">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
-              {t("totalExamScores")}
+              {t("generalPerformance")}
             </span>
             <div className="size-9 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
-              <Award className="size-4.5" />
+              <TrendingUp className="size-4.5" />
             </div>
           </div>
           <div className="space-y-0.5">
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl sm:text-3xl font-black text-foreground">
-                {totalExamScores.toLocaleString()}
+                {performancePercentage}%
               </span>
-              <span className="text-xs font-semibold text-amber-600">{t("grades")}</span>
             </div>
           </div>
         </DashboardCard>

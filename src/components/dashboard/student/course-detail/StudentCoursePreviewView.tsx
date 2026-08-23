@@ -14,7 +14,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import { getStoredExams } from "@/lib/exams-storage";
-import { cn } from "@/lib/utils";
 import { Course, LessonAttachment } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { Teacher } from "@/types/settings";
@@ -28,12 +27,10 @@ import {
   FileText,
   Globe,
   Globe2,
-  HelpCircle,
   House,
   Lock,
   Paperclip,
   Sparkles,
-  Star,
   Tag,
   User,
   Users,
@@ -191,14 +188,6 @@ export function StudentCoursePreviewView({
   // Duration in hours
   const totalVideoHours = course.durationHours || Math.max(1, Math.round(flatLessons.length * 1.5));
 
-  // Average Rating and Total count
-  const averageRating = course.averageRating || 4.9;
-  const totalRatingsCount =
-    course.totalRatingsCount || Math.max(12, Math.round(course.numberOfParticipants * 0.25));
-
-  const faqs = course.faqs || [];
-  const ratingsReviews = course.ratingsReviews || [];
-
   return (
     <TooltipProvider delayDuration={200}>
       <div className="w-full space-y-6">
@@ -246,7 +235,7 @@ export function StudentCoursePreviewView({
                 {course.title}
               </h1>
 
-              {/* Teacher Info + Rating + Number of Enrolled Students */}
+              {/* Teacher Info + Number of Enrolled Students */}
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-2 border-t border-border/60">
                 {/* Instructor */}
                 <div className="flex items-center gap-3">
@@ -269,19 +258,6 @@ export function StudentCoursePreviewView({
                     </div>
                     <div className="text-sm font-bold text-foreground">{course.teacherName}</div>
                   </div>
-                </div>
-
-                {/* Rating */}
-                <div className="flex items-center gap-2 border-s border-border/60 ps-4 sm:ps-6">
-                  <div className="flex items-center gap-1 text-amber-500">
-                    <Star className="size-4 fill-amber-400 text-amber-400" />
-                    <span className="text-sm font-bold text-foreground">
-                      {averageRating.toFixed(1)}
-                    </span>
-                  </div>
-                  <span className="text-xs text-muted-foreground">
-                    {t("ratingsCount", { count: totalRatingsCount })}
-                  </span>
                 </div>
 
                 {/* Enrolled Students Count */}
@@ -323,30 +299,6 @@ export function StudentCoursePreviewView({
                       {allAttachments.length > 0 && (
                         <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
                           {allAttachments.length}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="faqs"
-                      className="gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <HelpCircle className="size-4" />
-                      <span>{t("tabs.faqs")}</span>
-                      {faqs.length > 0 && (
-                        <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
-                          {faqs.length}
-                        </span>
-                      )}
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="ratings"
-                      className="gap-2 px-3.5 py-2.5 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <Star className="size-4" />
-                      <span>{t("tabs.ratings")}</span>
-                      {ratingsReviews.length > 0 && (
-                        <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
-                          {ratingsReviews.length}
                         </span>
                       )}
                     </TabsTrigger>
@@ -582,153 +534,6 @@ export function StudentCoursePreviewView({
                                 {t("attachmentsTab.lockedFile")}
                               </span>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  {/* ─────────────────────────────────────────────────────────────
-                      TAB 4: FAQS ACCORDION
-                  ───────────────────────────────────────────────────────────── */}
-                  <TabsContent value="faqs" className="space-y-4 mt-0 focus-visible:outline-hidden">
-                    <div className="space-y-1">
-                      <h3 className="text-base font-bold text-foreground">{t("faqsTab.title")}</h3>
-                      <p className="text-xs text-muted-foreground">{t("faqsTab.subtitle")}</p>
-                    </div>
-
-                    {faqs.length === 0 ? (
-                      <div className="py-12 text-center text-sm text-muted-foreground border border-dashed rounded-xl">
-                        {t("faqsTab.noFaqs")}
-                      </div>
-                    ) : (
-                      <Accordion
-                        type="single"
-                        collapsible
-                        defaultValue={faqs[0]?.id}
-                        className="w-full space-y-3"
-                      >
-                        {faqs.map((faq) => (
-                          <AccordionItem
-                            key={faq.id}
-                            value={faq.id}
-                            className="border border-border/70 rounded-xl px-4 py-1 bg-muted/20 data-[state=open]:bg-muted/40 transition-colors"
-                          >
-                            <AccordionTrigger className="hover:no-underline py-3 text-start font-bold text-sm sm:text-base text-foreground items-center gap-2">
-                              <div className="flex items-center gap-2">
-                                <HelpCircle className="size-4 text-primary shrink-0" />
-                                <span>{faq.question}</span>
-                              </div>
-                            </AccordionTrigger>
-                            <AccordionContent className="pt-2 pb-4 text-xs sm:text-sm text-muted-foreground leading-relaxed border-t border-border/40 mt-1">
-                              {faq.answer}
-                            </AccordionContent>
-                          </AccordionItem>
-                        ))}
-                      </Accordion>
-                    )}
-                  </TabsContent>
-
-                  {/* ─────────────────────────────────────────────────────────────
-                      TAB 5: RATINGS & REVIEWS
-                  ───────────────────────────────────────────────────────────── */}
-                  <TabsContent
-                    value="ratings"
-                    className="space-y-6 mt-0 focus-visible:outline-hidden"
-                  >
-                    {/* Overall Summary Card */}
-                    <div className="p-5 sm:p-6 rounded-2xl bg-muted/30 border border-border/80 flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4">
-                      <div className="space-y-1 text-center sm:text-start">
-                        <div className="text-xs font-semibold text-muted-foreground">
-                          {t("ratingsTab.averageRating")}
-                        </div>
-                        <div className="flex items-baseline justify-center sm:justify-start gap-2">
-                          <span className="text-3xl sm:text-4xl font-extrabold text-foreground">
-                            {averageRating.toFixed(1)}
-                          </span>
-                          <span className="text-sm font-medium text-muted-foreground">
-                            {t("ratingsTab.outOfFive")}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {t("ratingsTab.basedOnRatings", { count: totalRatingsCount })}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-1 text-amber-400">
-                        {Array.from({ length: 5 }).map((_, starIdx) => (
-                          <Star
-                            key={starIdx}
-                            className={cn(
-                              "size-6 sm:size-7",
-                              starIdx < Math.round(averageRating)
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground/30",
-                            )}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Reviews List */}
-                    {ratingsReviews.length === 0 ? (
-                      <div className="py-12 text-center text-sm text-muted-foreground border border-dashed rounded-xl">
-                        {t("ratingsTab.noRatings")}
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {ratingsReviews.map((review) => (
-                          <div
-                            key={review.id}
-                            className="p-4 sm:p-5 rounded-xl border border-border/70 bg-card space-y-3 shadow-xs"
-                          >
-                            <div className="flex items-center justify-between gap-3">
-                              {/* Student User */}
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="relative size-10 rounded-full overflow-hidden bg-muted border border-border shrink-0 flex items-center justify-center">
-                                  {review.userImage ? (
-                                    <Image
-                                      src={review.userImage}
-                                      alt={review.userName}
-                                      fill
-                                      className="object-cover"
-                                      sizes="40px"
-                                    />
-                                  ) : (
-                                    <User className="size-4 text-muted-foreground" />
-                                  )}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="text-xs sm:text-sm font-bold text-foreground truncate">
-                                    {review.userName}
-                                  </div>
-                                  <div className="text-[11px] text-muted-foreground">
-                                    {review.date}
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Star rating for this review */}
-                              <div className="flex items-center gap-1 shrink-0">
-                                {Array.from({ length: 5 }).map((_, sIdx) => (
-                                  <Star
-                                    key={sIdx}
-                                    className={cn(
-                                      "size-3.5 sm:size-4",
-                                      sIdx < Math.round(review.rating)
-                                        ? "fill-amber-400 text-amber-400"
-                                        : "text-muted-foreground/30",
-                                    )}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-
-                            {review.comment && (
-                              <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed ps-13">
-                                {review.comment}
-                              </p>
-                            )}
                           </div>
                         ))}
                       </div>

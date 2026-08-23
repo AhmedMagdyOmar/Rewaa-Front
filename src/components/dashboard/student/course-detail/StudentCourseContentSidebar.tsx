@@ -19,6 +19,7 @@ import { Course, CourseSection, Lesson } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
   Award,
+  BookOpen,
   CheckCircle2,
   ChevronRight,
   Download,
@@ -27,6 +28,8 @@ import {
   FileText,
   Lock,
   Paperclip,
+  PanelLeftClose,
+  PanelLeftOpen,
   Video,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -42,6 +45,8 @@ interface StudentCourseContentSidebarProps {
   onAttemptLockedLesson?: (section: CourseSection, requiredExamId?: string) => void;
   progressPercentage: number;
   onOpenCertificate: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
   className?: string;
 }
 
@@ -55,6 +60,8 @@ export function StudentCourseContentSidebar({
   onAttemptLockedLesson,
   progressPercentage,
   onOpenCertificate,
+  isCollapsed = false,
+  onToggleCollapse,
   className,
 }: StudentCourseContentSidebarProps) {
   const locale = useLocale();
@@ -68,6 +75,7 @@ export function StudentCourseContentSidebar({
     window.addEventListener("rewaa_exams_updated", handleExamsUpdate);
     return () => window.removeEventListener("rewaa_exams_updated", handleExamsUpdate);
   }, [locale]);
+
   // Sanitize course to ensure draft sections and draft lessons are excluded
   const sanitizedSections = React.useMemo(() => {
     return (course.sections || [])
@@ -104,6 +112,88 @@ export function StudentCourseContentSidebar({
     return foundIndex !== -1 ? `section-${foundIndex}` : "section-0";
   }, [sanitizedSections, selectedLessonId]);
 
+  // Collapsed Sidebar View (Desktop mini-rail)
+  if (isCollapsed) {
+    return (
+      <TooltipProvider delayDuration={200}>
+        <div
+          className={cn(
+            "flex flex-col items-center justify-between h-full min-h-120 py-4 bg-card border border-border/80 rounded-2xl sm:rounded-3xl shadow-xs gap-4",
+            className,
+          )}
+        >
+          <div className="flex flex-col items-center gap-4 w-full px-2">
+            {/* Expand toggle button */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={onToggleCollapse}
+                  className="h-10 w-10 rounded-xl border-border/80 hover:bg-muted/80 text-foreground shrink-0 shadow-xs"
+                >
+                  <PanelLeftOpen className="size-5 rtl:rotate-180 text-primary" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
+                {t("expandSidebar")}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Circular / Vertical Progress Badge */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex flex-col items-center justify-center p-2 rounded-xl bg-primary/10 border border-primary/20 text-primary text-xs font-bold w-full cursor-default">
+                  <span>{progressPercentage}%</span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
+                {t("totalProgress", { progress: progressPercentage })}
+              </TooltipContent>
+            </Tooltip>
+
+            {/* Book Icon Indicator */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={onToggleCollapse}
+                  className="flex flex-col items-center justify-center size-10 rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <BookOpen className="size-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
+                {t("courseContent")} ({totalLessons})
+              </TooltipContent>
+            </Tooltip>
+          </div>
+
+          {/* Certificate Icon in Collapsed State */}
+          <div className="w-full px-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={onOpenCertificate}
+                  className="w-full h-10 rounded-xl border-primary/30 text-primary hover:bg-primary/10 shadow-xs"
+                >
+                  <Award className="size-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
+                {t("showCertificate")}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
   return (
     <TooltipProvider delayDuration={200}>
       <div
@@ -115,39 +205,66 @@ export function StudentCourseContentSidebar({
         {/* Sidebar Header */}
         <div className="p-4 sm:p-5 border-b border-border/80 bg-muted/20 space-y-3">
           <div className="flex items-center justify-between gap-2">
-            <h2 className="text-base font-bold text-foreground tracking-tight">
-              {t("courseContent")}
-            </h2>
-            <Badge
-              variant="secondary"
-              className="bg-primary/10 text-primary font-bold text-xs border border-primary/20"
-            >
-              {t("totalProgress", { progress: progressPercentage })}
-            </Badge>
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0">
+                <BookOpen className="size-5" />
+              </div>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground tracking-tight truncate">
+                {t("courseContent")}
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <Badge
+                variant="secondary"
+                className="bg-primary/10 text-primary font-bold text-xs sm:text-sm px-2.5 py-0.5 border border-primary/20"
+              >
+                {t("totalProgress", { progress: progressPercentage })}
+              </Badge>
+
+              {onToggleCollapse && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={onToggleCollapse}
+                      className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hidden lg:flex"
+                    >
+                      <PanelLeftClose className="size-4 rtl:rotate-180" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">
+                    {t("collapseSidebar")}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
 
           {/* Count indicators: sections & lessons */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground font-medium">
+          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground font-medium">
             <span>{t("sectionsCount", { count: totalSections })}</span>
             <span>•</span>
             <span>{t("lessonsCount", { count: totalLessons })}</span>
           </div>
 
           {/* Progress Bar */}
-          <Progress value={progressPercentage} className="h-2 bg-primary/15" />
+          <Progress value={progressPercentage} className="h-2.5 bg-primary/15 rounded-full" />
         </div>
 
         {/* Sections & Items Collapsible List */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
           {sanitizedSections.length === 0 ? (
-            <div className="py-8 px-4 text-center text-xs text-muted-foreground border border-dashed rounded-xl">
+            <div className="py-8 px-4 text-center text-sm text-muted-foreground border border-dashed rounded-xl">
               {t("empty.noSections")}
             </div>
           ) : (
             <Accordion
               type="multiple"
               defaultValue={[defaultSectionValue]}
-              className="w-full space-y-2.5"
+              className="w-full space-y-3"
             >
               {sanitizedSections.map((section: CourseSection, sIdx: number) => {
                 const sectionLessonsCount = section.lessons.length;
@@ -191,54 +308,47 @@ export function StudentCourseContentSidebar({
                     key={section.id || `section-${sIdx}`}
                     value={`section-${sIdx}`}
                     className={cn(
-                      "border rounded-xl px-3 py-1 bg-background data-[state=open]:bg-muted/30 transition-colors",
+                      "border rounded-xl px-3.5 py-1.5 bg-background data-[state=open]:bg-muted/30 transition-colors",
                       isSectionLocked
                         ? "border-amber-500/30 bg-amber-500/5 data-[state=open]:bg-amber-500/10 opacity-90"
                         : "border-border/70",
                     )}
                   >
-                    <AccordionTrigger className="hover:no-underline py-2.5 min-w-0 [&>svg]:shrink-0">
-                      <div className="flex flex-col items-start text-start gap-1 pe-2 flex-1 min-w-0">
-                        <div className="flex items-center gap-2 w-full min-w-0">
+                    <AccordionTrigger className="hover:no-underline py-2.5 min-w-0 [&>svg]:shrink-0 [&>svg]:mt-1">
+                      <div className="flex flex-col items-start text-start gap-1.5 pe-2 flex-1 min-w-0">
+                        <div className="flex items-start gap-2.5 w-full min-w-0">
                           {isSectionLocked ? (
-                            <div className="size-4 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0">
-                              <Lock className="size-2.5 text-amber-600" />
+                            <div className="size-5 rounded-full bg-amber-500/20 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                              <Lock className="size-3 text-amber-600" />
                             </div>
                           ) : isSectionCompleted ? (
-                            <CheckCircle2 className="size-4 text-emerald-500 shrink-0" />
+                            <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
                           ) : (
-                            <span className="size-4 rounded-full border border-muted-foreground/40 shrink-0 text-[10px] flex items-center justify-center font-bold text-muted-foreground">
+                            <span className="size-5 rounded-full border border-muted-foreground/40 shrink-0 text-xs flex items-center justify-center font-bold text-muted-foreground mt-0.5">
                               {sIdx + 1}
                             </span>
                           )}
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <h3 className="text-xs sm:text-sm font-bold text-foreground truncate min-w-0 flex-1">
-                                {section.title}
-                              </h3>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="max-w-xs text-xs">
-                              {section.title}
-                            </TooltipContent>
-                          </Tooltip>
+                          <h3 className="text-sm sm:text-base font-bold text-foreground min-w-0 flex-1 leading-snug">
+                            {section.title}
+                          </h3>
 
                           {isSectionLocked && (
                             <Badge
                               variant="outline"
-                              className="text-[10px] bg-amber-500/15 text-amber-700 border-amber-500/30 font-bold shrink-0 gap-1 px-1.5 py-0"
+                              className="text-[11px] bg-amber-500/15 text-amber-700 border-amber-500/30 font-bold shrink-0 gap-1 px-2 py-0.5 mt-0.5"
                             >
-                              <Lock className="size-2.5" />
+                              <Lock className="size-3" />
                               <span>{t("locked.badge")}</span>
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 ps-6 text-[11px] text-muted-foreground">
+                        <div className="flex items-center gap-2 ps-7 text-xs text-muted-foreground font-medium">
                           <span>
                             {sectionCompletedCount}/{sectionLessonsCount}{" "}
                             {t("lessonsCount", { count: sectionLessonsCount })}
                           </span>
                           {section.isRequiredPassExamForNextSection && (
-                            <span className="text-[10px] text-amber-600 font-semibold">
+                            <span className="text-xs text-amber-600 font-semibold">
                               • {t("locked.mustPassExam")}
                             </span>
                           )}
@@ -246,13 +356,13 @@ export function StudentCourseContentSidebar({
                       </div>
                     </AccordionTrigger>
 
-                    <AccordionContent className="pt-2 pb-3 space-y-2 border-t border-border/50 mt-1">
+                    <AccordionContent className="pt-2.5 pb-3.5 space-y-2 border-t border-border/50 mt-1">
                       {/* If locked, display lock explanation warning box */}
                       {isSectionLocked && (
-                        <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800 flex items-center gap-2 mb-2">
-                          <Lock className="size-4 shrink-0 text-amber-600" />
+                        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs sm:text-sm text-amber-800 flex items-start gap-2.5 mb-2">
+                          <Lock className="size-4 shrink-0 text-amber-600 mt-0.5" />
                           <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-[11px] leading-tight">
+                            <p className="font-semibold text-xs leading-tight">
                               {t("locked.tooltip")}
                             </p>
                           </div>
@@ -267,12 +377,19 @@ export function StudentCourseContentSidebar({
                         const hasPdf =
                           lesson.hasPdfAttachments ||
                           (lesson.pdfFiles && lesson.pdfFiles.length > 0);
+                        const hasLessonExam = Boolean(
+                          lesson.isLinkedToExam &&
+                          lesson.linkedExamId &&
+                          isExamPublished(lesson.linkedExamId),
+                        );
+                        const isLessonExamPassed =
+                          hasLessonExam && passedExamIds.includes(lesson.linkedExamId!);
 
                         return (
                           <div
                             key={lesson.id}
                             className={cn(
-                              "group/item relative flex items-center justify-between gap-2 p-2.5 rounded-lg border text-xs transition-all",
+                              "group/item relative flex items-start justify-between gap-2.5 p-3 rounded-xl border text-xs sm:text-sm transition-all",
                               isSectionLocked
                                 ? "bg-muted/40 border-border/40 text-muted-foreground cursor-not-allowed opacity-75"
                                 : isSelected
@@ -287,9 +404,9 @@ export function StudentCourseContentSidebar({
                               }
                             }}
                           >
-                            {/* Completion Checkbox */}
+                            {/* Completion Checkbox & Title */}
                             <div
-                              className="flex items-center gap-2.5 min-w-0 flex-1"
+                              className="flex items-start gap-3 min-w-0 flex-1"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Checkbox
@@ -301,7 +418,7 @@ export function StudentCourseContentSidebar({
                                   }
                                 }}
                                 aria-label={t("lesson.markAsCompleted")}
-                                className="size-4 shrink-0 rounded-lg data-checked:bg-emerald-600 data-checked:border-emerald-600"
+                                className="size-4.5 shrink-0 rounded-lg data-checked:bg-emerald-600 data-checked:border-emerald-600 mt-0.5"
                               />
 
                               <Tooltip>
@@ -317,20 +434,20 @@ export function StudentCourseContentSidebar({
                                       }
                                     }}
                                     className={cn(
-                                      "flex items-center gap-2 text-start min-w-0 flex-1",
+                                      "flex items-start gap-2.5 text-start min-w-0 flex-1 text-xs sm:text-sm font-medium",
                                       isSectionLocked ? "cursor-not-allowed" : "hover:underline",
                                     )}
                                   >
                                     {isSectionLocked ? (
-                                      <Lock className="size-3.5 shrink-0 text-muted-foreground/60" />
+                                      <Lock className="size-4 shrink-0 text-muted-foreground/60 mt-0.5" />
                                     ) : hasVideo ? (
-                                      <Video className="size-3.5 shrink-0 text-primary" />
+                                      <Video className="size-4 shrink-0 text-primary mt-0.5" />
                                     ) : (
-                                      <FileText className="size-3.5 shrink-0 text-blue-500" />
+                                      <FileText className="size-4 shrink-0 text-blue-500 mt-0.5" />
                                     )}
                                     <span
                                       className={cn(
-                                        "truncate",
+                                        "text-xs sm:text-sm leading-snug",
                                         isCompleted &&
                                           !isSelected &&
                                           "line-through text-muted-foreground opacity-80",
@@ -347,18 +464,43 @@ export function StudentCourseContentSidebar({
                             </div>
 
                             {/* Extra Badges / Indicators */}
-                            <div className="flex items-center gap-1.5 shrink-0">
+                            <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                              {/* Exam linked indicator icon */}
+                              {hasLessonExam && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      className={cn(
+                                        "p-1.5 rounded-lg flex items-center justify-center transition-colors",
+                                        isLessonExamPassed
+                                          ? "bg-emerald-500/15 text-emerald-600"
+                                          : "bg-amber-500/15 text-amber-600",
+                                      )}
+                                    >
+                                      <FileSpreadsheet className="size-3.5" />
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {getExamTitle(lesson.linkedExamId, lesson.linkedExamTitle)}
+                                    {isLessonExamPassed
+                                      ? ` (${t("locked.examPassed")})`
+                                      : ` (${t("lesson.linkedExam")})`}
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+
                               {hasPdf && (
-                                <span className="p-1 rounded bg-blue-500/10 text-blue-600 text-[10px] font-bold">
+                                <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 text-[11px] font-bold">
                                   PDF
                                 </span>
                               )}
+
                               {isSectionLocked ? (
-                                <Lock className="size-3 text-muted-foreground/60" />
+                                <Lock className="size-3.5 text-muted-foreground/60" />
                               ) : (
                                 <ChevronRight
                                   className={cn(
-                                    "size-3.5 text-muted-foreground transition-transform rtl:rotate-180",
+                                    "size-4 text-muted-foreground transition-transform rtl:rotate-180",
                                     isSelected &&
                                       "text-primary translate-x-0.5 rtl:-translate-x-0.5",
                                   )}
@@ -384,13 +526,13 @@ export function StudentCourseContentSidebar({
                                       download
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="flex items-center justify-between p-2 rounded-lg bg-muted/40 hover:bg-muted border border-border/50 text-[11px] text-muted-foreground hover:text-foreground transition-colors min-w-0"
+                                      className="flex items-start justify-between p-2.5 rounded-xl bg-muted/40 hover:bg-muted border border-border/50 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0 gap-2"
                                     >
-                                      <div className="flex items-center gap-2 truncate min-w-0 flex-1">
-                                        <Paperclip className="size-3 text-primary shrink-0" />
-                                        <span className="truncate">{file.title}</span>
+                                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                        <Paperclip className="size-3.5 text-primary shrink-0 mt-0.5" />
+                                        <span className="leading-snug">{file.title}</span>
                                       </div>
-                                      <Download className="size-3 text-muted-foreground shrink-0 ms-1" />
+                                      <Download className="size-3.5 text-muted-foreground shrink-0 ms-1 mt-0.5" />
                                     </a>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="max-w-xs text-xs">
@@ -405,7 +547,7 @@ export function StudentCourseContentSidebar({
                       {section.isLinkedToExam &&
                         section.linkedExamId &&
                         isExamPublished(section.linkedExamId) && (
-                          <div className="pt-1">
+                          <div className="pt-1.5">
                             {(() => {
                               const examTitle = getExamTitle(
                                 section.linkedExamId,
@@ -417,37 +559,37 @@ export function StudentCourseContentSidebar({
                                     <Link
                                       href={`/student-dashboard/exams/${section.linkedExamId}`}
                                       className={cn(
-                                        "flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold transition-colors min-w-0",
+                                        "flex items-start justify-between p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-colors min-w-0 gap-2",
                                         isCurrentExamPassed
                                           ? "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-800"
                                           : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800",
                                       )}
                                     >
-                                      <div className="flex items-center gap-2 truncate min-w-0 flex-1">
+                                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
                                         <FileSpreadsheet
                                           className={cn(
-                                            "size-4 shrink-0",
+                                            "size-4.5 shrink-0 mt-0.5",
                                             isCurrentExamPassed
                                               ? "text-emerald-600"
                                               : "text-amber-600",
                                           )}
                                         />
-                                        <span className="truncate">{examTitle}</span>
+                                        <span className="leading-snug">{examTitle}</span>
                                       </div>
-                                      <div className="flex items-center gap-1.5 shrink-0 ms-1">
+                                      <div className="flex items-center gap-1.5 shrink-0 ms-1 mt-0.5">
                                         {isCurrentExamPassed ? (
-                                          <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0 h-4">
+                                          <Badge className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 h-auto">
                                             {t("locked.examPassed")}
                                           </Badge>
                                         ) : section.isRequiredPassExamForNextSection ? (
                                           <Badge
                                             variant="outline"
-                                            className="text-[10px] bg-amber-500/15 border-amber-500/30 text-amber-700 px-1.5 py-0 h-4"
+                                            className="text-[11px] bg-amber-500/15 border-amber-500/30 text-amber-700 px-2 py-0.5 h-auto font-bold"
                                           >
                                             {t("locked.examRequired")}
                                           </Badge>
                                         ) : (
-                                          <FileCheck className="size-3.5 shrink-0 opacity-80" />
+                                          <FileCheck className="size-4 shrink-0 opacity-80" />
                                         )}
                                       </div>
                                     </Link>
@@ -469,14 +611,14 @@ export function StudentCourseContentSidebar({
         </div>
 
         {/* Bottom Certificate Button */}
-        <div className="p-4 border-t border-border/80 bg-muted/30">
+        <div className="p-4 sm:p-5 border-t border-border/80 bg-muted/30">
           <Button
             type="button"
             onClick={onOpenCertificate}
             variant="outline"
-            className="w-full justify-center gap-2 text-xs sm:text-sm font-bold border-primary/30 hover:border-primary hover:bg-primary/5 text-primary py-5 rounded-xl shadow-xs"
+            className="w-full justify-center gap-2 text-sm font-bold border-primary/30 hover:border-primary hover:bg-primary/5 text-primary py-5 rounded-xl shadow-xs"
           >
-            <Award className="size-4 text-primary" />
+            <Award className="size-4.5 text-primary" />
             <span>{t("showCertificate")}</span>
           </Button>
         </div>

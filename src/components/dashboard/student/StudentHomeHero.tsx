@@ -1,11 +1,14 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
 import { useAuthControllerGetProfile } from "@/hooks/use-auth";
 import { useLocale, useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { getStoredPlatformInfo } from "@/lib/settings-storage";
+import { getWhatsAppUrl } from "@/components/ui/phone-link";
 
 interface StudentHomeHeroProps {
   studentName?: string;
@@ -15,6 +18,22 @@ export function StudentHomeHero({ studentName: initialStudentName }: StudentHome
   const locale = useLocale();
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.hero");
+
+  const [whatsappUrl, setWhatsappUrl] = useState<string>(() => {
+    return getWhatsAppUrl(getStoredPlatformInfo().communication.whatsappPhone);
+  });
+
+  useEffect(() => {
+    const handlePlatformInfoUpdate = () => {
+      const info = getStoredPlatformInfo();
+      setWhatsappUrl(getWhatsAppUrl(info.communication.whatsappPhone));
+    };
+
+    handlePlatformInfoUpdate();
+    window.addEventListener("rewaa_platform_info_updated", handlePlatformInfoUpdate);
+    return () =>
+      window.removeEventListener("rewaa_platform_info_updated", handlePlatformInfoUpdate);
+  }, []);
 
   const { data } = useAuthControllerGetProfile({
     query: {
@@ -81,7 +100,9 @@ export function StudentHomeHero({ studentName: initialStudentName }: StudentHome
             size="lg"
             className="px-8 py-6 text-lg font-semibold hover:bg-primary/90!"
           >
-            <Link href="/contact-us">{t("contactUs")}</Link>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
+              {t("contactUs")}
+            </a>
           </Button>
 
           {/* Secondary CTA Button */}
@@ -91,7 +112,7 @@ export function StudentHomeHero({ studentName: initialStudentName }: StudentHome
             size="lg"
             className="px-8 py-6 text-lg font-semibold hover:bg-white/90!"
           >
-            <Link href="/student-dashboard/courses">{t("discoverCourses")}</Link>
+            <Link href="/student-dashboard/courses/explore">{t("discoverCourses")}</Link>
           </Button>
         </div>
       </div>

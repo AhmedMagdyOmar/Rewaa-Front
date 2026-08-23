@@ -4,6 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getStoredCourses } from "@/lib/courses-storage";
 import { mockCoursesData } from "@/lib/mockCoursesData";
 import { getStoredTeachers } from "@/lib/settings-storage";
+import { cn } from "@/lib/utils";
 import {
   calculateCourseProgress,
   getCompletedLessons,
@@ -56,6 +57,9 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     section: CourseSection | null;
     requiredExamId?: string;
   }>({ section: null });
+
+  // Sidebar collapsed state
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
   // Load course, stored completions, and passed exams
   React.useEffect(() => {
@@ -311,8 +315,13 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
       {/* 2-Column Responsive Workspace Grid */}
       {/* On desktop: Sidebar on start (left in LTR, right in RTL), Main view on end */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Sidebar: Course Content Navigation (4 Cols on LG) */}
-        <aside className="lg:col-span-4 order-2 lg:order-1 lg:sticky lg:top-20 max-h-none lg:max-h-[calc(100vh-6rem)] flex flex-col">
+        {/* Sidebar: Course Content Navigation */}
+        <aside
+          className={cn(
+            "order-2 lg:order-1 lg:sticky lg:top-20 max-h-none lg:max-h-[calc(100vh-6rem)] flex flex-col transition-all duration-300",
+            isSidebarCollapsed ? "lg:col-span-1" : "lg:col-span-5 xl:col-span-4",
+          )}
+        >
           <StudentCourseContentSidebar
             course={currentCourse}
             selectedLessonId={selectedLessonId}
@@ -323,11 +332,18 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
             onAttemptLockedLesson={handleAttemptLockedLesson}
             progressPercentage={progressPercentage}
             onOpenCertificate={() => setCertificateOpen(true)}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
           />
         </aside>
 
-        {/* Main Content Workspace: Overview or Active Lesson (8 Cols on LG) */}
-        <main className="lg:col-span-8 order-1 lg:order-2 space-y-6">
+        {/* Main Content Workspace: Overview or Active Lesson */}
+        <main
+          className={cn(
+            "order-1 lg:order-2 space-y-6 transition-all duration-300",
+            isSidebarCollapsed ? "lg:col-span-11" : "lg:col-span-7 xl:col-span-8",
+          )}
+        >
           <StudentCourseMainView
             course={currentCourse}
             selectedLesson={selectedLesson}

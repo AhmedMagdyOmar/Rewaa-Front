@@ -142,6 +142,7 @@
     "exams": "Exams",
     "questions": "Questions Bank",
     "lessons": "Lessons",
+    "generallessons": "General Lessons",
     "students": "Students",
     "billing": "Billing & Invoices",
     "userSettings": "User Settings",
@@ -2215,8 +2216,8 @@
     },
     "overview": {
       "title": "General Overview",
-      "subtitle": "Track your learning progress, exam scores, and account statistics",
-      "totalExamScores": "Total Exam Scores",
+      "subtitle": "Track your learning progress, overall performance, and account statistics",
+      "generalPerformance": "General Performance",
       "coursesEnrolled": "Courses Enrolled",
       "walletBalance": "Wallet Balance",
       "examsSolved": "Exams Solved",
@@ -2559,6 +2560,8 @@
       "sectionsCount": "{count, plural, =0 {No sections} one {1 section} other {{count} sections}}",
       "lessonsCount": "{count, plural, =0 {No lessons} one {1 lesson} other {{count} lessons}}",
       "totalProgress": "Completed {progress}%",
+      "collapseSidebar": "Collapse sidebar",
+      "expandSidebar": "Expand course content",
       "showCertificate": "Show the Certificate",
       "certificateModal": {
         "title": "Course Certificate of Completion",

@@ -90,7 +90,7 @@ export const studentNavConfig: NavConfig = {
       icon: BookOpen,
     },
     {
-      label: "Lessons",
+      label: "generalLessons",
       href: "/student-dashboard/lessons",
       icon: Video,
     },
@@ -104,17 +104,12 @@ export const studentNavConfig: NavConfig = {
       href: "/student-dashboard/billing",
       icon: CreditCard,
     },
-    {
-      label: "Settings",
-      href: "/student-dashboard/settings",
-      icon: Settings,
-    },
   ],
 };
 
 export const studentNavbarLinks = [
   { label: "Home", href: "/student-dashboard" },
   { label: "Courses", href: "/student-dashboard/courses" },
-  { label: "Lessons", href: "/student-dashboard/lessons" },
+  { label: "generalLessons", href: "/student-dashboard/lessons" },
   { label: "Exams", href: "/student-dashboard/exams" },
 ];

@@ -20,11 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SelectWithAdd } from "@/components/ui/select-with-add";
-import {
-  getStoredCustomRegistrationTypes,
-  saveStoredCustomRegistrationType,
-} from "@/lib/custom-categories-storage";
+import { getStoredCustomRegistrationTypes } from "@/lib/custom-categories-storage";
 import { getStoredStudents, updateStoredStudent } from "@/lib/students-storage";
 import { Gender, RegistrationType, Student } from "@/types/student";
 
@@ -389,36 +385,34 @@ export function StudentProfileClient() {
             />
 
             {/* Registration Type */}
-            <SelectWithAdd
-              id="registrationType"
-              value={formData.registrationType}
-              onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
-              label={t("registrationTypeLabel")}
-              options={[
-                { value: "center", label: tForm("registrationTypes.center") },
-                { value: "online", label: tForm("registrationTypes.online") },
-                { value: "hybrid", label: tForm("registrationTypes.hybrid") },
-                { value: "external", label: tForm("registrationTypes.external") },
-                ...customRegTypes
-                  .filter(
-                    (c) =>
-                      !["center", "online", "hybrid", "external"].includes(c.id) &&
-                      !["center", "online", "hybrid", "external"].includes(c.name),
-                  )
-                  .map((c) => ({ value: c.id, label: c.name })),
-              ]}
-              allowAdd
-              onAddNewOption={(name) => {
-                saveStoredCustomRegistrationType(name);
-                setCustomRegTypes(getStoredCustomRegistrationTypes());
-              }}
-              addDialogTitle={locale === "ar" ? "إضافة نوع تسجيل جديد" : "Add Registration Type"}
-              addInputLabel={locale === "ar" ? "نوع التسجيل" : "Registration Type"}
-              addInputPlaceholder={
-                locale === "ar" ? "مثال: منحة دراسية خاصة" : "e.g. Special Scholarship"
-              }
-              triggerClassName="bg-background"
-            />
+            <div className="space-y-2">
+              <Label htmlFor="registrationType">{t("registrationTypeLabel")}</Label>
+              <Select
+                value={formData.registrationType}
+                onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
+              >
+                <SelectTrigger id="registrationType" className="bg-background">
+                  <SelectValue placeholder={tForm("selectRegistrationType")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="center">{tForm("registrationTypes.center")}</SelectItem>
+                  <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
+                  <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
+                  <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
+                  {customRegTypes
+                    .filter(
+                      (c) =>
+                        !["center", "online", "hybrid", "external"].includes(c.id) &&
+                        !["center", "online", "hybrid", "external"].includes(c.name),
+                    )
+                    .map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </FormSectionCard>
 

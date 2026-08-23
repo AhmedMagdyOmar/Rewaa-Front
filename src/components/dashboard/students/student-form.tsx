@@ -1,11 +1,13 @@
 "use client";
 
-import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
 import { MapPin, ShieldCheck, User } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import * as React from "react";
 
+import { GradeSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormSectionCard } from "@/components/ui/form-section-card";
+import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -15,13 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GradeSelect } from "@/components/ui/academic-selects";
-import { SelectWithAdd } from "@/components/ui/select-with-add";
-import { ImageUploadField } from "@/components/ui/image-upload-field";
-import {
-  getStoredCustomRegistrationTypes,
-  saveStoredCustomRegistrationType,
-} from "@/lib/custom-categories-storage";
+import { getStoredCustomRegistrationTypes } from "@/lib/custom-categories-storage";
 import { Gender, RegistrationType, Student } from "@/types/student";
 
 export interface StudentFormData {
@@ -351,35 +347,34 @@ export function StudentForm({
           />
 
           {/* Registration Type */}
-          <SelectWithAdd
-            id="registrationType"
-            value={formData.registrationType}
-            onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
-            label={tForm("registrationTypeLabel")}
-            placeholder={tForm("selectRegistrationType")}
-            options={[
-              { value: "center", label: tForm("registrationTypes.center") },
-              { value: "online", label: tForm("registrationTypes.online") },
-              { value: "hybrid", label: tForm("registrationTypes.hybrid") },
-              { value: "external", label: tForm("registrationTypes.external") },
-              ...customRegTypes
-                .filter(
-                  (c) =>
-                    !["center", "online", "hybrid", "external"].includes(c.id) &&
-                    !["center", "online", "hybrid", "external"].includes(c.name),
-                )
-                .map((c) => ({ value: c.id, label: c.name })),
-            ]}
-            allowAdd
-            onAddNewOption={(name) => {
-              saveStoredCustomRegistrationType(name);
-              setCustomRegTypes(getStoredCustomRegistrationTypes());
-            }}
-            addDialogTitle="إضافة نوع تسجيل جديد"
-            addInputLabel="نوع التسجيل"
-            addInputPlaceholder="مثال: منحة دراسية خاصة"
-            triggerClassName="bg-background"
-          />
+          <div className="space-y-2">
+            <Label htmlFor="registrationType">{tForm("registrationTypeLabel")}</Label>
+            <Select
+              value={formData.registrationType}
+              onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
+            >
+              <SelectTrigger id="registrationType" className="bg-background">
+                <SelectValue placeholder={tForm("selectRegistrationType")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="center">{tForm("registrationTypes.center")}</SelectItem>
+                <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
+                <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
+                <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
+                {customRegTypes
+                  .filter(
+                    (c) =>
+                      !["center", "online", "hybrid", "external"].includes(c.id) &&
+                      !["center", "online", "hybrid", "external"].includes(c.name),
+                  )
+                  .map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </FormSectionCard>
 
