@@ -8,6 +8,7 @@ import {
   FileQuestion,
   HelpCircle,
   LucideIcon,
+  Compass,
 } from "lucide-react";
 
 export interface NavItem {
@@ -84,10 +85,16 @@ export const studentNavConfig: NavConfig = {
       href: "/student-dashboard",
       icon: LayoutDashboard,
     },
+
     {
-      label: "Courses",
+      label: "myCourses",
       href: "/student-dashboard/courses",
       icon: BookOpen,
+    },
+    {
+      label: "exploreCourses",
+      href: "/student-dashboard/courses/explore",
+      icon: Compass,
     },
     {
       label: "generalLessons",
@@ -109,7 +116,8 @@ export const studentNavConfig: NavConfig = {
 
 export const studentNavbarLinks = [
   { label: "Home", href: "/student-dashboard" },
-  { label: "Courses", href: "/student-dashboard/courses" },
+  { label: "myCourses", href: "/student-dashboard/courses" },
+  { label: "exploreCourses", href: "/student-dashboard/courses/explore" },
   { label: "generalLessons", href: "/student-dashboard/lessons" },
   { label: "Exams", href: "/student-dashboard/exams" },
 ];

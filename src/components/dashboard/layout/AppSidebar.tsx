@@ -66,6 +66,7 @@ export function AppSidebar({
 
   // Helper to translate nav item label
   const getNavLabel = (label: string) => {
+    if (t.has(label)) return t(label);
     const key = label.toLowerCase();
     return t.has(key) ? t(key) : label;
   };
