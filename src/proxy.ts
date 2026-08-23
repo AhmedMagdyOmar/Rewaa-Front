@@ -29,7 +29,15 @@ export function proxy(request: NextRequest) {
   const isDashboardPage = pathnameWithoutLocale.startsWith("/dashboard");
   const isStudentDashboardPage = pathnameWithoutLocale.startsWith("/student-dashboard");
 
-  const publicPaths = ["/", "/about", "/contact", "/products"];
+  const publicPaths = [
+    "/",
+    "/about",
+    "/contact",
+    "/products",
+    "/student-report",
+    "/privacy",
+    "/terms",
+  ];
   const isPublicPage =
     publicPaths.includes(pathnameWithoutLocale) ||
     publicPaths.some((p) => p !== "/" && pathnameWithoutLocale.startsWith(p));

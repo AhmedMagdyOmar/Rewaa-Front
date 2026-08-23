@@ -1,86 +1,46 @@
-import { Footer } from "@/components/landing/layout/footer";
 import { Navbar } from "@/components/landing/layout/navbar";
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
-import { getPayload } from "@/lib/cms/getPayload";
+import { getTranslations } from "next-intl/server";
 import Link from "next/link";
 import React from "react";
 
 /**
  * Layout component for the landing route group.
- * Fetches global site settings from Payload CMS and renders Navbar/Footer.
- *
- * @param props - Component props containing children elements.
+ * Uses i18n translations (ar.json / en.json) for branding, routes, and actions.
  */
 export default async function LandingLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 }>) {
-  const payload = await getPayload();
+  const { locale } = await params;
+  const tNav = await getTranslations({ locale, namespace: "nav.landing" });
+  const tCommon = await getTranslations({ locale, namespace: "common" });
 
-  const header = await payload.findGlobal({
-    slug: "header",
-  });
-
-  const footer = await payload.findGlobal({
-    slug: "footer",
-  });
-
-  const navRoutes =
-    header.navItems?.map((item) => ({
-      href: item.link,
-      label: item.label,
-    })) || [];
-
-  const footerColumns =
-    footer.columns?.map((col) => ({
-      title: col.title,
-      links:
-        col.links?.map((link) => ({
-          href: link.link,
-          label: link.label,
-        })) || [],
-    })) || [];
-
-  const footerSocialLinks =
-    footer.socialLinks?.map((social) => ({
-      href: social.link,
-      label: social.label,
-      iconSvg: social.iconSvg,
-    })) || [];
-
-  const footerBottomLinks =
-    footer.bottomLinks?.map((link) => ({
-      href: link.link,
-      label: link.label,
-      iconSvg: link.iconSvg || undefined,
-    })) || [];
+  const navRoutes = [] as {
+    href: string;
+    label: string;
+  }[];
 
   return (
     <>
-      {/* Global Navbar */}
+      {/* Global Landing Navbar */}
       <Navbar
-        brandName={header.brandName}
-        logoSvg={header.logoSvg || undefined}
+        brandName={tCommon("brandName")}
         routes={navRoutes}
         actionSlot={
-          header.actionButton?.isEnabled ? (
-            <Button asChild size="sm">
-              <Link href={header.actionButton.link || "#"}>{header.actionButton.label}</Link>
+          <div className="flex items-center gap-2">
+            <LanguageSwitcher />
+            <Button asChild size="sm" className="font-bold">
+              <Link href={`/${locale}/auth/login`}>{tNav("login")}</Link>
             </Button>
-          ) : null
+          </div>
         }
       />
       {children}
-      {/* Global Footer */}
-      <Footer
-        brandName={footer.brandName}
-        logoSvg={footer.logoSvg || undefined}
-        description={footer.description || undefined}
-        socialLinks={footerSocialLinks}
-        columns={footerColumns}
-        bottomLinks={footerBottomLinks}
-      />
     </>
   );
 }

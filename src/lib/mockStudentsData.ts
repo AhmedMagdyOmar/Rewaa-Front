@@ -12,6 +12,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201098765432",
       gender: "male",
       email: "ahmed.ali@example.com",
+      image:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "مصر",
       state: "القاهرة",
@@ -34,6 +36,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201187654321",
       gender: "female",
       email: "sara.ibrahim@example.com",
+      image:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "مصر",
       state: "الأسكندرية",
@@ -56,6 +60,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201276543210",
       gender: "male",
       email: "omar.youssef@example.com",
+      image:
+        "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "مصر",
       state: "الجيزة",
@@ -78,6 +84,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201009998877",
       gender: "female",
       email: "maryam.samy@example.com",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "مصر",
       state: "الشرقية",
@@ -100,6 +108,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201504445566",
       gender: "male",
       email: "youssef.mustafa@example.com",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "السعودية",
       state: "الرياض",
@@ -122,6 +132,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201133332211",
       gender: "female",
       email: "nour.hisham@example.com",
+      image:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "مصر",
       state: "القاهرة",
@@ -144,6 +156,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201077778899",
       gender: "male",
       email: "karim.mansour@example.com",
+      image:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "الإمارات",
       state: "دبي",
@@ -168,6 +182,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201098765432",
       gender: "male",
       email: "ahmed.ali@example.com",
+      image:
+        "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Egypt",
       state: "Cairo",
@@ -190,6 +206,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201187654321",
       gender: "female",
       email: "sara.ibrahim@example.com",
+      image:
+        "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Egypt",
       state: "Alexandria",
@@ -212,6 +230,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201276543210",
       gender: "male",
       email: "omar.youssef@example.com",
+      image:
+        "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Egypt",
       state: "Giza",
@@ -234,6 +254,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201009998877",
       gender: "female",
       email: "maryam.samy@example.com",
+      image:
+        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Egypt",
       state: "Sharqia",
@@ -256,6 +278,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201504445566",
       gender: "male",
       email: "youssef.mustafa@example.com",
+      image:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Saudi Arabia",
       state: "Riyadh",
@@ -278,6 +302,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201133332211",
       gender: "female",
       email: "nour.hisham@example.com",
+      image:
+        "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "Egypt",
       state: "Cairo",
@@ -300,6 +326,8 @@ export const mockStudentsData: { ar: Student[]; en: Student[] } = {
       parentPhoneNumber: "+201077778899",
       gender: "male",
       email: "karim.mansour@example.com",
+      image:
+        "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&auto=format&fit=crop&q=80",
       password: "password123",
       country: "UAE",
       state: "Dubai",

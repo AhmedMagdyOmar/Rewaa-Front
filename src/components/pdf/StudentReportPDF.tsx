@@ -1,4 +1,14 @@
-import { Document, Page, Text, View, StyleSheet, Font, Svg, Path } from "@react-pdf/renderer";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Font,
+  Svg,
+  Path,
+  Image,
+} from "@react-pdf/renderer";
 import { Course } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { Student } from "@/types/student";
@@ -54,13 +64,35 @@ const styles = StyleSheet.create({
   // Hero Card
   heroCard: {
     backgroundColor: "#007fff",
-    padding: 16,
+    padding: 14,
     borderRadius: 8,
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 14,
   },
-  studentName: { fontSize: 18, fontWeight: 700, color: "#ffffff", marginTop: 4 },
-  studentMeta: { fontSize: 10, color: "#ffffff", marginTop: 4 },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    overflow: "hidden",
+    border: "2pt solid rgba(255, 255, 255, 0.4)",
+    marginBottom: 6,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+  },
+  avatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    objectFit: "cover",
+  },
+  avatarInitials: {
+    fontSize: 16,
+    fontWeight: 700,
+    color: "#ffffff",
+  },
+  studentName: { fontSize: 16, fontWeight: 700, color: "#ffffff" },
+  studentMeta: { fontSize: 9, color: "#ffffff", marginTop: 2 },
 
   // Section Titles
   sectionTitle: { fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 },
@@ -147,11 +179,23 @@ export function StudentReportPDF({ student, courses, exams, locale, strings }: P
 
         {/* HERO CARD */}
         <View style={styles.heroCard}>
+          <View style={styles.avatarContainer}>
+            {student.image ? (
+              // eslint-disable-next-line jsx-a11y/alt-text
+              <Image src={student.image} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarInitials}>
+                {locale === "ar"
+                  ? `${student.firstName[0] || ""}.${student.lastName[0] || ""}`
+                  : `${student.firstName[0] || ""}${student.lastName[0] || ""}`}
+              </Text>
+            )}
+          </View>
           <Text style={styles.studentName}>{fullName}</Text>
           <Text style={styles.studentMeta}>
             {strings.grade} • {strings.currentYear}
           </Text>
-          <Text style={{ fontSize: 8, color: "#e2e8f0", marginTop: 6 }}>{strings.generatedAt}</Text>
+          <Text style={{ fontSize: 8, color: "#e2e8f0", marginTop: 4 }}>{strings.generatedAt}</Text>
         </View>
 
         {/* STATS SECTION */}

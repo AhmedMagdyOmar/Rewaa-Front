@@ -143,9 +143,18 @@
     "questions": "Questions Bank",
     "lessons": "Lessons",
     "students": "Students",
-    "billing": "Billing",
+    "billing": "Billing & Invoices",
     "userSettings": "User Settings",
-    "expandSidebar": "Expand Sidebar",
+    "expandSidebar": "Expand sidebar",
+    "landing": {
+      "home": "Home",
+      "courses": "Courses",
+      "exams": "Public Exams",
+      "about": "About Us",
+      "contact": "Contact",
+      "login": "Sign In",
+      "dashboard": "Dashboard"
+    },
     "roles": {
       "user": "User",
       "admin": "Admin",
@@ -1522,6 +1531,7 @@
       "reportModal": {
         "title": "Comprehensive Student Report",
         "downloadPdf": "Download Report PDF",
+        "sendToParent": "Send to Parent",
         "generatingPdf": "Generating Report...",
         "reportGeneratedAt": "Report generated at: {date}",
         "currentYear": "Academic Year {year}",
@@ -2702,5 +2712,19 @@
       "requiredFieldsError": "Please fill in all required fields",
       "whatsappTooltip": "Direct WhatsApp chat"
     }
+  },
+  "publicStudentReport": {
+    "pageTitle": "Student Academic Performance Report",
+    "verificationTitle": "Confirm Access Code",
+    "verificationSubtitle": "Please enter the confirmation code to view the student's performance report",
+    "codePlaceholder": "Enter confirmation code (e.g. 123456)",
+    "verifyButton": "View Report",
+    "verifying": "Verifying...",
+    "invalidCode": "Invalid confirmation code. Please check the received link or code.",
+    "enterCodePrompt": "Please enter the confirmation code to continue",
+    "studentNotFound": "The requested student record was not found.",
+    "backToHome": "Back to Home",
+    "secureAccess": "Secure and encrypted access to student report",
+    "poweredBy": "Rewaa Educational Platform"
   }
 }
