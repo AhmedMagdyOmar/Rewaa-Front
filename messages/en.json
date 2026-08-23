@@ -2562,19 +2562,6 @@
       "totalProgress": "Completed {progress}%",
       "collapseSidebar": "Collapse sidebar",
       "expandSidebar": "Expand course content",
-      "showCertificate": "Show the Certificate",
-      "certificateModal": {
-        "title": "Course Certificate of Completion",
-        "description": "Certificate awarded upon completing all course curriculum items",
-        "recipientLabel": "Issued To",
-        "courseLabel": "Course",
-        "instructorLabel": "Instructor",
-        "issueDateLabel": "Completion Date",
-        "verified": "Verified & Authenticated",
-        "previewCertificate": "Preview Certificate",
-        "openInNewTab": "Open Fullscreen",
-        "close": "Close"
-      },
       "lesson": {
         "completed": "Completed",
         "markAsCompleted": "Mark as completed",

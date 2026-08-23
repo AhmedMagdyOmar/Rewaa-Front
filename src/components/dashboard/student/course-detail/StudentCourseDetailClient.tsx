@@ -20,7 +20,6 @@ import {
 import { Course, CourseSection, Lesson } from "@/types/course";
 import { useLocale } from "next-intl";
 import * as React from "react";
-import { StudentCertificateDialog } from "./StudentCertificateDialog";
 import { StudentCourseContentSidebar } from "./StudentCourseContentSidebar";
 import { StudentCourseMainView } from "./StudentCourseMainView";
 import { StudentCoursePreviewView } from "./StudentCoursePreviewView";
@@ -47,9 +46,6 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
 
   // Passed exams
   const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
-
-  // Certificate Modal State
-  const [certificateOpen, setCertificateOpen] = React.useState(false);
 
   // Locked Section Modal State
   const [lockedModalOpen, setLockedModalOpen] = React.useState(false);
@@ -261,7 +257,6 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   const totalLessons = flatLessons.length;
   const completedCount = flatLessons.filter((l) => completedLessons.includes(l.id)).length;
   const progressPercentage = calculateCourseProgress(totalLessons, completedCount);
-  const isFullyCompleted = totalLessons > 0 && completedCount === totalLessons;
 
   if (isLoading) {
     return (
@@ -331,7 +326,6 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
             onToggleLessonCompletion={handleToggleCompletion}
             onAttemptLockedLesson={handleAttemptLockedLesson}
             progressPercentage={progressPercentage}
-            onOpenCertificate={() => setCertificateOpen(true)}
             isCollapsed={isSidebarCollapsed}
             onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
           />
@@ -368,14 +362,6 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
         onOpenChange={setLockedModalOpen}
         lockedSection={lockedSectionData.section}
         requiredExamId={lockedSectionData.requiredExamId}
-      />
-
-      {/* Certificate Modal */}
-      <StudentCertificateDialog
-        open={certificateOpen}
-        onOpenChange={setCertificateOpen}
-        course={currentCourse}
-        isFullyCompleted={isFullyCompleted}
       />
     </div>
   );

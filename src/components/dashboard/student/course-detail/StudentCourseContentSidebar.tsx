@@ -18,7 +18,6 @@ import { cn } from "@/lib/utils";
 import { Course, CourseSection, Lesson } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
-  Award,
   BookOpen,
   CheckCircle2,
   ChevronRight,
@@ -27,9 +26,9 @@ import {
   FileSpreadsheet,
   FileText,
   Lock,
-  Paperclip,
   PanelLeftClose,
   PanelLeftOpen,
+  Paperclip,
   Video,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -44,7 +43,6 @@ interface StudentCourseContentSidebarProps {
   onToggleLessonCompletion: (lessonId: string) => void;
   onAttemptLockedLesson?: (section: CourseSection, requiredExamId?: string) => void;
   progressPercentage: number;
-  onOpenCertificate: () => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   className?: string;
@@ -59,7 +57,6 @@ export function StudentCourseContentSidebar({
   onToggleLessonCompletion,
   onAttemptLockedLesson,
   progressPercentage,
-  onOpenCertificate,
   isCollapsed = false,
   onToggleCollapse,
   className,
@@ -166,26 +163,6 @@ export function StudentCourseContentSidebar({
               </TooltipTrigger>
               <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
                 {t("courseContent")} ({totalLessons})
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          {/* Certificate Icon in Collapsed State */}
-          <div className="w-full px-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={onOpenCertificate}
-                  className="w-full h-10 rounded-xl border-primary/30 text-primary hover:bg-primary/10 shadow-xs"
-                >
-                  <Award className="size-5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side={locale === "ar" ? "left" : "right"} className="text-xs">
-                {t("showCertificate")}
               </TooltipContent>
             </Tooltip>
           </div>
@@ -608,19 +585,6 @@ export function StudentCourseContentSidebar({
               })}
             </Accordion>
           )}
-        </div>
-
-        {/* Bottom Certificate Button */}
-        <div className="p-4 sm:p-5 border-t border-border/80 bg-muted/30">
-          <Button
-            type="button"
-            onClick={onOpenCertificate}
-            variant="outline"
-            className="w-full justify-center gap-2 text-sm font-bold border-primary/30 hover:border-primary hover:bg-primary/5 text-primary py-5 rounded-xl shadow-xs"
-          >
-            <Award className="size-4.5 text-primary" />
-            <span>{t("showCertificate")}</span>
-          </Button>
         </div>
       </div>
     </TooltipProvider>

@@ -2562,19 +2562,6 @@
       "totalProgress": "تم إنجاز {progress}٪",
       "collapseSidebar": "طي القائمة الجانبية",
       "expandSidebar": "توسيع محتوى الدورة",
-      "showCertificate": "عرض الشهادة",
-      "certificateModal": {
-        "title": "شهادة إتمام الدورة التدريبية",
-        "description": "شهادة رسمية ممنوحة عند إكمال جميع متطلبات ومنهج الدورة بنجاح",
-        "recipientLabel": "مُنحت للطالب",
-        "courseLabel": "الدورة التعليمية",
-        "instructorLabel": "المحاضر",
-        "issueDateLabel": "تاريخ الإتمام",
-        "verified": "معتمدة وموثقة",
-        "previewCertificate": "للمعاينة فقط",
-        "openInNewTab": "فتح في نافذة كاملة",
-        "close": "إغلاق"
-      },
       "lesson": {
         "completed": "مكتمل",
         "markAsCompleted": "تحديد كمكتمل",
