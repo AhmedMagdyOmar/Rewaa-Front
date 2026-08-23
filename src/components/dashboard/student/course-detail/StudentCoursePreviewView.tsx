@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import { getStoredExams } from "@/lib/exams-storage";
 import { Course, LessonAttachment } from "@/types/course";
@@ -503,24 +503,17 @@ export function StudentCoursePreviewView({
                         {allAttachments.map((file, idx) => (
                           <div
                             key={file.id || `att-${idx}`}
-                            className="flex items-center justify-between p-3.5 rounded-xl border border-border/70 bg-muted/20 gap-3"
+                            className="flex items-start justify-between p-3.5 rounded-xl border border-border/70 bg-muted/20 gap-3"
                           >
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 shrink-0">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 shrink-0 mt-0.5">
                                 <FileText className="size-5" />
                               </div>
                               <div className="min-w-0 flex-1">
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="text-xs sm:text-sm font-bold text-foreground truncate cursor-default">
-                                      {file.title}
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs text-xs">
-                                    {file.title}
-                                  </TooltipContent>
-                                </Tooltip>
-                                <div className="text-[11px] text-muted-foreground mt-0.5">
+                                <div className="text-xs sm:text-sm font-bold text-foreground wrap-break-word leading-snug">
+                                  {file.title}
+                                </div>
+                                <div className="text-[11px] text-muted-foreground mt-1">
                                   {t("attachmentsTab.fileSize", {
                                     size: formatFileSize(file.sizeInBytes),
                                   })}
@@ -528,7 +521,7 @@ export function StudentCoursePreviewView({
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0 bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40">
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium shrink-0 bg-muted/60 px-2.5 py-1 rounded-lg border border-border/40 mt-0.5">
                               <Lock className="size-3" />
                               <span className="hidden sm:inline">
                                 {t("attachmentsTab.lockedFile")}

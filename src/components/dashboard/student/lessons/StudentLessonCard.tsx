@@ -2,19 +2,41 @@
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
+import { getPassedExams } from "@/lib/student-course-progress";
+import { cn } from "@/lib/utils";
 import { Lesson } from "@/types/course";
-import { FileQuestion, FileText, GraduationCap, Paperclip, User, Video } from "lucide-react";
+import {
+  Check,
+  FileSpreadsheet,
+  FileText,
+  GraduationCap,
+  Paperclip,
+  User,
+  Video,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 
 interface StudentLessonCardProps {
   lesson: Lesson;
+  isExamPassed?: boolean;
 }
 
-export function StudentLessonCard({ lesson }: StudentLessonCardProps) {
+export function StudentLessonCard({
+  lesson,
+  isExamPassed: isExamPassedProp,
+}: StudentLessonCardProps) {
   const t = useTranslations("studentDashboard.lessonsPage");
   const tGrades = useTranslations("courses.new.grades");
   const tSubjects = useTranslations("courses.new.subjects");
+
+  const isExamPassed =
+    isExamPassedProp ??
+    Boolean(
+      lesson.isLinkedToExam &&
+      lesson.linkedExamId &&
+      getPassedExams().includes(lesson.linkedExamId),
+    );
 
   const formatGrade = (g?: string) => {
     if (!g) return "";
@@ -124,9 +146,17 @@ export function StudentLessonCard({ lesson }: StudentLessonCardProps) {
           )}
 
           {lesson.isLinkedToExam && (
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-600 border border-amber-500/20 font-medium">
-              <FileQuestion className="h-3 w-3" />
-              {t("card.examLinked")}
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-medium border",
+                isExamPassed
+                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-600 border-amber-500/20",
+              )}
+            >
+              <FileSpreadsheet className="h-3.5 w-3.5 shrink-0" />
+              <span>{t("card.examLinked")}</span>
+              {isExamPassed && <Check className="h-3.5 w-3.5 shrink-0 stroke-[2.5]" />}
             </span>
           )}
         </div>

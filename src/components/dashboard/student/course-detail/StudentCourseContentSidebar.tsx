@@ -351,9 +351,8 @@ export function StudentCourseContentSidebar({
                         const isCompleted = completedLessons.includes(lesson.id);
                         const isSelected = selectedLessonId === lesson.id;
                         const hasVideo = lesson.type !== "text" && !!lesson.lectureVideoLink;
-                        const hasPdf =
-                          lesson.hasPdfAttachments ||
-                          (lesson.pdfFiles && lesson.pdfFiles.length > 0);
+                        const pdfCount =
+                          (lesson.pdfFiles || []).length || (lesson.hasPdfAttachments ? 1 : 0);
                         const hasLessonExam = Boolean(
                           lesson.isLinkedToExam &&
                           lesson.linkedExamId &&
@@ -466,10 +465,18 @@ export function StudentCourseContentSidebar({
                                 </Tooltip>
                               )}
 
-                              {hasPdf && (
-                                <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 text-[11px] font-bold">
-                                  PDF
-                                </span>
+                              {pdfCount > 0 && (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 text-[11px] font-bold flex items-center gap-1">
+                                      <Paperclip className="size-3" />
+                                      <span>{pdfCount}</span>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" className="text-xs">
+                                    {t("lesson.attachedFiles")}: {pdfCount}
+                                  </TooltipContent>
+                                </Tooltip>
                               )}
 
                               {isSectionLocked ? (

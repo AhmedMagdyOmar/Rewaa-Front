@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStoredLessons } from "@/lib/lessons-storage";
+import { getPassedExams } from "@/lib/student-course-progress";
 import { Lesson } from "@/types/course";
 import { ArrowUpDown, BookOpen, FileText, Filter, Search, Video, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -63,6 +64,7 @@ export function StudentLessonsClient() {
   );
 
   const [lessons, setLessons] = React.useState<Lesson[]>([]);
+  const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
 
   const loadData = React.useCallback(() => {
@@ -77,15 +79,19 @@ export function StudentLessonsClient() {
     });
 
     setLessons(independentPublished);
+    setPassedExamIds(getPassedExams());
     setIsLoading(false);
   }, [locale]);
 
   React.useEffect(() => {
     loadData();
+    const handlePassedUpdate = () => setPassedExamIds(getPassedExams());
     window.addEventListener("rewaa_lessons_updated", loadData);
+    window.addEventListener("rewaa_student_passed_exams_updated", handlePassedUpdate);
     window.addEventListener("storage", loadData);
     return () => {
       window.removeEventListener("rewaa_lessons_updated", loadData);
+      window.removeEventListener("rewaa_student_passed_exams_updated", handlePassedUpdate);
       window.removeEventListener("storage", loadData);
     };
   }, [loadData]);
@@ -365,7 +371,15 @@ export function StudentLessonsClient() {
         <div className="space-y-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {paginatedLessons.map((lesson) => (
-              <StudentLessonCard key={lesson.id} lesson={lesson} />
+              <StudentLessonCard
+                key={lesson.id}
+                lesson={lesson}
+                isExamPassed={
+                  lesson.isLinkedToExam && lesson.linkedExamId
+                    ? passedExamIds.includes(lesson.linkedExamId)
+                    : false
+                }
+              />
             ))}
           </div>
 
