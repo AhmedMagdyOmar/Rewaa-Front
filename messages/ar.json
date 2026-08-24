@@ -172,6 +172,8 @@
     "welcomeTitle": "مرحباً بعودتك، {userName}",
     "welcomeSubtitle": "إليك ملخص سريع لأداء المنصة ونشاط الطلاب اليوم",
     "downloadReport": "تحميل تقرير اليوم",
+    "addNewCourse": "إضافة دورة جديدة",
+    "manageStudents": "إدارة الطلاب",
     "manageSettings": "إدارة الإعدادات",
     "totalStudents": "إجمالي الطلاب",
     "activeToday": "النشطون اليوم",
@@ -179,9 +181,10 @@
     "totalEducationalContent": "إجمالي المحتوى التعليمي",
     "manageCourses": "إدارة الدورات",
     "coursesCount": "عدد الدورات",
-    "lecturesCount": "عدد المحاضرات",
+    "lecturesCount": "عدد الدروس",
     "questionsCount": "عدد الأسئلة",
     "examsCount": "عدد الامتحانات",
+    "addedToday": "+{count} اليوم",
     "classesDistribution": "توزيع الصفوف الدراسية",
     "examActivityToday": "نشاط الامتحانات اليوم",
     "examPassed": "ناجح",
@@ -197,6 +200,7 @@
       "name": "الاسم",
       "amount": "المبلغ",
       "paymentMethod": "طريقة الدفع",
+      "status": "الحالة",
       "actions": "الإجراءات",
       "viewInvoice": "عرض الفاتورة"
     },
@@ -213,7 +217,7 @@
       "status": "الحالة",
       "close": "إغلاق"
     },
-    "currencyEgp": "{amount} ج.م",
+    "currencyEgp": "{amount} ج",
     "statusPending": "قيد الانتظار",
     "classesList": {
       "firstSecondary": "الصف الأول الثانوي",
@@ -310,6 +314,13 @@
       "published": "منشور",
       "draft": "مسودة"
     },
+    "filters": {
+      "venue": {
+        "all": "جميع الأماكن",
+        "center": "سنتر",
+        "online": "أونلاين"
+      }
+    },
     "clearFilters": "مسح الفلاتر",
     "sort": {
       "newest": "التاريخ: الأحدث أولاً",
@@ -331,7 +342,8 @@
     },
     "status": {
       "published": "منشور",
-      "draft": "مسودة"
+      "draft": "مسودة",
+      "scheduled": "مجدول"
     },
     "venue": {
       "all": "سنتر وأونلاين",
@@ -339,6 +351,7 @@
       "center": "سنتر"
     },
     "badge": {
+      "offer": "عرض خاص",
       "featured": "مميز",
       "featuredDesc": "دورة مُختارة وموصى بها.",
       "revision": "مراجعة",
@@ -362,7 +375,7 @@
       "lessons": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{count} دروس} many {{count} درساً} other {{count} درس}}",
       "lessonsShort": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{count} دروس} many {{count} درساً} other {{count} درس}}",
       "free": "مجاني",
-      "egp": "ج.م",
+      "egp": "ج",
       "edit": "تعديل",
       "viewStudents": "عرض الطلاب",
       "addStudent": "إضافة طالب",
@@ -373,7 +386,10 @@
       "modify": "تعديل",
       "delete": "حذف",
       "copyLink": "نسخ الرابط",
-      "linkCopied": "تم نسخ الرابط"
+      "linkCopied": "تم نسخ الرابط",
+      "createdAt": "تاريخ الإنشاء",
+      "scheduledAt": "تاريخ النشر المجدول",
+      "scheduledTo": "إلى"
     },
     "empty": {
       "title": "لا توجد دورات",
@@ -1577,7 +1593,7 @@
       },
       "currentBalance": "الرصيد الحالي",
       "manageBalance": "إدارة الرصيد",
-      "currency": "ج.م"
+      "currency": "ج"
     },
     "transactionModal": {
       "headerLabel": "إدارة رصيد الطالب: {name}",
@@ -1701,6 +1717,7 @@
         "studentPhoneNumber": "رقم هاتف الطالب",
         "grade": "الصف الدراسي",
         "amount": "المبلغ",
+        "paymentMethod": "طريقة الدفع",
         "course": "الدورة التعليمية",
         "venue": "مكان النشر",
         "status": "الحالة",
@@ -1727,6 +1744,7 @@
       "courseName": "اسم الدورة",
       "amountRequired": "المبلغ المطلوب",
       "transactionInfo": "بيانات المعاملة",
+      "paymentMethod": "طريقة الدفع",
       "date": "التاريخ",
       "time": "الوقت",
       "phoneUsed": "رقم الهاتف المستخدم في المعاملة",
@@ -1844,7 +1862,7 @@
       "expiryDate": "تاريخ انتهاء الصلاحية",
       "save": "حفظ",
       "cancel": "إلغاء",
-      "currency": "ج.م"
+      "currency": "ج"
     }
   },
   "groupCodesPage": {
@@ -1909,7 +1927,7 @@
       "expiryDateLabel": "تاريخ انتهاء الصلاحية",
       "save": "حفظ التغييرات",
       "cancel": "إلغاء",
-      "currency": "ج.م"
+      "currency": "ج"
     },
     "createCode": "إنشاء كود",
     "createBatch": "إنشاء دفعة أكواد",
@@ -1922,7 +1940,7 @@
       "regenerate": "توليد كود آخر",
       "create": "إنشاء الكود",
       "cancel": "إلغاء",
-      "currency": "ج.م"
+      "currency": "ج"
     },
     "batchDialog": {
       "title": "إنشاء دفعة أكواد تفعيل",
@@ -1935,7 +1953,7 @@
       "expiryDateLabel": "تاريخ انتهاء الصلاحية",
       "create": "إنشاء الدفعة",
       "cancel": "إلغاء",
-      "currency": "ج.م"
+      "currency": "ج"
     },
     "deleteDialog": {
       "title": "تأكيد حذف الكود؟",
@@ -2228,7 +2246,7 @@
       "questionsSolved": "الأسئلة المجابة",
       "correctAnswers": "صحيحة",
       "wrongAnswers": "خاطئة",
-      "currency": "ج.م",
+      "currency": "ج",
       "grades": "درجة"
     },
     "announcement": {
@@ -2725,5 +2743,61 @@
     "backToHome": "العودة للرئيسية",
     "secureAccess": "وصول آمن ومشفر لتقرير الطالب",
     "poweredBy": "منصة رواء التعليمية"
+  },
+  "governoratesPage": {
+    "title": "المحافظات والمناطق الجغرافية",
+    "description": "توزيع الطلاب المسجلين جغرافياً حسب المحافظات المصرية والدول المسجلة",
+    "backToDashboard": "العودة للوحة التحكم",
+    "stats": {
+      "totalStudents": "إجمالي الطلاب المسجلين",
+      "egyptStudents": "طلاب جمهورية مصر",
+      "internationalStudents": "الطلاب الدوليون والوافدون",
+      "topGovernorate": "المحافظة الأكثر تسجيلاً",
+      "activeRate": "متوسط نسبة النشاط"
+    },
+    "filters": {
+      "searchPlaceholder": "ابحث باسم المحافظة، المنطقة أو الدولة...",
+      "country": {
+        "label": "الدولة",
+        "all": "جميع الدول",
+        "egypt": "مصر",
+        "saudiArabia": "السعودية",
+        "uae": "الإمارات",
+        "kuwait": "الكويت",
+        "qatar": "قطر",
+        "jordan": "الأردن",
+        "oman": "عُمان"
+      },
+      "sort": {
+        "label": "الترتيب",
+        "studentsDesc": "الأكثر تسجيلاً",
+        "studentsAsc": "الأقل تسجيلاً",
+        "activeDesc": "الأعلى نشاطاً",
+        "nameAsc": "أبجدياً (أ - ي)"
+      },
+      "reset": "إعادة ضبط التصفية"
+    },
+    "table": {
+      "columns": {
+        "region": "المحافظة / المنطقة",
+        "country": "الدولة",
+        "studentsCount": "عدد الطلاب",
+        "percentage": "النسبة من الإجمالي",
+        "learningMode": "طبيعة الحضور",
+        "activeStudents": "الطلاب النشطون",
+        "topGrade": "الصف الأكثر تواجداً"
+      },
+      "centerShort": "سنتر",
+      "onlineShort": "أونلاين",
+      "activeRateBadge": "{percentage}% نشط",
+      "empty": {
+        "title": "لا توجد نتائج مطابقة",
+        "description": "لم يتم العثور على أي محافظات أو مناطق تطابق معايير البحث المحددة."
+      }
+    },
+    "pagination": {
+      "showing": "عرض {start} إلى {end} من أصل {total} محافظة ومنطقة"
+    },
+    "studentsCount": "{count, plural, =0 {لا طلاب} zero {لا طلاب} one {طالب واحد} two {طالبين} few {{count} طلاب} many {{count} طالباً} other {{count} طالب}}"
   }
 }

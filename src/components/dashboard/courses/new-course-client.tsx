@@ -71,6 +71,7 @@ interface NewCourseClientProps {
 
 export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) {
   const t = useTranslations("courses.new");
+  const tCourses = useTranslations("courses");
   const locale = useLocale();
   const router = useRouter();
 
@@ -785,16 +786,28 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
                   value={badge}
                   onValueChange={(val) => setBadge(val as typeof badge)}
                   options={[
-                    { id: "none", label: t("badge.none"), desc: t("badge.noneDesc") },
-                    { id: "featured", label: t("badge.featured"), desc: t("badge.featuredDesc") },
-                    { id: "new", label: t("badge.new"), desc: t("badge.newDesc") },
-                    { id: "revision", label: t("badge.revision"), desc: t("badge.revisionDesc") },
+                    { id: "none", label: tCourses("badge.none"), desc: tCourses("badge.noneDesc") },
+                    {
+                      id: "featured",
+                      label: tCourses("badge.featured"),
+                      desc: tCourses("badge.featuredDesc"),
+                    },
+                    { id: "new", label: tCourses("badge.new"), desc: tCourses("badge.newDesc") },
+                    {
+                      id: "revision",
+                      label: tCourses("badge.revision"),
+                      desc: tCourses("badge.revisionDesc"),
+                    },
                     {
                       id: "bestseller",
-                      label: t("badge.bestseller"),
-                      desc: t("badge.bestsellerDesc"),
+                      label: tCourses("badge.bestseller"),
+                      desc: tCourses("badge.bestsellerDesc"),
                     },
-                    { id: "limited", label: t("badge.limited"), desc: t("badge.limitedDesc") },
+                    {
+                      id: "limited",
+                      label: tCourses("badge.limited"),
+                      desc: tCourses("badge.limitedDesc"),
+                    },
                   ]}
                 />
               </FormSectionCard>

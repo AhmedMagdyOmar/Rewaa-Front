@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { dashboardMockData } from "@/lib/mockData";
 import {
   DashboardBanner,
@@ -9,22 +9,12 @@ import {
   ClassesDistributionCard,
   ExamActivityCard,
   LastBillingRequestsCard,
-  InvoiceDetailsModal,
   GovernoratesBreakdown,
-  BillingRequest,
 } from "@/components/dashboard/overview";
 
 const DashboardPage = () => {
-  const [selectedInvoice, setSelectedInvoice] = useState<BillingRequest | null>(null);
-
-  const {
-    students,
-    educationalContent,
-    classesDistribution,
-    examActivityToday,
-    billingRequests,
-    governorates,
-  } = dashboardMockData;
+  const { students, educationalContent, classesDistribution, examActivityToday, governorates } =
+    dashboardMockData;
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -44,20 +34,11 @@ const DashboardPage = () => {
           totalStudents={students.total}
         />
         <ExamActivityCard examActivityToday={examActivityToday} />
-        <LastBillingRequestsCard
-          billingRequests={billingRequests}
-          onSelectInvoice={setSelectedInvoice}
-        />
+        <LastBillingRequestsCard />
       </div>
 
       {/* ROW 4: Governorates Breakdown */}
       <GovernoratesBreakdown governorates={governorates} />
-
-      {/* INVOICE MODAL */}
-      <InvoiceDetailsModal
-        selectedInvoice={selectedInvoice}
-        onClose={() => setSelectedInvoice(null)}
-      />
     </div>
   );
 };

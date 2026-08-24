@@ -197,7 +197,7 @@ export function FinancialSummaryPDF({
               <Text style={styles.colWeek}>الأسبوع {weekIdx + 1}</Text>
               {yearData.months.map((m, mIdx) => (
                 <Text key={mIdx} style={styles.colMonth}>
-                  {m.weeks[weekIdx].toLocaleString()} ج.م
+                  {m.weeks[weekIdx].toLocaleString()} ج
                 </Text>
               ))}
             </View>
@@ -208,7 +208,7 @@ export function FinancialSummaryPDF({
             <Text style={styles.colTotalWeekHeader}>الإجمالي</Text>
             {monthTotals.map((tot, mIdx) => (
               <Text key={mIdx} style={styles.colTotalMonth}>
-                {tot.toLocaleString()} ج.م
+                {tot.toLocaleString()} ج
               </Text>
             ))}
           </View>
@@ -221,7 +221,7 @@ export function FinancialSummaryPDF({
           >
             <Text style={[styles.summaryTitle, { color: "#166534" }]}>أعلى شهر في المدفوعات</Text>
             <Text style={[styles.summaryVal, { color: "#15803d" }]}>
-              {highestMonthName} ({highestMonthTotal.toLocaleString()} ج.م)
+              {highestMonthName} ({highestMonthTotal.toLocaleString()} ج)
             </Text>
           </View>
 
@@ -230,13 +230,13 @@ export function FinancialSummaryPDF({
           >
             <Text style={[styles.summaryTitle, { color: "#991b1b" }]}>أقل شهر في المدفوعات</Text>
             <Text style={[styles.summaryVal, { color: "#b91c1c" }]}>
-              {lowestMonthName} ({lowestMonthTotal.toLocaleString()} ج.م)
+              {lowestMonthName} ({lowestMonthTotal.toLocaleString()} ج)
             </Text>
           </View>
 
           <View style={styles.summaryCard}>
             <Text style={styles.summaryTitle}>المتوسط الشهري لـ 12 شهراً</Text>
-            <Text style={styles.summaryVal}>{Math.round(monthlyAverage).toLocaleString()} ج.م</Text>
+            <Text style={styles.summaryVal}>{Math.round(monthlyAverage).toLocaleString()} ج</Text>
           </View>
         </View>
       </Page>

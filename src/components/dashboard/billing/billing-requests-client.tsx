@@ -141,6 +141,22 @@ export function BillingRequestsClient() {
     return locale === "ar" ? "الكل" : "All";
   };
 
+  // Format payment method helper
+  const formatPaymentMethod = (method?: string) => {
+    switch (method) {
+      case "vodafoneCash":
+        return locale === "ar" ? "فودافون كاش" : "Vodafone Cash";
+      case "creditCard":
+        return locale === "ar" ? "بطاقة ائتمان" : "Credit Card";
+      case "fawry":
+        return locale === "ar" ? "فوري" : "Fawry";
+      case "instaPay":
+        return locale === "ar" ? "إنستاباي" : "InstaPay";
+      default:
+        return locale === "ar" ? "أخرى" : "Other";
+    }
+  };
+
   // Invoice modal state
   const [generatedInvoiceData, setGeneratedInvoiceData] = useState<{
     student: Student;
@@ -295,7 +311,7 @@ export function BillingRequestsClient() {
             <span className="text-2xl font-black text-foreground">
               {stats.totalPayments}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                {locale === "ar" ? "ج.م" : "EGP"}
+                {locale === "ar" ? "ج" : "EGP"}
               </span>
             </span>
           </div>
@@ -458,10 +474,11 @@ export function BillingRequestsClient() {
           2. Student Phone Number
           3. Grade
           4. Amount
-          5. Course
-          6. Venue
-          7. Status
-          8. Actions: Eye Icon to view details
+          5. Payment Method
+          6. Course
+          7. Venue
+          8. Status
+          9. Actions: Eye Icon to view details
       ────────────────────────────────────────────────────────────────────────────── */}
       <DashboardCard className="p-0 overflow-hidden border-border/80 shadow-xs">
         <div className="overflow-x-auto">
@@ -476,6 +493,9 @@ export function BillingRequestsClient() {
                 </TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.grade")}</TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.amount")}</TableHead>
+                <TableHead className="text-xs font-bold">
+                  {t("table.columns.paymentMethod")}
+                </TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.course")}</TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.venue")}</TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.status")}</TableHead>
@@ -487,7 +507,7 @@ export function BillingRequestsClient() {
             <TableBody>
               {filteredAndSortedRequests.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="h-48 text-center">
+                  <TableCell colSpan={9} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
                       <Receipt className="size-10 text-muted-foreground/50" />
                       <p className="font-semibold text-sm">{t("table.empty.title")}</p>
@@ -533,7 +553,14 @@ export function BillingRequestsClient() {
 
                       {/* Amount */}
                       <TableCell className="text-xs font-extrabold text-primary">
-                        {req.amount} {locale === "ar" ? "ج.م" : "EGP"}
+                        {req.amount} {locale === "ar" ? "ج" : "EGP"}
+                      </TableCell>
+
+                      {/* Payment Method */}
+                      <TableCell className="text-xs font-medium text-foreground">
+                        <Badge variant="secondary" className="text-[11px] font-medium">
+                          {formatPaymentMethod(req.paymentMethod)}
+                        </Badge>
                       </TableCell>
 
                       {/* Course */}

@@ -6,6 +6,9 @@ import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useAuthControllerGetProfile } from "@/hooks/use-auth";
 
+import { Link } from "@/i18n/routing";
+import { Plus } from "lucide-react";
+
 export function DashboardBanner() {
   const locale = useLocale();
   const isAr = locale === "ar";
@@ -57,11 +60,16 @@ export function DashboardBanner() {
           {t("welcomeSubtitle")}
         </p>
         <div className="relative z-10 flex flex-wrap items-center gap-3">
-          <Button size="default" className="font-bold">
-            {t("downloadReport")}
+          <Button asChild size="default" className="font-bold gap-2">
+            <Link href="/dashboard/courses/new">
+              <Plus className="h-4 w-4" />
+              <span>{t("addNewCourse")}</span>
+            </Link>
           </Button>
-          <Button variant="outline" size="default" className="font-bold">
-            {t("manageSettings")}
+          <Button asChild variant="outline" size="default" className="font-bold">
+            <Link href="/dashboard/settings">
+              <span>{t("manageSettings")}</span>
+            </Link>
           </Button>
         </div>
       </div>

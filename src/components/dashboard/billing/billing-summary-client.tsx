@@ -293,7 +293,7 @@ export function BillingSummaryClient() {
             <div className="text-2xl font-bold tracking-tight text-foreground">
               {state.todayPayments.amount.toLocaleString()}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                {locale === "ar" ? "ج.م" : "EGP"}
+                {locale === "ar" ? "ج" : "EGP"}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
@@ -320,7 +320,7 @@ export function BillingSummaryClient() {
             <div className="text-2xl font-bold tracking-tight text-foreground">
               {state.thisWeekPayments.amount.toLocaleString()}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                {locale === "ar" ? "ج.م" : "EGP"}
+                {locale === "ar" ? "ج" : "EGP"}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
@@ -347,7 +347,7 @@ export function BillingSummaryClient() {
             <div className="text-2xl font-bold tracking-tight text-foreground">
               {state.thisMonthPayments.amount.toLocaleString()}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                {locale === "ar" ? "ج.م" : "EGP"}
+                {locale === "ar" ? "ج" : "EGP"}
               </span>
             </div>
             <div className="mt-2 flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
@@ -514,7 +514,7 @@ export function BillingSummaryClient() {
             </div>
             <div className="text-2xl font-extrabold mt-1 text-emerald-700">
               {summaryMetrics.highestTotal.toLocaleString()}{" "}
-              <span className="text-xs font-normal">{locale === "ar" ? "ج.م" : "EGP"}</span>
+              <span className="text-xs font-normal">{locale === "ar" ? "ج" : "EGP"}</span>
             </div>
           </div>
         </DashboardCard>
@@ -535,7 +535,7 @@ export function BillingSummaryClient() {
             </div>
             <div className="text-2xl font-extrabold mt-1 text-destructive">
               {summaryMetrics.lowestTotal.toLocaleString()}{" "}
-              <span className="text-xs font-normal">{locale === "ar" ? "ج.م" : "EGP"}</span>
+              <span className="text-xs font-normal">{locale === "ar" ? "ج" : "EGP"}</span>
             </div>
           </div>
         </DashboardCard>
@@ -554,7 +554,7 @@ export function BillingSummaryClient() {
             <div className="text-2xl font-bold text-foreground">
               {Math.round(summaryMetrics.average).toLocaleString()}{" "}
               <span className="text-xs font-normal text-muted-foreground">
-                {locale === "ar" ? "ج.م" : "EGP"}
+                {locale === "ar" ? "ج" : "EGP"}
               </span>
             </div>
             <div className="text-xs text-muted-foreground mt-2">

@@ -12,10 +12,10 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { BillingRequest } from "./last-billing-requests-card";
+import { BillingRequestItem } from "@/types/billing-request";
 
 interface InvoiceDetailsModalProps {
-  selectedInvoice: BillingRequest | null;
+  selectedInvoice: BillingRequestItem | null;
   onClose: () => void;
 }
 
@@ -37,28 +37,28 @@ export function InvoiceDetailsModal({ selectedInvoice, onClose }: InvoiceDetails
         <div className="flex flex-col gap-3 py-4 text-sm">
           <div className="flex justify-between border-b pb-2">
             <span className="text-muted-foreground">{t("invoiceModal.studentName")}</span>
-            <span className="font-semibold">{t(`studentsList.${selectedInvoice.studentKey}`)}</span>
+            <span className="font-semibold">{selectedInvoice.studentFullName}</span>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="text-muted-foreground">{t("invoiceModal.amountPaid")}</span>
             <span className="font-semibold text-primary">
-              {t("currencyEgp", { amount: selectedInvoice.amountValue })}
+              {t("currencyEgp", { amount: selectedInvoice.amount })}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="text-muted-foreground">{t("invoiceModal.paymentMethod")}</span>
-            <span className="font-medium">
-              {t(`paymentMethods.${selectedInvoice.paymentMethodKey}`)}
+            <span className="font-medium font-mono" dir="ltr">
+              {selectedInvoice.phoneUsedForTransaction}
             </span>
           </div>
           <div className="flex justify-between border-b pb-2">
             <span className="text-muted-foreground">{t("invoiceModal.date")}</span>
-            <span className="font-medium">{selectedInvoice.date}</span>
+            <span className="font-medium">{selectedInvoice.createdAt}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">{t("invoiceModal.status")}</span>
             <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20">
-              {t(selectedInvoice.statusKey)}
+              {selectedInvoice.status}
             </Badge>
           </div>
         </div>

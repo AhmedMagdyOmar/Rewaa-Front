@@ -106,6 +106,7 @@ export interface Course {
   venue: CourseVenue;
   numberOfParticipants: number;
   isDraft: boolean;
+  publishStatus?: LessonPublishStatus;
   sections: CourseSection[];
   faqs?: CourseFAQ[];
   ratingsReviews?: CourseRatingReview[];

@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getStoredCourses, saveStoredCourses, resetStoredCourses } from "@/lib/courses-storage";
 import { Course } from "@/types/course";
 import { CourseCard } from "./course-card";
-import { CourseFilters, FilterTab, SortOption } from "./course-filters";
+import { CourseFilters, CourseVenueFilter, FilterTab, SortOption } from "./course-filters";
 import { CoursePagination } from "./course-pagination";
 import { DeleteCourseDialog } from "./delete-course-dialog";
 
@@ -27,6 +27,7 @@ export function ManageCoursesClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as FilterTab) || "all";
+  const venueFilter = (searchParams.get("venue") as CourseVenueFilter) || "all";
   const sortBy = (searchParams.get("sort") as SortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 8;
@@ -40,6 +41,7 @@ export function ManageCoursesClient() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
+          (key === "venue" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
           (key === "page" && value === 1)
         ) {
@@ -83,8 +85,23 @@ export function ManageCoursesClient() {
   // Filter & Search Logic
   const filteredCourses = React.useMemo(() => {
     return courses.filter((course) => {
-      if (activeTab === "published" && course.isDraft) return false;
-      if (activeTab === "draft" && !course.isDraft) return false;
+      const isScheduled =
+        course.publishStatus === "scheduled" ||
+        (!course.publishStatus && Boolean(course.scheduledPublishDate));
+      const isPublished =
+        course.publishStatus === "published" ||
+        (!course.publishStatus && !course.isDraft && !isScheduled);
+
+      if (activeTab === "published" && !isPublished) return false;
+      if (activeTab === "draft" && isPublished) return false;
+
+      // Venue Filter
+      if (venueFilter === "center" && course.venue !== "center" && course.venue !== "all") {
+        return false;
+      }
+      if (venueFilter === "online" && course.venue !== "online" && course.venue !== "all") {
+        return false;
+      }
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -99,7 +116,7 @@ export function ManageCoursesClient() {
 
       return true;
     });
-  }, [courses, activeTab, searchQuery]);
+  }, [courses, activeTab, venueFilter, searchQuery]);
 
   // Sort Logic
   const sortedCourses = React.useMemo(() => {
@@ -138,6 +155,10 @@ export function ManageCoursesClient() {
     updateUrlParams({ tab, page: 1 });
   };
 
+  const handleVenueChange = (venue: string) => {
+    updateUrlParams({ venue: venue === "all" ? null : venue, page: 1 });
+  };
+
   const handleSortChange = (sort: SortOption) => {
     updateUrlParams({ sort, page: 1 });
   };
@@ -147,7 +168,17 @@ export function ManageCoursesClient() {
   };
 
   const handlePublishToggle = (courseId: string) => {
-    const updated = courses.map((c) => (c.id === courseId ? { ...c, isDraft: false } : c));
+    const updated = courses.map((c) =>
+      c.id === courseId
+        ? {
+            ...c,
+            isDraft: false,
+            publishStatus: "published" as const,
+            scheduledPublishDate: undefined,
+            scheduledEndDate: undefined,
+          }
+        : c,
+    );
     setCourses(updated);
     saveStoredCourses(locale, updated);
   };
@@ -174,7 +205,7 @@ export function ManageCoursesClient() {
   };
 
   const handleResetFilters = () => {
-    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
+    updateUrlParams({ search: null, tab: null, venue: null, sort: null, page: 1 });
   };
 
   return (
@@ -221,12 +252,32 @@ export function ManageCoursesClient() {
       <CourseFilters
         searchQuery={searchQuery}
         activeTab={activeTab}
+        venueFilter={venueFilter}
         sortBy={sortBy}
         totalCount={courses.length}
-        publishedCount={courses.filter((c) => !c.isDraft).length}
-        draftCount={courses.filter((c) => c.isDraft).length}
+        publishedCount={
+          courses.filter((c) => {
+            const isScheduled =
+              c.publishStatus === "scheduled" ||
+              (!c.publishStatus && Boolean(c.scheduledPublishDate));
+            return (
+              c.publishStatus === "published" || (!c.publishStatus && !c.isDraft && !isScheduled)
+            );
+          }).length
+        }
+        draftCount={
+          courses.filter((c) => {
+            const isScheduled =
+              c.publishStatus === "scheduled" ||
+              (!c.publishStatus && Boolean(c.scheduledPublishDate));
+            const isPublished =
+              c.publishStatus === "published" || (!c.publishStatus && !c.isDraft && !isScheduled);
+            return !isPublished;
+          }).length
+        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
+        onVenueChange={handleVenueChange}
         onSortChange={handleSortChange}
         onResetFilters={handleResetFilters}
       />

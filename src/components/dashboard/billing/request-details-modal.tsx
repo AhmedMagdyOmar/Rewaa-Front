@@ -164,6 +164,20 @@ export function RequestDetailsModal({
               </h3>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
+                  <span className="text-muted-foreground text-xs">{t("paymentMethod")}</span>
+                  <Badge variant="secondary" className="text-xs font-medium">
+                    {request.paymentMethod === "vodafoneCash"
+                      ? "فودافون كاش / Vodafone Cash"
+                      : request.paymentMethod === "creditCard"
+                        ? "بطاقة ائتمان / Credit Card"
+                        : request.paymentMethod === "fawry"
+                          ? "فوري / Fawry"
+                          : request.paymentMethod === "instaPay"
+                            ? "إنستاباي / InstaPay"
+                            : "أخرى / Other"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("date")}</span>
                   <span className="font-medium text-foreground">{request.createdAt}</span>
                 </div>

@@ -18,6 +18,7 @@ import {
   House,
   MoreVertical,
   Pencil,
+  Tag,
   Trash2,
   User,
   UserPlus,
@@ -88,6 +89,14 @@ export function CourseCard({
     }
   };
 
+  const isScheduled =
+    course.publishStatus === "scheduled" ||
+    (!course.publishStatus && Boolean(course.scheduledPublishDate));
+  const isPublished =
+    course.publishStatus === "published" ||
+    (!course.publishStatus && !course.isDraft && !isScheduled);
+  const _isDraft = !isScheduled && !isPublished;
+
   return (
     <div className="group flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
       {/* Cover Image Container with Badge */}
@@ -104,20 +113,32 @@ export function CourseCard({
         {/* Status Badge on top-start (hidden in student mode) */}
         {mode !== "student" && (
           <div className="absolute top-2.5 inset-e-2.5">
-            {!course.isDraft ? (
+            {isScheduled ? (
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-200 border border-purple-400/30 backdrop-blur-xs shadow-xs">
+                {t("status.scheduled")}
+              </span>
+            ) : isPublished ? (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-success-bg text-success shadow-xs">
                 {t("status.published")}
               </span>
             ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-warning-bg text-warning backdrop-blur-xs">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-warning-bg text-warning backdrop-blur-xs shadow-xs">
                 {t("status.draft")}
               </span>
             )}
           </div>
         )}
 
-        {/* Course Badge on top-end */}
-        {course.badge &&
+        {/* Course / Offer Badge on top-start (takes precedence if course has offer) */}
+        {course.hasOffer ? (
+          <div className="absolute top-2.5 inset-s-2.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wide shadow-xs backdrop-blur-xs bg-rose-500/90 text-white">
+              <Tag className="size-3 shrink-0" />
+              <span>{course.offerPercentage || t("badge.offer")}</span>
+            </span>
+          </div>
+        ) : (
+          course.badge &&
           (() => {
             const badgeStyles: Record<string, string> = {
               featured: "bg-amber-500/90 text-white",
@@ -135,31 +156,69 @@ export function CourseCard({
                 </span>
               </div>
             );
-          })()}
-        {/* Schedule Dates Strip — bottom of image, only when scheduledPublishDate is set */}
-        {course.scheduledPublishDate && (
-          <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 bg-black/55 backdrop-blur-xs text-white">
-            <Calendar className="h-3 w-3 shrink-0 opacity-80" />
-            <span className="text-[10px] font-medium truncate">
-              {formatScheduleDate(course.scheduledPublishDate)}
-              {course.scheduledEndDate && (
-                <>
-                  {" "}
-                  <span className="opacity-60 mx-0.5">{isAr ? "←" : "→"}</span>{" "}
-                  {formatScheduleDate(course.scheduledEndDate)}
-                </>
-              )}
-            </span>
-          </div>
+          })()
         )}
+
+        {/* Dates Strip — bottom of image:
+            - Scheduled: scheduled release date, scheduled end date
+            - Published & Draft: creation date only */}
+        {isScheduled
+          ? (course.scheduledPublishDate || course.scheduledEndDate) && (
+              <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xs text-white">
+                <Calendar className="h-3 w-3 shrink-0 opacity-80" />
+                <span className="text-[10px] font-medium truncate">
+                  {course.scheduledPublishDate
+                    ? formatScheduleDate(course.scheduledPublishDate)
+                    : ""}
+                  {course.scheduledEndDate && (
+                    <>
+                      <span className="opacity-60 mx-1">{isAr ? "←" : "→"}</span>
+                      {formatScheduleDate(course.scheduledEndDate)}
+                    </>
+                  )}
+                </span>
+              </div>
+            )
+          : course.date && (
+              <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xs text-white">
+                <Calendar className="h-3 w-3 shrink-0 opacity-80" />
+                <span className="text-[10px] font-medium truncate">
+                  {formatScheduleDate(course.date)}
+                </span>
+              </div>
+            )}
       </div>
 
       {/* Card Body */}
       <div className="flex flex-col flex-1 p-4">
-        {/* Course Title */}
-        <h3 className="font-bold text-foreground line-clamp-2 text-base leading-snug mb-2 group-hover:text-primary transition-colors">
-          {course.title}
-        </h3>
+        {/* Course Title with Venue Icon */}
+        <div className="flex items-start gap-1.5 mb-2 group-hover:text-primary transition-colors">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="mt-1 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
+                  {course.venue === "online" ? (
+                    <Globe className="h-4 w-4" />
+                  ) : course.venue === "center" ? (
+                    <House className="h-4 w-4" />
+                  ) : (
+                    <Globe2 className="h-4 w-4" />
+                  )}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {course.venue === "all"
+                  ? t("venue.all")
+                  : course.venue === "online"
+                    ? t("venue.online")
+                    : t("venue.center")}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <h3 className="font-bold text-foreground line-clamp-2 text-base leading-snug">
+            {course.title}
+          </h3>
+        </div>
         {/* Grade */}
         <div className="text-xs font-semibold text-primary/80 mb-1">
           {course.subject ? formatSubject(course.subject) : ""} / {formatGrade(course.grade)}
@@ -200,7 +259,7 @@ export function CourseCard({
 
         {/* Info Row */}
         <div className="mt-auto pt-3 border-t border-border/40 flex flex-row gap-1 justify-between text-xs text-muted-foreground">
-          <div className="flex flex-row gap-2">
+          <div className="flex flex-row gap-3">
             {/* 1. Students Enrolled */}
             <div
               className="flex items-center gap-1.5 truncate"
@@ -220,33 +279,9 @@ export function CourseCard({
                 {t("card.lessonsShort", { count: course.numberOfLessons })}
               </span>
             </div>
-
-            {/* 3. Venue icon with tooltip */}
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1.5 cursor-default">
-                    {course.venue === "online" ? (
-                      <Globe className="h-3.5 w-3.5 text-primary shrink-0" />
-                    ) : course.venue === "center" ? (
-                      <House className="h-3.5 w-3.5 text-primary shrink-0" />
-                    ) : (
-                      <Globe2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {course.venue === "all"
-                    ? t("venue.all")
-                    : course.venue === "online"
-                      ? t("venue.online")
-                      : t("venue.center")}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
           </div>
 
-          {/* 4. Formatted Price (only for dashboard mode to avoid duplicate in student mode) */}
+          {/* 3. Formatted Price (only for dashboard mode to avoid duplicate in student mode) */}
           {mode !== "student" && (
             <div className="flex items-center justify-end font-bold text-primary text-base truncate">
               <span>{formatPrice(course.price, course.currency, course.isFree)}</span>

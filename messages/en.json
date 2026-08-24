@@ -172,6 +172,8 @@
     "welcomeTitle": "Welcome back, {userName}",
     "welcomeSubtitle": "Here is a quick summary of the platform's performance and the students' activity today",
     "downloadReport": "Download today's report",
+    "addNewCourse": "Add a new course",
+    "manageStudents": "Manage Students",
     "manageSettings": "Manage settings",
     "totalStudents": "Total Students",
     "activeToday": "Active today",
@@ -182,6 +184,7 @@
     "lecturesCount": "Number of lectures",
     "questionsCount": "Number of questions",
     "examsCount": "Number of exams",
+    "addedToday": "+{count} today",
     "classesDistribution": "Classes Distribution",
     "examActivityToday": "Exam activity today",
     "examPassed": "Passed",
@@ -197,6 +200,7 @@
       "name": "Name",
       "amount": "Amount",
       "paymentMethod": "Payment Method",
+      "status": "Status",
       "actions": "Actions",
       "viewInvoice": "View Invoice"
     },
@@ -310,6 +314,13 @@
       "published": "Published",
       "draft": "Draft"
     },
+    "filters": {
+      "venue": {
+        "all": "All Venues",
+        "center": "Center",
+        "online": "Online"
+      }
+    },
     "clearFilters": "Clear all filters",
     "sort": {
       "newest": "Date: Newest first",
@@ -331,7 +342,8 @@
     },
     "status": {
       "published": "Published",
-      "draft": "Draft"
+      "draft": "Draft",
+      "scheduled": "Scheduled"
     },
     "venue": {
       "all": "Hybrid",
@@ -339,6 +351,7 @@
       "center": "Center"
     },
     "badge": {
+      "offer": "Special Offer",
       "featured": "Featured",
       "featuredDesc": "A curated course recommended by the platform.",
       "revision": "Revision",
@@ -373,7 +386,10 @@
       "modify": "Edit",
       "delete": "Delete",
       "copyLink": "Copy Link",
-      "linkCopied": "Link Copied"
+      "linkCopied": "Link Copied",
+      "createdAt": "Creation Date",
+      "scheduledAt": "Scheduled Release Date",
+      "scheduledTo": "to"
     },
     "empty": {
       "title": "No courses found",
@@ -1701,6 +1717,7 @@
         "studentPhoneNumber": "Student Phone Number",
         "grade": "Grade",
         "amount": "Amount",
+        "paymentMethod": "Payment Method",
         "course": "Course",
         "venue": "Venue",
         "status": "Status",
@@ -1727,9 +1744,10 @@
       "courseName": "Course Name",
       "amountRequired": "Amount Required",
       "transactionInfo": "Transaction Information",
+      "paymentMethod": "Payment Method",
       "date": "Date",
       "time": "Time",
-      "phoneUsed": "Phone Number Used",
+      "phoneUsed": "Phone Used for Transaction",
       "transactionProof": "Transaction Proof",
       "screenshotNote": "Proof screenshot provided by student",
       "openFullScreen": "Open Full Size Image",
@@ -2725,5 +2743,61 @@
     "backToHome": "Back to Home",
     "secureAccess": "Secure and encrypted access to student report",
     "poweredBy": "Rewaa Educational Platform"
+  },
+  "governoratesPage": {
+    "title": "Governorates & Geographic Regions",
+    "description": "Geographical distribution of registered students across Egyptian governorates and international countries",
+    "backToDashboard": "Back to Dashboard",
+    "stats": {
+      "totalStudents": "Total Registered Students",
+      "egyptStudents": "Egypt Students",
+      "internationalStudents": "International & Expat Students",
+      "topGovernorate": "Top Governorate",
+      "activeRate": "Avg. Activity Rate"
+    },
+    "filters": {
+      "searchPlaceholder": "Search by governorate, region, or country...",
+      "country": {
+        "label": "Country",
+        "all": "All Countries",
+        "egypt": "Egypt",
+        "saudiArabia": "Saudi Arabia",
+        "uae": "United Arab Emirates",
+        "kuwait": "Kuwait",
+        "qatar": "Qatar",
+        "jordan": "Jordan",
+        "oman": "Oman"
+      },
+      "sort": {
+        "label": "Sort By",
+        "studentsDesc": "Highest Students",
+        "studentsAsc": "Lowest Students",
+        "activeDesc": "Highest Activity Rate",
+        "nameAsc": "Alphabetical (A - Z)"
+      },
+      "reset": "Reset Filters"
+    },
+    "table": {
+      "columns": {
+        "region": "Governorate / Region",
+        "country": "Country",
+        "studentsCount": "Students Count",
+        "percentage": "Share Percentage",
+        "learningMode": "Attendance Mode",
+        "activeStudents": "Active Students",
+        "topGrade": "Primary Grade"
+      },
+      "centerShort": "Center",
+      "onlineShort": "Online",
+      "activeRateBadge": "{percentage}% Active",
+      "empty": {
+        "title": "No Matching Regions Found",
+        "description": "No governorates or regions matched your current search and filter criteria."
+      }
+    },
+    "pagination": {
+      "showing": "Showing {start} to {end} of {total} governorates and regions"
+    },
+    "studentsCount": "{count, plural, =0 {No students} one {1 student} other {{count} students}}"
   }
 }

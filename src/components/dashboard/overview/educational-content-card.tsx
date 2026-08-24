@@ -39,7 +39,7 @@ export function EducationalContentCard({ educationalContent }: EducationalConten
   ];
 
   return (
-    <DashboardCard className="lg:col-span-7 h-64">
+    <DashboardCard className="lg:col-span-7 min-h-64">
       <DashboardCardHeader
         icon={<BookOpen className="size-5 text-primary" />}
         title={t("totalEducationalContent")}
@@ -51,7 +51,17 @@ export function EducationalContentCard({ educationalContent }: EducationalConten
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 h-full">
         {items.map((item, idx) => (
-          <StatTile key={idx} label={item.label} value={item.value} icon={item.icon} />
+          <StatTile
+            key={idx}
+            label={item.label}
+            value={item.value}
+            icon={item.icon}
+            subtitle={
+              <span className="text-xs font-semibold text-success text-center">
+                {t("addedToday", { count: 5 })}
+              </span>
+            }
+          />
         ))}
       </div>
     </DashboardCard>

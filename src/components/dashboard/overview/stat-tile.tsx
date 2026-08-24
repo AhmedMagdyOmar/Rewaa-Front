@@ -7,6 +7,7 @@ interface StatTileProps {
   label: string;
   value: React.ReactNode;
   icon?: React.ReactNode;
+  subtitle?: React.ReactNode;
   variant?: "vertical" | "horizontal" | "compact";
   valueClassName?: string;
   className?: string;
@@ -16,6 +17,7 @@ export function StatTile({
   label,
   value,
   icon,
+  subtitle,
   variant = "vertical",
   valueClassName,
   className,
@@ -47,17 +49,20 @@ export function StatTile({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 p-3.5 rounded-xl border bg-card hover:bg-bg-card/30 transition-colors",
+        "flex flex-col justify-between gap-2 p-3.5 rounded-xl border bg-card hover:bg-bg-card/30 transition-colors text-center",
         className,
       )}
     >
-      <div className="flex items-center justify-center flex-col gap-4 text-muted-foreground">
+      <div className="flex items-center justify-center flex-col gap-2 text-muted-foreground">
         {icon}
         <span className="text-xs font-medium">{label}</span>
       </div>
-      <span className={cn("text-2xl font-bold text-foreground text-center", valueClassName)}>
-        {value}
-      </span>
+      <div className="flex flex-col items-center justify-center gap-1">
+        <span className={cn("text-2xl font-bold text-foreground text-center", valueClassName)}>
+          {value}
+        </span>
+        {subtitle}
+      </div>
     </div>
   );
 }

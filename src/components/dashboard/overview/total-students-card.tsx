@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { dashboardMockData } from "@/lib/mockData";
 import { DashboardCard } from "./dashboard-card";
 import { StatTile } from "./stat-tile";
+import { DashboardCardHeader } from ".";
 
 interface TotalStudentsCardProps {
   students: typeof dashboardMockData.students;
@@ -17,14 +18,16 @@ export function TotalStudentsCard({ students }: TotalStudentsCardProps) {
 
   return (
     <DashboardCard className="lg:col-span-5 h-64">
-      <div>
-        <div className="flex items-center gap-2 text-muted-foreground text-sm font-medium">
-          <GraduationCap className="size-5 text-primary" />
-          <span>{t("totalStudents")}</span>
-        </div>
-        <div className="mt-2 text-3xl font-bold tracking-tight text-foreground">
-          {students.total.toLocaleString()}
-        </div>
+      <DashboardCardHeader
+        icon={<GraduationCap className="size-5 text-primary" />}
+        title={t("totalStudents")}
+        action={{
+          label: t("manageStudents"),
+          href: "/dashboard/students",
+        }}
+      />
+      <div className="text-3xl lg:text-4xl font-bold tracking-tight text-foreground -mt-4">
+        {students.total.toLocaleString()}
       </div>
 
       <Separator className="my-2" />

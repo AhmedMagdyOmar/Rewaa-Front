@@ -224,7 +224,7 @@ const DonutChart = React.forwardRef<HTMLDivElement, DonutChartProps>(
               )}
               <Pie
                 className={cn(
-                  "stroke-white dark:stroke-gray-950 [&_.recharts-pie-sector]:outline-hidden",
+                  "[&_.recharts-pie-sector]:outline-hidden",
                   onValueChange ? "cursor-pointer" : "cursor-default",
                 )}
                 data={parseData(data, categoryColors, category)}
@@ -234,7 +234,8 @@ const DonutChart = React.forwardRef<HTMLDivElement, DonutChartProps>(
                 endAngle={-270}
                 innerRadius={isDonut ? "75%" : "0%"}
                 outerRadius="100%"
-                stroke=""
+                stroke="none"
+                strokeWidth={0}
                 strokeLinejoin="round"
                 dataKey={value}
                 nameKey={category}
@@ -246,6 +247,8 @@ const DonutChart = React.forwardRef<HTMLDivElement, DonutChartProps>(
                   return (
                     <Sector
                       {...props}
+                      stroke="none"
+                      strokeWidth={0}
                       opacity={activeIndex === undefined ? 1 : isActive ? 1 : 0.3}
                       style={{ outline: "none" }}
                     />

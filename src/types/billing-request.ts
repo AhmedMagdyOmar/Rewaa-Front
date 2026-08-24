@@ -2,6 +2,8 @@ import { CourseVenue } from "./course";
 
 export type BillingRequestStatus = "pending" | "accepted" | "rejected";
 
+export type PaymentMethod = "vodafoneCash" | "creditCard" | "fawry" | "instaPay";
+
 export interface BillingRequestItem {
   id: string;
   studentId: string;
@@ -10,6 +12,7 @@ export interface BillingRequestItem {
   studentEmail?: string;
   grade: string; // e.g. "grade1", "grade2", "grade3"
   amount: number;
+  paymentMethod?: PaymentMethod;
   courseId: string;
   courseName: string;
   venue: CourseVenue; // "center" | "online" | "all"

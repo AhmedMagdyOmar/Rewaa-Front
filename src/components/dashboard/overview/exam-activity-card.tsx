@@ -32,7 +32,7 @@ export function ExamActivityCard({ examActivityToday }: ExamActivityCardProps) {
   });
 
   return (
-    <DashboardCard className="lg:col-span-4">
+    <DashboardCard className="lg:col-span-3">
       <div>
         <DashboardCardHeader
           icon={<CheckCircle2 className="size-5 text-emerald-500" />}

@@ -46,6 +46,20 @@ export const chartColors = {
     text: "text-chart-6",
     foreground: "text-chart-6-foreground",
   },
+  success: {
+    bg: "bg-success",
+    stroke: "stroke-success",
+    fill: "fill-success",
+    text: "text-success",
+    foreground: "text-white",
+  },
+  error: {
+    bg: "bg-error",
+    stroke: "stroke-error",
+    fill: "fill-error",
+    text: "text-error",
+    foreground: "text-white",
+  },
 } as const satisfies {
   [color: string]: {
     [key in ColorUtility]: string;

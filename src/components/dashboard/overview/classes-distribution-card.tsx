@@ -20,7 +20,7 @@ export function ClassesDistributionCard({
   const t = useTranslations("dashboard");
 
   return (
-    <DashboardCard className="lg:col-span-4">
+    <DashboardCard className="lg:col-span-3">
       <div>
         <DashboardCardHeader
           icon={<Users className="size-5 text-primary" />}
