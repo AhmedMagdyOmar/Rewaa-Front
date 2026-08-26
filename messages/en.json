@@ -610,7 +610,10 @@
           "examExpiryDate": "Exam Expiry Date",
           "examDateAfterScheduleError": "Exam dates must be after the section's scheduled publish date ({date}).",
           "examDateBeforeScheduleEndError": "Exam dates must be before the section's scheduled end date ({date}).",
-          "examEndDateAfterStartError": "Expiry date must be after the start date."
+          "examEndDateAfterStartError": "Expiry date must be after the start date.",
+          "sectionDateAfterCourseScheduleError": "Section scheduled publish date must be after the course's scheduled publish date ({date}).",
+          "sectionDateBeforeCourseScheduleEndError": "Section scheduled end date must be before the course's scheduled end date ({date}).",
+          "sectionEndDateAfterStartError": "Section scheduled end date must be after the publish date."
         },
         "addLessonDialog": {
           "title": "Add New Lesson",
@@ -683,6 +686,11 @@
           "examDateAfterScheduleError": "Exam dates must be after the lesson's scheduled publish date ({date}).",
           "examDateBeforeScheduleEndError": "Exam dates must be before the lesson's scheduled end date ({date}).",
           "examEndDateAfterStartError": "Expiry date must be after the start date.",
+          "lessonDateAfterSectionScheduleError": "Lesson scheduled publish date must be after the section's scheduled publish date ({date}).",
+          "lessonDateBeforeSectionScheduleEndError": "Lesson scheduled end date must be before the section's scheduled end date ({date}).",
+          "lessonDateAfterCourseScheduleError": "Lesson scheduled publish date must be after the course's scheduled publish date ({date}).",
+          "lessonDateBeforeCourseScheduleEndError": "Lesson scheduled end date must be before the course's scheduled end date ({date}).",
+          "lessonEndDateAfterStartError": "Lesson scheduled end date must be after the publish date.",
           "venue": "Venue",
           "lessonCategory": "Lesson Category",
           "categoryOptions": {
@@ -1338,8 +1346,8 @@
     "metadata": "Lesson Metadata",
     "tabs": {
       "all": "All Lessons",
-      "published": "Published",
-      "draft": "Drafts & Scheduled"
+      "general": "General Lessons",
+      "courseLinked": "Course-Linked"
     },
     "filterType": {
       "all": "All Types",
@@ -1374,7 +1382,9 @@
       "coursesCount": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
       "viewCourses": "View Courses",
       "coursesPopupTitle": "Courses Including This Lesson",
-      "multipleCourses": "Multiple Courses"
+      "multipleCourses": "Multiple Courses",
+      "generalLesson": "General Lesson",
+      "courseDependentLesson": "Course-Linked Lesson"
     },
     "deleteDialog": {
       "title": "Delete Lesson",
@@ -1409,7 +1419,9 @@
       "selectCoursePlaceholder": "Choose a course to link this lesson to...",
       "selectSection": "Select Section",
       "selectSectionPlaceholder": "Choose section...",
-      "inCoursesInfo": "{count, plural, =0 {This lesson is not linked to any courses.} one {This lesson is included in 1 course.} other {This lesson is included in {count} courses.}}"
+      "inCoursesInfo": "{count, plural, =0 {This lesson is not linked to any courses.} one {This lesson is included in 1 course.} other {This lesson is included in {count} courses.}}",
+      "isGeneralLesson": "General Lesson",
+      "isGeneralLessonSubtitle": "Toggle on if this lesson is general and available independently outside courses."
     },
     "pagination": {
       "showing": "Showing {start} to {end} of {total} lessons"

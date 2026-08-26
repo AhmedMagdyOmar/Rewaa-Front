@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExamSelect, MultiLessonSelect } from "@/components/ui/academic-selects";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { getStoredCourses } from "@/lib/courses-storage";
 import { getStoredExams, saveStoredExams } from "@/lib/exams-storage";
 import { getStoredLessons } from "@/lib/lessons-storage";
 import { cn } from "@/lib/utils";
@@ -121,6 +122,7 @@ export function LessonDialog({
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
   const [scheduledPublishDate, setScheduledPublishDate] = useState("");
   const [scheduledEndDate, setScheduledEndDate] = useState("");
+  const [scheduleDateError, setScheduleDateError] = useState<string | null>(null);
 
   // Bank Form State
   const [bankSectionId, setBankSectionId] = useState("");
@@ -244,6 +246,7 @@ export function LessonDialog({
         setPublishStatus(initialLesson.publishStatus || "published");
         setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
         setScheduledEndDate(initialLesson.scheduledEndDate || "");
+        setScheduleDateError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
       } else {
@@ -268,6 +271,7 @@ export function LessonDialog({
         setPublishStatus("published");
         setScheduledPublishDate("");
         setScheduledEndDate("");
+        setScheduleDateError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
         setBankSectionId(initialSectionId || sections[0]?.id || "");
@@ -353,6 +357,78 @@ export function LessonDialog({
     if (hasPdfAttachments && pdfFiles.length === 0) {
       setPdfError(t("pdfRequiredError"));
       return;
+    }
+
+    setScheduleDateError(null);
+
+    // Validation: If lesson is scheduled, validate against Section & Course schedule periods
+    if (publishStatus === "scheduled") {
+      if (scheduledPublishDate && scheduledEndDate && scheduledEndDate < scheduledPublishDate) {
+        setScheduleDateError(t("lessonEndDateAfterStartError"));
+        return;
+      }
+
+      const targetSec = sections.find((s) => s.id === targetSectionId);
+      if (targetSec && targetSec.status === "scheduled") {
+        if (targetSec.scheduledPublishDate && scheduledPublishDate) {
+          if (scheduledPublishDate < targetSec.scheduledPublishDate) {
+            setScheduleDateError(
+              t("lessonDateAfterSectionScheduleError", { date: targetSec.scheduledPublishDate }),
+            );
+            return;
+          }
+        }
+        if (targetSec.scheduledEndDate) {
+          if (scheduledPublishDate && scheduledPublishDate > targetSec.scheduledEndDate) {
+            setScheduleDateError(
+              t("lessonDateBeforeSectionScheduleEndError", { date: targetSec.scheduledEndDate }),
+            );
+            return;
+          }
+          if (scheduledEndDate && scheduledEndDate > targetSec.scheduledEndDate) {
+            setScheduleDateError(
+              t("lessonDateBeforeSectionScheduleEndError", { date: targetSec.scheduledEndDate }),
+            );
+            return;
+          }
+        }
+      }
+
+      // Check against course scheduled dates from storage if existing
+      const storedCourses = getStoredCourses(locale);
+      const currentCourse = storedCourses.find((c) =>
+        c.sections?.some((s) => s.id === targetSectionId),
+      );
+      if (currentCourse && currentCourse.publishStatus === "scheduled") {
+        if (currentCourse.scheduledPublishDate && scheduledPublishDate) {
+          if (scheduledPublishDate < currentCourse.scheduledPublishDate) {
+            setScheduleDateError(
+              t("lessonDateAfterCourseScheduleError", {
+                date: currentCourse.scheduledPublishDate,
+              }),
+            );
+            return;
+          }
+        }
+        if (currentCourse.scheduledEndDate) {
+          if (scheduledPublishDate && scheduledPublishDate > currentCourse.scheduledEndDate) {
+            setScheduleDateError(
+              t("lessonDateBeforeCourseScheduleEndError", {
+                date: currentCourse.scheduledEndDate,
+              }),
+            );
+            return;
+          }
+          if (scheduledEndDate && scheduledEndDate > currentCourse.scheduledEndDate) {
+            setScheduleDateError(
+              t("lessonDateBeforeCourseScheduleEndError", {
+                date: currentCourse.scheduledEndDate,
+              }),
+            );
+            return;
+          }
+        }
+      }
     }
 
     setExamDateError(null);
@@ -975,41 +1051,114 @@ export function LessonDialog({
                   ]}
                 />
 
-                {publishStatus === "scheduled" && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 pt-1">
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="dialog-scheduled-date"
-                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                      >
-                        <Calendar className="size-4 text-primary" />
-                        {t("scheduledPublishDate")} <span className="text-destructive">*</span>
-                      </label>
-                      <Input
-                        id="dialog-scheduled-date"
-                        type="datetime-local"
-                        value={scheduledPublishDate}
-                        onChange={(e) => setScheduledPublishDate(e.target.value)}
-                        required={publishStatus === "scheduled"}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
-                      <label
-                        htmlFor="dialog-scheduled-end-date"
-                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                      >
-                        <Calendar className="size-4 text-primary" />
-                        {t("scheduledEndDate")}
-                      </label>
-                      <Input
-                        id="dialog-scheduled-end-date"
-                        type="datetime-local"
-                        value={scheduledEndDate}
-                        onChange={(e) => setScheduledEndDate(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                )}
+                {publishStatus === "scheduled" &&
+                  (() => {
+                    // Helper to convert date strings (e.g. "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm") to valid datetime-local format
+                    const toDateTimeLocal = (dateStr?: string, isEnd = false) => {
+                      if (!dateStr) return undefined;
+                      if (dateStr.includes("T")) {
+                        return dateStr.slice(0, 16);
+                      }
+                      return `${dateStr}T${isEnd ? "23:59" : "00:00"}`;
+                    };
+
+                    // Compute min and max boundaries from target section and parent course
+                    const targetSec = sections.find((s) => s.id === targetSectionId);
+                    const storedCourses = getStoredCourses(locale);
+                    const currentCourse = storedCourses.find((c) =>
+                      c.sections?.some((s) => s.id === targetSectionId),
+                    );
+
+                    let effectiveMinDate: string | undefined = undefined;
+                    let effectiveMaxDate: string | undefined = undefined;
+
+                    if (targetSec?.status === "scheduled") {
+                      if (targetSec.scheduledPublishDate) {
+                        effectiveMinDate = targetSec.scheduledPublishDate;
+                      }
+                      if (targetSec.scheduledEndDate) {
+                        effectiveMaxDate = targetSec.scheduledEndDate;
+                      }
+                    }
+
+                    if (currentCourse?.publishStatus === "scheduled") {
+                      if (currentCourse.scheduledPublishDate) {
+                        effectiveMinDate =
+                          effectiveMinDate && effectiveMinDate > currentCourse.scheduledPublishDate
+                            ? effectiveMinDate
+                            : currentCourse.scheduledPublishDate;
+                      }
+                      if (currentCourse.scheduledEndDate) {
+                        effectiveMaxDate =
+                          effectiveMaxDate && effectiveMaxDate < currentCourse.scheduledEndDate
+                            ? effectiveMaxDate
+                            : currentCourse.scheduledEndDate;
+                      }
+                    }
+
+                    const minDateAttr = toDateTimeLocal(effectiveMinDate, false);
+                    const maxDateAttr = toDateTimeLocal(effectiveMaxDate, true);
+                    const publishDateAttr = toDateTimeLocal(scheduledPublishDate, false);
+                    const endDateAttr = toDateTimeLocal(scheduledEndDate, true);
+
+                    const minEndDateAttr = publishDateAttr || minDateAttr;
+                    const maxPublishDateAttr = endDateAttr || maxDateAttr;
+
+                    return (
+                      <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-2">
+                            <label
+                              htmlFor="dialog-scheduled-date"
+                              className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                            >
+                              <Calendar className="size-4 text-primary" />
+                              {t("scheduledPublishDate")}{" "}
+                              <span className="text-destructive">*</span>
+                            </label>
+                            <Input
+                              id="dialog-scheduled-date"
+                              type="datetime-local"
+                              value={scheduledPublishDate}
+                              min={minDateAttr}
+                              max={maxPublishDateAttr}
+                              onChange={(e) => {
+                                setScheduledPublishDate(e.target.value);
+                                setScheduleDateError(null);
+                              }}
+                              required={publishStatus === "scheduled"}
+                            />
+                          </div>
+                          <div className="flex flex-col gap-2">
+                            <label
+                              htmlFor="dialog-scheduled-end-date"
+                              className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                            >
+                              <Calendar className="size-4 text-primary" />
+                              {t("scheduledEndDate")}
+                            </label>
+                            <Input
+                              id="dialog-scheduled-end-date"
+                              type="datetime-local"
+                              value={scheduledEndDate}
+                              min={minEndDateAttr}
+                              max={maxDateAttr}
+                              onChange={(e) => {
+                                setScheduledEndDate(e.target.value);
+                                setScheduleDateError(null);
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {scheduleDateError && (
+                          <p className="text-xs text-destructive font-medium animate-in fade-in">
+                            {scheduleDateError}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
               </div>
             </div>
           )}

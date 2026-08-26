@@ -1153,6 +1153,7 @@ function Step2CurriculumView({
   const [newSecExamStartDate, setNewSecExamStartDate] = useState("");
   const [newSecExamExpiryDate, setNewSecExamExpiryDate] = useState("");
   const [newSecExamDateError, setNewSecExamDateError] = useState<string | null>(null);
+  const [newSecScheduleDateError, setNewSecScheduleDateError] = useState<string | null>(null);
 
   // Dialog Form states: Import Sections From Other Courses
   const [importCourseId, setImportCourseId] = useState("");
@@ -1231,6 +1232,7 @@ function Step2CurriculumView({
     setNewSecExamStartDate("");
     setNewSecExamExpiryDate("");
     setNewSecExamDateError(null);
+    setNewSecScheduleDateError(null);
     setActiveDialog("section");
   };
 
@@ -1248,12 +1250,60 @@ function Step2CurriculumView({
     setNewSecExamStartDate(sec.examStartDate || "");
     setNewSecExamExpiryDate(sec.examExpiryDate || "");
     setNewSecExamDateError(null);
+    setNewSecScheduleDateError(null);
     setActiveDialog("section");
   };
 
   const handleSaveSection = () => {
     if (!newSecTitle.trim()) return;
     setNewSecExamDateError(null);
+    setNewSecScheduleDateError(null);
+
+    // Validation for section schedule dates against parent course if section is scheduled
+    if (newSecStatus === "scheduled") {
+      if (
+        newSecScheduledDate &&
+        newSecScheduledEndDate &&
+        newSecScheduledEndDate < newSecScheduledDate
+      ) {
+        setNewSecScheduleDateError(t("step2.addSectionDialog.sectionEndDateAfterStartError"));
+        return;
+      }
+
+      // Check against course scheduled dates from storage if existing
+      const storedCourses = getStoredCourses(locale);
+      const currentCourse = storedCourses.find((c) => c.id === courseId);
+      if (currentCourse && currentCourse.publishStatus === "scheduled") {
+        if (currentCourse.scheduledPublishDate && newSecScheduledDate) {
+          if (newSecScheduledDate < currentCourse.scheduledPublishDate) {
+            setNewSecScheduleDateError(
+              t("step2.addSectionDialog.sectionDateAfterCourseScheduleError", {
+                date: currentCourse.scheduledPublishDate,
+              }),
+            );
+            return;
+          }
+        }
+        if (currentCourse.scheduledEndDate) {
+          if (newSecScheduledDate && newSecScheduledDate > currentCourse.scheduledEndDate) {
+            setNewSecScheduleDateError(
+              t("step2.addSectionDialog.sectionDateBeforeCourseScheduleEndError", {
+                date: currentCourse.scheduledEndDate,
+              }),
+            );
+            return;
+          }
+          if (newSecScheduledEndDate && newSecScheduledEndDate > currentCourse.scheduledEndDate) {
+            setNewSecScheduleDateError(
+              t("step2.addSectionDialog.sectionDateBeforeCourseScheduleEndError", {
+                date: currentCourse.scheduledEndDate,
+              }),
+            );
+            return;
+          }
+        }
+      }
+    }
 
     // Validation for exam expiry dates if enabled
     if (newSecIsLinkedExam && newSecHasExamExpiry) {
@@ -1815,7 +1865,7 @@ function Step2CurriculumView({
             {/* Status */}
             <div className="flex flex-col gap-1.5">
               <label className="text-sm font-medium text-foreground">
-                {locale === "ar" ? "حالة النشر" : "Publish Status"}
+                {locale === "ar" ? "إعدادات النشر" : "Publish Status"}
               </label>
               <Select
                 value={newSecStatus}
@@ -1837,40 +1887,74 @@ function Step2CurriculumView({
             </div>
 
             {/* Schedule Dates (Only if status is scheduled) */}
-            {newSecStatus === "scheduled" && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-1">
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="sec-schedule-date"
-                    className="text-sm font-medium text-foreground flex items-center gap-1"
-                  >
-                    {locale === "ar" ? "تاريخ النشر المجدول" : "Scheduled Publish Date"}{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="sec-schedule-date"
-                    type="date"
-                    value={newSecScheduledDate}
-                    onChange={(e) => setNewSecScheduledDate(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label
-                    htmlFor="sec-schedule-end-date"
-                    className="text-sm font-medium text-foreground"
-                  >
-                    {locale === "ar" ? "تاريخ الانتهاء المجدول" : "Scheduled End Date"}
-                  </label>
-                  <Input
-                    id="sec-schedule-end-date"
-                    type="date"
-                    value={newSecScheduledEndDate}
-                    onChange={(e) => setNewSecScheduledEndDate(e.target.value)}
-                  />
-                </div>
-              </div>
-            )}
+            {newSecStatus === "scheduled" &&
+              (() => {
+                const storedCourses = getStoredCourses(locale);
+                const currentCourse = storedCourses.find((c) => c.id === courseId);
+                const courseMinDate =
+                  currentCourse?.publishStatus === "scheduled"
+                    ? currentCourse.scheduledPublishDate
+                    : undefined;
+                const courseMaxDate =
+                  currentCourse?.publishStatus === "scheduled"
+                    ? currentCourse.scheduledEndDate
+                    : undefined;
+
+                const sectionMinEndDate = newSecScheduledDate || courseMinDate;
+
+                return (
+                  <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label
+                          htmlFor="sec-schedule-date"
+                          className="text-sm font-medium text-foreground flex items-center gap-1"
+                        >
+                          {locale === "ar" ? "تاريخ النشر المجدول" : "Scheduled Publish Date"}{" "}
+                          <span className="text-destructive">*</span>
+                        </label>
+                        <Input
+                          id="sec-schedule-date"
+                          type="date"
+                          value={newSecScheduledDate}
+                          min={courseMinDate}
+                          max={newSecScheduledEndDate || courseMaxDate}
+                          onChange={(e) => {
+                            setNewSecScheduledDate(e.target.value);
+                            setNewSecScheduleDateError(null);
+                          }}
+                          required
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label
+                          htmlFor="sec-schedule-end-date"
+                          className="text-sm font-medium text-foreground"
+                        >
+                          {locale === "ar" ? "تاريخ الانتهاء المجدول" : "Scheduled End Date"}
+                        </label>
+                        <Input
+                          id="sec-schedule-end-date"
+                          type="date"
+                          value={newSecScheduledEndDate}
+                          min={sectionMinEndDate}
+                          max={courseMaxDate}
+                          onChange={(e) => {
+                            setNewSecScheduledEndDate(e.target.value);
+                            setNewSecScheduleDateError(null);
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {newSecScheduleDateError && (
+                      <p className="text-xs text-destructive font-medium animate-in fade-in">
+                        {newSecScheduleDateError}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
             {/* Toggle: Link to Exam */}
             <FormToggleSetting

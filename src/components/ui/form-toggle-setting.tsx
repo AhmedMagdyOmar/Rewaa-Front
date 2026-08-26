@@ -66,7 +66,7 @@ export function FormToggleSetting({
         </label>
       </div>
       {children && (
-        <div className="px-3.5 pb-3.5 pt-1 border-t border-border/50 bg-background/50 animate-in fade-in slide-in-from-top-1">
+        <div className="px-3.5 pb-3.5 pt-1 mt-4 border-t border-border/50 bg-background/50 animate-in fade-in slide-in-from-top-1">
           {children}
         </div>
       )}

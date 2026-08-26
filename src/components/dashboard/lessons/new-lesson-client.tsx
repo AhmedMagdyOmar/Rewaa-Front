@@ -1,12 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import {
-  GradeSelect,
-  SubjectSelect,
-  TeacherSelect,
-  ExamSelect,
-} from "@/components/ui/academic-selects";
+import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { FormRadioGroup } from "@/components/ui/form-radio-group";
@@ -35,8 +30,6 @@ import {
   FileText,
   GraduationCap,
   ImageIcon,
-  Info,
-  Layers,
   MapPin,
   Radio,
   Trash2,
@@ -52,13 +45,6 @@ import { useEffect, useState } from "react";
 interface NewLessonClientProps {
   initialLessonId?: string;
 }
-
-const MOCK_BACKEND_EXAMS = [
-  { id: "exam-backend-101", title: "Comprehensive Physics Midterm Exam - الفصل الأول" },
-  { id: "exam-backend-102", title: "Electricity & Ohm's Law Quiz - اختبار قصير" },
-  { id: "exam-backend-103", title: "Kirchhoff's Laws Mastery Test - امتحان كيرشوف" },
-  { id: "exam-backend-104", title: "General Mathematics & Calculus Exam - امتحان الرياضيات" },
-];
 
 export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) {
   const t = useTranslations("lessons.new");
@@ -90,7 +76,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [subject, setSubject] = useState("physics");
   const [teacherName, setTeacherName] = useState("");
 
-  // Attachments and Exams
+  // Attachments
   const [hasPdfAttachments, setHasPdfAttachments] = useState(false);
   const [pdfFiles, setPdfFiles] = useState<LessonAttachment[]>([]);
   const [pdfError, setPdfError] = useState<string | null>(null);
@@ -98,19 +84,12 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [hasImageAttachments, setHasImageAttachments] = useState(false);
   const [imageFiles, setImageFiles] = useState<LessonAttachment[]>([]);
 
-  const [isLinkedToExam, setIsLinkedToExam] = useState(false);
-  const [linkedExamId, setLinkedExamId] = useState("");
-  const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
-
-  // Independent toggle & conditional Venue / Publish status
-  const [isIndependent, setIsIndependent] = useState<boolean>(true);
+  // Is general lesson toggle & conditional Venue / Publish status
+  const [isGeneralLesson, setIsGeneralLesson] = useState<boolean>(true);
   const [venue, setVenue] = useState<CourseVenue>("all");
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
   const [scheduledPublishDate, setScheduledPublishDate] = useState("");
   const [scheduledEndDate, setScheduledEndDate] = useState("");
-
-  // coursesCount comes directly from the lesson record (populated by backend)
-  const [coursesCount, setCoursesCount] = useState<number>(0);
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -126,8 +105,8 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         setLectureVideoLink(existing.lectureVideoLink || "");
         setCoverImage(existing.coverImage || "");
 
-        const isIndep = existing.lessonCategory !== "course-dependent" && !existing.courseId;
-        setIsIndependent(isIndep);
+        const isGeneral = existing.lessonCategory !== "course-dependent" && !existing.courseId;
+        setIsGeneralLesson(isGeneral);
 
         setGrade(existing.grade || "grade1");
         setSubject(existing.subject || "physics");
@@ -146,15 +125,9 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         setHasImageAttachments(hasImgs);
         setImageFiles(existing.imageFiles || []);
 
-        setIsLinkedToExam(Boolean(existing.isLinkedToExam));
-        setLinkedExamId(existing.linkedExamId || "");
-        setIsRequiredPassExam(Boolean(existing.isRequiredPassExam));
-
         setPublishStatus(existing.publishStatus || "published");
         setScheduledPublishDate(existing.scheduledPublishDate || "");
         setScheduledEndDate(existing.scheduledEndDate || "");
-
-        setCoursesCount(existing.coursesCount ?? 0);
       }
     }
     setIsLoaded(true);
@@ -210,10 +183,13 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     }
 
     const currentLessons = getStoredLessons(locale);
-    const selectedExamObj = MOCK_BACKEND_EXAMS.find((e) => e.id === linkedExamId);
+    const existing = initialLessonId
+      ? currentLessons.find((l) => l.id === initialLessonId)
+      : undefined;
     const generatedId = initialLessonId || `les-standalone-${crypto.randomUUID()}`;
 
     const lessonData: Lesson = {
+      ...existing,
       id: generatedId,
       type,
       title: title.trim(),
@@ -222,27 +198,23 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       lectureVideoLink: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
       coverImage: coverImage.trim() || undefined,
 
-      lessonCategory: isIndependent ? "independent" : "course-dependent",
+      lessonCategory: isGeneralLesson ? "independent" : "course-dependent",
 
       grade,
       subject,
       teacherName: teacherName.trim(),
-      venue: isIndependent ? venue : undefined,
+      venue: isGeneralLesson ? venue : undefined,
 
       hasPdfAttachments,
       pdfFiles: hasPdfAttachments ? pdfFiles : [],
       hasImageAttachments,
       imageFiles: hasImageAttachments ? imageFiles : [],
-      isLinkedToExam,
-      linkedExamId: isLinkedToExam ? linkedExamId : undefined,
-      linkedExamTitle: isLinkedToExam && selectedExamObj ? selectedExamObj.title : undefined,
-      isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
 
-      publishStatus: isIndependent ? publishStatus : "published",
+      publishStatus: isGeneralLesson ? publishStatus : "published",
       scheduledPublishDate:
-        isIndependent && publishStatus === "scheduled" ? scheduledPublishDate : undefined,
+        isGeneralLesson && publishStatus === "scheduled" ? scheduledPublishDate : undefined,
       scheduledEndDate:
-        isIndependent && publishStatus === "scheduled" ? scheduledEndDate : undefined,
+        isGeneralLesson && publishStatus === "scheduled" ? scheduledEndDate : undefined,
     };
 
     let updatedLessons: Lesson[];
@@ -431,7 +403,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           />
         </FormSectionCard>
 
-        {/* 5. ATTACHMENTS & EXAMS */}
+        {/* 5. ATTACHMENTS & SETTINGS */}
         <FormSectionCard
           title={tDialog("groups.attachmentsAndExams")}
           description={tDialog("groupDescriptions.attachmentsAndExams")}
@@ -561,59 +533,13 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           </FormToggleSetting>
 
           <FormToggleSetting
-            id="standalone-exam-toggle"
-            title={tDialog("isLinkedToExam")}
-            subtitle={tDialog("isLinkedToExamSubtitle")}
-            checked={isLinkedToExam}
-            onCheckedChange={setIsLinkedToExam}
+            id="standalone-is-general-toggle"
+            title={t("isGeneralLesson")}
+            subtitle={t("isGeneralLessonSubtitle")}
+            checked={isGeneralLesson}
+            onCheckedChange={setIsGeneralLesson}
           >
-            {isLinkedToExam && (
-              <div className="space-y-3 pt-1">
-                <ExamSelect
-                  id="standalone-exam-select"
-                  value={linkedExamId}
-                  onValueChange={setLinkedExamId}
-                  label={tDialog("selectExam")}
-                  placeholder={tDialog("selectExam")}
-                  required={isLinkedToExam}
-                  exams={MOCK_BACKEND_EXAMS}
-                />
-                <FormToggleSetting
-                  id="standalone-pass-exam-toggle"
-                  title={tDialog("isRequiredPassExam")}
-                  subtitle={tDialog("isRequiredPassExamSubtitle")}
-                  checked={isRequiredPassExam}
-                  onCheckedChange={setIsRequiredPassExam}
-                  className="mt-2"
-                />
-              </div>
-            )}
-          </FormToggleSetting>
-        </FormSectionCard>
-
-        {/* 6. INDEPENDENT LESSON TOGGLE (WITH VENUE & PUBLISH STATUS) */}
-        <FormSectionCard
-          title={tDialog("categoryOptions.independent")}
-          description={tDialog("categoryDescriptions.independent")}
-          icon={Layers}
-          contentClassName="space-y-6"
-        >
-          {/* Info badge: number of courses this lesson is in (edit mode only) */}
-          {initialLessonId && (
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/60 border border-border/60 text-xs text-muted-foreground">
-              <Info className="size-3.5 shrink-0 text-primary" />
-              <span>{t("inCoursesInfo", { count: coursesCount })}</span>
-            </div>
-          )}
-
-          <FormToggleSetting
-            id="standalone-is-independent-toggle"
-            title={tDialog("categoryOptions.independent")}
-            subtitle={tDialog("categoryDescriptions.independent")}
-            checked={isIndependent}
-            onCheckedChange={setIsIndependent}
-          >
-            {isIndependent && (
+            {isGeneralLesson && (
               <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-1">
                 {/* Venue */}
                 <FormRadioGroup

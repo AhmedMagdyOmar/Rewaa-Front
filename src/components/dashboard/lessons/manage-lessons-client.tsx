@@ -8,13 +8,6 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { BookOpen, Plus, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Lesson, LessonPublishStatus } from "@/types/course";
 import { getStoredLessons, saveStoredLessons, resetStoredLessons } from "@/lib/lessons-storage";
@@ -23,8 +16,7 @@ import { ContentPagination } from "../common/content-pagination";
 import { LessonCard } from "./lesson-card";
 import { DeleteLessonDialog } from "./delete-lesson-dialog";
 
-export type LessonFilterTab = "all" | "published" | "draft";
-export type LessonTypeFilter = "all" | "independent" | "course-dependent";
+export type LessonFilterTab = "all" | "general" | "course-linked";
 export type LessonSortOption = "date-newest" | "date-oldest";
 
 export function ManageLessonsClient() {
@@ -38,10 +30,9 @@ export function ManageLessonsClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as LessonFilterTab) || "all";
-  const typeFilter = (searchParams.get("type") as LessonTypeFilter) || "all";
   const sortBy = (searchParams.get("sort") as LessonSortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 8;
+  const itemsPerPage = 9;
 
   // Helper function to update URL search parameters
   const updateUrlParams = React.useCallback(
@@ -52,7 +43,6 @@ export function ManageLessonsClient() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
-          (key === "type" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
           (key === "page" && value === 1)
         ) {
@@ -96,16 +86,11 @@ export function ManageLessonsClient() {
   // Filter & Search Logic
   const filteredLessons = React.useMemo(() => {
     return lessons.filter((lesson) => {
-      const isPublished =
-        lesson.publishStatus === "published" || (!lesson.publishStatus && lesson.title);
-      if (activeTab === "published" && !isPublished) return false;
-      if (activeTab === "draft" && isPublished) return false;
-
-      // Type Filter (independent vs course-dependent)
-      const isIndep =
+      // General vs Course-Linked category filter
+      const isGeneral =
         lesson.lessonCategory === "independent" || (!lesson.lessonCategory && !lesson.courseId);
-      if (typeFilter === "independent" && !isIndep) return false;
-      if (typeFilter === "course-dependent" && isIndep) return false;
+      if (activeTab === "general" && !isGeneral) return false;
+      if (activeTab === "course-linked" && isGeneral) return false;
 
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
@@ -127,7 +112,7 @@ export function ManageLessonsClient() {
 
       return true;
     });
-  }, [lessons, activeTab, typeFilter, searchQuery]);
+  }, [lessons, activeTab, searchQuery]);
 
   // Sort Logic
   const sortedLessons = React.useMemo(() => {
@@ -199,28 +184,26 @@ export function ManageLessonsClient() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleTypeChange = (val: string) => {
-    updateUrlParams({ type: val === "all" ? null : val, page: 1 });
-  };
-
   const handleResetFilters = () => {
-    updateUrlParams({ search: null, tab: null, type: null, sort: null, page: 1 });
+    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
   };
 
   // Filter tabs and sort options
   const tabs: TabItem<LessonFilterTab>[] = [
     { value: "all", label: t("tabs.all"), count: lessons.length },
     {
-      value: "published",
-      label: t("tabs.published"),
-      count: lessons.filter((l) => l.publishStatus === "published" || (!l.publishStatus && l.title))
-        .length,
+      value: "general",
+      label: t("tabs.general"),
+      count: lessons.filter(
+        (l) => l.lessonCategory === "independent" || (!l.lessonCategory && !l.courseId),
+      ).length,
     },
     {
-      value: "draft",
-      label: t("tabs.draft"),
-      count: lessons.filter((l) => l.publishStatus !== "published" && l.publishStatus !== undefined)
-        .length,
+      value: "course-linked",
+      label: t("tabs.courseLinked"),
+      count: lessons.filter(
+        (l) => !(l.lessonCategory === "independent" || (!l.lessonCategory && !l.courseId)),
+      ).length,
     },
   ];
 
@@ -273,21 +256,6 @@ export function ManageLessonsClient() {
         sortBy={sortBy}
         sortOptions={sortOptions}
         clearFiltersLabel={t("clearFilters")}
-        isFilterActiveCustom={typeFilter !== "all"}
-        extraFilters={
-          <div className="w-full sm:w-44 self-start sm:self-auto">
-            <Select value={typeFilter} onValueChange={handleTypeChange}>
-              <SelectTrigger className="h-9 text-xs bg-background">
-                <SelectValue placeholder={t("filterType.all")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filterType.all")}</SelectItem>
-                <SelectItem value="independent">{t("filterType.independent")}</SelectItem>
-                <SelectItem value="course-dependent">{t("filterType.courseDependent")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
         onSortChange={handleSortChange}

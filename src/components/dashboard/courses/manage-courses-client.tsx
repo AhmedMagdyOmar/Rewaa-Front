@@ -30,7 +30,7 @@ export function ManageCoursesClient() {
   const venueFilter = (searchParams.get("venue") as CourseVenueFilter) || "all";
   const sortBy = (searchParams.get("sort") as SortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 8;
+  const itemsPerPage = 9;
 
   // Helper function to update URL search parameters
   const updateUrlParams = React.useCallback(

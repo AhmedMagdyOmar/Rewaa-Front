@@ -610,7 +610,10 @@
           "examExpiryDate": "تاريخ انتهاء الامتحان",
           "examDateAfterScheduleError": "يجب أن يكون تاريخ الامتحان بعد تاريخ نشر القسم المجدول ({date}).",
           "examDateBeforeScheduleEndError": "يجب أن يكون تاريخ الامتحان قبل تاريخ انتهاء القسم المجدول ({date}).",
-          "examEndDateAfterStartError": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء."
+          "examEndDateAfterStartError": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.",
+          "sectionDateAfterCourseScheduleError": "يجب أن يكون تاريخ نشر القسم بعد تاريخ نشر الدورة المجدولة ({date}).",
+          "sectionDateBeforeCourseScheduleEndError": "يجب أن يكون تاريخ انتهاء القسم قبل تاريخ انتهاء الدورة المجدولة ({date}).",
+          "sectionEndDateAfterStartError": "يجب أن يكون تاريخ انتهاء القسم بعد تاريخ البدء."
         },
         "addLessonDialog": {
           "title": "إضافة درس جديد",
@@ -683,6 +686,11 @@
           "examDateAfterScheduleError": "يجب أن يكون تاريخ الامتحان بعد تاريخ نشر الدرس المجدول ({date}).",
           "examDateBeforeScheduleEndError": "يجب أن يكون تاريخ الامتحان قبل تاريخ انتهاء الدرس المجدول ({date}).",
           "examEndDateAfterStartError": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.",
+          "lessonDateAfterSectionScheduleError": "يجب أن يكون تاريخ نشر الدرس بعد تاريخ نشر القسم المجدول ({date}).",
+          "lessonDateBeforeSectionScheduleEndError": "يجب أن يكون تاريخ انتهاء الدرس قبل تاريخ انتهاء القسم المجدول ({date}).",
+          "lessonDateAfterCourseScheduleError": "يجب أن يكون تاريخ نشر الدرس بعد تاريخ نشر الدورة المجدولة ({date}).",
+          "lessonDateBeforeCourseScheduleEndError": "يجب أن يكون تاريخ انتهاء الدرس قبل تاريخ انتهاء الدورة المجدولة ({date}).",
+          "lessonEndDateAfterStartError": "يجب أن يكون تاريخ انتهاء الدرس بعد تاريخ البدء.",
           "venue": "مكان النشر",
           "lessonCategory": "تصنيف الدرس",
           "categoryOptions": {
@@ -691,7 +699,7 @@
           },
           "categoryDisabledNote": "محدد تلقائياً ومغلق على (مرتبط بدورة) عند الإنشاء من داخل الدورة.",
           "locked": "مُغلق",
-          "publishStatus": "حالة النشر",
+          "publishStatus": "إعدادات النشر",
           "statusOptions": {
             "draft": "مسودة",
             "draftDesc": "احفظه كمسودة، غير مرئي للطلاب.",
@@ -814,7 +822,7 @@
   },
   "exams": {
     "manageTitle": "إدارة الامتحانات",
-    "manageSubtitle": "عرض، تصفية، وإدارة كافة الامتحانات المستقلة والمرتبطة بالدورات.",
+    "manageSubtitle": "عرض، تصفية، وإدارة كافة الامتحانات العامة والمرتبطة بالدورات.",
     "addNewExam": "إضافة امتحان جديد",
     "resetExams": "إعادة ضبط البيانات",
     "searchPlaceholder": "ابحث في الامتحانات حسب العنوان، المادة، المعلم...",
@@ -826,7 +834,7 @@
     },
     "filterType": {
       "all": "الجميع",
-      "independent": "امتحانات مستقلة",
+      "independent": "امتحانات عامة",
       "courseDependent": "مرتبطة بدورة"
     },
     "sort": {
@@ -943,7 +951,7 @@
         "isIndependentDesc": "قم بالتفعيل إذا كان هذا الامتحان مستقلاً وغير مرتبط بدورة أو درس معين.",
         "venue": "مكان النشر",
         "selectVenue": "اختر مكان النشر...",
-        "publishStatus": "حالة النشر",
+        "publishStatus": "إعدادات النشر",
         "statusOptions": {
           "published": "منشور",
           "publishedDesc": "متاح ومرئي لجميع الطلاب المسجلين.",
@@ -1330,7 +1338,7 @@
   },
   "lessons": {
     "manageTitle": "إدارة الدروس",
-    "manageSubtitle": "عرض، تصفية، إنشاء، وإدارة كافة الدروس التعليمية المستقلة والمرتبطة بالدورات.",
+    "manageSubtitle": "عرض، تصفية، إنشاء، وإدارة كافة الدروس التعليمية العامة والمرتبطة بالدورات.",
     "addNewLesson": "إضافة درس جديد",
     "resetLessons": "إعادة ضبط البيانات",
     "searchPlaceholder": "ابحث في الدروس حسب العنوان، المادة، المعلم...",
@@ -1338,12 +1346,12 @@
     "metadata": "معلومات عن الدرس",
     "tabs": {
       "all": "جميع الدروس",
-      "published": "الدروس المنشورة",
-      "draft": "المسودات والمجدولة"
+      "general": "دروس عامة",
+      "courseLinked": "مرتبطة بدورة"
     },
     "filterType": {
       "all": "الجميع",
-      "independent": "دروس مستقلة",
+      "independent": "دروس عامة",
       "courseDependent": "مرتبطة بدورة"
     },
     "sort": {
@@ -1363,7 +1371,7 @@
       "pdfsCount": "{count, plural, =0 {لا ملفات PDF} zero {لا ملفات PDF} one {ملف PDF واحد} two {ملفين PDF} few {{count} ملفات PDF} many {{count} ملفاً PDF} other {{count} ملف PDF}}",
       "examLinked": "مرتبط بامتحان",
       "viewDetails": "عرض التفاصيل",
-      "editLesson": "تعديل الدرس",
+      "editLesson": "تعديل",
       "publishNow": "نشر الآن",
       "copyLink": "نسخ الرابط",
       "copied": "تم النسخ!",
@@ -1374,7 +1382,9 @@
       "coursesCount": "{count, plural, =0 {لا دورات} zero {لا دورات} one {دورة واحدة} two {دورتين} few {{count} دورات} many {{count} دورة} other {{count} دورة}}",
       "viewCourses": "عرض الدورات",
       "coursesPopupTitle": "الدورات التي تتضمن هذا الدرس",
-      "multipleCourses": "دورات متعددة"
+      "multipleCourses": "دورات متعددة",
+      "generalLesson": "درس عام",
+      "courseDependentLesson": "درس مرتبط بدورة"
     },
     "deleteDialog": {
       "title": "حذف الدرس",
@@ -1409,7 +1419,9 @@
       "selectCoursePlaceholder": "اختر الدورة التي يتبع لها هذا الدرس...",
       "selectSection": "اختر القسم",
       "selectSectionPlaceholder": "اختر القسم داخل الدورة...",
-      "inCoursesInfo": "{count, plural, =0 {هذا الدرس غير مرتبط بأي دورات.} zero {هذا الدرس غير مرتبط بأي دورات.} one {هذا الدرس مضمَّن في دورة واحدة.} two {هذا الدرس مضمَّن في دورتين.} few {هذا الدرس مضمَّن في {count} دورات.} many {هذا الدرس مضمَّن في {count} دورةً.} other {هذا الدرس مضمَّن في {count} دورة.}}"
+      "inCoursesInfo": "{count, plural, =0 {هذا الدرس غير مرتبط بأي دورات.} zero {هذا الدرس غير مرتبط بأي دورات.} one {هذا الدرس مضمَّن في دورة واحدة.} two {هذا الدرس مضمَّن في دورتين.} few {هذا الدرس مضمَّن في {count} دورات.} many {هذا الدرس مضمَّن في {count} دورةً.} other {هذا الدرس مضمَّن في {count} دورة.}}",
+      "isGeneralLesson": "درس عام",
+      "isGeneralLessonSubtitle": "قم بالتفعيل إذا كان هذا الدرس عاماً ومتاحاً بشكل مستقل خارج الدورات."
     },
     "pagination": {
       "showing": "{total, plural, =0 {عرض 0 درس} zero {عرض 0 درس} one {عرض درس واحد من أصل درس واحد} two {عرض درسين من أصل درسين} few {عرض {start} إلى {end} من أصل {total} دروس} many {عرض {start} إلى {end} من أصل {total} درساً} other {عرض {start} إلى {end} من أصل {total} درس}}"
@@ -2322,8 +2334,8 @@
       }
     },
     "lessonsPage": {
-      "title": "الدروس المستقلة",
-      "subtitle": "استعرض واشرح الدروس العامة والمحاضرات المستقلة المتاحة لك على المنصة",
+      "title": "الدروس العامة",
+      "subtitle": "استعرض واشرح الدروس العامة والمحاضرات العامة المتاحة لك على المنصة",
       "searchPlaceholder": "بحث باسم الدرس أو المادة أو المعلم...",
       "clearFilters": "مسح الفلاتر",
       "totalAvailable": "{count, plural, =0 {لا دروس متاحة} zero {لا دروس متاحة} one {درس واحد متاح} two {درسين متاحين} few {{count} دروس متاحة} many {{count} درساً متاحاً} other {{count} درس متاح}}",
@@ -2347,8 +2359,8 @@
         "pdfsCount": "{count, plural, =0 {لا ملفات} zero {لا ملفات} one {ملف واحد} two {ملفين} few {{count} ملفات} many {{count} ملفاً} other {{count} ملف}}"
       },
       "empty": {
-        "title": "لا توجد دروس مستقلة متاحة حالياً",
-        "description": "لم يتم إضافة أي دروس مستقلة عامة حتى الآن، تابع معنا للإطلاع على الدروس الجديدة."
+        "title": "لا توجد دروس عامة متاحة حالياً",
+        "description": "لم يتم إضافة أي دروس عامة حتى الآن، تابع معنا للإطلاع على الدروس الجديدة."
       },
       "pagination": {
         "showing": "عرض {start} إلى {end} من إجمالي {total, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{total} دروس} many {{total} درساً} other {{total} درس}}"
@@ -2377,7 +2389,7 @@
       "venue": "طبيعة الحضور"
     },
     "generalExamsPage": {
-      "title": "الامتحانات العامة المستقلة",
+      "title": "الامتحانات العامة",
       "subtitle": "استعرض وأدِّ الامتحانات والاختبارات الشاملة المتاحة للجميع على المنصة",
       "backToExams": "العودة إلى الامتحانات",
       "totalAvailable": "{count, plural, =0 {لا امتحانات عامة} zero {لا امتحانات عامة} one {امتحان عام واحد} two {امتحانين عامين} few {{count} امتحانات عامة} many {{count} امتحاناً عاماً} other {{count} امتحان عام}}",

@@ -15,7 +15,6 @@ import { Lesson } from "@/types/course";
 import {
   BookOpen,
   Check,
-  Clock,
   Copy,
   Eye,
   FileQuestion,
@@ -28,6 +27,7 @@ import {
   MoreVertical,
   Paperclip,
   Pencil,
+  Sparkles,
   Trash2,
   User,
   Video,
@@ -45,7 +45,6 @@ interface LessonCardProps {
   onDeleteRequest: (lesson: Lesson) => void;
 }
 
-/** Format large view counts compactly: 1842 → "1.8k", 3271 → "3.3k", <1000 → as-is */
 function formatCount(n: number): string {
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
@@ -93,7 +92,6 @@ export function LessonCard({
   const fallbackCover = lesson.coverImage || "/courses/physics.jpg";
   const pdfCount = (lesson.pdfFiles || []).length || (lesson.hasPdfAttachments ? 1 : 0);
 
-  // Look up teacher image
   const teachers = typeof window !== "undefined" ? getStoredTeachers() : [];
   const teacherImage =
     lesson.teacherImage ||
@@ -110,19 +108,11 @@ export function LessonCard({
 
   const coursesCount = lesson.coursesCount ?? 0;
   const viewsCount = lesson.viewsCount ?? 0;
-
-  // Show course title only when linked to exactly 1 course and coursesCount <= 1
-  const showCourseTitle = !isIndependent && lesson.courseTitle && coursesCount <= 1;
-  // Multiple courses: show popup option — applies to both independent and course-dependent lessons
   const isMultiCourse = coursesCount > 1;
 
-  // Resolve linked courses for the popup from stored courses
   const linkedCoursesList = React.useMemo(() => {
     if (!isMultiCourse) return [];
-
     const allCourses = typeof window !== "undefined" ? getStoredCourses(locale) : [];
-
-    // Collect IDs
     const ids: string[] = [];
     if (lesson.courseIds && lesson.courseIds.length > 0) {
       ids.push(...lesson.courseIds);
@@ -130,33 +120,75 @@ export function LessonCard({
       ids.push(lesson.courseId);
     }
 
-    const resolved: { id: string; title: string }[] = [];
+    interface LinkedCourseItem {
+      id: string;
+      title: string;
+      viewsCount: number;
+      publishStatus: "published" | "draft" | "scheduled";
+    }
+
+    const resolved: LinkedCourseItem[] = [];
+
+    // Helper to find lesson instance inside a course
+    const findLessonInCourse = (c: (typeof allCourses)[0]) => {
+      for (const s of c.sections || []) {
+        const found = (s.lessons || []).find((l) => l.id === lesson.id);
+        if (found) return found;
+      }
+      return null;
+    };
+
     ids.forEach((id) => {
       const match = allCourses.find((c) => c.id === id);
       if (match) {
-        resolved.push({ id: match.id, title: match.title });
+        const lessonInCourse = findLessonInCourse(match);
+        resolved.push({
+          id: match.id,
+          title: match.title,
+          viewsCount: lessonInCourse?.viewsCount ?? viewsCount,
+          publishStatus: lessonInCourse?.publishStatus ?? lesson.publishStatus ?? "published",
+        });
       }
     });
 
-    // If no courseIds were found or count is greater, fill with first courses available
     if (resolved.length === 0 && lesson.courseTitle) {
-      resolved.push({ id: lesson.courseId || "c1", title: lesson.courseTitle });
+      resolved.push({
+        id: lesson.courseId || "c1",
+        title: lesson.courseTitle,
+        viewsCount: viewsCount,
+        publishStatus: lesson.publishStatus || "published",
+      });
     }
 
     for (const c of allCourses) {
       if (resolved.length >= coursesCount) break;
       if (!resolved.some((r) => r.id === c.id)) {
-        resolved.push({ id: c.id, title: c.title });
+        const lessonInCourse = findLessonInCourse(c);
+        resolved.push({
+          id: c.id,
+          title: c.title,
+          viewsCount: lessonInCourse?.viewsCount ?? Math.max(0, Math.floor(viewsCount * 0.7)),
+          publishStatus: lessonInCourse?.publishStatus ?? "published",
+        });
       }
     }
-
     return resolved;
-  }, [isMultiCourse, lesson.courseIds, lesson.courseId, lesson.courseTitle, coursesCount, locale]);
+  }, [
+    isMultiCourse,
+    lesson.courseIds,
+    lesson.courseId,
+    lesson.courseTitle,
+    lesson.id,
+    lesson.publishStatus,
+    coursesCount,
+    viewsCount,
+    locale,
+  ]);
 
   return (
     <>
       <div className="group flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
-        {/* Cover Image Container with Badges */}
+        {/* 1. COVER IMAGE & OVERLAYS */}
         <div className="relative aspect-video w-full overflow-hidden bg-muted">
           <Image
             src={fallbackCover}
@@ -166,122 +198,33 @@ export function LessonCard({
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             unoptimized
           />
-          <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/30" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-black/20" />
 
-          {/* Publish Status Badge on top-start */}
-          <div className="absolute top-2.5 inset-s-2.5">
-            {lesson.publishStatus === "published" || (!lesson.publishStatus && lesson.title) ? (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-success-bg text-success shadow-xs">
-                {t("card.published")}
-              </span>
-            ) : lesson.publishStatus === "scheduled" ? (
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/20 text-purple-200 border border-purple-400/30 backdrop-blur-xs">
-                <Clock className="h-3 w-3" />
-                {t("card.scheduled")}
-              </span>
-            ) : (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-warning-bg text-warning backdrop-blur-xs">
-                {t("card.draft")}
-              </span>
-            )}
-          </div>
-
-          {/* Lesson Type Icon Badge on top-end (icon only) */}
-          <div className="absolute top-2.5 inset-e-2.5 flex items-center gap-1.5">
-            <span
-              className="inline-flex items-center justify-center p-1.5 rounded-full bg-black/60 text-white backdrop-blur-xs shadow-xs"
-              title={lesson.type === "text" ? t("card.textOnly") : t("card.videoText")}
-            >
+          {/* Top-End: Media Type */}
+          <div className="absolute top-2 inset-e-2 flex items-center gap-1.5">
+            <span className="inline-flex items-center justify-center p-1.5 rounded-md bg-black/60 text-white backdrop-blur-md border border-white/10 shadow-xs">
               {lesson.type === "text" ? (
-                <FileText className="h-3.5 w-3.5" />
+                <FileText className="h-4 w-4" />
               ) : (
-                <Video className="h-3.5 w-3.5" />
+                <Video className="h-4 w-4" />
               )}
             </span>
           </div>
         </div>
 
-        {/* Card Body */}
-        <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
+        {/* 2. CARD BODY (Title First) */}
+        <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
           <div>
-            {/* Category & Course Tag with Quick Metadata Icons */}
-            <div className="flex items-start justify-between text-xs text-muted-foreground mb-1.5 gap-2">
-              <span className="font-semibold text-primary wrap-break-word leading-tight">
-                {isIndependent
-                  ? t("card.independent")
-                  : isMultiCourse
-                    ? t("card.multipleCourses")
-                    : showCourseTitle
-                      ? t("card.courseDependent", { courseTitle: lesson.courseTitle ?? "" })
-                      : t("card.courseDependent", { courseTitle: "..." })}
-              </span>
-
-              {/* Quick Metadata Icons: Venue (independent only) or Exam badge, PDFs */}
-              <TooltipProvider>
-                <div className="flex items-center gap-2 shrink-0 pt-0.5 text-muted-foreground">
-                  {/* Venue — only shown for independent lessons */}
-                  {isIndependent && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center cursor-default transition-colors hover:text-foreground">
-                          {lesson.venue === "online" ? (
-                            <Globe className="h-3.5 w-3.5 text-primary" />
-                          ) : lesson.venue === "center" ? (
-                            <House className="h-3.5 w-3.5 text-primary" />
-                          ) : (
-                            <Globe2 className="h-3.5 w-3.5 text-primary" />
-                          )}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">{formatVenue(lesson.venue)}</TooltipContent>
-                    </Tooltip>
-                  )}
-
-                  {/* Exam linked — shown for all lesson types when isLinkedToExam */}
-                  {lesson.isLinkedToExam && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-default">
-                          <FileQuestion className="h-3.5 w-3.5 text-amber-500" />
-                          <Check className="h-3 w-3 text-success" />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {lesson.linkedExamTitle
-                          ? `${t("card.examLinked")}: ${lesson.linkedExamTitle}`
-                          : t("card.examLinked")}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-
-                  {/* PDF Attachments */}
-                  {pdfCount > 0 && (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="flex items-center gap-1 cursor-default text-primary hover:text-primary/80 transition-colors">
-                          <Paperclip className="h-3.5 w-3.5 shrink-0" />
-                          <span className="text-[11px] font-semibold">{pdfCount}</span>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top">
-                        {t("card.pdfsCount", { count: pdfCount })}
-                      </TooltipContent>
-                    </Tooltip>
-                  )}
-                </div>
-              </TooltipProvider>
-            </div>
-
             {/* Title */}
-            <h3 className="font-bold text-foreground text-sm line-clamp-2 leading-snug group-hover:text-primary transition-colors">
+            <h3 className="font-bold text-foreground text-[15px] line-clamp-2 leading-snug group-hover:text-primary transition-colors mb-2.5">
               {lesson.title}
             </h3>
 
             {/* Teacher and Subject Info */}
-            <div className="mt-2 text-xs text-muted-foreground space-y-1.5">
+            <div className="flex flex-col gap-2">
               {lesson.teacherName && (
                 <div className="flex items-center gap-2">
-                  <div className="relative size-5 rounded-full overflow-hidden bg-primary/10 border border-border/60 shrink-0 flex items-center justify-center">
+                  <div className="relative size-6 rounded-full overflow-hidden bg-primary/10 border border-border/60 shrink-0 flex items-center justify-center">
                     {teacherImage ? (
                       <Image
                         src={teacherImage}
@@ -291,76 +234,139 @@ export function LessonCard({
                         unoptimized
                       />
                     ) : (
-                      <User className="size-3 text-primary/70" />
+                      <User className="size-3.5 text-primary/70" />
                     )}
                   </div>
-                  <span className="truncate font-medium text-foreground/80">
+                  <span className="truncate text-sm font-medium text-foreground/80">
                     {lesson.teacherName}
                   </span>
                 </div>
               )}
               {subjectAndGradeText && (
-                <div className="flex items-center gap-1.5">
-                  <GraduationCap className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0" />
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <GraduationCap className="h-3.5 w-3.5 shrink-0" />
                   <span className="truncate">{subjectAndGradeText}</span>
                 </div>
               )}
             </div>
-
-            {/* Stats Row: Views & Courses Count */}
-            <div className="mt-2.5 flex items-center gap-3 text-xs text-muted-foreground">
-              <TooltipProvider>
-                {/* Views */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 cursor-default">
-                      <Eye className="h-3.5 w-3.5 shrink-0" />
-                      <span className="font-medium tabular-nums">{formatCount(viewsCount)}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {t("card.viewsCount", { count: viewsCount })}
-                  </TooltipContent>
-                </Tooltip>
-
-                {/* Courses */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 cursor-default">
-                      <LayoutList className="h-3.5 w-3.5 shrink-0" />
-                      <span className="font-medium tabular-nums">{coursesCount}</span>
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {t("card.coursesCount", { count: coursesCount })}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
           </div>
 
-          {/* Card Footer: CTA & Actions Dropdown */}
-          <div className="pt-3 border-t border-border/40 flex items-center justify-between gap-2">
+          {/* 3. METADATA PILLS ROW */}
+          <div className="flex flex-wrap items-center gap-1.5 pt-2">
+            <TooltipProvider delayDuration={200}>
+              {/* Category Pill */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground cursor-default">
+                    {isIndependent ? (
+                      <Sparkles className="h-3 w-3 text-amber-500" />
+                    ) : (
+                      <BookOpen className="h-3 w-3 text-primary" />
+                    )}
+                    <span className="sr-only">
+                      {isIndependent ? t("card.generalLesson") : t("card.courseDependentLesson")}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {isIndependent ? t("card.generalLesson") : t("card.courseDependentLesson")}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Venue Pill (Independent Only) */}
+              {isIndependent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground">
+                      {lesson.venue === "online" ? (
+                        <Globe className="h-3 w-3 text-primary" />
+                      ) : lesson.venue === "center" ? (
+                        <House className="h-3 w-3 text-primary" />
+                      ) : (
+                        <Globe2 className="h-3 w-3 text-primary" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">{formatVenue(lesson.venue)}</TooltipContent>
+                </Tooltip>
+              )}
+
+              {pdfCount > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
+                      <Paperclip className="h-3 w-3" />
+                      <span>{pdfCount}</span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {t("card.pdfsCount", { count: pdfCount })}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {lesson.isLinkedToExam && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
+                      <FileQuestion className="h-3 w-3" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    {lesson.linkedExamTitle
+                      ? `${t("card.examLinked")}: ${lesson.linkedExamTitle}`
+                      : t("card.examLinked")}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Views Pill */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground cursor-default">
+                    <Eye className="h-3 w-3" />
+                    <span>{formatCount(viewsCount)}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {t("card.viewsCount", { count: viewsCount })}
+                </TooltipContent>
+              </Tooltip>
+
+              {/* Courses Count Pill */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground cursor-default">
+                    <LayoutList className="h-3 w-3" />
+                    <span>{coursesCount}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">
+                  {t("card.coursesCount", { count: coursesCount })}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+
+          {/* 4. FOOTER ACTIONS */}
+          <div className="flex items-center gap-2 mt-4 pt-1">
             {lesson.publishStatus === "draft" ? (
               <Button
                 onClick={() => onPublishToggle(lesson.id)}
-                variant="default"
                 size="sm"
-                className="h-8 gap-1.5 text-xs font-semibold flex-1 cursor-pointer"
+                className="flex-1 font-bold text-sm py-3.5! cursor-pointer"
               >
-                <BookOpen className="h-3.5 w-3.5" />
-                <span>{t("card.publishNow")}</span>
+                {t("card.publishNow")}
               </Button>
             ) : (
               <Button
                 asChild
-                variant="default"
+                variant="outline"
                 size="sm"
-                className="h-8 gap-1.5 text-xs font-semibold flex-1"
+                className="flex-1 font-bold text-sm border border-primary! text-primary hover:text-primary py-3.5! cursor-pointer"
               >
                 <Link href={`/${locale}/dashboard/lessons/${lesson.id}/edit`}>
-                  <Pencil className="h-3.5 w-3.5" />
-                  <span>{t("card.editLesson")}</span>
+                  {t("card.editLesson")}
                 </Link>
               </Button>
             )}
@@ -368,28 +374,24 @@ export function LessonCard({
             {/* Action Menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                >
+                <Button variant="ghost" size="icon-sm" className="shrink-0">
                   <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Menu</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align={isAr ? "start" : "end"} className="w-44">
                 {lesson.publishStatus === "draft" && (
                   <DropdownMenuItem asChild>
                     <Link href={`/${locale}/dashboard/lessons/${lesson.id}/edit`}>
-                      <Pencil className="h-3.5 w-3.5 me-2" />
+                      <Pencil className="h-4 w-4 me-2" />
                       <span>{t("card.editLesson")}</span>
                     </Link>
                   </DropdownMenuItem>
                 )}
 
-                {/* View Courses option — shown when lesson belongs to multiple courses */}
                 {isMultiCourse && (
                   <DropdownMenuItem onClick={() => setCoursesPopupOpen(true)}>
-                    <LayoutList className="h-3.5 w-3.5 me-2" />
+                    <LayoutList className="h-4 w-4 me-2" />
                     <span>{t("card.viewCourses")}</span>
                   </DropdownMenuItem>
                 )}
@@ -397,12 +399,12 @@ export function LessonCard({
                 <DropdownMenuItem onClick={() => onCopyLink(lesson.id)}>
                   {copiedId === lesson.id ? (
                     <>
-                      <Check className="h-3.5 w-3.5 me-2 text-success" />
+                      <Check className="h-4 w-4 me-2 text-success" />
                       <span className="text-success">{t("card.copied")}</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="h-3.5 w-3.5 me-2" />
+                      <Copy className="h-4 w-4 me-2" />
                       <span>{t("card.copyLink")}</span>
                     </>
                   )}
@@ -410,7 +412,7 @@ export function LessonCard({
 
                 {lesson.publishStatus !== "draft" && (
                   <DropdownMenuItem onClick={() => onPublishToggle(lesson.id)}>
-                    <BookOpen className="h-3.5 w-3.5 me-2" />
+                    <BookOpen className="h-4 w-4 me-2" />
                     <span>
                       {lesson.publishStatus === "published"
                         ? t("card.unpublish")
@@ -423,7 +425,7 @@ export function LessonCard({
                   onClick={() => onDeleteRequest(lesson)}
                   className="text-destructive focus:text-destructive"
                 >
-                  <Trash2 className="h-3.5 w-3.5 me-2" />
+                  <Trash2 className="h-4 w-4 me-2" />
                   <span>{t("card.deleteLesson")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -435,24 +437,53 @@ export function LessonCard({
       {/* Courses Popup Dialog */}
       {isMultiCourse && (
         <Dialog open={coursesPopupOpen} onOpenChange={setCoursesPopupOpen}>
-          <DialogContent className="max-w-sm">
+          <DialogContent className="min-w-xl">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
+              <DialogTitle className="flex items-center gap-2 text-base">
                 <LayoutList className="h-4 w-4 text-primary shrink-0" />
                 {t("card.coursesPopupTitle")}
               </DialogTitle>
             </DialogHeader>
-            <ul className="space-y-2 mt-1">
+            <ul className="space-y-2 mt-2 max-h-80 overflow-y-auto pr-0.5">
               {linkedCoursesList.map((course, idx) => (
                 <li
                   key={course.id}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted/50 border border-border/40 text-sm"
+                  className="flex items-start justify-between gap-3 p-2.5 rounded-lg bg-muted/40 hover:bg-muted/60 border border-border/50 transition-colors text-sm"
                 >
-                  <span className="text-muted-foreground text-xs font-medium w-5 shrink-0 text-center">
-                    {idx + 1}
-                  </span>
-                  <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-                  <span className="truncate font-medium">{course.title}</span>
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <span className="mt-1 text-muted-foreground text-xs font-semibold w-4 shrink-0 text-center">
+                      {idx + 1}
+                    </span>
+                    <BookOpen className="mt-1 h-4 w-4 text-primary shrink-0" />
+                    <span className="font-medium text-foreground text-xs sm:text-sm">
+                      {course.title}
+                    </span>
+                  </div>
+
+                  <div className="flex items-start mt-1 gap-2 shrink-0">
+                    {/* Views Count Pill */}
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-background border border-border/60 text-[11px] font-medium text-muted-foreground">
+                      <Eye className="h-3 w-3" />
+                      <span>{formatCount(course.viewsCount)}</span>
+                    </span>
+
+                    {/* Publish Status Badge */}
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                        course.publishStatus === "published"
+                          ? "bg-emerald-500/10 text-emerald-600  border border-emerald-500/20"
+                          : course.publishStatus === "scheduled"
+                            ? "bg-sky-500/10 text-sky-600 border border-sky-500/20"
+                            : "bg-muted text-muted-foreground border border-border/60"
+                      }`}
+                    >
+                      {course.publishStatus === "published"
+                        ? t("card.published")
+                        : course.publishStatus === "scheduled"
+                          ? t("card.scheduled")
+                          : t("card.draft")}
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
