@@ -582,6 +582,7 @@
         "addLesson": "إضافة درس",
         "addExam": "إضافة امتحان",
         "arrangeSections": "ترتيب الأقسام",
+        "importFromCourses": "استيراد من دورات أخرى",
         "cancel": "إلغاء",
         "create": "إضافة"
       },
@@ -595,13 +596,21 @@
         "scheduledBadge": "مجدول",
         "addSectionDialog": {
           "title": "إضافة قسم جديد",
+          "editTitle": "تعديل القسم",
           "subtitle": "أدخل تفاصيل القسم وشروط الامتحانات.",
           "sectionTitle": "عنوان القسم",
           "sectionTitlePlaceholder": "مثال: القسم الأول: مقدمة في الجبر",
-          "isLinkedToExam": "ربط القسم بامتحان",
+          "isLinkedToExam": "مربوط بامتحان",
           "isLinkedToExamSubtitle": "الطلب من الطلاب أداء امتحان مخصص لهذا القسم.",
           "isRequiredPassExam": "اجتياز الامتحان شرط للانتقال للقسم التالي",
-          "isRequiredPassExamSubtitle": "منع فتح القسم التالي حتى يتم نجاح الطالب في امتحان هذا القسم."
+          "isRequiredPassExamSubtitle": "منع فتح القسم التالي حتى يتم نجاح الطالب في امتحان هذا القسم.",
+          "hasExamExpiryDate": "تحديد موعد انتهاء للامتحان",
+          "hasExamExpiryDateSubtitle": "تحديد فترة زمنية محددة يبدأ وينتهي فيها الامتحان.",
+          "examStartDate": "تاريخ بدء الامتحان",
+          "examExpiryDate": "تاريخ انتهاء الامتحان",
+          "examDateAfterScheduleError": "يجب أن يكون تاريخ الامتحان بعد تاريخ نشر القسم المجدول ({date}).",
+          "examDateBeforeScheduleEndError": "يجب أن يكون تاريخ الامتحان قبل تاريخ انتهاء القسم المجدول ({date}).",
+          "examEndDateAfterStartError": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء."
         },
         "addLessonDialog": {
           "title": "إضافة درس جديد",
@@ -614,7 +623,7 @@
             "mainInfo": "البيانات الأساسية",
             "media": "الفيديو وصورة الغلاف",
             "academic": "البيانات الأكاديمية",
-            "attachmentsAndExams": "المرفقات والامتحانات",
+            "attachmentsAndExams": "الإعدادات",
             "organization": "التنظيم وحالة النشر"
           },
           "groupDescriptions": {
@@ -667,6 +676,13 @@
           "noExamsAvailable": "لا توجد امتحانات متاحة من النظام",
           "isRequiredPassExam": "إلزامية اجتياز الامتحان للانتقال للدرس التالي",
           "isRequiredPassExamSubtitle": "منع فتح الدرس التالي حتى يقوم الطالب باجتياز هذا الامتحان.",
+          "hasExamExpiryDate": "تحديد موعد انتهاء للامتحان",
+          "hasExamExpiryDateSubtitle": "تحديد فترة زمنية محددة يبدأ وينتهي فيها الامتحان.",
+          "examStartDate": "تاريخ بدء الامتحان",
+          "examExpiryDate": "تاريخ انتهاء الامتحان",
+          "examDateAfterScheduleError": "يجب أن يكون تاريخ الامتحان بعد تاريخ نشر الدرس المجدول ({date}).",
+          "examDateBeforeScheduleEndError": "يجب أن يكون تاريخ الامتحان قبل تاريخ انتهاء الدرس المجدول ({date}).",
+          "examEndDateAfterStartError": "يجب أن يكون تاريخ الانتهاء بعد تاريخ البدء.",
           "venue": "مكان النشر",
           "lessonCategory": "تصنيف الدرس",
           "categoryOptions": {
@@ -721,6 +737,24 @@
           "description": "هل أنت تأكد من رغبتك في حذف \"{title}\"؟ لا يمكن التراجع عن هذا الإجراء.",
           "confirm": "حذف الدرس",
           "cancel": "إلغاء"
+        },
+        "deleteSectionDialog": {
+          "title": "حذف القسم",
+          "description": "هل أنت متأكد من رغبتك في حذف \"{title}\"؟ سيتم حذف جميع الدروس والامتحانات التابعة لهذا القسم ولا يمكن التراجع عن هذا الإجراء.",
+          "confirm": "حذف القسم",
+          "cancel": "إلغاء"
+        },
+        "importFromCoursesDialog": {
+          "title": "استيراد أقسام من دورات أخرى",
+          "subtitle": "اختر الدورة والأقسام التي ترغب في نسخها واستيرادها إلى هذه الدورة.",
+          "selectCourse": "اختر الدورة",
+          "selectCoursePlaceholder": "اختر الدورة للاستيراد منها...",
+          "selectSections": "اختر الأقسام",
+          "selectSectionsPlaceholder": "اختر الأقسام للاستيراد...",
+          "noSectionsInCourse": "لا توجد أقسام في الدورة المحددة.",
+          "selectedSections": "الأقسام المختارة",
+          "importAction": "استيراد الأقسام",
+          "noCoursesAvailable": "لا توجد دورات أخرى متاحة للاستيراد منها"
         }
       }
     },

@@ -35,6 +35,9 @@ export interface Lesson {
   linkedExamId?: string; // FK → Exam.id
   linkedExamTitle?: string; // denormalized
   isRequiredPassExam?: boolean;
+  hasExamExpiryDate?: boolean;
+  examStartDate?: string;
+  examExpiryDate?: string;
 
   // Organization and publish status
   venue?: CourseVenue;
@@ -63,6 +66,9 @@ export interface CourseSection {
   linkedExamId?: string; // FK → Exam.id (replaces embedded ExamContent)
   linkedExamTitle?: string;
   isRequiredPassExamForNextSection: boolean;
+  hasExamExpiryDate?: boolean;
+  examStartDate?: string;
+  examExpiryDate?: string;
   lessons: Lesson[];
 }
 

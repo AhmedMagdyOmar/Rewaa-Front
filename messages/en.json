@@ -582,6 +582,7 @@
         "addLesson": "Add Lesson",
         "addExam": "Add Exam",
         "arrangeSections": "Arrange Sections",
+        "importFromCourses": "Import from Other Courses",
         "cancel": "Cancel",
         "create": "Create"
       },
@@ -595,13 +596,21 @@
         "scheduledBadge": "Scheduled",
         "addSectionDialog": {
           "title": "Add New Section",
+          "editTitle": "Edit Section",
           "subtitle": "Enter section details and exam requirements.",
           "sectionTitle": "Section Title",
           "sectionTitlePlaceholder": "e.g., Chapter 1: Introduction to Algebra",
           "isLinkedToExam": "Link Section to an Exam",
           "isLinkedToExamSubtitle": "Require students to take an exam associated with this section.",
           "isRequiredPassExam": "Required Exam Pass for Next Section",
-          "isRequiredPassExamSubtitle": "Prevent students from unlocking the next section until passing this exam."
+          "isRequiredPassExamSubtitle": "Prevent students from unlocking the next section until passing this exam.",
+          "hasExamExpiryDate": "Add Expiry Date",
+          "hasExamExpiryDateSubtitle": "Specify an availability window when this exam can be taken.",
+          "examStartDate": "Exam Start Date",
+          "examExpiryDate": "Exam Expiry Date",
+          "examDateAfterScheduleError": "Exam dates must be after the section's scheduled publish date ({date}).",
+          "examDateBeforeScheduleEndError": "Exam dates must be before the section's scheduled end date ({date}).",
+          "examEndDateAfterStartError": "Expiry date must be after the start date."
         },
         "addLessonDialog": {
           "title": "Add New Lesson",
@@ -667,6 +676,13 @@
           "noExamsAvailable": "No exams available from backend",
           "isRequiredPassExam": "Have to pass exam to proceed to next lesson",
           "isRequiredPassExamSubtitle": "Block progression to next lesson until student passes this exam.",
+          "hasExamExpiryDate": "Add Expiry Date",
+          "hasExamExpiryDateSubtitle": "Specify an availability window when this exam can be taken.",
+          "examStartDate": "Exam Start Date",
+          "examExpiryDate": "Exam Expiry Date",
+          "examDateAfterScheduleError": "Exam dates must be after the lesson's scheduled publish date ({date}).",
+          "examDateBeforeScheduleEndError": "Exam dates must be before the lesson's scheduled end date ({date}).",
+          "examEndDateAfterStartError": "Expiry date must be after the start date.",
           "venue": "Venue",
           "lessonCategory": "Lesson Category",
           "categoryOptions": {
@@ -721,6 +737,24 @@
           "description": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
           "confirm": "Delete Lesson",
           "cancel": "Cancel"
+        },
+        "deleteSectionDialog": {
+          "title": "Delete Section",
+          "description": "Are you sure you want to delete \"{title}\"? All lessons and exams under this section will also be removed. This action cannot be undone.",
+          "confirm": "Delete Section",
+          "cancel": "Cancel"
+        },
+        "importFromCoursesDialog": {
+          "title": "Import Sections from Other Courses",
+          "subtitle": "Select a course and the sections you want to copy and import into this course.",
+          "selectCourse": "Select Course",
+          "selectCoursePlaceholder": "Select course to import from...",
+          "selectSections": "Select Sections",
+          "selectSectionsPlaceholder": "Select sections to import...",
+          "noSectionsInCourse": "No sections available in the selected course.",
+          "selectedSections": "Selected Sections",
+          "importAction": "Import Sections",
+          "noCoursesAvailable": "No other courses available to import from"
         }
       }
     },

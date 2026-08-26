@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
+import { FormRadioGroup } from "@/components/ui/form-radio-group";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
@@ -28,16 +29,25 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { getStoredExams, saveStoredExams } from "@/lib/exams-storage";
 import { getStoredLessons } from "@/lib/lessons-storage";
 import { cn } from "@/lib/utils";
-import { CourseSection, CourseVenue, Lesson, LessonAttachment, LessonType } from "@/types/course";
+import {
+  CourseSection,
+  CourseVenue,
+  Lesson,
+  LessonAttachment,
+  LessonPublishStatus,
+  LessonType,
+} from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
   AlertCircle,
   BookOpen,
+  Calendar,
   FileCheck,
   FileQuestion,
   FileText,
   ImageIcon,
   Plus,
+  Radio,
   Sparkles,
   Trash2,
   Upload,
@@ -102,6 +112,15 @@ export function LessonDialog({
   const [isLinkedToExam, setIsLinkedToExam] = useState(false);
   const [linkedExamId, setLinkedExamId] = useState("");
   const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
+  const [hasExamExpiryDate, setHasExamExpiryDate] = useState(false);
+  const [examStartDate, setExamStartDate] = useState("");
+  const [examExpiryDate, setExamExpiryDate] = useState("");
+  const [examDateError, setExamDateError] = useState<string | null>(null);
+
+  // Publish Status State
+  const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
+  const [scheduledPublishDate, setScheduledPublishDate] = useState("");
+  const [scheduledEndDate, setScheduledEndDate] = useState("");
 
   // Bank Form State
   const [bankSectionId, setBankSectionId] = useState("");
@@ -217,6 +236,14 @@ export function LessonDialog({
         setIsLinkedToExam(Boolean(initialLesson.isLinkedToExam));
         setLinkedExamId(initialLesson.linkedExamId || "");
         setIsRequiredPassExam(Boolean(initialLesson.isRequiredPassExam));
+        setHasExamExpiryDate(Boolean(initialLesson.hasExamExpiryDate));
+        setExamStartDate(initialLesson.examStartDate || "");
+        setExamExpiryDate(initialLesson.examExpiryDate || "");
+        setExamDateError(null);
+
+        setPublishStatus(initialLesson.publishStatus || "published");
+        setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
+        setScheduledEndDate(initialLesson.scheduledEndDate || "");
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
       } else {
@@ -234,6 +261,13 @@ export function LessonDialog({
         setIsLinkedToExam(false);
         setLinkedExamId("");
         setIsRequiredPassExam(false);
+        setHasExamExpiryDate(false);
+        setExamStartDate("");
+        setExamExpiryDate("");
+        setExamDateError(null);
+        setPublishStatus("published");
+        setScheduledPublishDate("");
+        setScheduledEndDate("");
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
         setBankSectionId(initialSectionId || sections[0]?.id || "");
@@ -321,6 +355,36 @@ export function LessonDialog({
       return;
     }
 
+    setExamDateError(null);
+    if (isLinkedToExam && hasExamExpiryDate) {
+      if (publishStatus === "scheduled" && scheduledPublishDate) {
+        if (examStartDate && examStartDate < scheduledPublishDate) {
+          setExamDateError(t("examDateAfterScheduleError", { date: scheduledPublishDate }));
+          return;
+        }
+        if (examExpiryDate && examExpiryDate < scheduledPublishDate) {
+          setExamDateError(t("examDateAfterScheduleError", { date: scheduledPublishDate }));
+          return;
+        }
+      }
+
+      if (publishStatus === "scheduled" && scheduledEndDate) {
+        if (examStartDate && examStartDate > scheduledEndDate) {
+          setExamDateError(t("examDateBeforeScheduleEndError", { date: scheduledEndDate }));
+          return;
+        }
+        if (examExpiryDate && examExpiryDate > scheduledEndDate) {
+          setExamDateError(t("examDateBeforeScheduleEndError", { date: scheduledEndDate }));
+          return;
+        }
+      }
+
+      if (examStartDate && examExpiryDate && examExpiryDate < examStartDate) {
+        setExamDateError(t("examEndDateAfterStartError"));
+        return;
+      }
+    }
+
     const selectedExamObj = availableExams.find((e) => e.id === linkedExamId);
     const updatedLesson: Lesson = {
       id: initialLesson?.id || `les-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -345,11 +409,16 @@ export function LessonDialog({
       linkedExamId: isLinkedToExam ? linkedExamId : undefined,
       linkedExamTitle: isLinkedToExam && selectedExamObj ? selectedExamObj.title : undefined,
       isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
+      hasExamExpiryDate: isLinkedToExam ? hasExamExpiryDate : false,
+      examStartDate: isLinkedToExam && hasExamExpiryDate ? examStartDate : undefined,
+      examExpiryDate: isLinkedToExam && hasExamExpiryDate ? examExpiryDate : undefined,
 
-      // Organization & publish status inherited from course
+      // Organization & publish status
       venue: parentCourseContext.venue || initialLesson?.venue || "all",
       lessonCategory: "course-dependent",
-      publishStatus: initialLesson?.publishStatus || "published",
+      publishStatus: publishStatus,
+      scheduledPublishDate: publishStatus === "scheduled" ? scheduledPublishDate : undefined,
+      scheduledEndDate: publishStatus === "scheduled" ? scheduledEndDate : undefined,
     };
 
     onSave(targetSectionId, updatedLesson);
@@ -794,9 +863,153 @@ export function LessonDialog({
                         onCheckedChange={setIsRequiredPassExam}
                         className="mt-2"
                       />
+
+                      {/* Toggle Add Expiry Date */}
+                      <div className="space-y-3 pt-2 border-t border-border/50">
+                        <FormToggleSetting
+                          id="les-exam-expiry-toggle"
+                          title={t("hasExamExpiryDate")}
+                          subtitle={t("hasExamExpiryDateSubtitle")}
+                          checked={hasExamExpiryDate}
+                          onCheckedChange={setHasExamExpiryDate}
+                        />
+
+                        {hasExamExpiryDate && (
+                          <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                              <div className="flex flex-col gap-1.5">
+                                <label
+                                  htmlFor="les-exam-start-date"
+                                  className="text-xs font-medium text-foreground"
+                                >
+                                  {t("examStartDate")}
+                                </label>
+                                <Input
+                                  id="les-exam-start-date"
+                                  type="date"
+                                  value={examStartDate}
+                                  min={
+                                    publishStatus === "scheduled" && scheduledPublishDate
+                                      ? scheduledPublishDate
+                                      : undefined
+                                  }
+                                  max={
+                                    publishStatus === "scheduled" && scheduledEndDate
+                                      ? scheduledEndDate
+                                      : undefined
+                                  }
+                                  onChange={(e) => {
+                                    setExamStartDate(e.target.value);
+                                    setExamDateError(null);
+                                  }}
+                                />
+                              </div>
+                              <div className="flex flex-col gap-1.5">
+                                <label
+                                  htmlFor="les-exam-expiry-date"
+                                  className="text-xs font-medium text-foreground"
+                                >
+                                  {t("examExpiryDate")}
+                                </label>
+                                <Input
+                                  id="les-exam-expiry-date"
+                                  type="date"
+                                  value={examExpiryDate}
+                                  min={
+                                    examStartDate ||
+                                    (publishStatus === "scheduled" && scheduledPublishDate
+                                      ? scheduledPublishDate
+                                      : undefined)
+                                  }
+                                  max={
+                                    publishStatus === "scheduled" && scheduledEndDate
+                                      ? scheduledEndDate
+                                      : undefined
+                                  }
+                                  onChange={(e) => {
+                                    setExamExpiryDate(e.target.value);
+                                    setExamDateError(null);
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            {examDateError && (
+                              <p className="text-xs text-destructive font-medium animate-in fade-in">
+                                {examDateError}
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </FormToggleSetting>
+              </div>
+
+              {/* GROUP 6: PUBLISH STATUS */}
+              <div className="space-y-4 p-4 rounded-xl border bg-muted/20">
+                <FormRadioGroup
+                  name="dialog-lesson-publish-status"
+                  title={t("publishStatus")}
+                  icon={Radio}
+                  value={publishStatus}
+                  onValueChange={(val) => setPublishStatus(val as LessonPublishStatus)}
+                  gridClassName="sm:grid-cols-3"
+                  options={[
+                    {
+                      id: "published",
+                      label: t("statusOptions.published"),
+                      desc: t("statusOptions.publishedDesc"),
+                    },
+                    {
+                      id: "draft",
+                      label: t("statusOptions.draft"),
+                      desc: t("statusOptions.draftDesc"),
+                    },
+                    {
+                      id: "scheduled",
+                      label: t("statusOptions.scheduled"),
+                      desc: t("statusOptions.scheduledDesc"),
+                    },
+                  ]}
+                />
+
+                {publishStatus === "scheduled" && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 pt-1">
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="dialog-scheduled-date"
+                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                      >
+                        <Calendar className="size-4 text-primary" />
+                        {t("scheduledPublishDate")} <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        id="dialog-scheduled-date"
+                        type="datetime-local"
+                        value={scheduledPublishDate}
+                        onChange={(e) => setScheduledPublishDate(e.target.value)}
+                        required={publishStatus === "scheduled"}
+                      />
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <label
+                        htmlFor="dialog-scheduled-end-date"
+                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                      >
+                        <Calendar className="size-4 text-primary" />
+                        {t("scheduledEndDate")}
+                      </label>
+                      <Input
+                        id="dialog-scheduled-end-date"
+                        type="datetime-local"
+                        value={scheduledEndDate}
+                        onChange={(e) => setScheduledEndDate(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
