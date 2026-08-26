@@ -829,8 +829,8 @@
     "clearFilters": "مسح الفلاتر",
     "tabs": {
       "all": "جميع الامتحانات",
-      "published": "المنشورة",
-      "draft": "المسودات والمجدولة"
+      "independent": "امتحانات عامة",
+      "courseLinked": "مرتبطة بدورة"
     },
     "filterType": {
       "all": "الجميع",
@@ -851,6 +851,8 @@
         "subjectGrade": "المادة/المرحلة",
         "category": "الفئة",
         "typeVenue": "النطاق",
+        "questions": "الأسئلة",
+        "students": "الطلاب",
         "questionsStudents": "الأسئلة/الطلاب",
         "successRate": "معدل النجاح",
         "timesUsed": "الاستخدام",
@@ -951,15 +953,6 @@
         "isIndependentDesc": "قم بالتفعيل إذا كان هذا الامتحان مستقلاً وغير مرتبط بدورة أو درس معين.",
         "venue": "مكان النشر",
         "selectVenue": "اختر مكان النشر...",
-        "publishStatus": "إعدادات النشر",
-        "statusOptions": {
-          "published": "منشور",
-          "publishedDesc": "متاح ومرئي لجميع الطلاب المسجلين.",
-          "draft": "مسودة",
-          "draftDesc": "احفظه كمسودة، غير مرئي للطلاب.",
-          "scheduled": "مجدول",
-          "scheduledDesc": "ينشر تلقائياً في التاريخ والوقت المحددين."
-        },
         "linkedCourse": "الدورة التعليمية المرتبطة",
         "selectCourse": "اختر الدورة...",
         "linkedSection": "القسم المرتبط بالدورة",

@@ -125,7 +125,7 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
   const isExamPublished = (examId?: string) => {
     if (!examId) return false;
     const found = exams.find((e) => e.id === examId);
-    return found ? found.publishStatus === "published" : false;
+    return Boolean(found);
   };
 
   const getExamTitle = (examId?: string, fallbackTitle?: string) => {

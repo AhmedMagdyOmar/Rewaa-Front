@@ -285,16 +285,6 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
               >
                 {tComplaints("stats.totalComplaints", { count: complaints.length })}
               </Badge>
-              <Badge
-                variant="outline"
-                className={`text-xs font-semibold ${
-                  exam.publishStatus === "published"
-                    ? "bg-green-100 text-green-700 border-green-300/40"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {t(`status.${exam.publishStatus}` as Parameters<typeof t>[0])}
-              </Badge>
             </div>
             <p className="text-xs text-muted-foreground font-medium">
               <span className="font-semibold text-foreground">{exam.title}</span> —{" "}

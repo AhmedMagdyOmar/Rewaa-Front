@@ -170,11 +170,10 @@ export function StudentExamsClient() {
       : cat;
   };
 
-  // Compute available published exams for the student
+  // Compute available exams for the student
   const relevantExams = React.useMemo(() => {
     const enrolledSet = new Set(enrolledCourseIds);
     return exams.filter((exam) => {
-      if (exam.publishStatus !== "published") return false;
       // Either independent (available to all students) or belongs to an enrolled course
       if (exam.examType === "independent") return true;
       if (exam.courseId && enrolledSet.has(exam.courseId)) return true;

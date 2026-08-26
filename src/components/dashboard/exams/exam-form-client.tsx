@@ -16,7 +16,6 @@ import {
   ListOrdered,
   MapPin,
   Plus,
-  Radio,
   Settings,
   Shuffle,
   Trash2,
@@ -56,15 +55,7 @@ import {
 import { getStoredTeachers } from "@/lib/settings-storage";
 import { Teacher } from "@/types/settings";
 import { cn } from "@/lib/utils";
-import {
-  Exam,
-  ExamCategory,
-  ExamPublishStatus,
-  ExamSection,
-  ExamType,
-  ExamVenue,
-  Question,
-} from "@/types/exam";
+import { Exam, ExamCategory, ExamSection, ExamType, ExamVenue, Question } from "@/types/exam";
 
 interface ExamFormClientProps {
   mode: "create" | "edit";
@@ -169,9 +160,6 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     initialData ? initialData.examType === "independent" : true,
   );
   const [venue, setVenue] = React.useState<ExamVenue>(initialData?.venue || "online");
-  const [publishStatus, setPublishStatus] = React.useState<ExamPublishStatus>(
-    initialData?.publishStatus || "published",
-  );
 
   // coursesCount comes directly from the exam record (populated by backend)
   const [coursesCount] = React.useState<number>(initialData?.coursesCount ?? 0);
@@ -203,11 +191,9 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   // Helper to build exam object
-  const buildExamObject = (status?: ExamPublishStatus): Exam => {
+  const buildExamObject = (): Exam => {
     const examType: ExamType = isIndependent ? "independent" : "course-dependent";
     const totalQuestionsCount = examSections.reduce((acc, sec) => acc + sec.questions.length, 0);
-
-    const finalStatus = status || (isIndependent ? publishStatus : "published");
 
     return {
       id: initialData?.id || `exam-${Date.now()}`,
@@ -235,27 +221,26 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
       successRate: initialData?.successRate || 0,
       timesUsed: initialData?.timesUsed || 0,
 
-      publishStatus: finalStatus,
       createdAt: initialData?.createdAt || new Date().toISOString(),
     };
   };
 
-  // Save as Draft when proceeding to Step 2
+  // Save when proceeding to Step 2
   const handleProceedToStep2 = () => {
     if (!title.trim()) return;
 
-    const draftExam = buildExamObject("draft");
+    const currentExam = buildExamObject();
     const storedExams = getStoredExams(locale);
     let updatedList: Exam[];
 
     if (mode === "edit" && initialData) {
-      updatedList = storedExams.map((e) => (e.id === initialData.id ? draftExam : e));
+      updatedList = storedExams.map((e) => (e.id === initialData.id ? currentExam : e));
     } else {
-      const exists = storedExams.some((e) => e.id === draftExam.id);
+      const exists = storedExams.some((e) => e.id === currentExam.id);
       if (exists) {
-        updatedList = storedExams.map((e) => (e.id === draftExam.id ? draftExam : e));
+        updatedList = storedExams.map((e) => (e.id === currentExam.id ? currentExam : e));
       } else {
-        updatedList = [draftExam, ...storedExams];
+        updatedList = [currentExam, ...storedExams];
       }
     }
 
@@ -264,11 +249,11 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
   };
 
   // Final Submit Handler
-  const handleSave = (publishStatus: ExamPublishStatus) => {
+  const handleSave = () => {
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    const finalExam = buildExamObject(publishStatus);
+    const finalExam = buildExamObject();
     const storedExams = getStoredExams(locale);
     let updatedList: Exam[];
 
@@ -642,35 +627,6 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                             },
                           ]}
                         />
-
-                        {/* Publish status */}
-                        <div className="pt-2 border-t border-border/40">
-                          <FormRadioGroup
-                            name="exam-publish-status"
-                            title={tForm("fields.publishStatus")}
-                            icon={Radio}
-                            value={publishStatus}
-                            onValueChange={(v) => setPublishStatus(v as ExamPublishStatus)}
-                            gridClassName="sm:grid-cols-3"
-                            options={[
-                              {
-                                id: "published",
-                                label: tForm("fields.statusOptions.published"),
-                                desc: tForm("fields.statusOptions.publishedDesc"),
-                              },
-                              {
-                                id: "draft",
-                                label: tForm("fields.statusOptions.draft"),
-                                desc: tForm("fields.statusOptions.draftDesc"),
-                              },
-                              {
-                                id: "scheduled",
-                                label: tForm("fields.statusOptions.scheduled"),
-                                desc: tForm("fields.statusOptions.scheduledDesc"),
-                              },
-                            ]}
-                          />
-                        </div>
                       </div>
                     )}
                   </FormToggleSetting>
@@ -884,7 +840,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                 <div className="flex items-center gap-3">
                   <Button
                     type="button"
-                    onClick={() => handleSave("published")}
+                    onClick={() => handleSave()}
                     disabled={isSubmitting || !title.trim()}
                     className="gap-2 font-semibold"
                   >

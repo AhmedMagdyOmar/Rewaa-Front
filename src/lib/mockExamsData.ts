@@ -221,7 +221,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 832,
       successRate: 74,
       timesUsed: 1250,
-      publishStatus: "published",
       createdAt: "2026-08-01T10:00:00Z",
     },
     {
@@ -440,7 +439,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 510,
       successRate: 61,
       timesUsed: 680,
-      publishStatus: "published",
       createdAt: "2026-08-05T09:00:00Z",
     },
     {
@@ -639,7 +637,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 1240,
       successRate: 58,
       timesUsed: 1950,
-      publishStatus: "published",
       createdAt: "2026-07-20T08:00:00Z",
     },
     {
@@ -847,7 +844,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 640,
       successRate: 69,
       timesUsed: 870,
-      publishStatus: "published",
       createdAt: "2026-07-25T11:00:00Z",
     },
     {
@@ -1057,7 +1053,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 320,
       successRate: 82,
       timesUsed: 540,
-      publishStatus: "published",
       createdAt: "2026-08-10T14:00:00Z",
     },
     {
@@ -1256,7 +1251,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 2100,
       successRate: 55,
       timesUsed: 2100,
-      publishStatus: "published",
       createdAt: "2026-06-15T07:00:00Z",
     },
     {
@@ -1465,7 +1459,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 890,
       successRate: 63,
       timesUsed: 1100,
-      publishStatus: "draft",
       createdAt: "2026-08-12T10:00:00Z",
     },
     {
@@ -1666,9 +1659,7 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 415,
       successRate: 48,
       timesUsed: 600,
-      publishStatus: "scheduled",
       createdAt: "2026-08-08T09:00:00Z",
-      scheduledAt: "2026-09-01T08:00:00Z",
     },
   ],
 
@@ -1892,7 +1883,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 832,
       successRate: 74,
       timesUsed: 1250,
-      publishStatus: "published",
       createdAt: "2026-08-01T10:00:00Z",
     },
     {
@@ -2113,7 +2103,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 510,
       successRate: 61,
       timesUsed: 680,
-      publishStatus: "published",
       createdAt: "2026-08-05T09:00:00Z",
     },
     {
@@ -2314,7 +2303,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 1240,
       successRate: 58,
       timesUsed: 1950,
-      publishStatus: "published",
       createdAt: "2026-07-20T08:00:00Z",
     },
     {
@@ -2526,7 +2514,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 640,
       successRate: 69,
       timesUsed: 870,
-      publishStatus: "published",
       createdAt: "2026-07-25T11:00:00Z",
     },
     {
@@ -2732,7 +2719,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 320,
       successRate: 82,
       timesUsed: 540,
-      publishStatus: "published",
       createdAt: "2026-08-10T14:00:00Z",
     },
     {
@@ -2931,7 +2917,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 2100,
       successRate: 55,
       timesUsed: 2100,
-      publishStatus: "published",
       createdAt: "2026-06-15T07:00:00Z",
     },
     {
@@ -3152,7 +3137,6 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 890,
       successRate: 63,
       timesUsed: 1100,
-      publishStatus: "draft",
       createdAt: "2026-08-12T10:00:00Z",
     },
     {
@@ -3353,9 +3337,7 @@ export const mockExamsData: Record<"ar" | "en", Exam[]> = {
       numberOfStudents: 415,
       successRate: 48,
       timesUsed: 600,
-      publishStatus: "scheduled",
       createdAt: "2026-08-08T09:00:00Z",
-      scheduledAt: "2026-09-01T08:00:00Z",
     },
   ],
 };

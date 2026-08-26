@@ -86,11 +86,11 @@ export function StudentCourseContentSidebar({
   const totalSections = sanitizedSections.length;
   const totalLessons = sanitizedSections.reduce((acc, s) => acc + s.lessons.length, 0);
 
-  // Helper to check if linked exam is published
+  // Helper to check if linked exam exists
   const isExamPublished = (examId?: string) => {
     if (!examId) return false;
     const found = exams.find((e) => e.id === examId);
-    return found ? found.publishStatus === "published" : false;
+    return Boolean(found);
   };
 
   // Helper to resolve exam name

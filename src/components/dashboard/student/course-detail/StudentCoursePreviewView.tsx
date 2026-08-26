@@ -144,17 +144,17 @@ export function StudentCoursePreviewView({
     ]);
   }, [flatLessons]);
 
-  // Helper to check if linked exam is published
+  // Helper to check if linked exam exists
   const isExamPublished = React.useCallback(
     (examId?: string) => {
       if (!examId) return false;
       const found = exams.find((e) => e.id === examId);
-      return found ? found.publishStatus === "published" : false;
+      return Boolean(found);
     },
     [exams],
   );
 
-  // Exam stats (only published linked exams)
+  // Exam stats (only linked exams)
   const linkedExamIds = React.useMemo(() => {
     const ids = new Set<string>();
     sanitizedSections.forEach((sec) => {
@@ -176,7 +176,7 @@ export function StudentCoursePreviewView({
     let count = 0;
     linkedExamIds.forEach((examId) => {
       const exam = exams.find((e) => e.id === examId);
-      if (exam && exam.publishStatus === "published") {
+      if (exam) {
         const qCount = exam.examSections.reduce((acc, es) => acc + es.questions.length, 0);
         count += qCount;
       }

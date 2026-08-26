@@ -127,8 +127,6 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
   const formatKind = (k: QuestionKind) =>
     tDetails(`questions.kind.${k}` as Parameters<typeof tDetails>[0]);
 
-  const isPublished = exam.publishStatus === "published";
-
   const isRtl = locale === "ar";
 
   return (
@@ -147,16 +145,6 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 {exam.title}
               </h1>
-              <Badge
-                variant="outline"
-                className={`text-xs font-semibold ${
-                  isPublished
-                    ? "bg-green-100 text-green-700 border-green-300/40"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {t(`status.${exam.publishStatus}` as Parameters<typeof t>[0])}
-              </Badge>
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-2">
               <span>

@@ -278,16 +278,6 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 {exam.title}
               </h1>
-              <Badge
-                variant="outline"
-                className={`text-xs font-semibold ${
-                  exam.publishStatus === "published"
-                    ? "bg-green-100 text-green-700 border-green-300/40"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {t(`status.${exam.publishStatus}` as Parameters<typeof t>[0])}
-              </Badge>
             </div>
             <p className="text-xs text-muted-foreground font-medium">{tStats("subtitle")}</p>
           </div>

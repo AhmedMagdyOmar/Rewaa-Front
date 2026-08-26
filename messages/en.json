@@ -829,8 +829,8 @@
     "clearFilters": "Clear Filters",
     "tabs": {
       "all": "All Exams",
-      "published": "Published",
-      "draft": "Drafts & Scheduled"
+      "independent": "Independent Exams",
+      "courseLinked": "Course-Linked"
     },
     "filterType": {
       "all": "All Types",
@@ -851,6 +851,8 @@
         "subjectGrade": "Subject & Grade",
         "category": "Category",
         "typeVenue": "Type & Venue",
+        "questions": "Questions",
+        "students": "Students",
         "questionsStudents": "Questions & Students",
         "successRate": "Success Rate",
         "timesUsed": "Times Used",
@@ -951,15 +953,6 @@
         "isIndependentDesc": "Toggle on if this exam is not linked to any specific course or lesson.",
         "venue": "Attendance Venue",
         "selectVenue": "Select venue...",
-        "publishStatus": "Publishing Status",
-        "statusOptions": {
-          "published": "Published",
-          "publishedDesc": "Live and visible to all enrolled students.",
-          "draft": "Draft",
-          "draftDesc": "Save as work-in-progress, not visible to students.",
-          "scheduled": "Scheduled",
-          "scheduledDesc": "Goes live automatically at a set date and time."
-        },
         "linkedCourse": "Linked Course",
         "selectCourse": "Select course...",
         "linkedSection": "Linked Course Section",

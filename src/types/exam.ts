@@ -55,7 +55,6 @@ export type ExamCategory =
   | "placement";
 
 export type ExamType = "independent" | "course-dependent";
-export type ExamPublishStatus = "published" | "draft" | "scheduled";
 export type ExamVenue = "center" | "online" | "all";
 
 export interface Exam {
@@ -92,9 +91,6 @@ export interface Exam {
   successRate: number; // 0–100
   timesUsed: number;
 
-  // ── Status & dates ────────────────────────────────────────────────────────
-  publishStatus: ExamPublishStatus;
+  // ── Dates ─────────────────────────────────────────────────────────────────
   createdAt: string; // ISO date string
-  scheduledAt?: string; // ISO date string — only when status === "scheduled" (scheduled publish date)
-  scheduledEndDate?: string; // ISO date string — optional when status === "scheduled"
 }

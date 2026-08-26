@@ -3,10 +3,7 @@
 
 import {
   BarChart3,
-  CalendarClock,
-  CalendarDays,
   CircleAlert,
-  CircleQuestionMark,
   ExternalLink,
   FileQuestion,
   Globe,
@@ -17,7 +14,6 @@ import {
   Plus,
   RotateCcw,
   Trash2,
-  Users,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -32,13 +28,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
 import { getStoredExams, resetStoredExams, saveStoredExams } from "@/lib/exams-storage";
@@ -47,8 +36,7 @@ import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filte
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteExamDialog } from "./delete-exam-dialog";
 
-export type ExamFilterTab = "all" | "published" | "draft";
-export type ExamTypeFilter = "all" | "independent" | "course-dependent";
+export type ExamFilterTab = "all" | "independent" | "course-dependent";
 export type ExamSortOption = "date-newest" | "date-oldest" | "rating-high" | "rating-low";
 
 // ─── Success-rate colour ──────────────────────────────────────────────────────
@@ -56,14 +44,6 @@ function successRateColor(rate: number) {
   if (rate >= 70) return "text-success";
   if (rate >= 50) return "text-warning";
   return "text-error";
-}
-
-function formatDate(iso: string, locale: string) {
-  return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
 }
 
 export function ManageExamsClient() {
@@ -80,7 +60,6 @@ export function ManageExamsClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as ExamFilterTab) || "all";
-  const typeFilter = (searchParams.get("type") as ExamTypeFilter) || "all";
   const sortBy = (searchParams.get("sort") as ExamSortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 10;
@@ -93,7 +72,6 @@ export function ManageExamsClient() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
-          (key === "type" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
           (key === "page" && value === 1)
         ) {
@@ -130,17 +108,10 @@ export function ManageExamsClient() {
   // ─── Filter & Search ────────────────────────────────────────────────────────
   const filteredExams = React.useMemo(() => {
     return exams.filter((exam) => {
-      const isPublished = exam.publishStatus === "published";
-      const isDraftOrScheduled =
-        exam.publishStatus === "draft" || exam.publishStatus === "scheduled";
-
-      if (activeTab === "published" && !isPublished) return false;
-      if (activeTab === "draft" && !isDraftOrScheduled) return false;
-
-      // Type Filter (independent vs course-dependent)
+      // Tab Filter (all vs independent vs course-dependent)
       const isIndep = exam.examType === "independent" || (!exam.examType && !exam.courseId);
-      if (typeFilter === "independent" && !isIndep) return false;
-      if (typeFilter === "course-dependent" && isIndep) return false;
+      if (activeTab === "independent" && !isIndep) return false;
+      if (activeTab === "course-dependent" && isIndep) return false;
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -154,7 +125,7 @@ export function ManageExamsClient() {
       }
       return true;
     });
-  }, [exams, activeTab, typeFilter, searchQuery]);
+  }, [exams, activeTab, searchQuery]);
 
   // ─── Sort ───────────────────────────────────────────────────────────────────
   const sortedExams = React.useMemo(() => {
@@ -203,12 +174,8 @@ export function ManageExamsClient() {
     setExams(reset);
   };
 
-  const handleTypeChange = (val: string) => {
-    updateUrlParams({ type: val === "all" ? null : val, page: 1 });
-  };
-
   const handleResetFilters = () =>
-    updateUrlParams({ search: null, tab: null, type: null, sort: null, page: 1 });
+    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
 
   // ─── Format helpers ─────────────────────────────────────────────────────────
   const formatGrade = (g?: string) => {
@@ -242,14 +209,15 @@ export function ManageExamsClient() {
   const tabs: TabItem<ExamFilterTab>[] = [
     { value: "all", label: t("tabs.all"), count: exams.length },
     {
-      value: "published",
-      label: t("tabs.published"),
-      count: exams.filter((e) => e.publishStatus === "published").length,
+      value: "independent",
+      label: t("tabs.independent"),
+      count: exams.filter((e) => e.examType === "independent" || (!e.examType && !e.courseId))
+        .length,
     },
     {
-      value: "draft",
-      label: t("tabs.draft"),
-      count: exams.filter((e) => e.publishStatus === "draft" || e.publishStatus === "scheduled")
+      value: "course-dependent",
+      label: t("tabs.courseLinked"),
+      count: exams.filter((e) => !(e.examType === "independent" || (!e.examType && !e.courseId)))
         .length,
     },
   ];
@@ -277,7 +245,7 @@ export function ManageExamsClient() {
   // ─── Skeleton rows ──────────────────────────────────────────────────────────
   const SkeletonRow = () => (
     <tr className="border-b border-border/50">
-      {Array.from({ length: 9 }).map((_, i) => (
+      {Array.from({ length: 8 }).map((_, i) => (
         <td key={i} className="px-4 py-3">
           <Skeleton className="h-4 w-full rounded" />
         </td>
@@ -323,21 +291,6 @@ export function ManageExamsClient() {
         sortBy={sortBy}
         sortOptions={sortOptions}
         clearFiltersLabel={t("clearFilters")}
-        isFilterActiveCustom={typeFilter !== "all"}
-        extraFilters={
-          <div className="w-full sm:w-44 self-start sm:self-auto">
-            <Select value={typeFilter} onValueChange={handleTypeChange}>
-              <SelectTrigger className="h-9 text-xs bg-background">
-                <SelectValue placeholder={t("filterType.all")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filterType.all")}</SelectItem>
-                <SelectItem value="independent">{t("filterType.independent")}</SelectItem>
-                <SelectItem value="course-dependent">{t("filterType.courseDependent")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
         onSortChange={handleSortChange}
@@ -356,10 +309,9 @@ export function ManageExamsClient() {
                   t("table.columns.subjectGrade"),
                   t("table.columns.category"),
                   t("table.columns.typeVenue"),
-                  t("table.columns.questionsStudents"),
+                  t("table.columns.questions"),
+                  t("table.columns.students"),
                   t("table.columns.successRate"),
-                  t("table.columns.timesUsed"),
-                  t("table.columns.dates"),
                   t("table.columns.actions"),
                 ].map((col) => (
                   <th
@@ -377,7 +329,7 @@ export function ManageExamsClient() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : paginatedExams.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={8}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <FileQuestion className="h-12 w-12 text-muted-foreground/40 mb-3" />
                       <h3 className="text-base font-semibold text-foreground">
@@ -461,18 +413,18 @@ export function ManageExamsClient() {
                         )}
                       </td>
 
-                      {/* ── Questions & Students ──────────────────────────── */}
-                      <td className="px-4 py-3">
-                        <div className="flex flex-col gap-1 text-xs">
-                          <span className="flex items-center gap-1.5 font-medium">
-                            <CircleQuestionMark className="h-3.5 w-3.5 shrink-0" />
-                            {t("table.questionsCount", { count: exam.numberOfQuestions })}
-                          </span>
-                          <span className="flex items-center gap-1.5 font-medium text-sky-600">
-                            <Users className="h-3.5 w-3.5 shrink-0" />
-                            {t("table.studentsCount", { count: exam.numberOfStudents })}
-                          </span>
-                        </div>
+                      {/* ── Questions ─────────────────────────────────────── */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs font-medium text-foreground">
+                          {t("table.questionsCount", { count: exam.numberOfQuestions })}
+                        </span>
+                      </td>
+
+                      {/* ── Students ──────────────────────────────────────── */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs font-medium text-foreground">
+                          {t("table.studentsCount", { count: exam.numberOfStudents })}
+                        </span>
                       </td>
 
                       {/* ── Success Rate ──────────────────────────────────── */}
@@ -482,32 +434,6 @@ export function ManageExamsClient() {
                         >
                           {exam.successRate}%
                         </span>
-                      </td>
-
-                      {/* ── Times Used ────────────────────────────────────── */}
-                      <td className="px-4 py-3">
-                        <span className="flex items-center gap-1.5 text-xs text-foreground/80">
-                          {t("table.timesUsedCount", { count: exam.timesUsed })}
-                        </span>
-                      </td>
-
-                      {/* ── Dates ─────────────────────────────────────────── */}
-                      <td className="px-4 py-3 min-w-36">
-                        <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1" title={t("status.createdAt")}>
-                            <CalendarDays className="h-3.5 w-3.5 shrink-0" />
-                            {formatDate(exam.createdAt, locale)}
-                          </span>
-                          {exam.scheduledAt && (
-                            <span
-                              className="flex items-center gap-1 text-blue-600"
-                              title={t("status.scheduleTime")}
-                            >
-                              <CalendarClock className="h-3.5 w-3.5 shrink-0" />
-                              {formatDate(exam.scheduledAt, locale)}
-                            </span>
-                          )}
-                        </div>
                       </td>
 
                       {/* ── Actions ───────────────────────────────────────── */}

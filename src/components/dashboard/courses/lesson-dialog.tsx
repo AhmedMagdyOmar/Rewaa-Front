@@ -169,7 +169,6 @@ export function LessonDialog({
         numberOfStudents: 0,
         successRate: 0,
         timesUsed: 0,
-        publishStatus: "published",
         createdAt: new Date().toISOString(),
       };
 

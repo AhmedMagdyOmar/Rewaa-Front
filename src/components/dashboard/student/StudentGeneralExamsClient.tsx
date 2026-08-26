@@ -90,11 +90,9 @@ export function StudentGeneralExamsClient() {
 
   const loadData = React.useCallback(() => {
     const stored = getStoredExams(locale);
-    // Filter to ONLY independent, published exams
-    const independentPublished = stored.filter(
-      (e) => e.examType === "independent" && e.publishStatus === "published",
-    );
-    setExams(independentPublished);
+    // Filter to ONLY independent exams
+    const independentExams = stored.filter((e) => e.examType === "independent");
+    setExams(independentExams);
     setPassedExamIds(getPassedExams());
     setIsLoading(false);
   }, [locale]);
