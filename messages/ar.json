@@ -982,7 +982,7 @@
         "addSection": "إضافة قسم",
         "addQuestion": "إضافة سؤال",
         "arrangeSections": "ترتيب الأقسام",
-        "importExcel": "استيراد من Excel"
+        "importOtherExams": "استيراد من امتحانات أخرى"
       },
       "addSectionDialog": {
         "title": "إضافة قسم جديد للامتحان",
@@ -992,6 +992,39 @@
         "subtitleLabel": "وصف قصير (اختياري)",
         "subtitlePlaceholder": "وصف أو تعليمات خاصة بهذا القسم...",
         "create": "إضافة القسم"
+      },
+      "editSectionDialog": {
+        "title": "تعديل قسم الامتحان",
+        "subtitle": "تعديل اسم أو بيانات القسم.",
+        "titleLabel": "عنوان القسم",
+        "titlePlaceholder": "مثال: القسم الأول - الأسئلة المباشرة",
+        "save": "حفظ التعديلات"
+      },
+      "deleteSectionDialog": {
+        "title": "حذف قسم الامتحان",
+        "description": "هل أنت متأكد من حذف القسم \"{title}\" وجميع الأسئلة الموجودة بداخله؟ لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "confirm": "حذف القسم"
+      },
+      "importFromExamsDialog": {
+        "title": "استيراد من امتحانات أخرى",
+        "subtitle": "اختر امتحاناً لاستيراد أقسامه وأسئلته وإضافتها إلى هذا الامتحان.",
+        "selectExamLabel": "اختر الامتحان المصدر",
+        "selectExamPlaceholder": "اختر امتحاناً...",
+        "noExamsAvailable": "لا توجد امتحانات أخرى متاحة للاستيراد منها.",
+        "selectSectionsLabel": "الأقسام المتاحة للاستيراد",
+        "selectAllSections": "تحديد الكل",
+        "deselectAllSections": "إلغاء تحديد الكل",
+        "noSectionsInExam": "هذا الامتحان لا يحتوي على أي أقسام.",
+        "selectedSectionsTitle": "تخصيص الأقسام والأسئلة المختارة",
+        "selectedSectionsSubtitle": "حدد الأسئلة التي ترغب في تضمينها أو استبعادها من كل قسم:",
+        "selectAllQuestions": "تحديد جميع الأسئلة",
+        "deselectAllQuestions": "إلغاء تحديد الكل",
+        "questionsCount": "{count, plural, =0 {لا أسئلة} zero {لا أسئلة} one {سؤال واحد} two {سؤالان} few {{count} أسئلة} many {{count} سؤالاً} other {{count} سؤال}}",
+        "pointsCount": "{count, plural, =0 {لا درجات} zero {لا درجات} one {درجة واحدة} two {درجتان} few {{count} درجات} many {{count} درجة} other {{count} درجة}}",
+        "noQuestionsInSection": "لا توجد أسئلة في هذا القسم.",
+        "importAction": "استيراد الأقسام والأسئلة المحددة ({count})",
+        "cancel": "إلغاء"
       },
       "noSections": "لا توجد أقسام مضافة للامتحان بعد. قم بإضافة قسم جديد للبدء في تنظيم الأسئلة.",
       "noQuestions": "لا توجد أسئلة مضافة في هذا القسم.",

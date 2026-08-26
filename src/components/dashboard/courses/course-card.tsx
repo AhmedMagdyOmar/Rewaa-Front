@@ -160,22 +160,14 @@ export function CourseCard({
         )}
 
         {/* Dates Strip — bottom of image:
-            - Scheduled: scheduled release date, scheduled end date
+            - Scheduled: scheduled release date
             - Published & Draft: creation date only */}
         {isScheduled
-          ? (course.scheduledPublishDate || course.scheduledEndDate) && (
+          ? course.scheduledPublishDate && (
               <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xs text-white">
                 <Calendar className="h-3 w-3 shrink-0 opacity-80" />
                 <span className="text-[10px] font-medium truncate">
-                  {course.scheduledPublishDate
-                    ? formatScheduleDate(course.scheduledPublishDate)
-                    : ""}
-                  {course.scheduledEndDate && (
-                    <>
-                      <span className="opacity-60 mx-1">{isAr ? "←" : "→"}</span>
-                      {formatScheduleDate(course.scheduledEndDate)}
-                    </>
-                  )}
+                  {formatScheduleDate(course.scheduledPublishDate)}
                 </span>
               </div>
             )

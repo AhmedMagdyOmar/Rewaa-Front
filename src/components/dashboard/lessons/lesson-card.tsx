@@ -17,7 +17,6 @@ import {
   Check,
   Copy,
   Eye,
-  FileQuestion,
   FileText,
   Globe,
   Globe2,
@@ -215,10 +214,55 @@ export function LessonCard({
         {/* 2. CARD BODY (Title First) */}
         <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
           <div>
-            {/* Title */}
-            <h3 className="font-bold text-foreground text-[15px] line-clamp-2 leading-snug group-hover:text-primary transition-colors mb-2.5">
-              {lesson.title}
-            </h3>
+            {/* Lesson Title Row with Category Icon (start) and Venue Icon (end, general only) */}
+            <div className="flex items-start justify-between gap-2 mb-2.5 group-hover:text-primary transition-colors">
+              <div className="flex items-start gap-1.5 min-w-0 flex-1">
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-0.5 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
+                        {isIndependent ? (
+                          <Sparkles className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <BookOpen className="h-4 w-4 text-primary" />
+                        )}
+                        <span className="sr-only">
+                          {isIndependent
+                            ? t("card.generalLesson")
+                            : t("card.courseDependentLesson")}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">
+                      {isIndependent ? t("card.generalLesson") : t("card.courseDependentLesson")}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <h3 className="font-bold text-foreground text-[15px] line-clamp-2 leading-snug">
+                  {lesson.title}
+                </h3>
+              </div>
+
+              {/* Venue Icon at the end of the title row (visible only if general/independent) */}
+              {isIndependent && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-0.5 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
+                        {lesson.venue === "online" ? (
+                          <Globe className="h-4 w-4" />
+                        ) : lesson.venue === "center" ? (
+                          <House className="h-4 w-4" />
+                        ) : (
+                          <Globe2 className="h-4 w-4" />
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top">{formatVenue(lesson.venue)}</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+            </div>
 
             {/* Teacher and Subject Info */}
             <div className="flex flex-col gap-2">
@@ -251,71 +295,19 @@ export function LessonCard({
             </div>
           </div>
 
-          {/* 3. METADATA PILLS ROW */}
+          {/* 3. METADATA PILLS ROW (Numeric pills only) */}
           <div className="flex flex-wrap items-center gap-1.5 pt-2">
             <TooltipProvider delayDuration={200}>
-              {/* Category Pill */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground cursor-default">
-                    {isIndependent ? (
-                      <Sparkles className="h-3 w-3 text-amber-500" />
-                    ) : (
-                      <BookOpen className="h-3 w-3 text-primary" />
-                    )}
-                    <span className="sr-only">
-                      {isIndependent ? t("card.generalLesson") : t("card.courseDependentLesson")}
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="top">
-                  {isIndependent ? t("card.generalLesson") : t("card.courseDependentLesson")}
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Venue Pill (Independent Only) */}
-              {isIndependent && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="inline-flex items-center gap-1 bg-muted px-2 py-1 rounded-md text-xs font-medium text-muted-foreground">
-                      {lesson.venue === "online" ? (
-                        <Globe className="h-3 w-3 text-primary" />
-                      ) : lesson.venue === "center" ? (
-                        <House className="h-3 w-3 text-primary" />
-                      ) : (
-                        <Globe2 className="h-3 w-3 text-primary" />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{formatVenue(lesson.venue)}</TooltipContent>
-                </Tooltip>
-              )}
-
               {pdfCount > 0 && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
+                    <div className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium cursor-default">
                       <Paperclip className="h-3 w-3" />
                       <span>{pdfCount}</span>
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top">
                     {t("card.pdfsCount", { count: pdfCount })}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-
-              {lesson.isLinkedToExam && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="flex items-center gap-1 bg-muted text-muted-foreground px-2 py-1 rounded-md text-xs font-medium">
-                      <FileQuestion className="h-3 w-3" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">
-                    {lesson.linkedExamTitle
-                      ? `${t("card.examLinked")}: ${lesson.linkedExamTitle}`
-                      : t("card.examLinked")}
                   </TooltipContent>
                 </Tooltip>
               )}

@@ -982,7 +982,7 @@
         "addSection": "Add Section",
         "addQuestion": "Add Questions",
         "arrangeSections": "Arrange Sections",
-        "importExcel": "Import from Excel"
+        "importOtherExams": "Import from Other Exams"
       },
       "addSectionDialog": {
         "title": "Add New Exam Section",
@@ -992,6 +992,39 @@
         "subtitleLabel": "Short Subtitle (Optional)",
         "subtitlePlaceholder": "Special instructions or notes...",
         "create": "Add Section"
+      },
+      "editSectionDialog": {
+        "title": "Edit Exam Section",
+        "subtitle": "Modify section title or details.",
+        "titleLabel": "Section Title",
+        "titlePlaceholder": "e.g., Section 1 - Direct Questions",
+        "save": "Save Changes"
+      },
+      "deleteSectionDialog": {
+        "title": "Delete Exam Section",
+        "description": "Are you sure you want to delete section \"{title}\" along with all its questions? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete Section"
+      },
+      "importFromExamsDialog": {
+        "title": "Import from Other Exams",
+        "subtitle": "Select an existing exam to import its sections and questions into this exam.",
+        "selectExamLabel": "Select Source Exam",
+        "selectExamPlaceholder": "Select an exam...",
+        "noExamsAvailable": "No other exams available to import from.",
+        "selectSectionsLabel": "Sections Available for Import",
+        "selectAllSections": "Select all",
+        "deselectAllSections": "Deselect all",
+        "noSectionsInExam": "This exam has no sections.",
+        "selectedSectionsTitle": "Customize Selected Sections & Questions",
+        "selectedSectionsSubtitle": "Choose which questions to include or exclude inside each section:",
+        "selectAllQuestions": "Select all questions",
+        "deselectAllQuestions": "Deselect all",
+        "questionsCount": "{count, plural, =0 {No questions} zero {No questions} one {1 question} two {2 questions} few {{count} questions} many {{count} questions} other {{count} questions}}",
+        "pointsCount": "{count, plural, =0 {No points} zero {No points} one {1 point} two {2 points} few {{count} points} many {{count} points} other {{count} points}}",
+        "noQuestionsInSection": "No questions in this section.",
+        "importAction": "Import Selected Sections ({count})",
+        "cancel": "Cancel"
       },
       "noSections": "No exam sections added yet. Add a section to start organizing questions.",
       "noQuestions": "No questions added to this section.",

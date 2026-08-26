@@ -89,7 +89,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [venue, setVenue] = useState<CourseVenue>("all");
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
   const [scheduledPublishDate, setScheduledPublishDate] = useState("");
-  const [scheduledEndDate, setScheduledEndDate] = useState("");
 
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -127,7 +126,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
 
         setPublishStatus(existing.publishStatus || "published");
         setScheduledPublishDate(existing.scheduledPublishDate || "");
-        setScheduledEndDate(existing.scheduledEndDate || "");
       }
     }
     setIsLoaded(true);
@@ -213,8 +211,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       publishStatus: isGeneralLesson ? publishStatus : "published",
       scheduledPublishDate:
         isGeneralLesson && publishStatus === "scheduled" ? scheduledPublishDate : undefined,
-      scheduledEndDate:
-        isGeneralLesson && publishStatus === "scheduled" ? scheduledEndDate : undefined,
     };
 
     let updatedLessons: Lesson[];
@@ -597,39 +593,22 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                   />
 
                   {publishStatus === "scheduled" && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in fade-in slide-in-from-top-1 pt-2">
-                      <div className="flex flex-col gap-2">
-                        <label
-                          htmlFor="standalone-scheduled-date"
-                          className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                        >
-                          <Calendar className="size-4 text-primary" />
-                          {tDialog("scheduledPublishDate")}{" "}
-                          <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="standalone-scheduled-date"
-                          type="datetime-local"
-                          value={scheduledPublishDate}
-                          onChange={(e) => setScheduledPublishDate(e.target.value)}
-                          required={publishStatus === "scheduled"}
-                        />
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <label
-                          htmlFor="standalone-scheduled-end-date"
-                          className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                        >
-                          <Calendar className="size-4 text-primary" />
-                          {tDialog("scheduledEndDate")}
-                        </label>
-                        <Input
-                          id="standalone-scheduled-end-date"
-                          type="datetime-local"
-                          value={scheduledEndDate}
-                          onChange={(e) => setScheduledEndDate(e.target.value)}
-                        />
-                      </div>
+                    <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 pt-2">
+                      <label
+                        htmlFor="standalone-scheduled-date"
+                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                      >
+                        <Calendar className="size-4 text-primary" />
+                        {tDialog("scheduledPublishDate")}{" "}
+                        <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        id="standalone-scheduled-date"
+                        type="datetime-local"
+                        value={scheduledPublishDate}
+                        onChange={(e) => setScheduledPublishDate(e.target.value)}
+                        required={publishStatus === "scheduled"}
+                      />
                     </div>
                   )}
                 </div>

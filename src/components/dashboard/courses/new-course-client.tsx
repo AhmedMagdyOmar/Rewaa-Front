@@ -154,7 +154,6 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
   const [venue, setVenue] = useState<"online" | "center" | "all">("all");
   const [coursePublishStatus, setCoursePublishStatus] = useState<LessonPublishStatus>("published");
   const [courseScheduledPublishDate, setCourseScheduledPublishDate] = useState("");
-  const [courseScheduledEndDate, setCourseScheduledEndDate] = useState("");
 
   // Active step state: 1 = Info & Price, 2 = Curriculum & Lectures
   const [currentStep, setCurrentStep] = useState<1 | 2>(1);
@@ -187,7 +186,6 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
         setCoursePublishStatus(existing.isDraft ? "draft" : "published");
       }
       setCourseScheduledPublishDate(existing.scheduledPublishDate || "");
-      setCourseScheduledEndDate(existing.scheduledEndDate || "");
 
       // Period parsing
       const rawPeriod = existing.period || "";
@@ -372,7 +370,6 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
       publishStatus: isDraftOnly ? "draft" : coursePublishStatus,
       scheduledPublishDate:
         coursePublishStatus === "scheduled" ? courseScheduledPublishDate : undefined,
-      scheduledEndDate: coursePublishStatus === "scheduled" ? courseScheduledEndDate : undefined,
       sections: finalSections,
     };
 
@@ -481,7 +478,6 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
                         isDraft: val === "draft",
                         scheduledPublishDate:
                           val === "scheduled" ? courseScheduledPublishDate : undefined,
-                        scheduledEndDate: val === "scheduled" ? courseScheduledEndDate : undefined,
                       };
                       saveStoredCourses(locale, courses);
                     }
@@ -501,7 +497,7 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
               </SelectContent>
             </Select>
 
-            {/* Scheduled Date Inputs with Labels */}
+            {/* Scheduled Date Input with Label */}
             {coursePublishStatus === "scheduled" && (
               <div className="flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-top-1">
                 <div className="flex items-center gap-1.5">
@@ -532,42 +528,6 @@ export function NewCourseClient({ initialCourseId }: NewCourseClientProps = {}) 
                           }
                         } catch (err) {
                           console.error("Failed to update schedule date:", err);
-                        }
-                      }
-                    }}
-                    className="h-9 w-36 text-xs"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1.5">
-                  <label
-                    htmlFor="course-scheduled-end-date"
-                    className="text-xs font-medium text-muted-foreground whitespace-nowrap"
-                  >
-                    {locale === "ar" ? "تاريخ الانتهاء:" : "End Date:"}
-                  </label>
-                  <Input
-                    id="course-scheduled-end-date"
-                    type="date"
-                    value={courseScheduledEndDate}
-                    min={courseScheduledPublishDate || undefined}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setCourseScheduledEndDate(val);
-                      const targetId = createdCourseId || initialCourseId;
-                      if (targetId) {
-                        try {
-                          const courses = getStoredCourses(locale);
-                          const idx = courses.findIndex((c) => c.id === targetId);
-                          if (idx !== -1) {
-                            courses[idx] = {
-                              ...courses[idx],
-                              scheduledEndDate: val,
-                            };
-                            saveStoredCourses(locale, courses);
-                          }
-                        } catch (err) {
-                          console.error("Failed to update schedule end date:", err);
                         }
                       }
                     }}
@@ -1145,7 +1105,6 @@ function Step2CurriculumView({
   const [newSecTitle, setNewSecTitle] = useState("");
   const [newSecStatus, setNewSecStatus] = useState<LessonPublishStatus>("draft");
   const [newSecScheduledDate, setNewSecScheduledDate] = useState("");
-  const [newSecScheduledEndDate, setNewSecScheduledEndDate] = useState("");
   const [newSecIsLinkedExam, setNewSecIsLinkedExam] = useState(false);
   const [newSecLinkedExamId, setNewSecLinkedExamId] = useState("");
   const [newSecIsReqPass, setNewSecIsReqPass] = useState(false);
@@ -1224,7 +1183,6 @@ function Step2CurriculumView({
     setNewSecTitle("");
     setNewSecStatus("draft");
     setNewSecScheduledDate("");
-    setNewSecScheduledEndDate("");
     setNewSecIsLinkedExam(false);
     setNewSecLinkedExamId("");
     setNewSecIsReqPass(false);
@@ -1242,7 +1200,6 @@ function Step2CurriculumView({
     const status: LessonPublishStatus = sec.status || (sec.isDraft ? "draft" : "published");
     setNewSecStatus(status);
     setNewSecScheduledDate(sec.scheduledPublishDate || "");
-    setNewSecScheduledEndDate(sec.scheduledEndDate || "");
     setNewSecIsLinkedExam(Boolean(sec.isLinkedToExam));
     setNewSecLinkedExamId(sec.linkedExamId || "");
     setNewSecIsReqPass(Boolean(sec.isRequiredPassExamForNextSection));
@@ -1261,15 +1218,6 @@ function Step2CurriculumView({
 
     // Validation for section schedule dates against parent course if section is scheduled
     if (newSecStatus === "scheduled") {
-      if (
-        newSecScheduledDate &&
-        newSecScheduledEndDate &&
-        newSecScheduledEndDate < newSecScheduledDate
-      ) {
-        setNewSecScheduleDateError(t("step2.addSectionDialog.sectionEndDateAfterStartError"));
-        return;
-      }
-
       // Check against course scheduled dates from storage if existing
       const storedCourses = getStoredCourses(locale);
       const currentCourse = storedCourses.find((c) => c.id === courseId);
@@ -1279,24 +1227,6 @@ function Step2CurriculumView({
             setNewSecScheduleDateError(
               t("step2.addSectionDialog.sectionDateAfterCourseScheduleError", {
                 date: currentCourse.scheduledPublishDate,
-              }),
-            );
-            return;
-          }
-        }
-        if (currentCourse.scheduledEndDate) {
-          if (newSecScheduledDate && newSecScheduledDate > currentCourse.scheduledEndDate) {
-            setNewSecScheduleDateError(
-              t("step2.addSectionDialog.sectionDateBeforeCourseScheduleEndError", {
-                date: currentCourse.scheduledEndDate,
-              }),
-            );
-            return;
-          }
-          if (newSecScheduledEndDate && newSecScheduledEndDate > currentCourse.scheduledEndDate) {
-            setNewSecScheduleDateError(
-              t("step2.addSectionDialog.sectionDateBeforeCourseScheduleEndError", {
-                date: currentCourse.scheduledEndDate,
               }),
             );
             return;
@@ -1317,25 +1247,6 @@ function Step2CurriculumView({
         if (newSecExamExpiryDate && newSecExamExpiryDate < newSecScheduledDate) {
           setNewSecExamDateError(
             t("step2.addSectionDialog.examDateAfterScheduleError", { date: newSecScheduledDate }),
-          );
-          return;
-        }
-      }
-
-      if (newSecStatus === "scheduled" && newSecScheduledEndDate) {
-        if (newSecExamStartDate && newSecExamStartDate > newSecScheduledEndDate) {
-          setNewSecExamDateError(
-            t("step2.addSectionDialog.examDateBeforeScheduleEndError", {
-              date: newSecScheduledEndDate,
-            }),
-          );
-          return;
-        }
-        if (newSecExamExpiryDate && newSecExamExpiryDate > newSecScheduledEndDate) {
-          setNewSecExamDateError(
-            t("step2.addSectionDialog.examDateBeforeScheduleEndError", {
-              date: newSecScheduledEndDate,
-            }),
           );
           return;
         }
@@ -1362,7 +1273,6 @@ function Step2CurriculumView({
             isDraft: newSecStatus === "draft",
             status: newSecStatus,
             scheduledPublishDate: newSecStatus === "scheduled" ? newSecScheduledDate : undefined,
-            scheduledEndDate: newSecStatus === "scheduled" ? newSecScheduledEndDate : undefined,
             isLinkedToExam: newSecIsLinkedExam,
             linkedExamId: newSecIsLinkedExam ? newSecLinkedExamId || undefined : undefined,
             linkedExamTitle: newSecIsLinkedExam ? selectedExam?.title : undefined,
@@ -1386,7 +1296,6 @@ function Step2CurriculumView({
         isDraft: newSecStatus === "draft",
         status: newSecStatus,
         scheduledPublishDate: newSecStatus === "scheduled" ? newSecScheduledDate : undefined,
-        scheduledEndDate: newSecStatus === "scheduled" ? newSecScheduledEndDate : undefined,
         isLinkedToExam: newSecIsLinkedExam,
         linkedExamId: newSecIsLinkedExam ? newSecLinkedExamId || undefined : undefined,
         linkedExamTitle: newSecIsLinkedExam ? selectedExam?.title : undefined,
@@ -1406,7 +1315,6 @@ function Step2CurriculumView({
     setNewSecTitle("");
     setNewSecStatus("draft");
     setNewSecScheduledDate("");
-    setNewSecScheduledEndDate("");
     setNewSecIsLinkedExam(false);
     setNewSecLinkedExamId("");
     setNewSecIsReqPass(false);
@@ -1886,7 +1794,7 @@ function Step2CurriculumView({
               </Select>
             </div>
 
-            {/* Schedule Dates (Only if status is scheduled) */}
+            {/* Schedule Date (Only if status is scheduled) */}
             {newSecStatus === "scheduled" &&
               (() => {
                 const storedCourses = getStoredCourses(locale);
@@ -1895,56 +1803,28 @@ function Step2CurriculumView({
                   currentCourse?.publishStatus === "scheduled"
                     ? currentCourse.scheduledPublishDate
                     : undefined;
-                const courseMaxDate =
-                  currentCourse?.publishStatus === "scheduled"
-                    ? currentCourse.scheduledEndDate
-                    : undefined;
-
-                const sectionMinEndDate = newSecScheduledDate || courseMinDate;
 
                 return (
                   <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div className="flex flex-col gap-1.5">
-                        <label
-                          htmlFor="sec-schedule-date"
-                          className="text-sm font-medium text-foreground flex items-center gap-1"
-                        >
-                          {locale === "ar" ? "تاريخ النشر المجدول" : "Scheduled Publish Date"}{" "}
-                          <span className="text-destructive">*</span>
-                        </label>
-                        <Input
-                          id="sec-schedule-date"
-                          type="date"
-                          value={newSecScheduledDate}
-                          min={courseMinDate}
-                          max={newSecScheduledEndDate || courseMaxDate}
-                          onChange={(e) => {
-                            setNewSecScheduledDate(e.target.value);
-                            setNewSecScheduleDateError(null);
-                          }}
-                          required
-                        />
-                      </div>
-                      <div className="flex flex-col gap-1.5">
-                        <label
-                          htmlFor="sec-schedule-end-date"
-                          className="text-sm font-medium text-foreground"
-                        >
-                          {locale === "ar" ? "تاريخ الانتهاء المجدول" : "Scheduled End Date"}
-                        </label>
-                        <Input
-                          id="sec-schedule-end-date"
-                          type="date"
-                          value={newSecScheduledEndDate}
-                          min={sectionMinEndDate}
-                          max={courseMaxDate}
-                          onChange={(e) => {
-                            setNewSecScheduledEndDate(e.target.value);
-                            setNewSecScheduleDateError(null);
-                          }}
-                        />
-                      </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label
+                        htmlFor="sec-schedule-date"
+                        className="text-sm font-medium text-foreground flex items-center gap-1"
+                      >
+                        {locale === "ar" ? "تاريخ النشر المجدول" : "Scheduled Publish Date"}{" "}
+                        <span className="text-destructive">*</span>
+                      </label>
+                      <Input
+                        id="sec-schedule-date"
+                        type="date"
+                        value={newSecScheduledDate}
+                        min={courseMinDate}
+                        onChange={(e) => {
+                          setNewSecScheduledDate(e.target.value);
+                          setNewSecScheduleDateError(null);
+                        }}
+                        required
+                      />
                     </div>
 
                     {newSecScheduleDateError && (
@@ -2024,11 +1904,6 @@ function Step2CurriculumView({
                               ? newSecScheduledDate
                               : undefined
                           }
-                          max={
-                            newSecStatus === "scheduled" && newSecScheduledEndDate
-                              ? newSecScheduledEndDate
-                              : undefined
-                          }
                           onChange={(e) => {
                             setNewSecExamStartDate(e.target.value);
                             setNewSecExamDateError(null);
@@ -2051,11 +1926,6 @@ function Step2CurriculumView({
                             (newSecStatus === "scheduled" && newSecScheduledDate
                               ? newSecScheduledDate
                               : undefined)
-                          }
-                          max={
-                            newSecStatus === "scheduled" && newSecScheduledEndDate
-                              ? newSecScheduledEndDate
-                              : undefined
                           }
                           onChange={(e) => {
                             setNewSecExamExpiryDate(e.target.value);

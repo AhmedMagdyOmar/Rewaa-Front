@@ -121,7 +121,6 @@ export function LessonDialog({
   // Publish Status State
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
   const [scheduledPublishDate, setScheduledPublishDate] = useState("");
-  const [scheduledEndDate, setScheduledEndDate] = useState("");
   const [scheduleDateError, setScheduleDateError] = useState<string | null>(null);
 
   // Bank Form State
@@ -244,7 +243,6 @@ export function LessonDialog({
 
         setPublishStatus(initialLesson.publishStatus || "published");
         setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
-        setScheduledEndDate(initialLesson.scheduledEndDate || "");
         setScheduleDateError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
@@ -269,7 +267,6 @@ export function LessonDialog({
         setExamDateError(null);
         setPublishStatus("published");
         setScheduledPublishDate("");
-        setScheduledEndDate("");
         setScheduleDateError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
@@ -362,31 +359,12 @@ export function LessonDialog({
 
     // Validation: If lesson is scheduled, validate against Section & Course schedule periods
     if (publishStatus === "scheduled") {
-      if (scheduledPublishDate && scheduledEndDate && scheduledEndDate < scheduledPublishDate) {
-        setScheduleDateError(t("lessonEndDateAfterStartError"));
-        return;
-      }
-
       const targetSec = sections.find((s) => s.id === targetSectionId);
       if (targetSec && targetSec.status === "scheduled") {
         if (targetSec.scheduledPublishDate && scheduledPublishDate) {
           if (scheduledPublishDate < targetSec.scheduledPublishDate) {
             setScheduleDateError(
               t("lessonDateAfterSectionScheduleError", { date: targetSec.scheduledPublishDate }),
-            );
-            return;
-          }
-        }
-        if (targetSec.scheduledEndDate) {
-          if (scheduledPublishDate && scheduledPublishDate > targetSec.scheduledEndDate) {
-            setScheduleDateError(
-              t("lessonDateBeforeSectionScheduleEndError", { date: targetSec.scheduledEndDate }),
-            );
-            return;
-          }
-          if (scheduledEndDate && scheduledEndDate > targetSec.scheduledEndDate) {
-            setScheduleDateError(
-              t("lessonDateBeforeSectionScheduleEndError", { date: targetSec.scheduledEndDate }),
             );
             return;
           }
@@ -409,24 +387,6 @@ export function LessonDialog({
             return;
           }
         }
-        if (currentCourse.scheduledEndDate) {
-          if (scheduledPublishDate && scheduledPublishDate > currentCourse.scheduledEndDate) {
-            setScheduleDateError(
-              t("lessonDateBeforeCourseScheduleEndError", {
-                date: currentCourse.scheduledEndDate,
-              }),
-            );
-            return;
-          }
-          if (scheduledEndDate && scheduledEndDate > currentCourse.scheduledEndDate) {
-            setScheduleDateError(
-              t("lessonDateBeforeCourseScheduleEndError", {
-                date: currentCourse.scheduledEndDate,
-              }),
-            );
-            return;
-          }
-        }
       }
     }
 
@@ -439,17 +399,6 @@ export function LessonDialog({
         }
         if (examExpiryDate && examExpiryDate < scheduledPublishDate) {
           setExamDateError(t("examDateAfterScheduleError", { date: scheduledPublishDate }));
-          return;
-        }
-      }
-
-      if (publishStatus === "scheduled" && scheduledEndDate) {
-        if (examStartDate && examStartDate > scheduledEndDate) {
-          setExamDateError(t("examDateBeforeScheduleEndError", { date: scheduledEndDate }));
-          return;
-        }
-        if (examExpiryDate && examExpiryDate > scheduledEndDate) {
-          setExamDateError(t("examDateBeforeScheduleEndError", { date: scheduledEndDate }));
           return;
         }
       }
@@ -493,7 +442,6 @@ export function LessonDialog({
       lessonCategory: "course-dependent",
       publishStatus: publishStatus,
       scheduledPublishDate: publishStatus === "scheduled" ? scheduledPublishDate : undefined,
-      scheduledEndDate: publishStatus === "scheduled" ? scheduledEndDate : undefined,
     };
 
     onSave(targetSectionId, updatedLesson);
@@ -968,11 +916,6 @@ export function LessonDialog({
                                       ? scheduledPublishDate
                                       : undefined
                                   }
-                                  max={
-                                    publishStatus === "scheduled" && scheduledEndDate
-                                      ? scheduledEndDate
-                                      : undefined
-                                  }
                                   onChange={(e) => {
                                     setExamStartDate(e.target.value);
                                     setExamDateError(null);
@@ -995,11 +938,6 @@ export function LessonDialog({
                                     (publishStatus === "scheduled" && scheduledPublishDate
                                       ? scheduledPublishDate
                                       : undefined)
-                                  }
-                                  max={
-                                    publishStatus === "scheduled" && scheduledEndDate
-                                      ? scheduledEndDate
-                                      : undefined
                                   }
                                   onChange={(e) => {
                                     setExamExpiryDate(e.target.value);
@@ -1061,7 +999,7 @@ export function LessonDialog({
                       return `${dateStr}T${isEnd ? "23:59" : "00:00"}`;
                     };
 
-                    // Compute min and max boundaries from target section and parent course
+                    // Compute min boundary from target section and parent course
                     const targetSec = sections.find((s) => s.id === targetSectionId);
                     const storedCourses = getStoredCourses(locale);
                     const currentCourse = storedCourses.find((c) =>
@@ -1069,14 +1007,10 @@ export function LessonDialog({
                     );
 
                     let effectiveMinDate: string | undefined = undefined;
-                    let effectiveMaxDate: string | undefined = undefined;
 
                     if (targetSec?.status === "scheduled") {
                       if (targetSec.scheduledPublishDate) {
                         effectiveMinDate = targetSec.scheduledPublishDate;
-                      }
-                      if (targetSec.scheduledEndDate) {
-                        effectiveMaxDate = targetSec.scheduledEndDate;
                       }
                     }
 
@@ -1087,67 +1021,31 @@ export function LessonDialog({
                             ? effectiveMinDate
                             : currentCourse.scheduledPublishDate;
                       }
-                      if (currentCourse.scheduledEndDate) {
-                        effectiveMaxDate =
-                          effectiveMaxDate && effectiveMaxDate < currentCourse.scheduledEndDate
-                            ? effectiveMaxDate
-                            : currentCourse.scheduledEndDate;
-                      }
                     }
 
                     const minDateAttr = toDateTimeLocal(effectiveMinDate, false);
-                    const maxDateAttr = toDateTimeLocal(effectiveMaxDate, true);
-                    const publishDateAttr = toDateTimeLocal(scheduledPublishDate, false);
-                    const endDateAttr = toDateTimeLocal(scheduledEndDate, true);
-
-                    const minEndDateAttr = publishDateAttr || minDateAttr;
-                    const maxPublishDateAttr = endDateAttr || maxDateAttr;
 
                     return (
                       <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="flex flex-col gap-2">
-                            <label
-                              htmlFor="dialog-scheduled-date"
-                              className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                            >
-                              <Calendar className="size-4 text-primary" />
-                              {t("scheduledPublishDate")}{" "}
-                              <span className="text-destructive">*</span>
-                            </label>
-                            <Input
-                              id="dialog-scheduled-date"
-                              type="datetime-local"
-                              value={scheduledPublishDate}
-                              min={minDateAttr}
-                              max={maxPublishDateAttr}
-                              onChange={(e) => {
-                                setScheduledPublishDate(e.target.value);
-                                setScheduleDateError(null);
-                              }}
-                              required={publishStatus === "scheduled"}
-                            />
-                          </div>
-                          <div className="flex flex-col gap-2">
-                            <label
-                              htmlFor="dialog-scheduled-end-date"
-                              className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                            >
-                              <Calendar className="size-4 text-primary" />
-                              {t("scheduledEndDate")}
-                            </label>
-                            <Input
-                              id="dialog-scheduled-end-date"
-                              type="datetime-local"
-                              value={scheduledEndDate}
-                              min={minEndDateAttr}
-                              max={maxDateAttr}
-                              onChange={(e) => {
-                                setScheduledEndDate(e.target.value);
-                                setScheduleDateError(null);
-                              }}
-                            />
-                          </div>
+                        <div className="flex flex-col gap-2">
+                          <label
+                            htmlFor="dialog-scheduled-date"
+                            className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                          >
+                            <Calendar className="size-4 text-primary" />
+                            {t("scheduledPublishDate")} <span className="text-destructive">*</span>
+                          </label>
+                          <Input
+                            id="dialog-scheduled-date"
+                            type="datetime-local"
+                            value={scheduledPublishDate}
+                            min={minDateAttr}
+                            onChange={(e) => {
+                              setScheduledPublishDate(e.target.value);
+                              setScheduleDateError(null);
+                            }}
+                            required={publishStatus === "scheduled"}
+                          />
                         </div>
 
                         {scheduleDateError && (

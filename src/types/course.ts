@@ -50,7 +50,6 @@ export interface Lesson {
   viewsCount?: number; // how many times this lesson has been viewed
   publishStatus?: LessonPublishStatus;
   scheduledPublishDate?: string;
-  scheduledEndDate?: string;
 
   attachments?: LessonAttachment[];
 }
@@ -61,7 +60,6 @@ export interface CourseSection {
   isDraft: boolean;
   status?: LessonPublishStatus;
   scheduledPublishDate?: string;
-  scheduledEndDate?: string;
   isLinkedToExam: boolean;
   linkedExamId?: string; // FK → Exam.id (replaces embedded ExamContent)
   linkedExamTitle?: string;
@@ -121,5 +119,4 @@ export interface Course {
   durationHours?: number;
   badge?: CourseBadge;
   scheduledPublishDate?: string;
-  scheduledEndDate?: string;
 }

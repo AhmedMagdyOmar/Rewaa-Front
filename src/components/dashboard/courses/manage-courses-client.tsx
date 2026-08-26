@@ -175,7 +175,6 @@ export function ManageCoursesClient() {
             isDraft: false,
             publishStatus: "published" as const,
             scheduledPublishDate: undefined,
-            scheduledEndDate: undefined,
           }
         : c,
     );
