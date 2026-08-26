@@ -8,10 +8,10 @@ import {
   Edit2,
   Eye,
   FileQuestion,
-  FileSpreadsheet,
   FolderPlus,
   GraduationCap,
   HelpCircle,
+  Import,
   Info,
   ListOrdered,
   MapPin,
@@ -27,7 +27,7 @@ import * as React from "react";
 
 import { ArrangeSectionsDialog } from "@/components/dashboard/common/arrange-sections-dialog";
 import { FormTimelineSidebar } from "@/components/dashboard/common/form-timeline-sidebar";
-import { ExcelImportDisclaimerDialog } from "@/components/dashboard/exams/excel-import-dialog";
+import { ImportFromExamsDialog } from "@/components/dashboard/exams/import-from-exams-dialog";
 import { QuestionDialog } from "@/components/dashboard/exams/question-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -177,7 +177,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
 
   // Step 2 Active Dialog State
   const [activeDialog, setActiveDialog] = React.useState<
-    "addSection" | "question" | "arrange" | "excel" | null
+    "addSection" | "question" | "arrange" | "importExams" | null
   >(null);
   const [editingQuestion, setEditingQuestion] = React.useState<{
     question: Question;
@@ -185,8 +185,24 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
   } | null>(null);
   const [targetQuestionSectionId, setTargetQuestionSectionId] = React.useState<string>("");
 
-  // Add Section Dialog state
+  // All stored exams for importing (excluding current exam being edited)
+  const [allExams, setAllExams] = React.useState<Exam[]>([]);
+
+  React.useEffect(() => {
+    const loadExams = () => {
+      const stored = getStoredExams(locale);
+      setAllExams(stored.filter((e) => e.id !== initialData?.id));
+    };
+    loadExams();
+    window.addEventListener("rewaa_exams_updated", loadExams);
+    return () => window.removeEventListener("rewaa_exams_updated", loadExams);
+  }, [locale, initialData?.id]);
+
+  // Section Dialog states (Add, Edit, Delete)
   const [newSecTitle, setNewSecTitle] = React.useState("");
+  const [editingSection, setEditingSection] = React.useState<ExamSection | null>(null);
+  const [editSecTitle, setEditSecTitle] = React.useState("");
+  const [sectionToDelete, setSectionToDelete] = React.useState<ExamSection | null>(null);
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
@@ -281,6 +297,28 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     setActiveDialog(null);
   };
 
+  const handleOpenEditSection = (sec: ExamSection) => {
+    setEditingSection(sec);
+    setEditSecTitle(sec.title);
+  };
+
+  const handleSaveEditSection = () => {
+    if (!editingSection || !editSecTitle.trim()) return;
+    setExamSections((prev) =>
+      prev.map((sec) =>
+        sec.id === editingSection.id ? { ...sec, title: editSecTitle.trim() } : sec,
+      ),
+    );
+    setEditingSection(null);
+    setEditSecTitle("");
+  };
+
+  const handleDeleteSection = () => {
+    if (!sectionToDelete) return;
+    setExamSections((prev) => prev.filter((sec) => sec.id !== sectionToDelete.id));
+    setSectionToDelete(null);
+  };
+
   const handleSaveQuestion = (savedQuestion: Question, targetSecId: string, keepOpen?: boolean) => {
     setExamSections((prevSections) => {
       return prevSections.map((sec) => {
@@ -319,11 +357,27 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     );
   };
 
+  const handleImportSections = (importedSections: ExamSection[]) => {
+    setExamSections((prev) => {
+      // If current sections list only has 1 default empty section with 0 questions, we can replace or append
+      const isEmptyDefault =
+        prev.length === 1 &&
+        prev[0].questions.length === 0 &&
+        (prev[0].title === "الفصل الأول - الأسئلة الرئيسية" ||
+          prev[0].title === "Section 1 - Main Questions");
+
+      if (isEmptyDefault) {
+        return importedSections;
+      }
+      return [...prev, ...importedSections];
+    });
+  };
+
   const topButtons = [
     { key: "addSection", label: tStep2("buttons.addSection"), icon: Plus },
     { key: "question", label: tStep2("buttons.addQuestion"), icon: FileQuestion },
     { key: "arrange", label: tStep2("buttons.arrangeSections"), icon: ListOrdered },
-    { key: "excel", label: tStep2("buttons.importExcel"), icon: FileSpreadsheet },
+    { key: "importExams", label: tStep2("buttons.importOtherExams"), icon: Import },
   ] as const;
 
   const timelineSteps = [
@@ -672,7 +726,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                         setActiveDialog(btn.key);
                       }}
                       className={cn(
-                        "py-3.5 px-4 rounded-xl font-semibold text-sm transition-all flex items-center justify-center gap-2.5 border shadow-2xs group cursor-pointer",
+                        "py-3.5 px-4 rounded-xl font-semibold text-xs transition-all flex items-center justify-center gap-2.5 border shadow-2xs group cursor-pointer",
                         isActive
                           ? "bg-primary text-white border-primary shadow-xs"
                           : "bg-card text-primary border-input hover:bg-primary hover:text-white hover:border-primary",
@@ -709,7 +763,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                       return (
                         <div key={sec.id} className="border rounded-xl p-4 bg-muted/20 space-y-3">
                           {/* Section Header */}
-                          <div className="flex items-center justify-between font-semibold text-foreground text-base">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between font-semibold text-foreground text-base gap-2">
                             <span className="flex items-center gap-2">
                               <span className="size-6 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center font-bold">
                                 {sIdx + 1}
@@ -717,25 +771,51 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                               {sec.title}
                             </span>
 
-                            <div className="flex items-center gap-2 text-xs font-normal text-muted-foreground">
+                            <div className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground self-end sm:self-center">
                               <span>
                                 {tStep2("questionsCount", { count: sec.questions.length })}
                               </span>
                               <span>•</span>
                               <span>{tStep2("pointsCount", { count: sectionPoints })}</span>
+
+                              {/* Add Question to this section */}
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
+                                title={tStep2("buttons.addQuestion")}
                                 onClick={() => {
                                   setEditingQuestion(null);
                                   setTargetQuestionSectionId(sec.id);
                                   setActiveDialog("question");
                                 }}
-                                className="h-7 px-2 text-xs text-primary hover:bg-primary/10 gap-1 ms-2"
+                                className="h-7 px-2 text-xs text-primary hover:bg-primary/10 gap-1 ms-1"
                               >
                                 <Plus className="size-3.5" />
-                                <span>{tStep2("buttons.addQuestion")}</span>
+                              </Button>
+
+                              {/* Edit Section */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => handleOpenEditSection(sec)}
+                                className="text-muted-foreground hover:text-primary h-7 w-7"
+                                title={locale === "ar" ? "تعديل القسم" : "Edit section"}
+                              >
+                                <Edit2 className="size-3.5" />
+                              </Button>
+
+                              {/* Delete Section */}
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon-xs"
+                                onClick={() => setSectionToDelete(sec)}
+                                className="text-muted-foreground hover:text-destructive h-7 w-7"
+                                title={locale === "ar" ? "حذف القسم" : "Delete section"}
+                              >
+                                <Trash2 className="size-3.5" />
                               </Button>
                             </div>
                           </div>
@@ -916,11 +996,87 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
         onReorder={setExamSections}
       />
 
-      {/* DIALOG 4: IMPORT FROM EXCEL DISCLAIMER */}
-      <ExcelImportDisclaimerDialog
-        open={activeDialog === "excel"}
+      {/* DIALOG 4: IMPORT FROM OTHER EXAMS */}
+      <ImportFromExamsDialog
+        open={activeDialog === "importExams"}
         onOpenChange={(open) => !open && setActiveDialog(null)}
+        availableExams={allExams}
+        onImport={handleImportSections}
       />
+
+      {/* DIALOG 5: EDIT SECTION */}
+      <Dialog
+        open={Boolean(editingSection)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEditingSection(null);
+            setEditSecTitle("");
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{tStep2("editSectionDialog.title")}</DialogTitle>
+            <DialogDescription>{tStep2("editSectionDialog.subtitle")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-sec-title-input" className="text-sm font-medium text-foreground">
+                {tStep2("editSectionDialog.titleLabel")}
+              </Label>
+              <Input
+                id="edit-sec-title-input"
+                value={editSecTitle}
+                onChange={(e) => setEditSecTitle(e.target.value)}
+                placeholder={tStep2("editSectionDialog.titlePlaceholder")}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => {
+                setEditingSection(null);
+                setEditSecTitle("");
+              }}
+            >
+              {tForm("actions.cancel")}
+            </Button>
+            <Button type="button" onClick={handleSaveEditSection} disabled={!editSecTitle.trim()}>
+              {tStep2("editSectionDialog.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* DIALOG 6: DELETE SECTION CONFIRMATION */}
+      <Dialog
+        open={Boolean(sectionToDelete)}
+        onOpenChange={(open) => !open && setSectionToDelete(null)}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="size-5" />
+              <span>{tStep2("deleteSectionDialog.title")}</span>
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              {tStep2("deleteSectionDialog.description", {
+                title: sectionToDelete?.title || "",
+              })}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 pt-2 sm:justify-end">
+            <Button variant="outline" type="button" onClick={() => setSectionToDelete(null)}>
+              {tStep2("deleteSectionDialog.cancel")}
+            </Button>
+            <Button variant="destructive" type="button" onClick={handleDeleteSection}>
+              {tStep2("deleteSectionDialog.confirm")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
