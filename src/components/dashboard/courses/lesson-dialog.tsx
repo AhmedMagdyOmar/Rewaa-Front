@@ -116,7 +116,6 @@ export function LessonDialog({
   const [hasExamExpiryDate, setHasExamExpiryDate] = useState(false);
   const [examStartDate, setExamStartDate] = useState("");
   const [examExpiryDate, setExamExpiryDate] = useState("");
-  const [examDateError, setExamDateError] = useState<string | null>(null);
 
   // Publish Status State
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
@@ -239,7 +238,6 @@ export function LessonDialog({
         setHasExamExpiryDate(Boolean(initialLesson.hasExamExpiryDate));
         setExamStartDate(initialLesson.examStartDate || "");
         setExamExpiryDate(initialLesson.examExpiryDate || "");
-        setExamDateError(null);
 
         setPublishStatus(initialLesson.publishStatus || "published");
         setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
@@ -264,7 +262,6 @@ export function LessonDialog({
         setHasExamExpiryDate(false);
         setExamStartDate("");
         setExamExpiryDate("");
-        setExamDateError(null);
         setPublishStatus("published");
         setScheduledPublishDate("");
         setScheduleDateError(null);
@@ -390,21 +387,17 @@ export function LessonDialog({
       }
     }
 
-    setExamDateError(null);
     if (isLinkedToExam && hasExamExpiryDate) {
       if (publishStatus === "scheduled" && scheduledPublishDate) {
         if (examStartDate && examStartDate < scheduledPublishDate) {
-          setExamDateError(t("examDateAfterScheduleError", { date: scheduledPublishDate }));
           return;
         }
         if (examExpiryDate && examExpiryDate < scheduledPublishDate) {
-          setExamDateError(t("examDateAfterScheduleError", { date: scheduledPublishDate }));
           return;
         }
       }
 
       if (examStartDate && examExpiryDate && examExpiryDate < examStartDate) {
-        setExamDateError(t("examEndDateAfterStartError"));
         return;
       }
     }
@@ -886,75 +879,6 @@ export function LessonDialog({
                         onCheckedChange={setIsRequiredPassExam}
                         className="mt-2"
                       />
-
-                      {/* Toggle Add Expiry Date */}
-                      <div className="space-y-3 pt-2 border-t border-border/50">
-                        <FormToggleSetting
-                          id="les-exam-expiry-toggle"
-                          title={t("hasExamExpiryDate")}
-                          subtitle={t("hasExamExpiryDateSubtitle")}
-                          checked={hasExamExpiryDate}
-                          onCheckedChange={setHasExamExpiryDate}
-                        />
-
-                        {hasExamExpiryDate && (
-                          <div className="space-y-2 animate-in fade-in slide-in-from-top-1">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="flex flex-col gap-1.5">
-                                <label
-                                  htmlFor="les-exam-start-date"
-                                  className="text-xs font-medium text-foreground"
-                                >
-                                  {t("examStartDate")}
-                                </label>
-                                <Input
-                                  id="les-exam-start-date"
-                                  type="date"
-                                  value={examStartDate}
-                                  min={
-                                    publishStatus === "scheduled" && scheduledPublishDate
-                                      ? scheduledPublishDate
-                                      : undefined
-                                  }
-                                  onChange={(e) => {
-                                    setExamStartDate(e.target.value);
-                                    setExamDateError(null);
-                                  }}
-                                />
-                              </div>
-                              <div className="flex flex-col gap-1.5">
-                                <label
-                                  htmlFor="les-exam-expiry-date"
-                                  className="text-xs font-medium text-foreground"
-                                >
-                                  {t("examExpiryDate")}
-                                </label>
-                                <Input
-                                  id="les-exam-expiry-date"
-                                  type="date"
-                                  value={examExpiryDate}
-                                  min={
-                                    examStartDate ||
-                                    (publishStatus === "scheduled" && scheduledPublishDate
-                                      ? scheduledPublishDate
-                                      : undefined)
-                                  }
-                                  onChange={(e) => {
-                                    setExamExpiryDate(e.target.value);
-                                    setExamDateError(null);
-                                  }}
-                                />
-                              </div>
-                            </div>
-
-                            {examDateError && (
-                              <p className="text-xs text-destructive font-medium animate-in fade-in">
-                                {examDateError}
-                              </p>
-                            )}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   )}
                 </FormToggleSetting>
