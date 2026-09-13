@@ -69,8 +69,8 @@ jobs:
             set -e
 
             # Ensure app directory exists
-            mkdir -p /opt/rewaa
-            cd /opt/rewaa
+            mkdir -p /opt/rewaa-frontend
+            cd /opt/rewaa-frontend
 
             # Authenticate with GHCR using the current workflow token
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
