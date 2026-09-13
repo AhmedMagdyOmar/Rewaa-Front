@@ -1,7 +1,6 @@
 import "@/app/globals.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { routing } from "@/i18n/routing";
-import { getPayload } from "@/lib/cms/getPayload";
 import { QueryProvider } from "@/providers/query-provider";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
@@ -17,15 +16,10 @@ const ibmPlexArabic = IBM_Plex_Sans_Arabic({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  const payload = await getPayload();
-  const siteSettings = await payload.findGlobal({
-    slug: "site-settings",
-  });
-
   return {
-    metadataBase: siteSettings.siteUrl ? new URL(siteSettings.siteUrl) : undefined,
-    title: siteSettings.siteTitle,
-    description: siteSettings.siteDescription,
+    metadataBase: process.env.NEXT_PUBLIC_API_URL,
+    title: "Rewaa",
+    description: "Rewaa Educational Platform",
   };
 }
 

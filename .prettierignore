@@ -5,4 +5,3 @@ build
 public
 *.min.js
 importMap.js
-payload-types.ts
