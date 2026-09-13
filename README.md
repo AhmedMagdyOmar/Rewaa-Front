@@ -1,185 +1,195 @@
-# 🚀 Next.js Enterprise Starter Template
+# 🎓 Rewaa (منصة رواء التعليمية)
 
-A production-ready, highly-opinionated Next.js starter template designed for speed, scalability, and developer experience. Built with the latest technologies including **Next.js 16**, **React 19**, and **Tailwind CSS v4**.
+A modern, high-performance, bilingual (Arabic & English) Learning Management System (LMS) and Educational Platform frontend built with **Next.js 16**, **React 19**, and **Tailwind CSS v4**.
+
+---
+
+## 🌟 Overview
+
+**Rewaa** is an educational platform designed for teachers, academies, and students. It offers a role-aware user experience with separate, dedicated interfaces for administrative management (teachers/assistants) and learning (students), coupled with public report verification and full RTL (Right-to-Left) localization.
+
+### 👥 User Roles & Spaces
+
+- **Instructor & Assistant Dashboard (`/dashboard`)**: Full-featured administrative suite to manage courses, lessons, question banks, exams, student enrollments, financial billing, and team permissions.
+- **Student Portal (`/student-dashboard`)**: Distraction-free learning portal for students to browse enrolled courses, watch video lessons, take timed exams, track academic progress, and manage their profile.
+- **Public Verification & Legal Pages**: Public student report cards (`/student-report/:studentId`), terms of service, and privacy policies.
+
+---
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router)
-- **Library**: [React 19](https://react.dev/)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/)
-- **Form Management**: [TanStack Form](https://tanstack.com/form) & [Zod](https://zod.dev/)
-- **Data Fetching**: [TanStack Query v5](https://tanstack.com/query) & [Axios](https://axios-http.com/)
-- **Theme Management**: [next-themes](https://github.com/pacocoursey/next-themes)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Code Quality**: [Husky](https://typicode.github.io/husky/), [Prettier](https://prettier.io/), [ESLint](https://eslint.org/)
-- **Animations**: [Tailwind Animate](https://github.com/jamiebuilds/tailwind-animate)
+| Category                | Technologies                                                                                                                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Framework**           | [Next.js 16](https://nextjs.org/) (App Router, Server Components, Standalone Output)                                                      |
+| **Library**             | [React 19](https://react.dev/) + React Compiler                                                                                           |
+| **Styling**             | [Tailwind CSS v4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Radix UI](https://www.radix-ui.com/)                   |
+| **Localization**        | [next-intl](https://next-intl-docs.vercel.app/) (Arabic & English, RTL-first, ICU plurals)                                                |
+| **Data Fetching**       | [TanStack Query v5](https://tanstack.com/query), [Axios](https://axios-http.com/), [Orval](https://orval.dev/) (OpenAPI code-generation)  |
+| **Forms & Validation**  | [TanStack Form](https://tanstack.com/form), [Zod](https://zod.dev/)                                                                       |
+| **Charts & Reporting**  | [Recharts](https://recharts.org/), [@react-pdf/renderer](https://react-pdf.org/) (PDF invoice generation)                                 |
+| **Content & Editing**   | [@mdxeditor/editor](https://mdxeditor.dev/), [@next/mdx](https://nextjs.org/docs/app/building-your-application/configuring/mdx)           |
+| **Animations**          | [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/)                                                      |
+| **DevOps & Containers** | [Docker](https://www.docker.com/) (Alpine standalone), [GitHub Actions](https://github.com/features/actions), [Nginx](https://nginx.org/) |
+
+---
 
 ## ✨ Key Features
 
-### 🔐 Pre-configured Authentication
+### 1. 📚 Course & Lesson Management
 
-- Core authentication logic located in `src/lib/auth.ts` and `src/hooks/useAuth.ts`.
-- **Middleware-based Protection**: Route protection configured in `src/middleware.ts` to handle auth/dashboard redirects.
-- **HttpOnly Cookie Support**: Axios instance pre-configured in `src/lib/api.ts` with `withCredentials: true` for secure token handling.
+- Dynamic course builder with multiple pricing models, thumbnail uploads, and group access codes.
+- Structured curriculum organization (modules, lessons, video hosting embeds, and file attachments).
+- Markdown/MDX rich-text lesson notes editor.
 
-### 📝 Advanced Form Patterns
+### 2. 📝 Exam Engine & Question Bank
 
-- **Generic Form Component**: `src/components/ui/generic-form.tsx` provides a high-level abstraction for TanStack Form, allowing you to build complex, validated forms with just a schema and field configuration.
-- **Zod Integration**: Type-safe validation out of the box.
+- Comprehensive question bank supporting multiple choice, essay, and media-rich questions.
+- Timed online exam system with real-time countdown, automatic autosave, and grading.
+- Post-exam analytics, student complaint tracking, and question performance breakdowns.
 
-### 🚄 Optimized Data Fetching
+### 3. 👥 Student Roster & Billing
 
-- **Global Query Provider**: TanStack Query is set up in `src/providers/QueryProvider.tsx`.
-- **Axios Interceptors**: Global request/response handling, including automatic error logging and 401 Unauthorized handling.
+- Complete student directory with search, filter by governorate/city, and parent emergency contact details.
+- Automated invoice generation and printable PDF export via React-PDF.
+- Subscription and course purchase verification system.
 
-### 🏗️ Robust Architecture
+### 4. 🌐 Full Bilingual & RTL Support
 
-- **Shadcn UI**: Pre-installed and configured components.
-- **Typed API Layer**: Centralized API definitions in `src/lib/api.ts`.
-- **Pre-commit Hooks**: Automatic linting and type-checking on every commit via Husky and lint-staged.
-- **Dark Mode**: Toggleable theme support out of the box with the `ThemeToggle` component.
-- **Modular Layouts**: Flexible `Navbar` and `Footer` components supporting dynamic branding (Text, SVG, or Images) and customizable navigation.
+- Native Arabic-first design powered by **IBM Plex Sans Arabic** typography.
+- Seamless switching between Arabic (RTL) and English (LTR).
+- Grammatically accurate Arabic pluralization rules using ICU syntax (`zero`, `one`, `two`, `few`, `many`, `other`).
+
+### 5. 🔐 Role-Based Access & Proxy Protection
+
+- Intelligent server-side route proxy (`src/proxy.ts`) redirecting users to their role-specific dashboard.
+- Cookie-based authentication (`rewaa_auth` & `rewaa_role`).
+- Supports magic link login, password reset, and registration workflows.
+
+---
 
 ## 📂 Project Structure
 
 ```text
-src/
-├── app/            # App router pages, layouts, and global styles
-├── components/     # React components
-│   ├── layout/     # Structural components (Navbar, Footer, Logo)
-│   └── ui/         # Shadcn & UI-related components (GenericForm, Button, etc.)
-├── hooks/          # Custom React hooks (useAuth, etc.)
-├── lib/            # Shared utilities (axios, auth types)
-├── providers/      # Context providers (QueryProvider, ThemeProvider)
-└── middleware.ts   # Route protection and auth logic
+rewaa/
+├── .github/
+│   └── workflows/deploy.yml       # GitHub Actions CI/CD deployment pipeline
+├── deploy/
+│   └── nginx/rewaa.conf           # Production Nginx reverse proxy configuration
+├── docs/
+│   ├── deployment-guide.md        # Comprehensive VPS/Droplet deployment guide
+│   ├── dashboard-guide.md         # Dashboard architecture and workflows
+│   └── dashboard-conventions.md   # UI/UX coding standards and patterns
+├── messages/
+│   ├── ar.json                    # Arabic translations
+│   └── en.json                    # English translations
+├── src/
+│   ├── app/
+│   │   ├── [locale]/
+│   │   │   └── (main)/
+│   │   │       ├── (auth)/        # Login, register, magic-link, password reset
+│   │   │       ├── (dashboard)/   # Admin & Teacher management panel
+│   │   │       ├── (student-dashboard)/ # Student learning portal
+│   │   │       └── (landing)/     # Public reports and legal pages
+│   │   └── api/                   # Next.js API route handlers
+│   ├── components/
+│   │   ├── dashboard/             # Management components (courses, exams, students, billing)
+│   │   ├── student/               # Student portal UI components
+│   │   └── ui/                    # Reusable Shadcn UI primitives
+│   ├── hooks/                     # Custom React hooks
+│   ├── i18n/                      # next-intl configuration and routing
+│   ├── lib/                       # API clients, utilities, and storage helpers
+│   ├── providers/                 # TanStack Query & Tooltip providers
+│   ├── proxy.ts                   # Edge-level auth and internationalization proxy
+│   └── types/                     # TypeScript interfaces and API schemas
+├── docker-compose.prod.yml        # Production Docker Compose definition
+├── Dockerfile                     # Multi-stage optimized standalone container
+└── next.config.ts                 # Next.js standalone build configuration
 ```
 
-## 🚀 Getting Started
+---
 
-### 1. Requirements
+## 🚀 Getting Started (Local Development)
 
-- Node.js (Latest LTS recommended)
-- PNPM (Recommended package manager)
+### Prerequisites
 
-### 2. Installation
+- **Node.js**: v20 or v22 LTS
+- **Package Manager**: [pnpm](https://pnpm.io/) (v9+)
 
-Clone the repository and install dependencies:
+### 1. Clone & Install Dependencies
 
 ```bash
+git clone https://github.com/AmrMohamed27/rewaa.git
+cd rewaa
 pnpm install
 ```
 
-### 3. Environment Variables
+### 2. Configure Environment Variables
 
-Create a `.env.local` file in the root directory:
+Copy the example environment file:
 
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```bash
+cp .env.example .env.local
 ```
 
-### 4. Development
+Configure your variables:
 
-Start the development server:
+```env
+# Backend API Base URL
+NEXT_PUBLIC_API_URL=http://localhost:8000
+
+# Auth Cookie Name (optional, defaults to rewaa_auth)
+COOKIE_NAME=rewaa_auth
+
+# Optional OpenAPI key for Orval code generation
+OPENAPI_API_KEY=
+```
+
+### 3. Run Development Server
 
 ```bash
 pnpm dev
 ```
 
-The app will be available at [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## 💡 Usage Example: Building a Form
-
-To create a new form using the `GenericForm` component, follow these steps:
-
-```tsx
-"use client";
-
-import * as z from "zod";
-import { GenericForm, FieldConfig } from "@/components/ui/generic-form";
-import { toast } from "sonner";
-
-// 1. Define your schema
-const schema = z.object({
-  title: z.string().min(5),
-  description: z.string().min(20),
-});
-
-type FormValues = z.infer<typeof schema>;
-
-export default function MyForm() {
-  // 2. Configure fields
-  const fields: FieldConfig<FormValues>[] = [
-    { name: "title", label: "Title", type: "text" },
-    { name: "description", label: "Description", type: "textarea" },
-  ];
-
-  // 3. Handle submission
-  const onSubmit = async (values: FormValues) => {
-    toast.success("Form submitted!");
-    console.log(values);
-  };
-
-  return (
-    <GenericForm
-      title="My New Form"
-      schema={schema}
-      defaultValues={{ title: "", description: "" }}
-      fields={fields}
-      onSubmit={onSubmit}
-    />
-  );
-}
-```
+---
 
 ## 📜 Available Scripts
 
-- `pnpm dev`: Run the development server
-- `pnpm build`: Create a production build
-- `pnpm start`: Start the production server
-- `pnpm lint`: Run ESLint to find/fix code issues
-- `pnpm type-check`: Run TypeScript compiler to check for type errors
-- `pnpm prepare`: One-time setup for Husky hooks
-- `pnpm docker:build`: Build the Docker image
-- `pnpm docker:up`: Start the application in a Docker container
-- `pnpm docker:down`: Stop the Docker container
+| Command               | Description                                                              |
+| --------------------- | ------------------------------------------------------------------------ |
+| `pnpm dev`            | Starts the Next.js development server with Turbopack                     |
+| `pnpm build`          | Compiles production bundle with standalone output                        |
+| `pnpm start`          | Starts the production server locally                                     |
+| `pnpm type-check`     | Runs TypeScript compiler check (`tsc --noEmit`)                          |
+| `pnpm lint`           | Runs ESLint rules across the codebase                                    |
+| `pnpm generate:orval` | Generates TypeScript API clients & React Query hooks from OpenAPI schema |
+| `pnpm docker:build`   | Builds local Docker image                                                |
+| `pnpm docker:up`      | Runs containerized app locally                                           |
+| `pnpm docker:down`    | Stops local Docker containers                                            |
 
-## 🐳 Docker Support
+---
 
-This template is fully Dockerized for production-ready deployments and consistent local development.
+## 🚢 Production Deployment
 
-### 1. Build and Run
+Rewaa is built to deploy on a **Digital Ocean Droplet** (or any 1 vCPU / 2 GB Linux VPS) with minimal resource usage (~150–200 MB RAM):
 
-To build and start the containerized application:
+- **Automated CI/CD**: A GitHub Actions workflow (`.github/workflows/deploy.yml`) builds the standalone Docker container on GitHub's free 7 GB RAM runners, pushes the image to GitHub Container Registry (`ghcr.io`), and triggers an SSH restart on your droplet.
+- **Host Nginx**: Proxies requests from ports 80/443 directly to `127.0.0.1:3000` with 1-year immutable caching for static assets.
+- **Auto-SSL**: Free Let's Encrypt certificates provisioned via Certbot.
 
-```bash
-# Build the image
-pnpm docker:build
+👉 **Read the full step-by-step instructions in the [Deployment Guide](docs/deployment-guide.md).**
 
-# Start the container
-pnpm docker:up
-```
+---
 
-The application will be accessible at [http://localhost:3000](http://localhost:3000).
+## 🤝 Code Standards & Conventions
 
-### 2. Environment Setup
+- **Back Buttons**: Sub-pages use a standardized circular icon button `<Button asChild variant="outline" size="icon" className="h-9 w-9 rounded-full shrink-0"><Link href={...}><ArrowLeft className="h-4 w-4 rtl:rotate-180" /></Link></Button>`.
+- **Arabic ICU Plurals**: Always pass `{ count }` to `t()` with grammatical dual/few/many distinctions. Avoid manual string concatenation.
+- **Git Hooks**: Pre-commit linting and formatting enforced via Husky, lint-staged, and Prettier.
 
-The Docker container loads environment variables from the `.env` file in the root directory. Ensure you have your variables configured based on `.env.example`.
+---
 
-### 3. Troubleshooting
+## 📄 License
 
-- **Build Failures**: Ensure you are using a compatible Node.js version locally if you have local lockfile issues. The Docker build uses `node:22-alpine`.
-- **Port Conflicts**: If port 3000 is already in use, you can modify the mapping in `docker-compose.yml`.
-- **Pnpm Versions**: The Dockerfile uses `corepack` to manage pnpm. If you encounter pnpm version mismatches, ensure your `package.json` specifies the correct `packageManager` field if needed.
-- **Standalone Output**: This template uses Next.js [standalone output](https://nextjs.org/docs/app/api-reference/next-config-js/output#standalone) for optimized image size.
-
-## 🤝 Contribution Guidelines
-
-### Pre-commit Hooks
-
-This project uses Husky to ensure code quality. Before every commit, the following tasks are automatically performed:
-
-1. `eslint --fix` on staged files.
-2. `prettier --write` on staged files.
-3. `tsc --noEmit` to ensure type safety.
-
-If any of these steps fail, the commit will be blocked until the issues are resolved.
+Proprietary © [Rewaa](https://rewaa.org). All rights reserved.

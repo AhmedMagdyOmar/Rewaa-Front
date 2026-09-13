@@ -1,0 +1,22 @@
+services:
+  app:
+    image: ghcr.io/amrmohamed27/rewaa:latest
+    container_name: rewaa-app
+    restart: always
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+      - COOKIE_NAME=${COOKIE_NAME:-rewaa_auth}
+    ports:
+      - "127.0.0.1:${APP_PORT:-3000}:3000"
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
