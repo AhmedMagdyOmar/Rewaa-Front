@@ -13,9 +13,14 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { useAuthControllerGetProfile, useAuthControllerLogout } from "@/hooks/use-auth";
-import { authTokens } from "@/lib/auth-token";
-import { AuthControllerGetProfile200 } from "@/types/api";
+import {
+  useProviderProfile,
+  useProviderLogout,
+  useStudentProfile,
+  useStudentLogout,
+} from "@/hooks/use-auth-queries";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { UserProfile } from "@/types/auth";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { ProfileDropdown } from "./ProfileDropdown";
 import { navConfig, studentNavConfig } from "@/config/nav-config";
@@ -28,7 +33,7 @@ export function AppSidebar({
   side: sideProp,
   variant = "admin",
 }: {
-  initialProfileData: AuthControllerGetProfile200;
+  initialProfileData?: UserProfile | null;
   side?: "left" | "right";
   variant?: "admin" | "student";
 }) {
@@ -39,32 +44,68 @@ export function AppSidebar({
   const side = sideProp ?? (locale === "ar" ? "right" : "left");
   const t = useTranslations("nav");
   const tCommon = useTranslations("common");
-  const { data, isLoading, error } = useAuthControllerGetProfile({
-    query: {
-      initialData: initialProfileData,
-      staleTime: 1000 * 60 * 5,
-    },
-  });
+
+  // Role-aware profile & logout hooks
+  const isStudent = variant === "student";
+
+  const providerProfileQuery = useProviderProfile({ enabled: !isStudent });
+  const studentProfileQuery = useStudentProfile({ enabled: isStudent });
+  const { mutate: providerLogout, isPending: isProviderLogoutPending } = useProviderLogout();
+  const { mutate: studentLogout, isPending: isStudentLogoutPending } = useStudentLogout();
+
+  const profileQuery = isStudent ? studentProfileQuery : providerProfileQuery;
+  const isLoading = profileQuery.status === "pending";
+  const error = profileQuery.error;
+  const isPending = isStudent ? isStudentLogoutPending : isProviderLogoutPending;
+
   const router = useRouter();
-  const { mutate: logout, isPending } = useAuthControllerLogout({
-    mutation: {
-      onSuccess: () => {
-        authTokens.clearToken();
-        router.push("/auth/login");
-        router.refresh();
-      },
-    },
-  });
-
-  const handleLogout = () => {
-    logout();
-  };
   const pathname = usePathname();
-
   const { state, isMobile, toggleSidebar } = useSidebar();
   const isCollapsed = state === "collapsed" && !isMobile;
 
-  const user = data?.data;
+  // Zustand store user for immediate display on mount/rehydration
+  const storeUser = useAuthStore((s) => s.user);
+
+  // Normalise profile data from query or fall back to Zustand store
+  const queryUser = profileQuery.data;
+  const resolvedFullName =
+    ((queryUser as Record<string, unknown>)?.full_name as string | undefined) ??
+    storeUser?.full_name ??
+    "";
+
+  // Build user profile shape for ProfileDropdown
+  const user: UserProfile | null =
+    queryUser != null
+      ? (queryUser as unknown as UserProfile)
+      : storeUser
+        ? {
+            id: storeUser.id,
+            email: storeUser.email,
+            firstName: resolvedFullName.split(" ")[0] ?? "",
+            lastName: resolvedFullName.split(" ").slice(1).join(" ") ?? "",
+            full_name: storeUser.full_name,
+            role: storeUser.role === "student" ? "student" : "assistant",
+            isVerified: true,
+          }
+        : (initialProfileData ?? null);
+
+  const handleLogout = () => {
+    if (isStudent) {
+      studentLogout(undefined, {
+        onSuccess: () => {
+          router.push("/auth/login");
+          router.refresh();
+        },
+      });
+    } else {
+      providerLogout(undefined, {
+        onSuccess: () => {
+          router.push("/auth/login");
+          router.refresh();
+        },
+      });
+    }
+  };
 
   // Helper to translate nav item label
   const getNavLabel = (label: string) => {
@@ -134,9 +175,6 @@ export function AppSidebar({
           <SidebarMenuItem className="w-full flex justify-center">
             {isLoading && <div>Loading...</div>}
             {error && <div>Error: {error.message}</div>}
-            {data?.statusCode && data?.statusCode >= 400 && (
-              <div>You are not authorized to access this page.</div>
-            )}
             {user && (
               <ProfileDropdown
                 user={user}

@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { UserResponseDto } from "@/types/api";
+import { UserProfile } from "@/types/auth";
 import { LogOut, Settings, User } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
@@ -17,13 +17,7 @@ import * as React from "react";
 import { getStoredStudents } from "@/lib/students-storage";
 
 interface ProfileDropdownProps {
-  user: UserResponseDto & {
-    firstNameAr?: string;
-    lastNameAr?: string;
-    role?: string;
-    roleAr?: string;
-    avatarUrl?: string;
-  };
+  user: UserProfile;
   handleLogout: () => void;
   isPending: boolean;
   expanded?: boolean;
@@ -45,7 +39,7 @@ export function ProfileDropdown({
   const isAr = locale === "ar";
   const firstName = isAr && user.firstNameAr ? user.firstNameAr : user.firstName || "";
   const lastName = isAr && user.lastNameAr ? user.lastNameAr : user.lastName || "";
-  const fullName = `${firstName} ${lastName}`.trim() || user.email;
+  const fullName = user.full_name || user.email;
 
   // Localized role
   const rawRole = (user.role || "user").toLowerCase();

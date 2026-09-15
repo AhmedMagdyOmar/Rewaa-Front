@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Link, useRouter } from "@/i18n/routing";
 import { getErrorMessage } from "@/lib/api-utils";
 import { authService } from "@/lib/api/auth-service";
-import { getAuthControllerGetProfileQueryKey } from "@/lib/api/react-query/auth/auth";
+import { queryKeys } from "@/lib/api/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -75,8 +75,10 @@ export default function LoginPage() {
         });
       }
 
+      // Invalidate the role-specific profile query cache
       await queryClient.invalidateQueries({
-        queryKey: getAuthControllerGetProfileQueryKey(),
+        queryKey:
+          selectedRole === "student" ? queryKeys.student.profile() : queryKeys.provider.profile(),
       });
 
       toast.success(t("loginSuccess"));

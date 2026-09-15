@@ -1,8 +1,14 @@
-import { ApiErrorResponseDto } from "@/types/api";
 import { CustomAxiosError } from "./apiClient";
 
+interface ApiErrorPayload {
+  message?: string | string[];
+  statusCode?: number;
+  status?: number;
+  errors?: Record<string, string[]>;
+}
+
 interface DataType {
-  data?: ApiErrorResponseDto;
+  data?: ApiErrorPayload;
   status?: number;
 }
 
@@ -31,8 +37,8 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
     return axiosErr.apiMessage;
   }
 
-  // 3. Check standard ApiErrorResponseDto
-  const dtoErr = error as ApiErrorResponseDto;
+  // 3. Check generic API error payload
+  const dtoErr = error as ApiErrorPayload;
   if (dtoErr?.message) {
     if (Array.isArray(dtoErr.message)) {
       return dtoErr.message.join(", ");

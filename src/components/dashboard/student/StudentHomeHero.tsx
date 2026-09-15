@@ -1,22 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Image from "next/image";
-import { Link } from "@/i18n/routing";
 import { Button } from "@/components/ui/button";
-import { useAuthControllerGetProfile } from "@/hooks/use-auth";
-import { useLocale, useTranslations } from "next-intl";
-import { cn } from "@/lib/utils";
-import { getStoredPlatformInfo } from "@/lib/settings-storage";
 import { getWhatsAppUrl } from "@/components/ui/phone-link";
+import { useStudentProfile } from "@/hooks/use-auth-queries";
+import { Link } from "@/i18n/routing";
+import { getStoredPlatformInfo } from "@/lib/settings-storage";
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 interface StudentHomeHeroProps {
   studentName?: string;
 }
 
 export function StudentHomeHero({ studentName: initialStudentName }: StudentHomeHeroProps) {
-  const locale = useLocale();
-  const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.hero");
 
   const [whatsappUrl, setWhatsappUrl] = useState<string>(() => {
@@ -35,30 +34,13 @@ export function StudentHomeHero({ studentName: initialStudentName }: StudentHome
       window.removeEventListener("rewaa_platform_info_updated", handlePlatformInfoUpdate);
   }, []);
 
-  const { data } = useAuthControllerGetProfile({
-    query: {
-      staleTime: 1000 * 60 * 5,
-    },
-  });
+  // Read from Zustand store (hydrated at login) + live query for refresh
+  const storeUser = useAuthStore((s) => s.user);
+  const { data: profileData } = useStudentProfile();
+  const apiUser = profileData as Record<string, unknown> | undefined;
 
-  const user = data?.data;
-
-  // Resolve student name dynamically from auth query profile or initial fallback
-  const resolvedFirstName =
-    isAr && (user as Record<string, unknown>)?.firstNameAr
-      ? String((user as Record<string, unknown>).firstNameAr)
-      : user?.firstName || "";
-  const resolvedLastName =
-    isAr && (user as Record<string, unknown>)?.lastNameAr
-      ? String((user as Record<string, unknown>).lastNameAr)
-      : user?.lastName || "";
   const resolvedFullName =
-    `${resolvedFirstName} ${resolvedLastName}`.trim() ||
-    (typeof (user as Record<string, unknown>)?.name === "string"
-      ? ((user as Record<string, unknown>).name as string)
-      : "") ||
-    user?.email ||
-    "";
+    (apiUser?.full_name as string | undefined) ?? storeUser?.full_name ?? storeUser?.email ?? "";
 
   const studentName: string = initialStudentName || resolvedFullName || t("defaultStudentName");
 

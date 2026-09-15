@@ -4,11 +4,16 @@ import { Logo } from "@/components/landing/layout/logo";
 import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { Separator } from "@/components/ui/separator";
 import { navConfig } from "@/config/nav-config";
-import { useAuthControllerGetProfile, useAuthControllerLogout } from "@/hooks/use-auth";
-import { authTokens } from "@/lib/auth-token";
+import {
+  useProviderProfile,
+  useProviderLogout,
+  useStudentProfile,
+  useStudentLogout,
+} from "@/hooks/use-auth-queries";
+import { useAuthStore } from "@/lib/stores/auth-store";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
-import { AuthControllerGetProfile200 } from "@/types/api";
+import { UserProfile } from "@/types/auth";
 import { useTranslations } from "next-intl";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,9 +27,9 @@ export interface NavLinkItem {
 }
 
 interface DashboardNavbarProps {
-  variant?: "light" | "dark";
+  variant?: "light" | "dark" | "student";
   links?: NavLinkItem[];
-  initialProfileData?: AuthControllerGetProfile200;
+  initialProfileData?: UserProfile | null;
   primaryHref?: string;
   centerContent?: React.ReactNode;
 }
@@ -50,28 +55,56 @@ export function DashboardNavbar({
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
 
-  const { data } = useAuthControllerGetProfile({
-    query: {
-      initialData: initialProfileData,
-      staleTime: 1000 * 60 * 5,
-    },
-  });
+  const isStudent = variant === "student";
 
-  const { mutate: logout, isPending } = useAuthControllerLogout({
-    mutation: {
-      onSuccess: () => {
-        authTokens.clearToken();
-        router.push("/auth/login");
-        router.refresh();
-      },
-    },
-  });
+  const providerProfileQuery = useProviderProfile({ enabled: !isStudent });
+  const studentProfileQuery = useStudentProfile({ enabled: isStudent });
+  const { mutate: providerLogout, isPending: isProviderLogoutPending } = useProviderLogout();
+  const { mutate: studentLogout, isPending: isStudentLogoutPending } = useStudentLogout();
+
+  const profileQuery = isStudent ? studentProfileQuery : providerProfileQuery;
+  const isPending = isStudent ? isStudentLogoutPending : isProviderLogoutPending;
+
+  // Zustand store supplements data before first query resolves
+  const storeUser = useAuthStore((s) => s.user);
+  const queryUser = profileQuery.data;
+  const resolvedFullName =
+    ((queryUser as Record<string, unknown>)?.full_name as string | undefined) ??
+    storeUser?.full_name ??
+    "";
+
+  const user: UserProfile | null =
+    queryUser != null
+      ? (queryUser as unknown as UserProfile)
+      : storeUser
+        ? {
+            id: storeUser.id,
+            email: storeUser.email,
+            firstName: resolvedFullName.split(" ")[0] ?? "",
+            lastName: resolvedFullName.split(" ").slice(1).join(" ") ?? "",
+            full_name: storeUser.full_name,
+            role: storeUser.role === "student" ? "student" : "assistant",
+            isVerified: true,
+          }
+        : (initialProfileData ?? null);
 
   const handleLogout = () => {
-    logout();
+    if (isStudent) {
+      studentLogout(undefined, {
+        onSuccess: () => {
+          router.push("/auth/login");
+          router.refresh();
+        },
+      });
+    } else {
+      providerLogout(undefined, {
+        onSuccess: () => {
+          router.push("/auth/login");
+          router.refresh();
+        },
+      });
+    }
   };
-
-  const user = data?.data;
 
   const getNavLabel = (label: string) => {
     if (t.has(label)) return t(label);
@@ -122,7 +155,7 @@ export function DashboardNavbar({
         {/* User Actions & Controls */}
         <div className="flex items-center gap-2 md:gap-4">
           <NotificationsPopover />
-          <LanguageSwitcher variant={variant} />
+          <LanguageSwitcher variant={variant === "student" ? "light" : variant} />
           <Separator className="max-md:hidden h-8 my-auto" orientation="vertical" />
 
           {/* Profile Dropdown (Desktop) */}
@@ -134,7 +167,7 @@ export function DashboardNavbar({
                 isPending={isPending}
                 expanded={true}
                 showRole={true}
-                variant={variant}
+                variant={variant === "student" ? "light" : variant}
               />
             </div>
           )}

@@ -13,8 +13,7 @@
     "docker:build": "docker compose build",
     "docker:up": "docker compose up -d",
     "docker:down": "docker compose down",
-    "docker:rebuild": "docker compose down -v && docker compose build && docker compose up -d",
-    "generate:orval": "orval"
+    "docker:rebuild": "docker compose down -v && docker compose build && docker compose up -d"
   },
   "dependencies": {
     "@faker-js/faker": "^10.4.0",
@@ -70,7 +69,6 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "openapi-typescript": "^7.13.0",
-    "orval": "^8.9.1",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",

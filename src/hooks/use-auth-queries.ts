@@ -7,6 +7,7 @@ import {
   StudentLoginResponse,
 } from "@/lib/api/auth-service";
 import { queryKeys } from "@/lib/api/queryKeys";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 /**
  * Provider Authentication Hooks
@@ -17,6 +18,7 @@ export function useProviderLogin() {
   return useMutation<ProviderLoginResponse, Error, ProviderLoginCredentials>({
     mutationFn: (credentials) => authService.providerLogin(credentials),
     onSuccess: (data) => {
+      // authService.providerLogin already called setUser — seed query cache too
       queryClient.setQueryData(queryKeys.provider.profile(), data.user);
     },
   });
@@ -24,10 +26,12 @@ export function useProviderLogin() {
 
 export function useProviderLogout() {
   const queryClient = useQueryClient();
+  const clearUser = useAuthStore((s) => s.clearUser);
 
   return useMutation<void, Error, void>({
     mutationFn: () => authService.providerLogout(),
     onSuccess: () => {
+      clearUser();
       queryClient.removeQueries({ queryKey: queryKeys.provider.all });
     },
   });
@@ -51,6 +55,7 @@ export function useStudentLogin() {
   return useMutation<StudentLoginResponse, Error, StudentLoginCredentials>({
     mutationFn: (credentials) => authService.studentLogin(credentials),
     onSuccess: (data) => {
+      // authService.studentLogin already called setUser — seed query cache too
       queryClient.setQueryData(queryKeys.student.profile(), data.student);
     },
   });
@@ -58,10 +63,12 @@ export function useStudentLogin() {
 
 export function useStudentLogout() {
   const queryClient = useQueryClient();
+  const clearUser = useAuthStore((s) => s.clearUser);
 
   return useMutation<void, Error, void>({
     mutationFn: () => authService.studentLogout(),
     onSuccess: () => {
+      clearUser();
       queryClient.removeQueries({ queryKey: queryKeys.student.all });
     },
   });

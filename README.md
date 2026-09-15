@@ -24,7 +24,7 @@ A modern, high-performance, bilingual (Arabic & English) Learning Management Sys
 | **Library**             | [React 19](https://react.dev/) + React Compiler                                                                                           |
 | **Styling**             | [Tailwind CSS v4](https://tailwindcss.com/), [Shadcn UI](https://ui.shadcn.com/), [Radix UI](https://www.radix-ui.com/)                   |
 | **Localization**        | [next-intl](https://next-intl-docs.vercel.app/) (Arabic & English, RTL-first, ICU plurals)                                                |
-| **Data Fetching**       | [TanStack Query v5](https://tanstack.com/query), [Axios](https://axios-http.com/), [Orval](https://orval.dev/) (OpenAPI code-generation)  |
+| **Data Fetching**       | [TanStack Query v5](https://tanstack.com/query), [Axios](https://axios-http.com/)                                                         |
 | **Forms & Validation**  | [TanStack Form](https://tanstack.com/form), [Zod](https://zod.dev/)                                                                       |
 | **Charts & Reporting**  | [Recharts](https://recharts.org/), [@react-pdf/renderer](https://react-pdf.org/) (PDF invoice generation)                                 |
 | **Content & Editing**   | [@mdxeditor/editor](https://mdxeditor.dev/), [@next/mdx](https://nextjs.org/docs/app/building-your-application/configuring/mdx)           |

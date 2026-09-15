@@ -1,5 +1,6 @@
 import { api } from "@/lib/apiClient";
 import { authTokens } from "@/lib/auth-token";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 export interface ProviderLoginCredentials {
   email: string;
@@ -63,6 +64,17 @@ export const authService = {
         document.cookie = `rewaa_role=assistant; path=/; SameSite=Lax`;
         document.cookie = `rewaa_auth=${encodeURIComponent(data.access_token)}; path=/; SameSite=Lax`;
       }
+      // Hydrate the Zustand auth store
+      const u = data.user;
+      useAuthStore.getState().setUser(
+        {
+          id: u.id,
+          full_name: u.full_name,
+          email: u.email,
+          role: "provider",
+        },
+        "provider",
+      );
     }
 
     return data;
@@ -79,6 +91,7 @@ export const authService = {
       });
     } finally {
       authTokens.clearToken("provider");
+      useAuthStore.getState().clearUser();
       if (typeof document !== "undefined") {
         document.cookie = `rewaa_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
         document.cookie = `rewaa_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
@@ -113,6 +126,17 @@ export const authService = {
         document.cookie = `rewaa_role=student; path=/; SameSite=Lax`;
         document.cookie = `rewaa_auth=${encodeURIComponent(data.access_token)}; path=/; SameSite=Lax`;
       }
+      // Hydrate the Zustand auth store
+      const s = data.student;
+      useAuthStore.getState().setUser(
+        {
+          id: s.id,
+          full_name: s.full_name,
+          email: s.email,
+          role: "student",
+        },
+        "student",
+      );
     }
 
     return data;
@@ -129,6 +153,7 @@ export const authService = {
       });
     } finally {
       authTokens.clearToken("student");
+      useAuthStore.getState().clearUser();
       if (typeof document !== "undefined") {
         document.cookie = `rewaa_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
         document.cookie = `rewaa_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;

@@ -123,7 +123,6 @@ axiosInstance.interceptors.response.use(
 
 /**
  * Custom Axios API client for making HTTP requests with proper error handling.
- * Compatible with Orval-generated query hooks and direct service invocations.
  *
  * @param config - Axios request configuration
  * @param options - Axios request options (merged with base config)

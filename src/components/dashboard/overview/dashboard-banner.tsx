@@ -4,8 +4,8 @@ import React from "react";
 import Image from "next/image";
 import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { useAuthControllerGetProfile } from "@/hooks/use-auth";
-
+import { useAuthStore } from "@/lib/stores/auth-store";
+import { useProviderProfile } from "@/hooks/use-auth-queries";
 import { Link } from "@/i18n/routing";
 import { Plus } from "lucide-react";
 
@@ -14,29 +14,19 @@ export function DashboardBanner() {
   const isAr = locale === "ar";
   const t = useTranslations("dashboard");
 
-  const { data } = useAuthControllerGetProfile({
-    query: {
-      staleTime: 1000 * 60 * 5,
-    },
-  });
+  // Read from Zustand store first (already hydrated at login, no extra network call)
+  const storeUser = useAuthStore((s) => s.user);
 
-  const user = data?.data;
+  // Background refresh from the live API
+  const { data: profileData } = useProviderProfile();
+  const apiUser = profileData as Record<string, unknown> | undefined;
 
-  // Localized user display name
-  const firstName =
-    isAr && (user as Record<string, unknown>)?.firstNameAr
-      ? String((user as Record<string, unknown>).firstNameAr)
-      : user?.firstName || "";
-  const lastName =
-    isAr && (user as Record<string, unknown>)?.lastNameAr
-      ? String((user as Record<string, unknown>).lastNameAr)
-      : user?.lastName || "";
+  // Prefer live API name, fall back to persisted store name
   const resolvedFullName =
-    `${firstName} ${lastName}`.trim() ||
-    (typeof (user as Record<string, unknown>)?.name === "string"
-      ? ((user as Record<string, unknown>).name as string)
-      : "") ||
-    user?.email?.split("@")[0] ||
+    (apiUser?.full_name as string | undefined) ??
+    storeUser?.full_name ??
+    (isAr ? (apiUser?.firstNameAr as string | undefined) : undefined) ??
+    storeUser?.email?.split("@")[0] ??
     "Admin";
 
   return (
