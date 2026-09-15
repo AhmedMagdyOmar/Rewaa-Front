@@ -62,7 +62,7 @@
       "googleAuth": "Continue with Google",
       "magicLink": "Log in with Magic Link",
       "noAccount": "Don't have an account?",
-      "signUp": "Sign up",
+      "contactAdmin": "Please contact your provider or administrator to receive access.",
       "rememberMe": "Remember me",
       "forgotPasswordLink": "Forgot your password?",
       "loginSuccess": "Login successful! Welcome back."
@@ -118,6 +118,21 @@
       "success": "Magic Link verified! Redirecting...",
       "failedTitle": "Verification Failed",
       "invalidToken": "Invalid or expired magic link"
+    },
+    "verifyEmail": {
+      "title": "Check your email",
+      "sentLink": "We've sent a verification link to {email}.",
+      "defaultEmail": "your email address",
+      "instructions": "Please click the link in the email to verify your account. If you don't see it, check your spam folder.",
+      "backToLogin": "Back to Login",
+      "resendButton": "Resend Verification Email",
+      "dialogTitle": "Resend Verification",
+      "dialogDescription": "Enter your email address and we'll send you a new verification link.",
+      "emailLabel": "Email Address",
+      "emailRequired": "Please enter your email address.",
+      "resendSuccess": "Verification email sent! Please check your inbox.",
+      "sending": "Sending...",
+      "sendLink": "Send Verification Link"
     },
     "banner": {
       "title": "Rewaa Educational",

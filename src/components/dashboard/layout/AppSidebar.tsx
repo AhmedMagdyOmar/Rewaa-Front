@@ -14,6 +14,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useAuthControllerGetProfile, useAuthControllerLogout } from "@/hooks/use-auth";
+import { authTokens } from "@/lib/auth-token";
 import { AuthControllerGetProfile200 } from "@/types/api";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { ProfileDropdown } from "./ProfileDropdown";
@@ -48,6 +49,7 @@ export function AppSidebar({
   const { mutate: logout, isPending } = useAuthControllerLogout({
     mutation: {
       onSuccess: () => {
+        authTokens.clearToken();
         router.push("/auth/login");
         router.refresh();
       },

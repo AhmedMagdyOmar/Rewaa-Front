@@ -33,6 +33,51 @@ export async function GET() {
   }
 
   const role = roleCookie?.value === "student" ? "student" : "assistant";
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  // Try live Laravel backend if authCookie looks like a Sanctum token
+  if (authCookie.value && authCookie.value !== "mock_session_token_xyz") {
+    try {
+      const endpoint =
+        role === "student"
+          ? `${backendUrl}/api/website/profile`
+          : `${backendUrl}/api/dashboard/provider/profile`;
+
+      const backendRes = await fetch(endpoint, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${authCookie.value}`,
+          Accept: "application/json",
+        },
+      });
+
+      if (backendRes.ok) {
+        const backendJson = await backendRes.json();
+        const profileData = backendJson.data?.user || backendJson.data?.student || backendJson.data;
+
+        if (profileData) {
+          return NextResponse.json(
+            {
+              statusCode: 200,
+              message: "Profile retrieved successfully",
+              data: {
+                id: String(profileData.id),
+                email: profileData.email,
+                firstName: profileData.first_name || profileData.full_name?.split(" ")[0] || "User",
+                lastName: profileData.family_name || profileData.full_name?.split(" ")[1] || "",
+                role,
+                emailVerified: true,
+                createdAt: profileData.created_at || new Date().toISOString(),
+              },
+            },
+            { status: 200 },
+          );
+        }
+      }
+    } catch (e) {
+      console.warn("Backend profile query failed, using fallback:", e);
+    }
+  }
 
   return NextResponse.json(
     {

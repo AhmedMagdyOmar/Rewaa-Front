@@ -1,0 +1,148 @@
+import { api } from "@/lib/apiClient";
+import { authTokens } from "@/lib/auth-token";
+
+export interface ProviderLoginCredentials {
+  email: string;
+  password: string;
+}
+
+export interface ProviderLoginResponse {
+  user: {
+    id: number;
+    provider_id: number | null;
+    full_name: string;
+    email: string;
+    phone_code: string | null;
+    phone: string | null;
+    user_type: string;
+    roles?: Array<{ id: number; name: string }>;
+    permissions?: string[];
+  };
+  access_token: string;
+  token_type: string;
+}
+
+export interface StudentLoginCredentials {
+  login: string; // email, phone, or std-123
+  password: string;
+  phone_code?: string;
+}
+
+export interface StudentLoginResponse {
+  student: {
+    id: number;
+    student_code: string;
+    full_name: string;
+    first_name?: string;
+    family_name?: string;
+    email: string;
+    phone: string;
+    phone_code?: string;
+    status?: string;
+    courses_count?: number;
+  };
+  access_token: string;
+  token_type: string;
+}
+
+export const authService = {
+  /**
+   * Provider / Assistant Dashboard Login
+   */
+  async providerLogin(credentials: ProviderLoginCredentials): Promise<ProviderLoginResponse> {
+    const data = await api<ProviderLoginResponse>({
+      url: "/api/dashboard/provider/auth/login",
+      method: "POST",
+      data: credentials,
+    });
+
+    if (data?.access_token) {
+      authTokens.setToken(data.access_token, "provider");
+      // Set role cookie for middleware routing
+      if (typeof document !== "undefined") {
+        document.cookie = `rewaa_role=assistant; path=/; SameSite=Lax`;
+        document.cookie = `rewaa_auth=${encodeURIComponent(data.access_token)}; path=/; SameSite=Lax`;
+      }
+    }
+
+    return data;
+  },
+
+  /**
+   * Provider Dashboard Logout
+   */
+  async providerLogout(): Promise<void> {
+    try {
+      await api({
+        url: "/api/dashboard/provider/auth/logout",
+        method: "POST",
+      });
+    } finally {
+      authTokens.clearToken("provider");
+      if (typeof document !== "undefined") {
+        document.cookie = `rewaa_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+        document.cookie = `rewaa_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      }
+    }
+  },
+
+  /**
+   * Provider Profile
+   */
+  async getProviderProfile(): Promise<ProviderLoginResponse["user"]> {
+    const res = await api<{ user: ProviderLoginResponse["user"] }>({
+      url: "/api/dashboard/provider/profile",
+      method: "GET",
+    });
+    return res.user;
+  },
+
+  /**
+   * Student Website Portal Login
+   */
+  async studentLogin(credentials: StudentLoginCredentials): Promise<StudentLoginResponse> {
+    const data = await api<StudentLoginResponse>({
+      url: "/api/website/auth/login",
+      method: "POST",
+      data: credentials,
+    });
+
+    if (data?.access_token) {
+      authTokens.setToken(data.access_token, "student");
+      if (typeof document !== "undefined") {
+        document.cookie = `rewaa_role=student; path=/; SameSite=Lax`;
+        document.cookie = `rewaa_auth=${encodeURIComponent(data.access_token)}; path=/; SameSite=Lax`;
+      }
+    }
+
+    return data;
+  },
+
+  /**
+   * Student Website Portal Logout
+   */
+  async studentLogout(): Promise<void> {
+    try {
+      await api({
+        url: "/api/website/auth/logout",
+        method: "POST",
+      });
+    } finally {
+      authTokens.clearToken("student");
+      if (typeof document !== "undefined") {
+        document.cookie = `rewaa_role=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+        document.cookie = `rewaa_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
+      }
+    }
+  },
+
+  /**
+   * Student Profile
+   */
+  async getStudentProfile(): Promise<StudentLoginResponse["student"]> {
+    return api<StudentLoginResponse["student"]>({
+      url: "/api/website/profile",
+      method: "GET",
+    });
+  },
+};

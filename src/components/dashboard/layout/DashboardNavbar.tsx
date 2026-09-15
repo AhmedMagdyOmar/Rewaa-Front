@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { Separator } from "@/components/ui/separator";
 import { navConfig } from "@/config/nav-config";
 import { useAuthControllerGetProfile, useAuthControllerLogout } from "@/hooks/use-auth";
+import { authTokens } from "@/lib/auth-token";
 import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { AuthControllerGetProfile200 } from "@/types/api";
@@ -59,6 +60,7 @@ export function DashboardNavbar({
   const { mutate: logout, isPending } = useAuthControllerLogout({
     mutation: {
       onSuccess: () => {
+        authTokens.clearToken();
         router.push("/auth/login");
         router.refresh();
       },

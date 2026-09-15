@@ -90,18 +90,7 @@ export const getAuth = () => {
       options,
     );
   };
-  /**
-   * @summary Login with Google OAuth2
-   */
-  const authControllerGoogleAuth = (options?: SecondParameter<typeof api<void>>) => {
-    return api<void>({ url: `/api/auth/google`, method: "GET" }, options);
-  };
-  /**
-   * @summary Google OAuth2 callback
-   */
-  const authControllerGoogleAuthRedirect = (options?: SecondParameter<typeof api<void>>) => {
-    return api<void>({ url: `/api/auth/google/callback`, method: "GET" }, options);
-  };
+
   /**
    * @summary Verify email token
    */
@@ -159,8 +148,6 @@ export const getAuth = () => {
     authControllerGetProfile,
     authControllerRegister,
     authControllerResendVerification,
-    authControllerGoogleAuth,
-    authControllerGoogleAuthRedirect,
     authControllerVerify,
     magicLinkControllerRequest,
     magicLinkControllerVerify,
@@ -180,12 +167,6 @@ export type AuthControllerRegisterResult = NonNullable<
 >;
 export type AuthControllerResendVerificationResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getAuth>["authControllerResendVerification"]>>
->;
-export type AuthControllerGoogleAuthResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getAuth>["authControllerGoogleAuth"]>>
->;
-export type AuthControllerGoogleAuthRedirectResult = NonNullable<
-  Awaited<ReturnType<ReturnType<typeof getAuth>["authControllerGoogleAuthRedirect"]>>
 >;
 export type AuthControllerVerifyResult = NonNullable<
   Awaited<ReturnType<ReturnType<typeof getAuth>["authControllerVerify"]>>

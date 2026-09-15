@@ -1,4 +1,5 @@
 import { ApiErrorResponseDto } from "@/types/api";
+import { CustomAxiosError } from "./apiClient";
 
 interface DataType {
   data?: ApiErrorResponseDto;
@@ -6,32 +7,58 @@ interface DataType {
 }
 
 /**
- * Extracts a human-readable error message from an API response or error object.
- * Handles both Axios errors and custom API response formats.
+ * Extracts a human-readable error message from an API response, Axios error,
+ * or Laravel 422 validation errors dictionary.
  *
- * @param error - The error object from the mutation
- * @param data - The data object from the mutation (for cases where 200 OK but contains application-level error)
- * @returns A string containing the error message, or null if no error.
+ * @param error - The error object from mutation or query
+ * @param dataObj - Fallback response object
+ * @returns A string containing the friendly error message
  */
-export function getErrorMessage(
-  error: ApiErrorResponseDto | null,
-  dataObj?: unknown,
-): string | null {
-  if (error) {
-    const message = error.message;
-    if (Array.isArray(message)) {
-      return message.join(", ");
+export function getErrorMessage(error: unknown, dataObj?: unknown): string | null {
+  if (!error && !dataObj) return null;
+
+  // 1. Check CustomAxiosError with Laravel validation errors
+  const axiosErr = error as CustomAxiosError;
+  if (axiosErr?.validationErrors) {
+    const firstKey = Object.keys(axiosErr.validationErrors)[0];
+    if (firstKey && axiosErr.validationErrors[firstKey]?.length > 0) {
+      return axiosErr.validationErrors[firstKey][0];
     }
-    return message || "An unexpected error occurred";
   }
 
-  const data: DataType = dataObj as DataType;
-  if (data?.status && data.status >= 400 && data.data) {
+  // 2. Check apiMessage from Laravel ApiResponse
+  if (axiosErr?.apiMessage) {
+    return axiosErr.apiMessage;
+  }
+
+  // 3. Check standard ApiErrorResponseDto
+  const dtoErr = error as ApiErrorResponseDto;
+  if (dtoErr?.message) {
+    if (Array.isArray(dtoErr.message)) {
+      return dtoErr.message.join(", ");
+    }
+    return dtoErr.message;
+  }
+
+  // 4. Standard Error object
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  // 5. Fallback data object - check if it contains an application-level error (4xx/5xx)
+  const data = dataObj as DataType & { statusCode?: number };
+  const status = data?.status || data?.statusCode;
+  if (status && status >= 400 && data.data) {
     if (Array.isArray(data.data.message)) {
       return data.data.message.join(", ");
     }
     return data.data.message || "An error occurred";
   }
 
-  return null;
+  // If there is no error and data is successful (e.g. 200/201), there is no error!
+  if (!error) {
+    return null;
+  }
+
+  return "An unexpected error occurred. Please try again.";
 }
