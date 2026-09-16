@@ -186,7 +186,7 @@ Migrate login, registration, token persistence, and route protection for both Pr
 
 ---
 
-## Phase 3: Provider Dashboard — Course, Section & Content Hierarchy
+## Phase 3: Provider Dashboard — Course, Section & Content Hierarchy (Completed)
 
 ### Objective
 
@@ -194,27 +194,31 @@ Eliminate `mockCoursesData.ts` and `courses-storage.ts`. Connect course creation
 
 ### Deliverables & Action Items
 
-1. **Course Options Preloading Hook (`useCourseOptions`)**:
+1. **Course Options Preloading Hook (`useCourseOptions`)** [x]:
    - `GET /api/dashboard/provider/courses/options`
    - Cache stages, subjects, instructors, subscription periods for selects and filters.
 
-2. **Courses Management Views (`ManageCoursesClient`)**:
+2. **Courses Management Views (`ManageCoursesClient`)** [x]:
    - `GET /api/dashboard/provider/courses`
    - Support dynamic query parameters: `search`, `status`, `delivery_mode`, `educational_stage_id`, `page`, `per_page`.
    - Replace client-side item counters with server-provided `status_counts` (`all`, `published`, `draft`, `scheduled`, `archived`).
+   - Added `scheduled` status tab with counts.
+   - Added Refresh button.
 
-3. **Course Mutation & Creation Flows (`NewCourseClient` / Edit Course)**:
+3. **Course Mutation & Creation Flows (`NewCourseClient` / Edit Course)** [x]:
    - `POST /api/dashboard/provider/courses` (Handle `multipart/form-data` with `cover_image`, `intro_video_url`, bilingual `title.ar`, `title.en`, `description.ar`, `description.en`).
    - `GET /api/dashboard/provider/courses/{course}` (Prefill form state).
    - `PUT /api/dashboard/provider/courses/{course}` (Update course).
    - `DELETE /api/dashboard/provider/courses/{course}` (Soft delete).
    - `POST /api/dashboard/provider/courses/{course}/restore` (Restore from trash).
 
-4. **Curriculum & Section Management**:
+4. **Curriculum & Section Management** [x]:
    - `POST /api/dashboard/provider/courses/{course}/sections`
    - `PUT /api/dashboard/provider/courses/{course}/sections/{section}`
    - `DELETE /api/dashboard/provider/courses/{course}/sections/{section}`
    - `POST /api/dashboard/provider/courses/{course}/sections/reorder` (Reorder drag-and-drop hierarchy).
+   - Source course section import via parallel `POST` requests.
+   - Section-level exam linking (`exam_id`, `requires_exam_pass_to_unlock_next_section`).
 
 ---
 

@@ -70,9 +70,9 @@ export function ContentFilters<TTab extends string = string, TSort extends strin
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
 
   return (
-    <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
+    <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-start justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
       {/* Search & Tabs */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+      <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start gap-3 flex-1">
         {/* Search Box */}
         <div className="relative flex-1 min-w-55">
           <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

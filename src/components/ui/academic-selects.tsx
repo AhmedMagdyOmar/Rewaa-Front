@@ -162,7 +162,7 @@ export function ComboboxSelect({
                   {options.map((opt) => (
                     <CommandItem
                       key={opt.value}
-                      value={opt.label}
+                      value={`${opt.label} ___ ${opt.value}`}
                       onSelect={() => {
                         onValueChange(opt.value === value ? "" : opt.value);
                         setOpen(false);
@@ -238,6 +238,7 @@ export interface GradeSelectProps {
   showAllOption?: boolean;
   allOptionLabel?: string;
   allowAdd?: boolean;
+  grades?: Array<{ id: string | number; name: string }>;
 }
 
 export function GradeSelect({
@@ -253,6 +254,7 @@ export function GradeSelect({
   showAllOption = false,
   allOptionLabel,
   allowAdd = false,
+  grades,
 }: GradeSelectProps) {
   const tGrades = useTranslations("courses.new.grades");
   const [storedGradesList, setStoredGradesList] = React.useState<
@@ -260,6 +262,7 @@ export function GradeSelect({
   >([]);
 
   React.useEffect(() => {
+    if (grades) return;
     const load = () => {
       const g = getStoredGrades();
       setStoredGradesList(g.map((item) => ({ id: item.id, name: item.name })));
@@ -267,18 +270,22 @@ export function GradeSelect({
     load();
     window.addEventListener("rewaa_grades_updated", load);
     return () => window.removeEventListener("rewaa_grades_updated", load);
-  }, []);
+  }, [grades]);
 
-  const defaultGrades = [
-    { value: "grade1", label: tGrades("grade1") },
-    { value: "grade2", label: tGrades("grade2") },
-    { value: "grade3", label: tGrades("grade3") },
-    { value: "university", label: tGrades("university") },
-  ];
+  const defaultGrades = grades
+    ? grades.map((g) => ({ value: String(g.id), label: g.name }))
+    : [
+        { value: "grade1", label: tGrades("grade1") },
+        { value: "grade2", label: tGrades("grade2") },
+        { value: "grade3", label: tGrades("grade3") },
+        { value: "university", label: tGrades("university") },
+      ];
 
-  const customGrades = storedGradesList
-    .filter((sg) => !defaultGrades.some((dg) => dg.value === sg.name || dg.label === sg.name))
-    .map((sg) => ({ value: sg.name, label: sg.name }));
+  const customGrades = grades
+    ? []
+    : storedGradesList
+        .filter((sg) => !defaultGrades.some((dg) => dg.value === sg.name || dg.label === sg.name))
+        .map((sg) => ({ value: sg.name, label: sg.name }));
 
   const options: ComboboxOption[] = [
     ...(showAllOption ? [{ value: "all", label: allOptionLabel || "كل المراحل" }] : []),
@@ -326,6 +333,7 @@ export interface SubjectSelectProps {
   showAllOption?: boolean;
   allOptionLabel?: string;
   allowAdd?: boolean;
+  subjects?: Array<{ id: string | number; name: string }>;
 }
 
 export function SubjectSelect({
@@ -341,6 +349,7 @@ export function SubjectSelect({
   showAllOption = false,
   allOptionLabel,
   allowAdd = false,
+  subjects,
 }: SubjectSelectProps) {
   const tSubjects = useTranslations("courses.new.subjects");
   const [storedSubjectsList, setStoredSubjectsList] = React.useState<
@@ -348,6 +357,7 @@ export function SubjectSelect({
   >([]);
 
   React.useEffect(() => {
+    if (subjects) return;
     const load = () => {
       const s = getStoredSubjects();
       setStoredSubjectsList(s.map((item) => ({ id: item.id, name: item.name })));
@@ -355,20 +365,24 @@ export function SubjectSelect({
     load();
     window.addEventListener("rewaa_subjects_updated", load);
     return () => window.removeEventListener("rewaa_subjects_updated", load);
-  }, []);
+  }, [subjects]);
 
-  const defaultSubjects = [
-    { value: "physics", label: tSubjects("physics") },
-    { value: "chemistry", label: tSubjects("chemistry") },
-    { value: "mathematics", label: tSubjects("mathematics") },
-    { value: "biology", label: tSubjects("biology") },
-    { value: "arabic", label: tSubjects("arabic") },
-    { value: "english", label: tSubjects("english") },
-  ];
+  const defaultSubjects = subjects
+    ? subjects.map((s) => ({ value: String(s.id), label: s.name }))
+    : [
+        { value: "physics", label: tSubjects("physics") },
+        { value: "chemistry", label: tSubjects("chemistry") },
+        { value: "mathematics", label: tSubjects("mathematics") },
+        { value: "biology", label: tSubjects("biology") },
+        { value: "arabic", label: tSubjects("arabic") },
+        { value: "english", label: tSubjects("english") },
+      ];
 
-  const customSubjects = storedSubjectsList
-    .filter((sb) => !defaultSubjects.some((ds) => ds.value === sb.name || ds.label === sb.name))
-    .map((sb) => ({ value: sb.name, label: sb.name }));
+  const customSubjects = subjects
+    ? []
+    : storedSubjectsList
+        .filter((sb) => !defaultSubjects.some((ds) => ds.value === sb.name || ds.label === sb.name))
+        .map((sb) => ({ value: sb.name, label: sb.name }));
 
   const options: ComboboxOption[] = [
     ...(showAllOption ? [{ value: "all", label: allOptionLabel || "كل المواد" }] : []),
@@ -414,7 +428,7 @@ export interface TeacherSelectProps {
   className?: string;
   triggerClassName?: string;
   showIcon?: boolean;
-  teachers?: Teacher[];
+  teachers?: (Teacher | { id: number | string; full_name?: string; name?: string })[];
   allowAdd?: boolean;
 }
 
@@ -443,10 +457,15 @@ export function TeacherSelect({
   }, [teachers]);
 
   const activeTeachers = teachers || internalTeachers;
-  const options: ComboboxOption[] = activeTeachers.map((tch) => ({
-    value: tch.name,
-    label: tch.name,
-  }));
+  const options: ComboboxOption[] = activeTeachers.map((tch) => {
+    const labelStr =
+      "full_name" in tch && tch.full_name ? tch.full_name : tch.name || String(tch.id);
+    const valueStr = String(tch.id ?? tch.name);
+    return {
+      value: valueStr,
+      label: labelStr,
+    };
+  });
 
   const handleAddTeacher = (name: string) => {
     saveTeacher({

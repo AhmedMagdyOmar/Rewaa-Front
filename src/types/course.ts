@@ -1,5 +1,5 @@
 export type CoursePeriod = "monthly" | "yearly" | "termBased" | (string & {});
-export type CourseVenue = "center" | "online" | "all";
+export type CourseVenue = "onsite" | "online" | "hybrid" | "center" | "all";
 export type CourseBadge = "featured" | "revision" | "new" | "bestseller" | "limited";
 export type LessonType = "videoAndText" | "text";
 export type LessonCategory = "independent" | "course-dependent";
@@ -94,6 +94,7 @@ export interface Course {
   subject: string;
   grade: string;
   teacherName: string;
+  teacherImage?: string;
   period: CoursePeriod;
   date: string;
   numberOfLessons: number;

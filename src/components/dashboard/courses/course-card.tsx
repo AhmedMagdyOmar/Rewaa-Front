@@ -25,7 +25,6 @@ import {
   Users,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { getStoredTeachers } from "@/lib/settings-storage";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -56,16 +55,16 @@ export function CourseCard({
   const tNew = useTranslations("courses.new");
   const tStudent = useTranslations("studentDashboard.latestCourses");
 
-  const formatGrade = (gradeKey: string) => {
-    return tNew.has(`grades.${gradeKey}` as Parameters<typeof tNew.has>[0])
-      ? tNew(`grades.${gradeKey}` as Parameters<typeof tNew>[0])
-      : gradeKey;
+  const formatGrade = (gradeVal: string) => {
+    return tNew.has(`grades.${gradeVal}` as Parameters<typeof tNew.has>[0])
+      ? tNew(`grades.${gradeVal}` as Parameters<typeof tNew>[0])
+      : gradeVal;
   };
 
-  const formatSubject = (subjectKey: string) => {
-    return tNew.has(`subjects.${subjectKey}` as Parameters<typeof tNew.has>[0])
-      ? tNew(`subjects.${subjectKey}` as Parameters<typeof tNew>[0])
-      : subjectKey;
+  const formatSubject = (subjectVal: string) => {
+    return tNew.has(`subjects.${subjectVal}` as Parameters<typeof tNew.has>[0])
+      ? tNew(`subjects.${subjectVal}` as Parameters<typeof tNew.has>[0])
+      : subjectVal;
   };
 
   // Format currency
@@ -100,14 +99,20 @@ export function CourseCard({
   return (
     <div className="group flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
       {/* Cover Image Container with Badge */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        <Image
-          src={course.coverImage}
-          alt={course.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-        />
+      <div className="relative aspect-video w-full overflow-hidden bg-muted flex items-center justify-center">
+        {course.coverImage ? (
+          <Image
+            src={course.coverImage}
+            alt={course.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground/50">
+            <BookOpen className="size-10" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-black/20" />
 
         {/* Status Badge on top-start (hidden in student mode) */}
@@ -191,7 +196,7 @@ export function CourseCard({
                 <div className="mt-1 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
                   {course.venue === "online" ? (
                     <Globe className="h-4 w-4" />
-                  ) : course.venue === "center" ? (
+                  ) : course.venue === "center" || course.venue === "onsite" ? (
                     <House className="h-4 w-4" />
                   ) : (
                     <Globe2 className="h-4 w-4" />
@@ -199,7 +204,7 @@ export function CourseCard({
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top">
-                {course.venue === "all"
+                {course.venue === "all" || course.venue === "hybrid"
                   ? t("venue.all")
                   : course.venue === "online"
                     ? t("venue.online")
@@ -217,37 +222,24 @@ export function CourseCard({
         </div>
 
         {/* Teacher Info */}
-        {course.teacherName &&
-          (() => {
-            const teachers = typeof window !== "undefined" ? getStoredTeachers() : [];
-            const matchedTeacher = teachers.find(
-              (t) =>
-                t.name.trim().toLowerCase() === course.teacherName.trim().toLowerCase() ||
-                t.id === course.teacherName,
-            );
-            const teacherImg = matchedTeacher?.image;
-
-            return (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
-                <div className="relative size-5 rounded-full overflow-hidden bg-primary/10 border border-border/60 shrink-0 flex items-center justify-center">
-                  {teacherImg ? (
-                    <Image
-                      src={teacherImg}
-                      alt={course.teacherName}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                  ) : (
-                    <User className="size-3 text-primary/70" />
-                  )}
-                </div>
-                <span className="font-medium truncate text-foreground/80">
-                  {course.teacherName}
-                </span>
-              </div>
-            );
-          })()}
+        {course.teacherName && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
+            <div className="relative size-5 rounded-full overflow-hidden bg-primary/10 border border-border/60 shrink-0 flex items-center justify-center">
+              {course.teacherImage ? (
+                <Image
+                  src={course.teacherImage}
+                  alt={course.teacherName}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              ) : (
+                <User className="size-3 text-primary/70" />
+              )}
+            </div>
+            <span className="font-medium truncate text-foreground/80">{course.teacherName}</span>
+          </div>
+        )}
 
         {/* Info Row */}
         <div className="mt-auto pt-3 border-t border-border/40 flex flex-row gap-1 justify-between text-xs text-muted-foreground">

@@ -152,7 +152,12 @@ export function LessonDialog({
         subject: parentCourseContext.subject || "General",
         grade: parentCourseContext.grade || "General",
         teacherName: parentCourseContext.teacherName || "Teacher",
-        venue: parentCourseContext.venue || "all",
+        venue:
+          parentCourseContext.venue === "onsite"
+            ? "center"
+            : parentCourseContext.venue === "hybrid"
+              ? "all"
+              : parentCourseContext.venue || "all",
         category: "test",
         examType: "course-dependent",
         sectionId: bankSectionId,
