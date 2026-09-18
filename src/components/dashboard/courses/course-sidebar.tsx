@@ -49,7 +49,7 @@ export function CourseSidebar({ course }: CourseSidebarProps) {
         <div className="flex justify-between py-1 border-b border-border/40">
           <span className="text-muted-foreground">{t("details.period")}</span>
           <span className="font-semibold text-foreground">
-            {["monthly", "yearly", "termBased"].includes(course.period)
+            {["monthly", "yearly", "term"].includes(course.period)
               ? t(`period.${course.period}`)
               : course.period}
           </span>
@@ -58,11 +58,11 @@ export function CourseSidebar({ course }: CourseSidebarProps) {
         <div className="flex justify-between py-1 border-b border-border/40">
           <span className="text-muted-foreground">{t("details.venue")}</span>
           <span className="font-semibold text-foreground">
-            {course.venue === "all"
-              ? t("venue.all")
-              : course.venue === "online"
-                ? t("venue.online")
-                : t("venue.center")}
+            {course.venue === "online"
+              ? t("venue.online")
+              : course.venue === "onsite"
+                ? t("venue.onsite")
+                : t("venue.hybrid")}
           </span>
         </div>
 

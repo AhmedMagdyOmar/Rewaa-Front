@@ -26,9 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { ExamSelect, MultiLessonSelect } from "@/components/ui/academic-selects";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { getStoredExams, saveStoredExams } from "@/lib/exams-storage";
-import { getStoredLessons } from "@/lib/lessons-storage";
+import { useProviderLessonOptions, useProviderLessons } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
 import {
   CourseSection,
@@ -101,6 +99,8 @@ export function LessonDialog({
   const [description, setDescription] = useState("");
   const [lectureVideoLink, setLectureVideoLink] = useState("");
   const [coverImage, setCoverImage] = useState<string>("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+  const [removeCoverImage, setRemoveCoverImage] = useState<boolean>(false);
 
   // Attachments and Exams
   const [hasPdfAttachments, setHasPdfAttachments] = useState(false);
@@ -109,13 +109,11 @@ export function LessonDialog({
 
   const [hasImageAttachments, setHasImageAttachments] = useState(false);
   const [imageFiles, setImageFiles] = useState<LessonAttachment[]>([]);
+  const [deleteMediaIds, setDeleteMediaIds] = useState<number[]>([]);
 
   const [isLinkedToExam, setIsLinkedToExam] = useState(false);
   const [linkedExamId, setLinkedExamId] = useState("");
   const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
-  const [hasExamExpiryDate, setHasExamExpiryDate] = useState(false);
-  const [examStartDate, setExamStartDate] = useState("");
-  const [examExpiryDate, setExamExpiryDate] = useState("");
 
   // Publish Status State
   const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
@@ -134,9 +132,82 @@ export function LessonDialog({
   const [examIsReqPass, setExamIsReqPass] = useState(false);
   const [examTargetLessonId, setExamTargetLessonId] = useState<string | null>(null);
 
+  const { data: optionsData } = useProviderLessonOptions();
+  const { data: lessonsData } = useProviderLessons({ per_page: 50, classification: "standalone" });
+
   // Stored / Available exams & lessons bank
   const [availableExams, setAvailableExams] = useState<Exam[]>([]);
   const [bankLessons, setBankLessons] = useState<Lesson[]>([]);
+
+  useEffect(() => {
+    if (optionsData?.exams) {
+      setAvailableExams(
+        optionsData.exams.map((e) => ({
+          id: String(e.id),
+          title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
+          description: "",
+          subject: parentCourseContext.subject || "General",
+          grade: parentCourseContext.grade || "General",
+          teacherName: parentCourseContext.teacherName || "Teacher",
+          venue: parentCourseContext.venue || "hybrid",
+          category: "test",
+          examType: "course-dependent",
+          triesAllowed: 1,
+          durationMinutes: 60,
+          passingPercentage: e.passing_percentage,
+          showModelAnswers: true,
+          randomizeQuestionsOrder: false,
+          randomizeMCQChoices: false,
+          examSections: [],
+          numberOfQuestions: 0,
+          numberOfStudents: 0,
+          successRate: 0,
+          timesUsed: 0,
+          createdAt: new Date().toISOString(),
+        })),
+      );
+    }
+  }, [optionsData, locale, parentCourseContext]);
+
+  useEffect(() => {
+    if (lessonsData?.lessons) {
+      setBankLessons(
+        lessonsData.lessons.map((b) => ({
+          id: String(b.id),
+          title: b.title?.[locale] || b.title?.ar || b.title?.en || "",
+          description: b.description?.[locale] || b.description?.ar || "",
+          writtenText: b.description?.[locale] || b.description?.ar || "",
+          type: b.type === "text_only" ? "text" : "videoAndText",
+          coverImage: b.cover_image || b.cover_image_url || undefined,
+          lectureVideoLink: b.video_url || undefined,
+          lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
+          venue: (b.delivery_mode as CourseVenue) || "hybrid",
+          publishStatus: (b.status as LessonPublishStatus) || "published",
+          hasPdfAttachments: Boolean(b.has_pdf_attachments),
+          pdfFiles: (b.pdf_attachments || []).map((p) => ({
+            id: String(p.id),
+            title: p.name || "PDF",
+            fileUrl: p.url,
+            fileType: "pdf" as const,
+            sizeInBytes: p.size,
+          })),
+          hasImageAttachments: Boolean(b.has_explanatory_images),
+          imageFiles: (b.explanatory_images || []).map((img) => ({
+            id: String(img.id),
+            title: img.name || "Image",
+            fileUrl: img.url,
+            fileType: "image" as const,
+            sizeInBytes: img.size,
+          })),
+          isLinkedToExam: Boolean(b.has_exam),
+          linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
+          linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
+          isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
+          scheduledPublishDate: b.scheduled_publish_at || undefined,
+        })),
+      );
+    }
+  }, [lessonsData, locale]);
 
   const handleSaveInternalExam = () => {
     let finalExamId = examSelectedId;
@@ -152,12 +223,7 @@ export function LessonDialog({
         subject: parentCourseContext.subject || "General",
         grade: parentCourseContext.grade || "General",
         teacherName: parentCourseContext.teacherName || "Teacher",
-        venue:
-          parentCourseContext.venue === "onsite"
-            ? "center"
-            : parentCourseContext.venue === "hybrid"
-              ? "all"
-              : parentCourseContext.venue || "all",
+        venue: parentCourseContext.venue || "hybrid",
         category: "test",
         examType: "course-dependent",
         sectionId: bankSectionId,
@@ -176,7 +242,6 @@ export function LessonDialog({
       };
 
       const updatedExams = [createdExam, ...availableExams];
-      saveStoredExams(locale, updatedExams);
       setAvailableExams(updatedExams);
 
       finalExamId = createdExamId;
@@ -203,15 +268,6 @@ export function LessonDialog({
     setIsExamModalOpen(false);
   };
 
-  useEffect(() => {
-    if (open) {
-      const loadedLessons = getStoredLessons(locale);
-      const loadedExams = getStoredExams(locale);
-      setBankLessons(loadedLessons);
-      setAvailableExams(loadedExams);
-    }
-  }, [open, locale]);
-
   // Populate state on open / initialLesson change
   useEffect(() => {
     if (open) {
@@ -221,28 +277,43 @@ export function LessonDialog({
         setTitle(initialLesson.title || "");
         setDescription(initialLesson.description || initialLesson.writtenText || "");
         setLectureVideoLink(initialLesson.lectureVideoLink || "");
-        setCoverImage(initialLesson.coverImage || "");
+        setCoverImage(
+          initialLesson.coverImage ||
+            initialLesson.cover_image ||
+            initialLesson.cover_image_url ||
+            "",
+        );
+        setCoverImageFile(initialLesson.coverImageFile || null);
+        setRemoveCoverImage(Boolean(initialLesson.removeCoverImage));
 
         const hasPdfs = Boolean(
           initialLesson.hasPdfAttachments ||
           (initialLesson.pdfFiles && initialLesson.pdfFiles.length > 0),
         );
         setHasPdfAttachments(hasPdfs);
-        setPdfFiles(initialLesson.pdfFiles || []);
+        setPdfFiles(
+          (initialLesson.pdfFiles || []).map((p) => ({
+            ...p,
+            isExisting: p.isExisting ?? !p.rawFile,
+          })),
+        );
 
         const hasImgs = Boolean(
           initialLesson.hasImageAttachments ||
           (initialLesson.imageFiles && initialLesson.imageFiles.length > 0),
         );
         setHasImageAttachments(hasImgs);
-        setImageFiles(initialLesson.imageFiles || []);
+        setImageFiles(
+          (initialLesson.imageFiles || []).map((img) => ({
+            ...img,
+            isExisting: img.isExisting ?? !img.rawFile,
+          })),
+        );
+        setDeleteMediaIds(initialLesson.deleteMediaIds || []);
 
         setIsLinkedToExam(Boolean(initialLesson.isLinkedToExam));
         setLinkedExamId(initialLesson.linkedExamId || "");
         setIsRequiredPassExam(Boolean(initialLesson.isRequiredPassExam));
-        setHasExamExpiryDate(Boolean(initialLesson.hasExamExpiryDate));
-        setExamStartDate(initialLesson.examStartDate || "");
-        setExamExpiryDate(initialLesson.examExpiryDate || "");
 
         setPublishStatus(initialLesson.publishStatus || "published");
         setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
@@ -256,17 +327,17 @@ export function LessonDialog({
         setDescription("");
         setLectureVideoLink("");
         setCoverImage("");
+        setCoverImageFile(null);
+        setRemoveCoverImage(false);
         setHasPdfAttachments(false);
         setPdfFiles([]);
         setPdfError(null);
         setHasImageAttachments(false);
         setImageFiles([]);
+        setDeleteMediaIds([]);
         setIsLinkedToExam(false);
         setLinkedExamId("");
         setIsRequiredPassExam(false);
-        setHasExamExpiryDate(false);
-        setExamStartDate("");
-        setExamExpiryDate("");
         setPublishStatus("published");
         setScheduledPublishDate("");
         setScheduleDateError(null);
@@ -283,11 +354,13 @@ export function LessonDialog({
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const newPdf: LessonAttachment = {
-        id: `pdf-${Date.now()}`,
+        id: `pdf-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title: file.name,
         fileUrl: URL.createObjectURL(file),
         fileType: "pdf",
         sizeInBytes: file.size,
+        rawFile: file,
+        isExisting: false,
       };
       setPdfFiles((prev) => [...prev, newPdf]);
       setPdfError(null);
@@ -295,6 +368,10 @@ export function LessonDialog({
   };
 
   const handleRemovePdfFile = (id: string) => {
+    const item = pdfFiles.find((p) => p.id === id);
+    if (item?.isExisting && !isNaN(Number(item.id))) {
+      setDeleteMediaIds((prev) => [...prev, Number(item.id)]);
+    }
     setPdfFiles((prev) => prev.filter((p) => p.id !== id));
   };
 
@@ -303,17 +380,23 @@ export function LessonDialog({
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       const newImg: LessonAttachment = {
-        id: `img-${Date.now()}`,
+        id: `img-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         title: file.name,
         fileUrl: URL.createObjectURL(file),
         fileType: "image",
         sizeInBytes: file.size,
+        rawFile: file,
+        isExisting: false,
       };
       setImageFiles((prev) => [...prev, newImg]);
     }
   };
 
   const handleRemoveImageFile = (id: string) => {
+    const item = imageFiles.find((i) => i.id === id);
+    if (item?.isExisting && !isNaN(Number(item.id))) {
+      setDeleteMediaIds((prev) => [...prev, Number(item.id)]);
+    }
     setImageFiles((prev) => prev.filter((i) => i.id !== id));
   };
 
@@ -359,7 +442,7 @@ export function LessonDialog({
 
     setScheduleDateError(null);
 
-    // Validation: If lesson is scheduled, validate against Section & Course schedule periods
+    // Validation: If lesson is scheduled, validate against Section schedule periods
     if (publishStatus === "scheduled") {
       const targetSec = sections.find((s) => s.id === targetSectionId);
       if (targetSec && targetSec.status === "scheduled") {
@@ -372,39 +455,6 @@ export function LessonDialog({
           }
         }
       }
-
-      // Check against course scheduled dates from storage if existing
-      const storedCourses = getStoredCourses(locale);
-      const currentCourse = storedCourses.find((c) =>
-        c.sections?.some((s) => s.id === targetSectionId),
-      );
-      if (currentCourse && currentCourse.publishStatus === "scheduled") {
-        if (currentCourse.scheduledPublishDate && scheduledPublishDate) {
-          if (scheduledPublishDate < currentCourse.scheduledPublishDate) {
-            setScheduleDateError(
-              t("lessonDateAfterCourseScheduleError", {
-                date: currentCourse.scheduledPublishDate,
-              }),
-            );
-            return;
-          }
-        }
-      }
-    }
-
-    if (isLinkedToExam && hasExamExpiryDate) {
-      if (publishStatus === "scheduled" && scheduledPublishDate) {
-        if (examStartDate && examStartDate < scheduledPublishDate) {
-          return;
-        }
-        if (examExpiryDate && examExpiryDate < scheduledPublishDate) {
-          return;
-        }
-      }
-
-      if (examStartDate && examExpiryDate && examExpiryDate < examStartDate) {
-        return;
-      }
     }
 
     const selectedExamObj = availableExams.find((e) => e.id === linkedExamId);
@@ -416,6 +466,8 @@ export function LessonDialog({
       writtenText: description.trim(),
       lectureVideoLink: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
       coverImage: coverImage.trim() || undefined,
+      coverImageFile: coverImageFile || undefined,
+      removeCoverImage: removeCoverImage,
 
       // Auto-filled course info
       grade: parentCourseContext.grade,
@@ -427,13 +479,11 @@ export function LessonDialog({
       pdfFiles: hasPdfAttachments ? pdfFiles : [],
       hasImageAttachments,
       imageFiles: hasImageAttachments ? imageFiles : [],
+      deleteMediaIds: deleteMediaIds.length > 0 ? deleteMediaIds : undefined,
       isLinkedToExam,
       linkedExamId: isLinkedToExam ? linkedExamId : undefined,
       linkedExamTitle: isLinkedToExam && selectedExamObj ? selectedExamObj.title : undefined,
       isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
-      hasExamExpiryDate: isLinkedToExam ? hasExamExpiryDate : false,
-      examStartDate: isLinkedToExam && hasExamExpiryDate ? examStartDate : undefined,
-      examExpiryDate: isLinkedToExam && hasExamExpiryDate ? examExpiryDate : undefined,
 
       // Organization & publish status
       venue: parentCourseContext.venue || initialLesson?.venue || "all",
@@ -445,6 +495,16 @@ export function LessonDialog({
     onSave(targetSectionId, updatedLesson);
     onOpenChange(false);
   };
+
+  const availableBankLessons = bankLessons.filter((l) => {
+    // Exclude lessons already present in any section of this course
+    const isAlreadyInSection = sections.some((s) =>
+      s.lessons.some(
+        (existing) => existing.title.trim().toLowerCase() === l.title.trim().toLowerCase(),
+      ),
+    );
+    return !isAlreadyInSection;
+  });
 
   const selectedBankLessonsList = bankLessons.filter((l) => selectedBankLessonIds.includes(l.id));
 
@@ -506,7 +566,7 @@ export function LessonDialog({
                   onValueChange={setSelectedBankLessonIds}
                   label={locale === "ar" ? "اختر الدروس" : "Select Lessons"}
                   placeholder={locale === "ar" ? "اختر الدروس..." : "Select lessons..."}
-                  lessons={bankLessons.map((l) => ({ id: l.id, title: l.title }))}
+                  lessons={availableBankLessons.map((l) => ({ id: l.id, title: l.title }))}
                   required
                 />
               </div>
@@ -711,8 +771,18 @@ export function LessonDialog({
                   label={t("coverImage")}
                   labelIcon={<ImageIcon className="size-4 text-muted-foreground" />}
                   value={coverImage}
-                  onChange={(dataUrl) => setCoverImage(dataUrl)}
-                  onClear={() => setCoverImage("")}
+                  onChange={(dataUrl, file) => {
+                    setCoverImage(dataUrl);
+                    if (file) {
+                      setCoverImageFile(file);
+                      setRemoveCoverImage(false);
+                    }
+                  }}
+                  onClear={() => {
+                    setCoverImage("");
+                    setCoverImageFile(null);
+                    setRemoveCoverImage(true);
+                  }}
                   aspectRatio="auto"
                   prompt={tCourses("new.fields.coverImageDrag")}
                   hint={tCourses("new.fields.coverImageNote")}
@@ -928,27 +998,13 @@ export function LessonDialog({
                       return `${dateStr}T${isEnd ? "23:59" : "00:00"}`;
                     };
 
-                    // Compute min boundary from target section and parent course
+                    // Compute min boundary from target section
                     const targetSec = sections.find((s) => s.id === targetSectionId);
-                    const storedCourses = getStoredCourses(locale);
-                    const currentCourse = storedCourses.find((c) =>
-                      c.sections?.some((s) => s.id === targetSectionId),
-                    );
-
                     let effectiveMinDate: string | undefined = undefined;
 
                     if (targetSec?.status === "scheduled") {
                       if (targetSec.scheduledPublishDate) {
                         effectiveMinDate = targetSec.scheduledPublishDate;
-                      }
-                    }
-
-                    if (currentCourse?.publishStatus === "scheduled") {
-                      if (currentCourse.scheduledPublishDate) {
-                        effectiveMinDate =
-                          effectiveMinDate && effectiveMinDate > currentCourse.scheduledPublishDate
-                            ? effectiveMinDate
-                            : currentCourse.scheduledPublishDate;
                       }
                     }
 

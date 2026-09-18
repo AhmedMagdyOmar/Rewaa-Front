@@ -13,7 +13,6 @@ import {
   useCreateCourse,
   useUpdateCourse,
 } from "@/hooks/use-courses";
-import { DELIVERY_MODE_MAP, PERIOD_MAP } from "../course-form-utils";
 
 interface UseCourseFormProps {
   initialCourseId?: string;
@@ -135,35 +134,26 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     }
   }, [initialCourseId, initialBackendCourse, isBackendCourseLoading, locale]);
 
-  const handleSubmit = async (e: React.SubmitEvent, isDraftOnly = false) => {
-    e.preventDefault();
-    if (isDraftOnly) {
-      setIsSavingDraft(true);
-    } else {
-      setIsSubmitting(true);
-    }
-
+  const buildCoursePayload = (targetStatusOverride?: string) => {
     const stageId = Number(grade) || courseOptions?.educational_stages?.[0]?.id || 1;
     const subjectId = Number(subject) || courseOptions?.subjects?.[0]?.id || 1;
     const instructorId = Number(teacherName) || courseOptions?.instructors?.[0]?.id || undefined;
-    const deliveryMode = DELIVERY_MODE_MAP[venue] || "hybrid";
-    const subPeriod = PERIOD_MAP[period] || period || "monthly";
+    const deliveryMode = venue || "hybrid";
+    const subPeriod = period || "monthly";
 
-    // When creating a course on Step 1 (or saving draft), it must be saved as draft
-    // because published/scheduled courses require sections & lessons which are added in Step 2.
-    // If editing an existing course, keep its chosen status.
     const isNewCourse =
       !initialCourseId && (!createdCourseId || createdCourseId.startsWith("course-"));
     const targetStatus =
-      isDraftOnly || isNewCourse
+      targetStatusOverride ||
+      (isNewCourse
         ? "draft"
         : coursePublishStatus === "scheduled"
           ? "scheduled"
           : coursePublishStatus === "published"
             ? "published"
-            : "draft";
+            : "draft");
 
-    const coursePayload = {
+    return {
       title: {
         ar: title.trim(),
         en: title.trim(),
@@ -199,6 +189,20 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
           : undefined,
       is_active: isActive,
     };
+  };
+
+  const handleSubmit = async (e: React.SubmitEvent, isDraftOnly = false) => {
+    e.preventDefault();
+    if (isDraftOnly) {
+      setIsSavingDraft(true);
+    } else {
+      setIsSubmitting(true);
+    }
+
+    const isNewCourse =
+      !initialCourseId && (!createdCourseId || createdCourseId.startsWith("course-"));
+    const targetStatus = isDraftOnly || isNewCourse ? "draft" : undefined;
+    const coursePayload = buildCoursePayload(targetStatus);
 
     try {
       let savedCourseId = createdCourseId || initialCourseId;
@@ -257,18 +261,13 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     }
 
     try {
-      if (coursePublishStatus !== "draft") {
-        await updateCourseMutation.mutateAsync({
-          id: courseId,
-          data: {
-            status: coursePublishStatus,
-            scheduled_publish_at:
-              coursePublishStatus === "scheduled" && courseScheduledPublishDate
-                ? courseScheduledPublishDate
-                : undefined,
-          },
-        });
-      }
+      // Use regular PUT /courses/{id} with full payload
+      const fullPayload = buildCoursePayload(coursePublishStatus);
+      await updateCourseMutation.mutateAsync({
+        id: courseId,
+        data: fullPayload,
+      });
+
       toast.success(
         coursePublishStatus === "published"
           ? locale === "ar"

@@ -106,7 +106,7 @@ export function CategoryInfoSection({
                     : key === "yearly"
                       ? t("periodOptions.yearly")
                       : key === "term"
-                        ? t("periodOptions.termBased")
+                        ? t("periodOptions.term")
                         : String(label);
                 return (
                   <SelectItem key={key} value={key}>
@@ -118,7 +118,7 @@ export function CategoryInfoSection({
               <>
                 <SelectItem value="monthly">{t("periodOptions.monthly")}</SelectItem>
                 <SelectItem value="yearly">{t("periodOptions.yearly")}</SelectItem>
-                <SelectItem value="term">{t("periodOptions.termBased")}</SelectItem>
+                <SelectItem value="term">{t("periodOptions.term")}</SelectItem>
               </>
             )}
           </SelectContent>

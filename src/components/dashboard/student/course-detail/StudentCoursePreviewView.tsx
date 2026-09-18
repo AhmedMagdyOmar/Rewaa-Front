@@ -564,16 +564,16 @@ export function StudentCoursePreviewView({
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/60 text-white backdrop-blur-md border border-white/10 shadow-xs">
                       {course.venue === "online" ? (
                         <Globe className="h-3.5 w-3.5" />
-                      ) : course.venue === "center" ? (
+                      ) : course.venue === "onsite" ? (
                         <House className="h-3.5 w-3.5" />
                       ) : (
                         <Globe2 className="h-3.5 w-3.5" />
                       )}
-                      {course.venue === "all"
-                        ? tCourses("venue.all")
+                      {course.venue === "hybrid"
+                        ? tCourses("venue.hybrid")
                         : course.venue === "online"
                           ? tCourses("venue.online")
-                          : tCourses("venue.center")}
+                          : tCourses("venue.onsite")}
                     </span>
                   </div>
                 )}

@@ -1,8 +1,10 @@
-export type CoursePeriod = "monthly" | "yearly" | "termBased" | (string & {});
-export type CourseVenue = "onsite" | "online" | "hybrid" | "center" | "all";
+export type CoursePeriod = "monthly" | "yearly" | "term" | (string & {});
+export type CourseDeliveryMode = "online" | "onsite" | "hybrid";
+export type CourseVenue = CourseDeliveryMode;
 export type CourseBadge = "featured" | "revision" | "new" | "bestseller" | "limited";
 export type LessonType = "videoAndText" | "text";
-export type LessonCategory = "independent" | "course-dependent";
+export type LessonClassification = "standalone" | "course";
+export type LessonCategory = "independent" | "course-dependent" | "standalone" | "course";
 export type LessonPublishStatus = "draft" | "published" | "scheduled";
 
 export interface LessonAttachment {
@@ -11,6 +13,8 @@ export interface LessonAttachment {
   fileUrl: string;
   fileType: "pdf" | "image" | "doc" | "zip";
   sizeInBytes?: number;
+  rawFile?: File;
+  isExisting?: boolean;
 }
 
 export interface Lesson {
@@ -19,8 +23,11 @@ export interface Lesson {
   title: string;
   description?: string;
   coverImage?: string;
+  cover_image_url?: string;
+  cover_image?: string;
+  coverImageFile?: File | null;
+  removeCoverImage?: boolean;
   lectureVideoLink?: string;
-  writtenText?: string;
   grade?: string;
   subject?: string;
   teacherName?: string;
@@ -31,27 +38,31 @@ export interface Lesson {
   pdfFiles?: LessonAttachment[];
   hasImageAttachments?: boolean;
   imageFiles?: LessonAttachment[];
+  deleteMediaIds?: number[];
   isLinkedToExam?: boolean;
   linkedExamId?: string; // FK → Exam.id
   linkedExamTitle?: string; // denormalized
   isRequiredPassExam?: boolean;
-  hasExamExpiryDate?: boolean;
-  examStartDate?: string;
-  examExpiryDate?: string;
 
   // Organization and publish status
   venue?: CourseVenue;
+  classification?: LessonClassification;
   lessonCategory?: LessonCategory;
   courseId?: string; // FK → Course.id
   courseTitle?: string; // denormalized
-  courseIds?: string[]; // IDs of all courses containing this lesson
   sectionId?: string; // FK → CourseSection.id
-  coursesCount?: number; // how many courses include this lesson (from backend)
-  viewsCount?: number; // how many times this lesson has been viewed
+  sectionTitle?: string; // denormalized
+  completionsCount?: number; // how many students completed this lesson (from backend)
   publishStatus?: LessonPublishStatus;
   scheduledPublishDate?: string;
+  isActive?: boolean;
 
   attachments?: LessonAttachment[];
+  // Deprecated legacy aliases
+  writtenText?: string;
+  coursesCount?: number;
+  viewsCount?: number;
+  courseIds?: string[];
 }
 
 export interface CourseSection {

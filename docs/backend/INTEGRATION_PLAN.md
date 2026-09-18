@@ -5,6 +5,7 @@
 > - [`API_LIST.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/API_LIST.md) (Full 228-endpoint inventory & status)
 > - [`API_SCHEMAS.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/API_SCHEMAS.md) (Request / Response DTO models & enums)
 > - [`API_ASSIMILATION_GUIDE.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/API_ASSIMILATION_GUIDE.md) (Component & state migration details)
+> - [`LESSONS_INTEGRATION_CONTEXT.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/LESSONS_INTEGRATION_CONTEXT.md) (Phase 4 Lessons deep architecture, API contracts & component mapping)
 
 ---
 
@@ -230,16 +231,18 @@ Eliminate `lessons-storage.ts`, `exams-storage.ts`, and `questions-storage.ts`. 
 
 ### Deliverables & Action Items
 
-1. **Lessons Engine (`ManageLessonsClient`)**:
+1. **Lessons Engine (`ManageLessonsClient`, `NewLessonClient`, `LessonDialog`)** [x]:
+   - **Context & Reference**: [LESSONS_INTEGRATION_CONTEXT.md](./LESSONS_INTEGRATION_CONTEXT.md)
    - **Endpoints**:
-     - `GET /api/dashboard/provider/lessons`
-     - `GET /api/dashboard/provider/lessons/options`
-     - `POST /api/dashboard/provider/lessons`
-     - `GET /api/dashboard/provider/lessons/{lesson}`
-     - `PUT /api/dashboard/provider/lessons/{lesson}`
-     - `DELETE /api/dashboard/provider/lessons/{lesson}`
-     - `POST /api/dashboard/provider/lesson-templates` (Reusable template library)
-   - Support file attachments (PDFs, media via Spatie MediaLibrary) and exam linkages.
+     - `GET /api/dashboard/provider/lessons` (Filtering, search, pagination, status counts, classification tabs)
+     - `GET /api/dashboard/provider/lessons/options` (Stages, subjects, instructors, courses, sections, exams)
+     - `POST /api/dashboard/provider/lessons` (Multipart FormData with cover_image, pdf_files[], explanatory_images[])
+     - `GET /api/dashboard/provider/lessons/{lesson}` (Prefetching full lesson details & relations)
+     - `PUT /api/dashboard/provider/lessons/{lesson}` (Update with method spoofing `_method=PUT` for multipart)
+     - `DELETE /api/dashboard/provider/lessons/{lesson}` (Soft delete with dialog confirmation)
+     - `POST /api/dashboard/provider/lessons/reorder` (Curriculum ordering)
+   - Completely eliminated `getStoredLessons`, `saveStoredLessons`, and `mockLessonsData` across all provider views.
+   - Connected `LessonDialog` in `NewCourseClient` / Curriculum builder and standalone roster `ManageLessonsClient`.
 
 2. **Question Bank Management**:
    - **Endpoints**:

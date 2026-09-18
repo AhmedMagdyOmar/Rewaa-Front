@@ -18,7 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { getStoredCourses } from "@/lib/courses-storage";
 import { getStoredExams } from "@/lib/exams-storage";
-import { getStoredLessons } from "@/lib/lessons-storage";
+import { lessonsService } from "@/lib/api/lessons-service";
 import { getStoredTeachers } from "@/lib/settings-storage";
 import { cn } from "@/lib/utils";
 import { Exam } from "@/types/exam";
@@ -690,8 +690,29 @@ export function LessonSelect({
 
   React.useEffect(() => {
     if (lessons) return;
-    const loaded = getStoredLessons(locale);
-    setInternalLessons(loaded.map((l) => ({ id: l.id, title: l.title })));
+    let isMounted = true;
+    lessonsService
+      .getLessons({ per_page: 100 })
+      .then((res) => {
+        if (!isMounted) return;
+        setInternalLessons(
+          res.lessons.map((l) => {
+            const titleStr =
+              typeof l.title === "string"
+                ? l.title
+                : locale === "ar"
+                  ? l.title?.ar || l.title?.en || ""
+                  : l.title?.en || l.title?.ar || "";
+            return { id: String(l.id), title: titleStr };
+          }),
+        );
+      })
+      .catch(() => {
+        // Silently handle if unauthenticated or network failure
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [lessons, locale]);
 
   const activeLessons = lessons || internalLessons;
@@ -766,8 +787,29 @@ export function MultiLessonSelect({
 
   React.useEffect(() => {
     if (lessons) return;
-    const loaded = getStoredLessons(locale);
-    setInternalLessons(loaded.map((l) => ({ id: l.id, title: l.title })));
+    let isMounted = true;
+    lessonsService
+      .getLessons({ per_page: 100 })
+      .then((res) => {
+        if (!isMounted) return;
+        setInternalLessons(
+          res.lessons.map((l) => {
+            const titleStr =
+              typeof l.title === "string"
+                ? l.title
+                : locale === "ar"
+                  ? l.title?.ar || l.title?.en || ""
+                  : l.title?.en || l.title?.ar || "";
+            return { id: String(l.id), title: titleStr };
+          }),
+        );
+      })
+      .catch(() => {
+        // Silently handle if unauthenticated or network failure
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [lessons, locale]);
 
   const activeLessons = lessons || internalLessons;

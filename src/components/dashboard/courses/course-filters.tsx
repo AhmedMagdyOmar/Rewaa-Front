@@ -13,7 +13,7 @@ import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filte
 import { CourseFiltersSkeleton } from "./manage-courses/components/course-filters-skeleton";
 
 export type FilterTab = "all" | "published" | "draft" | "scheduled";
-export type CourseVenueFilter = "all" | "center" | "online";
+export type CourseVenueFilter = "all" | "online" | "onsite" | "hybrid";
 export type SortOption =
   | "date-newest"
   | "date-oldest"
@@ -130,8 +130,9 @@ export function CourseFilters({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("filters.venue.all")}</SelectItem>
-                <SelectItem value="center">{t("filters.venue.center")}</SelectItem>
                 <SelectItem value="online">{t("filters.venue.online")}</SelectItem>
+                <SelectItem value="onsite">{t("filters.venue.onsite")}</SelectItem>
+                <SelectItem value="hybrid">{t("filters.venue.hybrid")}</SelectItem>
               </SelectContent>
             </Select>
           </div>

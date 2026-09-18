@@ -24,6 +24,7 @@ import {
   useDeleteCourseSection,
   useReorderCourseSections,
 } from "@/hooks/use-courses";
+import { useCreateLesson, useUpdateLesson, useDeleteLesson } from "@/hooks/use-lessons";
 import { DialogType, EditingLessonState, LessonToDeleteState, ParentCourseContext } from "../types";
 
 interface UseCurriculumManagementProps {
@@ -49,7 +50,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     grade: "",
     subject: "",
     teacherName: "",
-    venue: "all" as CourseVenue,
+    venue: "hybrid" as CourseVenue,
   });
 
   // TanStack Query & Mutation hooks for Sections and Parent Course
@@ -60,6 +61,11 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   const updateSectionMutation = useUpdateCourseSection();
   const deleteSectionMutation = useDeleteCourseSection();
   const reorderSectionsMutation = useReorderCourseSections();
+
+  // Lesson Mutations
+  const createLessonMutation = useCreateLesson();
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
 
   // Dialog Form states: Section
   const [newSecTitle, setNewSecTitle] = useState("");
@@ -92,7 +98,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           "",
         subject: parentCourse.subject?.name?.[locale] || parentCourse.subject?.name?.ar || "",
         teacherName: parentCourse.instructor?.full_name || "",
-        venue: parentCourse.delivery_mode || "all",
+        venue: parentCourse.delivery_mode || "hybrid",
       });
     }
   }, [parentCourse, locale]);
@@ -107,10 +113,41 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
         const mappedLessons: Lesson[] = (sec.lessons || []).map((l) => ({
           id: String(l.id),
           title: l.title?.[locale] || l.title?.ar || l.title?.en || "",
-          type: (l.type === "text" ? "text" : "videoAndText") as LessonType,
-          publishStatus: (l.status === "draft" ? "draft" : "published") as LessonPublishStatus,
+          type: (l.type === "text_only" ? "text" : "videoAndText") as LessonType,
+          publishStatus: (l.status === "draft"
+            ? "draft"
+            : l.status === "scheduled"
+              ? "scheduled"
+              : "published") as LessonPublishStatus,
           isDraft: l.status === "draft",
           description: l.description?.[locale] || l.description?.ar || l.description?.en || "",
+          lectureVideoLink: l.intro_video_url || undefined,
+          coverImage: l.cover_image || l.cover_image_url || undefined,
+          hasPdfAttachments: Boolean(
+            l.has_pdf_attachments || (l.pdf_attachments && l.pdf_attachments.length > 0),
+          ),
+          pdfFiles: (l.pdf_attachments || []).map((p) => ({
+            id: String(p.id),
+            title: p.name || p.file_name || "PDF Document",
+            fileUrl: p.url,
+            fileType: "pdf" as const,
+            sizeInBytes: p.size,
+          })),
+          hasImageAttachments: Boolean(
+            l.has_explanatory_images || (l.explanatory_images && l.explanatory_images.length > 0),
+          ),
+          imageFiles: (l.explanatory_images || []).map((img) => ({
+            id: String(img.id),
+            title: img.name || "Image",
+            fileUrl: img.url,
+            fileType: "image" as const,
+            sizeInBytes: img.size,
+          })),
+          isLinkedToExam: Boolean(l.exam_id),
+          linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
+          linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
+          isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
+          scheduledPublishDate: l.scheduled_publish_at || undefined,
         }));
 
         return {
@@ -374,61 +411,197 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     }
   };
 
-  const handleSaveLesson = (targetSecId: string, savedLesson: Lesson) => {
-    const updated = sections.map((sec) => {
-      const lessonExistsInSec = sec.lessons.some((l) => l.id === savedLesson.id);
-      if (sec.id === targetSecId) {
-        if (lessonExistsInSec) {
-          return {
-            ...sec,
-            lessons: sec.lessons.map((l) => (l.id === savedLesson.id ? savedLesson : l)),
+  const handleSaveLesson = async (targetSecId: string, savedLesson: Lesson) => {
+    try {
+      let finalLesson = savedLesson;
+      const isBackendSec = !targetSecId.startsWith("sec-");
+      const isExistingBackendLesson = !savedLesson.id.startsWith("les-");
+
+      if (isBackendCourseId && isBackendSec) {
+        const newPdfFiles = (savedLesson.pdfFiles || [])
+          .map((p) => p.rawFile)
+          .filter(Boolean) as File[];
+        const newImageFiles = (savedLesson.imageFiles || [])
+          .map((img) => img.rawFile)
+          .filter(Boolean) as File[];
+
+        const payload = {
+          classification: "course" as const,
+          course_id: Number(courseId),
+          course_section_id: Number(targetSecId),
+          type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
+            | "text_only"
+            | "video_and_text",
+          title: { ar: savedLesson.title, en: savedLesson.title },
+          description: savedLesson.description
+            ? { ar: savedLesson.description, en: savedLesson.description }
+            : undefined,
+          video_url: savedLesson.lectureVideoLink || undefined,
+          cover_image: savedLesson.coverImageFile || undefined,
+          remove_cover_image: savedLesson.removeCoverImage || undefined,
+          has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
+          pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
+          has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
+          explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
+          delete_media_ids:
+            savedLesson.deleteMediaIds && savedLesson.deleteMediaIds.length > 0
+              ? savedLesson.deleteMediaIds
+              : undefined,
+          has_exam: Boolean(savedLesson.isLinkedToExam && savedLesson.linkedExamId),
+          exam_id:
+            savedLesson.isLinkedToExam && savedLesson.linkedExamId
+              ? Number(savedLesson.linkedExamId)
+              : null,
+          requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+          status: savedLesson.publishStatus || "published",
+          scheduled_publish_at: savedLesson.scheduledPublishDate || undefined,
+          is_active: true,
+        };
+
+        if (isExistingBackendLesson) {
+          const res = await updateLessonMutation.mutateAsync({
+            id: savedLesson.id,
+            data: payload,
+          });
+          finalLesson = {
+            ...savedLesson,
+            id: String(res.id),
+            coverImage: res.cover_image || res.cover_image_url || undefined,
+            coverImageFile: null,
+            removeCoverImage: false,
           };
+          toast.success(locale === "ar" ? "تم تحديث الدرس بنجاح" : "Lesson updated successfully");
         } else {
+          const res = await createLessonMutation.mutateAsync(payload);
+          finalLesson = {
+            ...savedLesson,
+            id: String(res.id),
+            coverImage: res.cover_image || res.cover_image_url || undefined,
+            coverImageFile: null,
+            removeCoverImage: false,
+          };
+          toast.success(locale === "ar" ? "تم إنشاء الدرس بنجاح" : "Lesson created successfully");
+        }
+      }
+
+      const updated = sections.map((sec) => {
+        const lessonExistsInSec = sec.lessons.some(
+          (l) => l.id === savedLesson.id || l.id === finalLesson.id,
+        );
+        if (sec.id === targetSecId) {
+          if (lessonExistsInSec) {
+            return {
+              ...sec,
+              lessons: sec.lessons.map((l) =>
+                l.id === savedLesson.id || l.id === finalLesson.id ? finalLesson : l,
+              ),
+            };
+          } else {
+            return {
+              ...sec,
+              lessons: [
+                ...sec.lessons.filter((l) => l.id !== savedLesson.id && l.id !== finalLesson.id),
+                finalLesson,
+              ],
+            };
+          }
+        } else if (lessonExistsInSec) {
           return {
             ...sec,
-            lessons: [...sec.lessons.filter((l) => l.id !== savedLesson.id), savedLesson],
+            lessons: sec.lessons.filter((l) => l.id !== savedLesson.id && l.id !== finalLesson.id),
           };
         }
-      } else if (lessonExistsInSec) {
-        return {
-          ...sec,
-          lessons: sec.lessons.filter((l) => l.id !== savedLesson.id),
-        };
-      }
-      return sec;
-    });
+        return sec;
+      });
 
-    setSections(updated);
-    setEditingLesson(null);
-    setActiveDialog(null);
+      setSections(updated);
+      setEditingLesson(null);
+      setActiveDialog(null);
+    } catch (err) {
+      console.error("Failed to save lesson:", err);
+      toast.error(getErrorMessage(err));
+    }
   };
 
-  const handleSaveManyLessons = (targetSecId: string, savedLessons: Lesson[]) => {
-    const updated = sections.map((sec) => {
-      if (sec.id === targetSecId) {
-        return { ...sec, lessons: [...sec.lessons, ...savedLessons] };
+  const handleSaveManyLessons = async (targetSecId: string, savedLessons: Lesson[]) => {
+    try {
+      const isBackendSec = !targetSecId.startsWith("sec-");
+      let attachedLessons = [...savedLessons];
+
+      if (isBackendCourseId && isBackendSec) {
+        const promises = savedLessons.map((l) =>
+          createLessonMutation.mutateAsync({
+            classification: "course",
+            course_id: Number(courseId),
+            course_section_id: Number(targetSecId),
+            original_lesson_id: !Number.isNaN(Number(l.id)) ? Number(l.id) : undefined,
+            type: l.type === "text" ? "text_only" : "video_and_text",
+            title: { ar: l.title, en: l.title },
+            description: l.description ? { ar: l.description, en: l.description } : undefined,
+            video_url: l.lectureVideoLink || undefined,
+            cover_image: l.coverImageFile || undefined,
+            has_pdf_attachments: Boolean(l.hasPdfAttachments),
+            has_explanatory_images: Boolean(l.hasImageAttachments),
+            has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
+            exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
+            requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
+            status: l.publishStatus || "published",
+            scheduled_publish_at: l.scheduledPublishDate || undefined,
+            is_active: true,
+          }),
+        );
+        const created = await Promise.all(promises);
+        attachedLessons = created.map((res, i) => ({
+          ...savedLessons[i],
+          id: String(res.id),
+        }));
+        toast.success(
+          locale === "ar"
+            ? `تم إضافة ${created.length} دروس بنجاح`
+            : `Successfully added ${created.length} lessons`,
+        );
       }
-      return sec;
-    });
-    setSections(updated);
-    setEditingLesson(null);
-    setActiveDialog(null);
+
+      const updated = sections.map((sec) => {
+        if (sec.id === targetSecId) {
+          return { ...sec, lessons: [...sec.lessons, ...attachedLessons] };
+        }
+        return sec;
+      });
+      setSections(updated);
+      setEditingLesson(null);
+      setActiveDialog(null);
+    } catch (err) {
+      console.error("Failed to add lessons from bank:", err);
+      toast.error(getErrorMessage(err));
+    }
   };
 
-  const handleDeleteLesson = () => {
+  const handleDeleteLesson = async () => {
     if (!lessonToDelete) return;
     const { lesson, sectionId } = lessonToDelete;
-    const updated = sections.map((sec) => {
-      if (sec.id === sectionId) {
-        return {
-          ...sec,
-          lessons: sec.lessons.filter((l) => l.id !== lesson.id),
-        };
+
+    try {
+      if (isBackendCourseId && !lesson.id.startsWith("les-")) {
+        await deleteLessonMutation.mutateAsync(lesson.id);
+        toast.success(locale === "ar" ? "تم حذف الدرس بنجاح" : "Lesson deleted successfully");
       }
-      return sec;
-    });
-    setSections(updated);
-    setLessonToDelete(null);
+
+      const updated = sections.map((sec) => {
+        if (sec.id === sectionId) {
+          return {
+            ...sec,
+            lessons: sec.lessons.filter((l) => l.id !== lesson.id),
+          };
+        }
+        return sec;
+      });
+      setSections(updated);
+      setLessonToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete lesson:", err);
+      toast.error(getErrorMessage(err));
+    }
   };
 
   const handleMoveSection = async (index: number, direction: "up" | "down") => {
@@ -554,6 +727,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     availableImportSections,
     selectedImportSectionsList,
     isImporting,
+    isDeletingLesson: deleteLessonMutation.isPending,
+    isSavingLesson: createLessonMutation.isPending || updateLessonMutation.isPending,
     // Handlers
     handleOpenAddSection,
     handleOpenEditSection,

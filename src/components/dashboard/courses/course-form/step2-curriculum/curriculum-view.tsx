@@ -201,6 +201,7 @@ export function CurriculumView({
         lessonToDelete={curriculum.lessonToDelete}
         onOpenChange={(open) => !open && curriculum.setLessonToDelete(null)}
         onConfirm={curriculum.handleDeleteLesson}
+        isDeleting={curriculum.isDeletingLesson}
       />
 
       {/* Delete Section Confirmation */}

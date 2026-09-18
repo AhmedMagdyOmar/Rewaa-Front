@@ -196,7 +196,7 @@ export function CourseCard({
                 <div className="mt-1 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
                   {course.venue === "online" ? (
                     <Globe className="h-4 w-4" />
-                  ) : course.venue === "center" || course.venue === "onsite" ? (
+                  ) : course.venue === "onsite" ? (
                     <House className="h-4 w-4" />
                   ) : (
                     <Globe2 className="h-4 w-4" />
@@ -204,11 +204,11 @@ export function CourseCard({
                 </div>
               </TooltipTrigger>
               <TooltipContent side="top">
-                {course.venue === "all" || course.venue === "hybrid"
-                  ? t("venue.all")
+                {course.venue === "hybrid"
+                  ? t("venue.hybrid")
                   : course.venue === "online"
                     ? t("venue.online")
-                    : t("venue.center")}
+                    : t("venue.onsite")}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>

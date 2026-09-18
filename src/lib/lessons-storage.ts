@@ -1,3 +1,7 @@
+/**
+ * @deprecated Provider lesson flows have been fully migrated to live backend API (/api/dashboard/provider/lessons).
+ * This module is maintained temporarily as a fallback for student portal views until Phase 7 (Student Experience) migration.
+ */
 import { mockLessonsData } from "@/lib/mockLessonsData";
 import { Lesson } from "@/types/course";
 

@@ -331,9 +331,11 @@
     },
     "filters": {
       "venue": {
-        "all": "All Venues",
-        "center": "Center",
-        "online": "Online"
+        "all": "All Delivery Modes",
+        "online": "Online",
+        "onsite": "On-site / Center",
+        "hybrid": "Hybrid",
+        "center": "Center"
       }
     },
     "clearFilters": "Clear all filters",
@@ -361,8 +363,10 @@
       "scheduled": "Scheduled"
     },
     "venue": {
-      "all": "Hybrid",
       "online": "Online",
+      "onsite": "On-site / Center",
+      "hybrid": "Hybrid",
+      "all": "Hybrid",
       "center": "Center"
     },
     "badge": {
@@ -383,6 +387,7 @@
     "period": {
       "monthly": "Monthly",
       "yearly": "Yearly",
+      "term": "Term",
       "termBased": "Term-based"
     },
     "card": {
@@ -492,6 +497,7 @@
       "periodOptions": {
         "monthly": "Monthly",
         "yearly": "Yearly",
+        "term": "Term",
         "termBased": "Term-based",
         "addPeriod": "Add new period",
         "addPeriodDialogTitle": "Add New Course Period",
@@ -511,6 +517,14 @@
         "online": {
           "label": "Online",
           "desc": "Digital remote learning"
+        },
+        "onsite": {
+          "label": "On-site / Center",
+          "desc": "Physical center attendance"
+        },
+        "hybrid": {
+          "label": "Hybrid",
+          "desc": "Combined online and in-person attendance"
         },
         "center": {
           "label": "Center",
@@ -1416,9 +1430,11 @@
       "publishNow": "Publish Now",
       "copyLink": "Copy Link",
       "copied": "Copied!",
+      "linkCopied": "Copied!",
       "deleteLesson": "Delete Lesson",
       "publish": "Publish",
       "unpublish": "Unpublish",
+      "unpublishLesson": "Unpublish Lesson",
       "viewsCount": "{count, plural, =0 {No views} one {1 view} other {{count} views}}",
       "coursesCount": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
       "viewCourses": "View Courses",

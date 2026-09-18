@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import * as React from "react";
@@ -64,6 +65,12 @@ export function ImageUploadField({
     }
   };
 
+  const [hasError, setHasError] = React.useState(false);
+
+  React.useEffect(() => {
+    setHasError(false);
+  }, [value]);
+
   const isAvatar = variant === "avatar";
 
   return (
@@ -86,7 +93,7 @@ export function ImageUploadField({
           dropzoneClassName,
         )}
       >
-        {value ? (
+        {value && !hasError ? (
           <div className="flex flex-col items-center gap-2 w-full">
             {isAvatar ? (
               <div
@@ -96,7 +103,14 @@ export function ImageUploadField({
                   previewHeightClassName,
                 )}
               >
-                <Image src={value} alt={previewAlt} fill className="object-cover" unoptimized />
+                <Image
+                  src={value}
+                  alt={previewAlt}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                  onError={() => setHasError(true)}
+                />
               </div>
             ) : (
               <div
@@ -114,7 +128,14 @@ export function ImageUploadField({
                       : "w-full max-w-xs h-32 sm:h-36"),
                 )}
               >
-                <Image src={value} alt={previewAlt} fill className="object-cover" unoptimized />
+                <Image
+                  src={value}
+                  alt={previewAlt}
+                  fill
+                  className="object-cover"
+                  unoptimized
+                  onError={() => setHasError(true)}
+                />
               </div>
             )}
 

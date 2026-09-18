@@ -1,20 +1,23 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import * as React from "react";
 import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { BookOpen, Plus, RotateCcw } from "lucide-react";
+import { BookOpen, Plus, RefreshCw } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Lesson, LessonPublishStatus } from "@/types/course";
-import { getStoredLessons, saveStoredLessons, resetStoredLessons } from "@/lib/lessons-storage";
+import { CourseVenue, Lesson, LessonPublishStatus } from "@/types/course";
+import { LessonClassification } from "@/types/api-contracts";
+import { useProviderLessons, useUpdateLesson, useDeleteLesson } from "@/hooks/use-lessons";
+import { getErrorMessage } from "@/lib/api-utils";
+import { cn } from "@/lib/utils";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
 import { LessonCard } from "./lesson-card";
 import { DeleteLessonDialog } from "./delete-lesson-dialog";
+import { useLessonUrlFilters } from "./use-lesson-url-filters";
 
 export type LessonFilterTab = "all" | "general" | "course-linked";
 export type LessonSortOption = "date-newest" | "date-oldest";
@@ -23,59 +26,34 @@ export function ManageLessonsClient() {
   const locale = useLocale();
   const t = useTranslations("lessons");
 
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-
-  // URL state synchronization
-  const searchQuery = searchParams.get("search") || "";
-  const activeTab = (searchParams.get("tab") as LessonFilterTab) || "all";
-  const sortBy = (searchParams.get("sort") as LessonSortOption) || "date-newest";
-  const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
+  const {
+    searchQuery,
+    activeTab,
+    sortBy,
+    currentPage,
+    handleSearchChange,
+    handleTabChange,
+    handleSortChange,
+    handlePageChange,
+    handleResetFilters,
+  } = useLessonUrlFilters();
   const itemsPerPage = 9;
 
-  // Helper function to update URL search parameters
-  const updateUrlParams = React.useCallback(
-    (updates: Record<string, string | number | null>) => {
-      const params = new URLSearchParams(searchParams.toString());
-      Object.entries(updates).forEach(([key, value]) => {
-        if (
-          value === null ||
-          value === "" ||
-          (key === "tab" && value === "all") ||
-          (key === "sort" && value === "date-newest") ||
-          (key === "page" && value === 1)
-        ) {
-          params.delete(key);
-        } else {
-          params.set(key, String(value));
-        }
-      });
-      const queryString = params.toString();
-      router.push(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
-    },
-    [searchParams, pathname, router],
-  );
+  // Map filters to backend request params
+  const classification: LessonClassification | undefined =
+    activeTab === "general" ? "standalone" : activeTab === "course-linked" ? "course" : undefined;
+  const sort = sortBy === "date-oldest" ? "oldest" : "latest";
 
-  // Local state initialized & synchronized with LocalStorage
-  const [lessons, setLessons] = React.useState<Lesson[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { data, isLoading, refetch, isRefetching } = useProviderLessons({
+    search: searchQuery.trim() || undefined,
+    classification,
+    sort,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
 
-  React.useEffect(() => {
-    setLessons(getStoredLessons(locale));
-    setIsLoading(false);
-
-    const handleStorageUpdate = () => {
-      setLessons(getStoredLessons(locale));
-    };
-
-    window.addEventListener("rewaa_lessons_updated", handleStorageUpdate);
-    window.addEventListener("storage", handleStorageUpdate);
-    return () => {
-      window.removeEventListener("rewaa_lessons_updated", handleStorageUpdate);
-      window.removeEventListener("storage", handleStorageUpdate);
-    };
-  }, [locale]);
+  const updateLessonMutation = useUpdateLesson();
+  const deleteLessonMutation = useDeleteLesson();
 
   // Dialog state for lesson deletion
   const [lessonToDelete, setLessonToDelete] = React.useState<Lesson | null>(null);
@@ -83,98 +61,96 @@ export function ManageLessonsClient() {
   // Copy feedback state
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
-  // Filter & Search Logic
-  const filteredLessons = React.useMemo(() => {
-    return lessons.filter((lesson) => {
-      // General vs Course-Linked category filter
-      const isGeneral =
-        lesson.lessonCategory === "independent" || (!lesson.lessonCategory && !lesson.courseId);
-      if (activeTab === "general" && !isGeneral) return false;
-      if (activeTab === "course-linked" && isGeneral) return false;
+  // Adapt backend lessons to local Lesson models for rendering
+  const adaptedLessons: Lesson[] = (data?.lessons || []).map((b) => ({
+    id: String(b.id),
+    title: b.title?.[locale] || b.title?.ar || b.title?.en || "",
+    description: b.description?.[locale] || b.description?.ar || "",
+    type: b.type === "text_only" ? "text" : "videoAndText",
+    coverImage: b.cover_image || b.cover_image_url || b.course?.cover_image || undefined,
+    lectureVideoLink: b.video_url || undefined,
+    grade: b.educational_stage?.name?.[locale] || b.educational_stage?.name?.ar || undefined,
+    subject: b.subject?.name?.[locale] || b.subject?.name?.ar || undefined,
+    teacherName: b.instructor?.full_name || undefined,
+    teacherImage: b.instructor?.avatar || undefined,
+    venue: (b.delivery_mode as CourseVenue) || "hybrid",
+    classification: b.classification,
+    lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
+    courseId: b.course_id ? String(b.course_id) : undefined,
+    courseTitle: b.course?.title?.[locale] || b.course?.title?.ar || undefined,
+    sectionId: b.course_section_id ? String(b.course_section_id) : undefined,
+    sectionTitle: b.course_section?.title?.[locale] || b.course_section?.title?.ar || undefined,
+    completionsCount: b.completions_count ?? 0,
+    publishStatus: (b.status as LessonPublishStatus) || "published",
+    scheduledPublishDate: b.scheduled_publish_at || undefined,
+    isActive: b.is_active,
+    hasPdfAttachments: Boolean(b.has_pdf_attachments),
+    pdfFiles: (b.pdf_attachments || []).map((p) => ({
+      id: String(p.id),
+      title: p.name || p.file_name || "PDF Document",
+      fileUrl: p.url,
+      fileType: "pdf" as const,
+      sizeInBytes: p.size,
+    })),
+    hasImageAttachments: Boolean(b.has_explanatory_images),
+    imageFiles: (b.explanatory_images || []).map((img) => ({
+      id: String(img.id),
+      title: img.name || "Image",
+      fileUrl: img.url,
+      fileType: "image" as const,
+      sizeInBytes: img.size,
+    })),
+    isLinkedToExam: Boolean(b.has_exam),
+    linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
+    linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
+    isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
+  }));
 
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = lesson.title.toLowerCase().includes(query);
-        const matchesSubject = (lesson.subject || "").toLowerCase().includes(query);
-        const matchesGrade = (lesson.grade || "").toLowerCase().includes(query);
-        const matchesTeacher = (lesson.teacherName || "").toLowerCase().includes(query);
-        const matchesCourse = (lesson.courseTitle || "").toLowerCase().includes(query);
-        if (
-          !matchesTitle &&
-          !matchesSubject &&
-          !matchesGrade &&
-          !matchesTeacher &&
-          !matchesCourse
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [lessons, activeTab, searchQuery]);
-
-  // Sort Logic
-  const sortedLessons = React.useMemo(() => {
-    return [...filteredLessons].sort((a, b) => {
-      switch (sortBy) {
-        case "date-oldest":
-          return a.id.localeCompare(b.id);
-        case "date-newest":
-        default:
-          return b.id.localeCompare(a.id);
-      }
-    });
-  }, [filteredLessons, sortBy]);
-
-  // Pagination Logic
-  const totalItems = sortedLessons.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  // Pagination details from backend
+  const totalItems = data?.pagination.total ?? 0;
+  const totalPages = data?.pagination.last_page ?? 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedLessons = sortedLessons.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedLessons = adaptedLessons;
 
-  // Handlers
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateUrlParams({ search: e.target.value, page: 1 });
-  };
+  const handlePublishToggle = async (lessonId: string) => {
+    const target = adaptedLessons.find((l) => l.id === lessonId);
+    if (!target) return;
+    const nextStatus = target.publishStatus === "published" ? "draft" : "published";
 
-  const handleTabChange = (tab: LessonFilterTab) => {
-    updateUrlParams({ tab, page: 1 });
-  };
-
-  const handleSortChange = (sort: LessonSortOption) => {
-    updateUrlParams({ sort, page: 1 });
-  };
-
-  const handlePageChange = (page: number) => {
-    updateUrlParams({ page });
-  };
-
-  const handlePublishToggle = (lessonId: string) => {
-    const updated: Lesson[] = lessons.map((l) => {
-      if (l.id === lessonId) {
-        const nextStatus: LessonPublishStatus =
-          l.publishStatus === "published" ? "draft" : "published";
-        return { ...l, publishStatus: nextStatus };
-      }
-      return l;
-    });
-    setLessons(updated);
-    saveStoredLessons(locale, updated);
-  };
-
-  const confirmDelete = () => {
-    if (lessonToDelete) {
-      const updated = lessons.filter((l) => l.id !== lessonToDelete.id);
-      setLessons(updated);
-      saveStoredLessons(locale, updated);
-      setLessonToDelete(null);
+    try {
+      await updateLessonMutation.mutateAsync({
+        id: lessonId,
+        data: { status: nextStatus },
+      });
+      toast.success(
+        nextStatus === "published"
+          ? locale === "ar"
+            ? "تم نشر الدرس بنجاح"
+            : "Lesson published successfully"
+          : locale === "ar"
+            ? "تم تحويل الدرس لمسودة"
+            : "Lesson unpublished",
+      );
+    } catch (err) {
+      console.error("Failed to update lesson status:", err);
+      toast.error(getErrorMessage(err));
     }
   };
 
-  const handleResetData = () => {
-    const reset = resetStoredLessons(locale);
-    setLessons(reset);
+  const confirmDelete = async () => {
+    if (!lessonToDelete) return;
+    try {
+      await deleteLessonMutation.mutateAsync(lessonToDelete.id);
+      toast.success(locale === "ar" ? "تم حذف الدرس بنجاح" : "Lesson deleted successfully");
+      setLessonToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete lesson:", err);
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  const handleRefresh = () => {
+    refetch();
   };
 
   const handleCopyLink = (lessonId: string) => {
@@ -184,26 +160,25 @@ export function ManageLessonsClient() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleResetFilters = () => {
-    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
-  };
+  // Classification counts from backend
+  const classificationCounts = data?.classification_counts;
 
   // Filter tabs and sort options
   const tabs: TabItem<LessonFilterTab>[] = [
-    { value: "all", label: t("tabs.all"), count: lessons.length },
+    {
+      value: "all",
+      label: t("tabs.all"),
+      count: classificationCounts?.all ?? data?.status_counts?.all ?? 0,
+    },
     {
       value: "general",
       label: t("tabs.general"),
-      count: lessons.filter(
-        (l) => l.lessonCategory === "independent" || (!l.lessonCategory && !l.courseId),
-      ).length,
+      count: classificationCounts?.standalone ?? 0,
     },
     {
       value: "course-linked",
       label: t("tabs.courseLinked"),
-      count: lessons.filter(
-        (l) => !(l.lessonCategory === "independent" || (!l.lessonCategory && !l.courseId)),
-      ).length,
+      count: classificationCounts?.course ?? 0,
     },
   ];
 
@@ -213,7 +188,7 @@ export function ManageLessonsClient() {
   ];
 
   const showingText = t("pagination.showing", {
-    start: Math.min(startIndex + 1, totalItems),
+    start: totalItems === 0 ? 0 : Math.min(startIndex + 1, totalItems),
     end: Math.min(startIndex + itemsPerPage, totalItems),
     total: totalItems,
   });
@@ -232,11 +207,12 @@ export function ManageLessonsClient() {
           <Button
             variant="outline"
             size="default"
-            onClick={handleResetData}
+            onClick={handleRefresh}
+            disabled={isRefetching}
             className="gap-2 shadow-xs font-semibold"
           >
-            <RotateCcw className="h-4 w-4" />
-            <span>{t("resetLessons")}</span>
+            <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
+            <span>{locale === "ar" ? "تحديث" : "Refresh"}</span>
           </Button>
           <Button asChild size="default" className="gap-2 shadow-sm font-semibold">
             <Link href={`/${locale}/dashboard/lessons/new`}>
@@ -265,7 +241,7 @@ export function ManageLessonsClient() {
       {/* Lessons Grid or Skeleton Loader */}
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {Array.from({ length: 8 }).map((_, index) => (
+          {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
               className="flex flex-col rounded-xl border border-border/60 bg-card overflow-hidden p-4 space-y-3"
@@ -319,6 +295,7 @@ export function ManageLessonsClient() {
         lessonToDelete={lessonToDelete}
         onClose={() => setLessonToDelete(null)}
         onConfirm={confirmDelete}
+        isDeleting={deleteLessonMutation.isPending}
       />
     </div>
   );

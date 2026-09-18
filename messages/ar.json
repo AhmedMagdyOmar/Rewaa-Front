@@ -332,8 +332,10 @@
     "filters": {
       "venue": {
         "all": "جميع الأماكن",
-        "center": "سنتر",
-        "online": "أونلاين"
+        "online": "أونلاين",
+        "onsite": "حضوري / سنتر",
+        "hybrid": "مدمج (أونلاين وحضوري)",
+        "center": "سنتر"
       }
     },
     "clearFilters": "مسح الفلاتر",
@@ -361,8 +363,10 @@
       "scheduled": "مجدول"
     },
     "venue": {
-      "all": "سنتر وأونلاين",
       "online": "أونلاين",
+      "onsite": "حضوري / سنتر",
+      "hybrid": "مدمج (أونلاين وحضوري)",
+      "all": "سنتر وأونلاين",
       "center": "سنتر"
     },
     "badge": {
@@ -383,6 +387,7 @@
     "period": {
       "monthly": "شهري",
       "yearly": "سنوي",
+      "term": "ترم",
       "termBased": "ترم"
     },
     "card": {
@@ -492,6 +497,7 @@
       "periodOptions": {
         "monthly": "شهري",
         "yearly": "سنوي",
+        "term": "ترم",
         "termBased": "ترم",
         "addPeriod": "إضافة تصنيف جديد",
         "addPeriodDialogTitle": "إضافة تصنيف كورس جديد",
@@ -511,6 +517,14 @@
         "online": {
           "label": "أونلاين",
           "desc": "تعلم رقمي عن بُعد"
+        },
+        "onsite": {
+          "label": "حضوري / سنتر",
+          "desc": "حضور في السنتر التعليمي أو القاعة"
+        },
+        "hybrid": {
+          "label": "مدمج (أونلاين وحضوري)",
+          "desc": "خيارات حضور مدمجة تشمل الأونلاين والسنتر"
         },
         "center": {
           "label": "سنتر",
@@ -1416,9 +1430,11 @@
       "publishNow": "نشر الآن",
       "copyLink": "نسخ الرابط",
       "copied": "تم النسخ!",
+      "linkCopied": "تم النسخ!",
       "deleteLesson": "حذف الدرس",
       "publish": "نشر",
       "unpublish": "إلغاء النشر",
+      "unpublishLesson": "إلغاء النشر",
       "viewsCount": "{count, plural, =0 {لا مشاهدات} zero {لا مشاهدات} one {مشاهدة واحدة} two {مشاهدتين} few {{count} مشاهدات} many {{count} مشاهدة} other {{count} مشاهدة}}",
       "coursesCount": "{count, plural, =0 {لا دورات} zero {لا دورات} one {دورة واحدة} two {دورتين} few {{count} دورات} many {{count} دورة} other {{count} دورة}}",
       "viewCourses": "عرض الدورات",

@@ -1,34 +1,3 @@
-import { CourseVenue } from "@/types/course";
-
-export const SUBJECT_COVER_PLACEHOLDERS: Record<string, string> = {
-  physics: "/courses/physics.jpg",
-  chemistry: "/courses/chemistry.jpg",
-  biology: "/courses/biology.webp",
-  mathematics: "/courses/math.jpg",
-  english: "/courses/english.png",
-  arabic: "/courses/arabic.jpg",
-};
-
-export const DEFAULT_COVER_PLACEHOLDER = "/courses/physics.jpg";
-
-export const DELIVERY_MODE_MAP: Record<string, CourseVenue> = {
-  center: "onsite",
-  online: "online",
-  all: "hybrid",
-};
-
-export const PERIOD_MAP: Record<string, string> = {
-  monthly: "monthly",
-  yearly: "yearly",
-  termBased: "term",
-  term: "term",
-};
-
-export function resolveCoverImage(coverImage: string | null, subject: string): string {
-  if (coverImage) return coverImage;
-  return SUBJECT_COVER_PLACEHOLDERS[subject] || DEFAULT_COVER_PLACEHOLDER;
-}
-
 export function matchKnownGrade(grade: string, t: (key: string) => string): string {
   const knownGrades: Record<string, string[]> = {
     grade1: [t("grades.grade1"), "الأول الثانوي", "الأول ثانوي", "10", "grade10", "grade1"],

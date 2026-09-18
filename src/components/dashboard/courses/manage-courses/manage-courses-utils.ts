@@ -10,12 +10,6 @@ export function adaptBackendCourseToCourse(backend: BackendCourse, locale: strin
   const description =
     backend.description?.[locale] || backend.description?.ar || backend.description?.en || "";
 
-  const periodMap: Record<string, string> = {
-    monthly: "monthly",
-    yearly: "yearly",
-    term: "termBased",
-  };
-
   const status = backend.status;
   const isDraft = status === "draft";
   const isScheduled = status === "scheduled";
@@ -40,7 +34,7 @@ export function adaptBackendCourseToCourse(backend: BackendCourse, locale: strin
     teacherName: backend.instructor?.full_name || "",
     teacherImage:
       (backend.instructor as { avatar?: string } | null | undefined)?.avatar || undefined,
-    period: periodMap[backend.subscription_period] || backend.subscription_period,
+    period: backend.subscription_period || "monthly",
     date: backend.created_at ? backend.created_at.split(" ")[0] : "",
     numberOfLessons: backend.lessons_count || 0,
     price: Number(backend.final_price ?? backend.base_price) || 0,
@@ -85,9 +79,8 @@ export function mapSortToBackend(sortBy: SortOption): string {
  * Maps frontend venue filter to backend delivery_mode param
  */
 export function mapVenueFilterToDeliveryMode(venueFilter: CourseVenueFilter): string | undefined {
-  if (venueFilter === "center") return "onsite";
-  if (venueFilter === "online") return "online";
-  return undefined;
+  if (venueFilter === "all") return undefined;
+  return venueFilter;
 }
 
 /**

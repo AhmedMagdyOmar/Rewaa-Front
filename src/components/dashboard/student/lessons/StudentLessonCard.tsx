@@ -6,6 +6,7 @@ import { getPassedExams } from "@/lib/student-course-progress";
 import { cn } from "@/lib/utils";
 import { Lesson } from "@/types/course";
 import {
+  BookOpen,
   Check,
   FileSpreadsheet,
   FileText,
@@ -52,10 +53,6 @@ export function StudentLessonCard({
       : s;
   };
 
-  const fallbackCover =
-    lesson.coverImage ||
-    "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800&auto=format&fit=crop&q=80";
-
   const pdfCount = (lesson.pdfFiles || []).length || (lesson.hasPdfAttachments ? 1 : 0);
   const subjectAndGradeText = [formatSubject(lesson.subject), formatGrade(lesson.grade)]
     .filter(Boolean)
@@ -64,15 +61,20 @@ export function StudentLessonCard({
   return (
     <div className="group flex flex-col bg-card rounded-2xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
       {/* Cover Image Container */}
-      <div className="relative aspect-video w-full overflow-hidden bg-muted">
-        <Image
-          src={fallbackCover}
-          alt={lesson.title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-          unoptimized
-        />
+      <div className="relative aspect-video w-full overflow-hidden bg-muted flex items-center justify-center">
+        {lesson.coverImage ? (
+          <Image
+            src={lesson.coverImage}
+            alt={lesson.title}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground/50">
+            <BookOpen className="size-10" />
+          </div>
+        )}
         <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-black/20" />
 
         {/* Independent Tag */}

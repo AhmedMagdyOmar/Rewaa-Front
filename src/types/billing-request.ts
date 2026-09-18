@@ -15,7 +15,7 @@ export interface BillingRequestItem {
   paymentMethod?: PaymentMethod;
   courseId: string;
   courseName: string;
-  venue: CourseVenue; // "center" | "online" | "all"
+  venue: CourseVenue; // "online" | "onsite" | "hybrid"
   status: BillingRequestStatus;
   createdAt: string; // ISO date string or formatted date
   transactionTime: string; // e.g. "14:30"

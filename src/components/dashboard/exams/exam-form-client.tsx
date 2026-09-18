@@ -670,14 +670,14 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                               desc: tCourses("new.venues.online.desc"),
                             },
                             {
-                              id: "center",
-                              label: tCourses("new.venues.center.label"),
-                              desc: tCourses("new.venues.center.desc"),
+                              id: "onsite",
+                              label: tCourses("new.venues.onsite.label"),
+                              desc: tCourses("new.venues.onsite.desc"),
                             },
                             {
-                              id: "all",
-                              label: tCourses("new.venues.all.label"),
-                              desc: tCourses("new.venues.all.desc"),
+                              id: "hybrid",
+                              label: tCourses("new.venues.hybrid.label"),
+                              desc: tCourses("new.venues.hybrid.desc"),
                             },
                           ]}
                         />

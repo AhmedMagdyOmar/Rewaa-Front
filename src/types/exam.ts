@@ -1,3 +1,5 @@
+import { CourseVenue } from "./course";
+
 // ─── Question Entity (standalone — future question-bank CRUD pages) ───────────
 
 export type QuestionType = "mcq" | "text" | "true/false";
@@ -55,7 +57,7 @@ export type ExamCategory =
   | "placement";
 
 export type ExamType = "independent" | "course-dependent";
-export type ExamVenue = "center" | "online" | "all";
+export type ExamVenue = CourseVenue;
 
 export interface Exam {
   // ── Identifiers & linking ─────────────────────────────────────────────────

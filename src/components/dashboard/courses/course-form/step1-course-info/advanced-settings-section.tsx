@@ -93,14 +93,14 @@ export function AdvancedSettingsSection({
             desc: t("venues.online.desc"),
           },
           {
-            id: "center",
-            label: t("venues.center.label"),
-            desc: t("venues.center.desc"),
+            id: "onsite",
+            label: t("venues.onsite.label"),
+            desc: t("venues.onsite.desc"),
           },
           {
-            id: "all",
-            label: t("venues.all.label"),
-            desc: t("venues.all.desc"),
+            id: "hybrid",
+            label: t("venues.hybrid.label"),
+            desc: t("venues.hybrid.desc"),
           },
         ]}
       />
