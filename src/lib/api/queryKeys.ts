@@ -43,6 +43,8 @@ export const queryKeys = {
       options: () => [...queryKeys.provider.exams.all(), "options"] as const,
       attempts: (examId?: number | string) =>
         [...queryKeys.provider.exams.all(), "attempts", { examId }] as const,
+      complaints: (examId?: number | string, filters?: Record<string, unknown>) =>
+        [...queryKeys.provider.exams.detail(examId || ""), "complaints", filters ?? {}] as const,
     },
     questions: {
       all: () => [...queryKeys.provider.all, "questions"] as const,

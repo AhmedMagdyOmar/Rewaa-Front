@@ -13,13 +13,11 @@ import {
   MoreVertical,
   Plus,
   RotateCcw,
-  Search,
   Trash2,
   UserCheck,
   Users,
   UserX,
   Wallet,
-  X,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -29,6 +27,7 @@ import * as React from "react";
 import { GradeSelect } from "@/components/ui/academic-selects";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +35,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 import {
   Select,
@@ -405,24 +403,12 @@ export function ManageStudentsClient() {
       <div className="bg-card p-4 rounded-xl border border-border/60 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-60">
-            <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t("searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => updateUrlParams({ search: e.target.value, page: 1 })}
-              className="ps-9 bg-background"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => updateUrlParams({ search: null, page: 1 })}
-                className="absolute inset-e-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
+          <DebouncedSearchInput
+            placeholder={t("searchPlaceholder")}
+            value={searchQuery}
+            onValueChange={(val) => updateUrlParams({ search: val, page: 1 })}
+            containerClassName="min-w-60"
+          />
 
           {/* Sort & Reset Buttons */}
           <div className="flex items-center gap-2 self-end md:self-auto">

@@ -130,35 +130,71 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   // Top level submit error
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Available Exams mapped for ExamSelect
+  // Available Exams mapped for ExamSelect (strictly filtered by academic criteria)
   const exams = optionsData?.exams;
   const availableExams: Exam[] = useMemo(() => {
     if (!exams) return [];
-    return exams.map((e) => ({
-      id: String(e.id),
-      title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
-      description: "",
-      subject: String(e.subject_id),
-      grade: String(e.educational_stage_id),
-      teacherName: "",
-      venue: "hybrid",
-      category: "test",
-      examType: e.course_id ? "course-dependent" : "independent",
-      courseId: e.course_id ? String(e.course_id) : undefined,
-      passingPercentage: e.passing_percentage,
-      triesAllowed: 1,
-      durationMinutes: 60,
-      showModelAnswers: true,
-      randomizeQuestionsOrder: false,
-      randomizeMCQChoices: false,
-      examSections: [],
-      numberOfQuestions: 0,
-      numberOfStudents: 0,
-      successRate: 0,
-      timesUsed: 0,
-      createdAt: new Date().toISOString(),
-    }));
-  }, [exams, locale]);
+    return exams
+      .filter((e) => {
+        // Always include currently selected linked exam so it remains visible on edit
+        if (linkedExamId && String(e.id) === String(linkedExamId)) {
+          return true;
+        }
+
+        if (isGeneralLesson) {
+          // Standalone lesson: must NOT belong to a course
+          if (e.course_id) return false;
+          if (grade && String(e.educational_stage_id) !== String(grade)) return false;
+          if (subject && String(e.subject_id) !== String(subject)) return false;
+          if (
+            optionsData?.requires_instructor_selection &&
+            instructorId &&
+            String(e.instructor_id) !== String(instructorId)
+          ) {
+            return false;
+          }
+          return true;
+        } else {
+          // Course lesson: must belong to the chosen course
+          if (!selectedCourseId) return false;
+          return String(e.course_id) === String(selectedCourseId);
+        }
+      })
+      .map((e) => ({
+        id: String(e.id),
+        title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
+        description: "",
+        subject: String(e.subject_id),
+        grade: String(e.educational_stage_id),
+        teacherName: "",
+        venue: "hybrid",
+        category: "test",
+        examType: e.course_id ? "course-dependent" : "independent",
+        courseId: e.course_id ? String(e.course_id) : undefined,
+        passingPercentage: e.passing_percentage,
+        triesAllowed: 1,
+        durationMinutes: 60,
+        showModelAnswers: true,
+        randomizeQuestionsOrder: false,
+        randomizeMCQChoices: false,
+        examSections: [],
+        numberOfQuestions: 0,
+        numberOfStudents: 0,
+        successRate: 0,
+        timesUsed: 0,
+        createdAt: new Date().toISOString(),
+      }));
+  }, [
+    exams,
+    locale,
+    linkedExamId,
+    isGeneralLesson,
+    grade,
+    subject,
+    instructorId,
+    selectedCourseId,
+    optionsData?.requires_instructor_selection,
+  ]);
 
   // Set default academic dropdowns when options load (for new lesson)
   useEffect(() => {
@@ -499,7 +535,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
 
   if (initialLessonId && isLoadingLesson) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[350px] gap-3">
+      <div className="flex flex-col items-center justify-center min-h-87.5 gap-3">
         <Loader2 className="size-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">
           {locale === "ar" ? "جاري تحميل بيانات الدرس..." : "Loading lesson data..."}
@@ -949,7 +985,26 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                   placeholder={tDialog("selectExam")}
                   required={isLinkedToExam}
                   exams={availableExams}
+                  emptyLabel={
+                    locale === "ar"
+                      ? isGeneralLesson
+                        ? "لا توجد امتحانات مستقلة مطابقة"
+                        : "لا توجد امتحانات لهذه الدورة"
+                      : "No matching exams"
+                  }
                 />
+
+                {availableExams.length === 0 && (
+                  <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                    {locale === "ar"
+                      ? isGeneralLesson
+                        ? "لا توجد امتحانات مستقلة متاحة تطابق المرحلة والمادة والمعلم المحدد. يمكنك إنشاء امتحان مستقل أولاً من قسم إدارة الامتحانات."
+                        : "لا توجد امتحانات مرتبطة بهذه الدورة حتى الآن. يمكنك إنشاء امتحان للدورة من قسم إدارة الامتحانات."
+                      : isGeneralLesson
+                        ? "No standalone exams match the selected stage, subject and instructor. Please create an exam in the Exams section first."
+                        : "No exams found for this course yet. Please create an exam for this course in the Exams section."}
+                  </p>
+                )}
 
                 <FormToggleSetting
                   id="standalone-pass-exam-toggle"

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -7,7 +6,7 @@ import {
   FileQuestion,
   MoreVertical,
   Plus,
-  Search,
+  RefreshCw,
   Trash2,
   X,
 } from "lucide-react";
@@ -15,8 +14,8 @@ import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 
-import { GradeSelect, SubjectSelect } from "@/components/ui/academic-selects";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,40 +31,49 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { QuestionWithContext, getAllQuestions } from "@/lib/questions-storage";
-import { QuestionDifficulty, QuestionKind, QuestionType } from "@/types/exam";
 import { ContentPagination } from "../common/content-pagination";
+import {
+  useDeleteQuestion,
+  useProviderQuestionOptions,
+  useProviderQuestions,
+} from "@/hooks/use-questions";
+import type { BackendQuestion } from "@/types/api-contracts";
 
-const DIFFICULTY_COLORS: Record<QuestionDifficulty, string> = {
+const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "bg-green-100 text-green-700 border-green-300/40",
   medium: "bg-amber-100 text-amber-700 border-amber-300/40",
   hard: "bg-red-100 text-red-700 border-red-300/40",
 };
 
-export type QuestionSortOption = "times-used-desc" | "times-used-asc";
-export type QuestionTypeFilter = "all" | QuestionType;
+const emptySubscribe = () => () => {};
+
+export type QuestionSortOption = "latest" | "oldest";
 
 export function ManageQuestionsClient() {
   const locale = useLocale();
   const t = useTranslations("questionsPage");
   const tExams = useTranslations("exams");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const isMounted = React.useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
   // URL state
   const searchQuery = searchParams.get("search") || "";
   const selectedGrade = searchParams.get("grade") || "all";
   const selectedSubject = searchParams.get("subject") || "all";
-  const selectedType = (searchParams.get("type") as QuestionTypeFilter) || "all";
-  const sortBy = (searchParams.get("sort") as QuestionSortOption) || "times-used-desc";
+  const selectedType = searchParams.get("type") || "all";
+  const sortBy = (searchParams.get("sort") as QuestionSortOption) || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   const updateUrlParams = React.useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -77,7 +85,7 @@ export function ManageQuestionsClient() {
           (key === "grade" && value === "all") ||
           (key === "subject" && value === "all") ||
           (key === "type" && value === "all") ||
-          (key === "sort" && value === "times-used-desc") ||
+          (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -91,84 +99,42 @@ export function ManageQuestionsClient() {
     [searchParams, pathname, router],
   );
 
-  const [questions, setQuestions] = React.useState<QuestionWithContext[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // Live Query from backend
+  const {
+    data: questionsResponse,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useProviderQuestions({
+    search: searchQuery || undefined,
+    type: selectedType !== "all" ? selectedType : undefined,
+    educational_stage_id: selectedGrade !== "all" ? selectedGrade : undefined,
+    subject_id: selectedSubject !== "all" ? selectedSubject : undefined,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
 
-  React.useEffect(() => {
-    setQuestions(getAllQuestions(locale));
-    setIsLoading(false);
+  const { data: optionsData } = useProviderQuestionOptions(
+    selectedGrade !== "all" ? selectedGrade : undefined,
+  );
 
-    const handleUpdate = () => {
-      setQuestions(getAllQuestions(locale));
-    };
+  const deleteQuestionMutation = useDeleteQuestion();
 
-    window.addEventListener("rewaa_exams_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_exams_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale]);
-
-  // Filter Logic:
-  // search box searches teacherName, questionName, questionContent, modelAnswer, or option texts
-  const filteredQuestions = React.useMemo(() => {
-    return questions.filter((q) => {
-      if (selectedGrade !== "all" && q.academicGrade !== selectedGrade) {
-        return false;
-      }
-      if (selectedSubject !== "all" && q.subject !== selectedSubject) {
-        return false;
-      }
-      if (selectedType !== "all" && q.type !== selectedType) {
-        return false;
-      }
-
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesName = (q.questionName || "").toLowerCase().includes(query);
-        const matchesContent = (q.questionContent || "").toLowerCase().includes(query);
-        const matchesAnswer = (q.modelAnswer || "").toLowerCase().includes(query);
-        const matchesTeacher = (q.teacherName || "").toLowerCase().includes(query);
-        const matchesOptions =
-          q.options && q.options.some((opt) => opt.text.toLowerCase().includes(query));
-
-        if (
-          !matchesName &&
-          !matchesContent &&
-          !matchesAnswer &&
-          !matchesTeacher &&
-          !matchesOptions
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [questions, selectedGrade, selectedSubject, selectedType, searchQuery]);
-
-  // Sort Logic
-  const sortedQuestions = React.useMemo(() => {
-    return [...filteredQuestions].sort((a, b) => {
-      switch (sortBy) {
-        case "times-used-asc":
-          return (a.timesUsed || 0) - (b.timesUsed || 0);
-        case "times-used-desc":
-        default:
-          return (b.timesUsed || 0) - (a.timesUsed || 0);
-      }
-    });
-  }, [filteredQuestions, sortBy]);
-
-  // Pagination calculation
-  const totalItems = sortedQuestions.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const questions: BackendQuestion[] = questionsResponse?.questions || [];
+  const pagination = questionsResponse?.pagination;
+  const totalItems = pagination?.total || 0;
+  const totalPages = pagination?.last_page || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedQuestions = sortedQuestions.slice(startIndex, startIndex + itemsPerPage);
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    updateUrlParams({ search: e.target.value, page: 1 });
+  const handleDelete = async (questionId: number) => {
+    try {
+      await deleteQuestionMutation.mutateAsync(questionId);
+      toast.success(t("messages.deletedSuccessfully") || "تم حذف السؤال بنجاح");
+    } catch {
+      toast.error(t("messages.deleteFailed") || "فشل في حذف السؤال");
+    }
+  };
 
   const handleGradeChange = (val: string) => updateUrlParams({ grade: val, page: 1 });
 
@@ -182,61 +148,24 @@ export function ManageQuestionsClient() {
   const handleResetFilters = () =>
     updateUrlParams({ search: null, grade: null, subject: null, type: null, sort: null, page: 1 });
 
-  const formatGrade = (g?: string) => {
-    if (!g) return "";
-    try {
-      return tGrades(g);
-    } catch {
-      return g;
-    }
+  const formatGrade = (q: BackendQuestion) => {
+    return q.educational_stage?.name?.[locale] || q.educational_stage?.name?.ar || "";
   };
 
-  const formatSubject = (s?: string) => {
-    if (!s) return "";
-    try {
-      return tSubjects(s);
-    } catch {
-      return s;
-    }
+  const formatSubject = (q: BackendQuestion) => {
+    return q.subject?.name?.[locale] || q.subject?.name?.ar || "";
   };
-
-  const formatType = (type: string) => {
-    if (type === "mcq") return tExams("questionDialog.types.mcq");
-    if (type === "true/false") return tExams("questionDialog.types.trueFalse");
-    return tExams("questionDialog.types.text");
-  };
-
-  const formatKind = (kind?: QuestionKind) => {
-    switch (kind) {
-      case "theoretical":
-        return tExams("questionDialog.kinds.theoretical");
-      case "practical":
-        return tExams("questionDialog.kinds.practical");
-      case "application-based":
-        return tExams("questionDialog.kinds.applicationBased");
-      case "analytical":
-        return tExams("questionDialog.kinds.analytical");
-      case "oral":
-        return tExams("questionDialog.kinds.oral");
-      case "skill-based":
-        return tExams("questionDialog.kinds.skillBased");
-      default:
-        return tExams("questionDialog.kinds.theoretical");
-    }
-  };
-
-  const formatDifficulty = (d: QuestionDifficulty) => tExams(`questionDialog.difficulties.${d}`);
 
   const isFilterActive =
     searchQuery.trim() !== "" ||
     selectedGrade !== "all" ||
     selectedSubject !== "all" ||
     selectedType !== "all" ||
-    sortBy !== "times-used-desc";
+    sortBy !== "latest";
 
   const sortOptions: { value: QuestionSortOption; label: string }[] = [
-    { value: "times-used-desc", label: t("sort.timesUsedDesc") },
-    { value: "times-used-asc", label: t("sort.timesUsedAsc") },
+    { value: "latest", label: t("sort.timesUsedDesc") || "الأحدث" },
+    { value: "oldest", label: t("sort.timesUsedAsc") || "الأقدم" },
   ];
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
@@ -252,49 +181,69 @@ export function ManageQuestionsClient() {
           <p className="text-sm text-muted-foreground mt-1">{t("manageSubtitle")}</p>
         </div>
 
-        <Button asChild size="default" className="gap-2 shadow-xs font-semibold shrink-0">
-          <Link href={`/${locale}/dashboard/questions/new`}>
-            <Plus className="h-4 w-4" />
-            <span>{t("addNewQuestion")}</span>
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isMounted && isFetching}
+            className="gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${isMounted && isFetching ? "animate-spin" : ""}`} />
+            <span>تحديث</span>
+          </Button>
+
+          <Button asChild size="default" className="gap-2 shadow-xs font-semibold shrink-0">
+            <Link href={`/${locale}/dashboard/questions/new`}>
+              <Plus className="h-4 w-4" />
+              <span>{t("addNewQuestion")}</span>
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters Bar: Search Box, Grade Select, Subject Select, Type Select, Sort Dropdown & Reset button */}
       <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-55">
-            <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t("searchPlaceholder")}
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="ps-9 bg-background"
-            />
-          </div>
+          <DebouncedSearchInput
+            placeholder={t("searchPlaceholder")}
+            value={searchQuery}
+            onValueChange={(val) => updateUrlParams({ search: val, page: 1 })}
+          />
 
-          {/* Grade Select */}
+          {/* Educational Stage Select */}
           <div className="w-full sm:w-44">
-            <GradeSelect
-              value={selectedGrade}
-              onValueChange={handleGradeChange}
-              placeholder={t("allGrades")}
-              showAllOption
-              allOptionLabel={t("allGrades")}
-            />
+            <Select value={selectedGrade} onValueChange={handleGradeChange}>
+              <SelectTrigger className="h-8 text-xs bg-background">
+                <SelectValue placeholder={t("allGrades")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allGrades")}</SelectItem>
+                {optionsData?.educational_stages.map((stage) => (
+                  <SelectItem key={stage.id} value={String(stage.id)}>
+                    {stage.name[locale] || stage.name.ar}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Subject Select */}
           <div className="w-full sm:w-44">
-            <SubjectSelect
-              value={selectedSubject}
-              onValueChange={handleSubjectChange}
-              placeholder={t("allSubjects")}
-              showAllOption
-              allOptionLabel={t("allSubjects")}
-            />
+            <Select value={selectedSubject} onValueChange={handleSubjectChange}>
+              <SelectTrigger className="h-8 text-xs bg-background">
+                <SelectValue placeholder={t("allSubjects")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allSubjects")}</SelectItem>
+                {optionsData?.subjects.map((sub) => (
+                  <SelectItem key={sub.id} value={String(sub.id)}>
+                    {sub.name[locale] || sub.name.ar}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Question Type Select */}
@@ -305,11 +254,23 @@ export function ManageQuestionsClient() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("allTypes")}</SelectItem>
-                <SelectItem value="mcq">{tExams("questionDialog.types.mcq")}</SelectItem>
-                <SelectItem value="true/false">
-                  {tExams("questionDialog.types.trueFalse")}
-                </SelectItem>
-                <SelectItem value="text">{tExams("questionDialog.types.text")}</SelectItem>
+                {optionsData?.types ? (
+                  Object.entries(optionsData.types).map(([val, label]) => (
+                    <SelectItem key={val} value={val}>
+                      {label}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="multiple_choice">
+                      {tExams("questionDialog.types.mcq")}
+                    </SelectItem>
+                    <SelectItem value="true_false">
+                      {tExams("questionDialog.types.trueFalse")}
+                    </SelectItem>
+                    <SelectItem value="essay">{tExams("questionDialog.types.text")}</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -382,7 +343,7 @@ export function ManageQuestionsClient() {
                     </td>
                   </tr>
                 ))
-              ) : paginatedQuestions.length === 0 ? (
+              ) : questions.length === 0 ? (
                 <tr>
                   <td colSpan={8}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -397,25 +358,25 @@ export function ManageQuestionsClient() {
                   </td>
                 </tr>
               ) : (
-                paginatedQuestions.map((q, idx) => {
+                questions.map((q, idx) => {
                   const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
+                  const qTitle = q.title[locale] || q.title.ar || "";
+                  const qBody = q.body?.[locale] || q.body?.ar || "";
                   return (
                     <tr
-                      key={`${q.id}-${idx}`}
+                      key={q.id}
                       className={`border-b border-border/40 hover:bg-accent/40 transition-colors ${rowBg}`}
                     >
                       {/* Question Name & Content preview */}
                       <td className="px-4 py-3 max-w-xs">
                         <div className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-foreground truncate">
-                            {q.questionName}
-                          </span>
-                          <span className="text-xs text-muted-foreground truncate">
-                            {q.questionContent}
-                          </span>
-                          {q.teacherName && (
+                          <span className="font-semibold text-foreground truncate">{qTitle}</span>
+                          {qBody && (
+                            <span className="text-xs text-muted-foreground truncate">{qBody}</span>
+                          )}
+                          {q.instructor && (
                             <span className="text-[11px] text-primary/80 font-medium">
-                              {q.teacherName}
+                              {q.instructor.full_name}
                             </span>
                           )}
                         </div>
@@ -427,29 +388,29 @@ export function ManageQuestionsClient() {
                           variant="outline"
                           className="bg-primary/5 text-primary border-primary/20 text-xs font-semibold"
                         >
-                          {formatSubject(q.subject)}
+                          {formatSubject(q)}
                         </Badge>
                       </td>
 
                       {/* Grade */}
                       <td className="px-4 py-3 whitespace-nowrap text-xs font-medium text-foreground">
-                        {formatGrade(q.academicGrade)}
+                        {formatGrade(q)}
                       </td>
 
-                      {/* Category (Theoretical, etc.) */}
+                      {/* Classification */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <Badge
                           variant="outline"
                           className="text-xs font-medium bg-muted/50 border-border/70 text-foreground"
                         >
-                          {formatKind(q.questionType)}
+                          {q.classification_label || q.classification}
                         </Badge>
                       </td>
 
                       {/* Question Type */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <Badge variant="secondary" className="text-xs font-medium">
-                          {formatType(q.type)}
+                          {q.type_label || q.type}
                         </Badge>
                       </td>
 
@@ -457,15 +418,15 @@ export function ManageQuestionsClient() {
                       <td className="px-4 py-3 whitespace-nowrap">
                         <Badge
                           variant="outline"
-                          className={`text-xs font-semibold ${DIFFICULTY_COLORS[q.difficulty]}`}
+                          className={`text-xs font-semibold ${DIFFICULTY_COLORS[q.difficulty] || ""}`}
                         >
-                          {formatDifficulty(q.difficulty)}
+                          {q.difficulty_label || q.difficulty}
                         </Badge>
                       </td>
 
                       {/* Times Used */}
                       <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
-                        {t("table.timesUsedCount", { count: q.timesUsed || 1 })}
+                        {t("table.timesUsedCount", { count: q.usage_count || 0 })}
                       </td>
 
                       {/* Actions */}
@@ -488,9 +449,7 @@ export function ManageQuestionsClient() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
-                              onClick={() => {
-                                // Deletion placeholder logic for future backend CRUD
-                              }}
+                              onClick={() => handleDelete(q.id)}
                             >
                               <Trash2 className="h-4 w-4" />
                               <span>{t("actions.delete")}</span>

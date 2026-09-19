@@ -82,10 +82,7 @@ export function CategoryInfoSection({
         required
         showIcon
         teachers={courseOptions?.instructors || []}
-        disabled={
-          !courseOptions ||
-          (courseOptions && courseOptions?.requires_instructor_selection !== false)
-        }
+        disabled={courseOptions?.requires_instructor_selection === false}
       />
 
       {/* Period */}

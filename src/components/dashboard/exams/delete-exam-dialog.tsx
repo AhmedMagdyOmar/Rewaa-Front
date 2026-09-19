@@ -11,16 +11,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Exam } from "@/types/exam";
+import { BackendExam } from "@/types/api-contracts";
 import { Trash2 } from "lucide-react";
 
 interface DeleteExamDialogProps {
-  examToDelete: Exam | null;
+  examToDelete: BackendExam | Exam | null;
   onClose: () => void;
   onConfirm: () => void;
 }
 
 export function DeleteExamDialog({ examToDelete, onClose, onConfirm }: DeleteExamDialogProps) {
   const t = useTranslations("exams.deleteDialog");
+  const examTitle = examToDelete
+    ? typeof examToDelete.title === "string"
+      ? examToDelete.title
+      : examToDelete.title?.ar || examToDelete.title?.en || ""
+    : "";
 
   return (
     <Dialog open={Boolean(examToDelete)} onOpenChange={(open) => !open && onClose()}>
@@ -31,7 +37,7 @@ export function DeleteExamDialog({ examToDelete, onClose, onConfirm }: DeleteExa
             <span>{t("title")}</span>
           </DialogTitle>
           <DialogDescription className="pt-2">
-            {t("description", { title: examToDelete?.title || "" })}
+            {t("description", { title: examTitle })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 pt-2 sm:justify-end">

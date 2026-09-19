@@ -4,30 +4,88 @@ import { ArrowLeft } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { QuestionFormContent } from "@/components/dashboard/questions/question-form-content";
 import { Button } from "@/components/ui/button";
-import { addStoredQuestion } from "@/lib/questions-storage";
+import { useCreateQuestion } from "@/hooks/use-questions";
+import { getErrorMessage } from "@/lib/api-utils";
 import { Question } from "@/types/exam";
+import type { StoreQuestionData } from "@/types/api-contracts";
+import { mapFrontendKindToBackend } from "@/lib/adapters/exam-adapters";
 
 export function NewQuestionClient() {
   const locale = useLocale();
   const router = useRouter();
   const t = useTranslations("questionsPage.newPage");
+  const createQuestionMutation = useCreateQuestion();
 
-  const handleSave = (
+  const handleSave = async (
     newQuestion: Question,
     _sectionId?: string,
-    _keepOpen?: boolean,
-    academicContext?: { grade?: string; subject?: string; teacherName?: string },
+    keepOpen?: boolean,
+    academicContext?: {
+      grade?: string;
+      subject?: string;
+      teacherName?: string;
+      educationalStageId?: number;
+      subjectId?: number;
+      instructorId?: number;
+    },
   ) => {
-    addStoredQuestion(locale, newQuestion, {
-      grade: academicContext?.grade,
-      subject: academicContext?.subject,
-      teacherName: academicContext?.teacherName,
-    });
+    try {
+      const payload: StoreQuestionData = {
+        title: { ar: newQuestion.questionName, en: newQuestion.questionName },
+        body: { ar: newQuestion.questionContent, en: newQuestion.questionContent },
+        type:
+          newQuestion.type === "mcq"
+            ? "multiple_choice"
+            : newQuestion.type === "true/false"
+              ? "true_false"
+              : "essay",
+        difficulty: newQuestion.difficulty || "medium",
+        classification: mapFrontendKindToBackend(newQuestion.questionType),
+        score: Number(newQuestion.grade) || 1,
+        has_explanation: newQuestion.hasAnswerExplanation,
+        is_active: true,
+        educational_stage_id: academicContext?.educationalStageId,
+        subject_id: academicContext?.subjectId,
+        instructor_id: academicContext?.instructorId,
+      };
 
-    router.push(`/${locale}/dashboard/questions`);
+      if (newQuestion.hasAnswerExplanation && newQuestion.answerExplanation) {
+        payload.explanation = {
+          ar: newQuestion.answerExplanation,
+          en: newQuestion.answerExplanation,
+        };
+      }
+
+      if (newQuestion.type === "text" && newQuestion.modelAnswer) {
+        payload.model_answer = {
+          ar: newQuestion.modelAnswer,
+          en: newQuestion.modelAnswer,
+        };
+      } else if (newQuestion.type === "true/false") {
+        payload.correct_answer = newQuestion.modelAnswer === "true";
+      } else if (newQuestion.type === "mcq" && newQuestion.options) {
+        payload.options = newQuestion.options.map((opt) => ({
+          text: { ar: opt.text, en: opt.text },
+          is_correct: opt.id === newQuestion.modelAnswer,
+        }));
+      }
+
+      await createQuestionMutation.mutateAsync(payload);
+      toast.success(t("messages.createdSuccessfully") || "تم إنشاء السؤال بنجاح");
+
+      if (!keepOpen) {
+        router.push(`/${locale}/dashboard/questions`);
+      }
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err) ||
+          (locale === "ar" ? "فشل في إنشاء السؤال" : "Failed to create question"),
+      );
+    }
   };
 
   const handleCancel = () => {
@@ -53,14 +111,15 @@ export function NewQuestionClient() {
 
       {/* Question Form Content with editable grade, subject, and teacherName */}
       <QuestionFormContent
-        examGrade="grade1"
-        examSubject="physics"
+        examGrade=""
+        examSubject=""
         examTeacherName=""
         allowEditableAcademicProps={true}
         onSave={handleSave}
         onCancel={handleCancel}
         submitLabel={t("saveQuestion")}
         cancelLabel={t("cancel")}
+        showSaveAndAddAnother={true}
       />
     </div>
   );

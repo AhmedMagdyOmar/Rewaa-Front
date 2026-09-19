@@ -28,8 +28,9 @@ import { Button } from "@/components/ui/button";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { DashboardCard } from "../overview/dashboard-card";
 
-import { getStoredExams } from "@/lib/exams-storage";
-import { Exam, QuestionDifficulty, QuestionKind } from "@/types/exam";
+import { useProviderExam } from "@/hooks/use-exams";
+import { mapBackendExamToFrontend } from "@/lib/adapters/exam-adapters";
+import { QuestionDifficulty, QuestionKind } from "@/types/exam";
 
 interface ExamDetailsClientProps {
   examId: string;
@@ -49,23 +50,19 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
   const tGrades = useTranslations("courses.new.grades");
   const tSubjects = useTranslations("courses.new.subjects");
 
-  const [exam, setExam] = React.useState<Exam | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { data: backendExam, isLoading } = useProviderExam(examId);
+  const exam = React.useMemo(() => {
+    if (!backendExam) return null;
+    return mapBackendExamToFrontend(backendExam, locale);
+  }, [backendExam, locale]);
+
   const [activeSection, setActiveSection] = React.useState<string | undefined>(undefined);
 
   React.useEffect(() => {
-    const stored = getStoredExams(locale);
-    const found = stored.find((e) => e.id === examId);
-    if (found) {
-      setExam(found);
-      setTimeout(() => {
-        if (found.examSections && found.examSections.length > 0) {
-          setActiveSection(found.examSections[0].id);
-        }
-      }, 100);
+    if (exam && exam.examSections && exam.examSections.length > 0 && !activeSection) {
+      setActiveSection(exam.examSections[0].id);
     }
-    setIsLoading(false);
-  }, [examId, locale]);
+  }, [exam, activeSection]);
 
   if (isLoading) {
     return (

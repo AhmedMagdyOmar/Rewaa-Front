@@ -54,7 +54,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 interface LessonDialogProps {
   open: boolean;
@@ -63,11 +63,13 @@ interface LessonDialogProps {
   initialLesson?: Lesson | null;
   initialSectionId?: string;
   parentCourseContext: {
+    courseId?: string;
     grade: string;
     subject: string;
     teacherName: string;
     venue: CourseVenue;
   };
+  availableExams?: Exam[];
   hideLessonCategory?: boolean;
   onSave: (sectionId: string, lesson: Lesson) => void;
   onSaveMany?: (sectionId: string, lessons: Lesson[]) => void;
@@ -81,6 +83,7 @@ export function LessonDialog({
   initialLesson,
   initialSectionId,
   parentCourseContext,
+  availableExams: passedExams,
   hideLessonCategory: _hideLessonCategory = true,
   onSave,
   onSaveMany,
@@ -98,6 +101,7 @@ export function LessonDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [lectureVideoLink, setLectureVideoLink] = useState("");
+  const [videoLinkError, setVideoLinkError] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState<string>("");
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [removeCoverImage, setRemoveCoverImage] = useState<boolean>(false);
@@ -126,8 +130,6 @@ export function LessonDialog({
 
   // Embedded Exam Modal State
   const [isExamModalOpen, setIsExamModalOpen] = useState(false);
-  const [isCreatingExam, setIsCreatingExam] = useState(false);
-  const [examTitleInput, setExamTitleInput] = useState("");
   const [examSelectedId, setExamSelectedId] = useState("");
   const [examIsReqPass, setExamIsReqPass] = useState(false);
   const [examTargetLessonId, setExamTargetLessonId] = useState<string | null>(null);
@@ -140,9 +142,22 @@ export function LessonDialog({
   const [bankLessons, setBankLessons] = useState<Lesson[]>([]);
 
   useEffect(() => {
+    if (passedExams !== undefined) {
+      setAvailableExams(passedExams);
+      return;
+    }
+
     if (optionsData?.exams) {
+      const isRealCourse =
+        parentCourseContext.courseId && !parentCourseContext.courseId.startsWith("course-");
+      const filtered = isRealCourse
+        ? optionsData.exams.filter(
+            (e) => String(e.course_id) === String(parentCourseContext.courseId),
+          )
+        : [];
+
       setAvailableExams(
-        optionsData.exams.map((e) => ({
+        filtered.map((e) => ({
           id: String(e.id),
           title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
           description: "",
@@ -166,8 +181,10 @@ export function LessonDialog({
           createdAt: new Date().toISOString(),
         })),
       );
+    } else {
+      setAvailableExams([]);
     }
-  }, [optionsData, locale, parentCourseContext]);
+  }, [passedExams, optionsData, locale, parentCourseContext]);
 
   useEffect(() => {
     if (lessonsData?.lessons) {
@@ -210,45 +227,8 @@ export function LessonDialog({
   }, [lessonsData, locale]);
 
   const handleSaveInternalExam = () => {
-    let finalExamId = examSelectedId;
-    let finalExamTitle = availableExams.find((e) => e.id === examSelectedId)?.title;
-
-    if (isCreatingExam) {
-      if (!examTitleInput.trim()) return;
-      const createdExamId = `exam-${Math.floor(1000 + Math.random() * 9000)}`;
-      const createdExam: Exam = {
-        id: createdExamId,
-        title: examTitleInput.trim(),
-        description: "",
-        subject: parentCourseContext.subject || "General",
-        grade: parentCourseContext.grade || "General",
-        teacherName: parentCourseContext.teacherName || "Teacher",
-        venue: parentCourseContext.venue || "hybrid",
-        category: "test",
-        examType: "course-dependent",
-        sectionId: bankSectionId,
-        triesAllowed: 1,
-        durationMinutes: 60,
-        passingPercentage: 70,
-        showModelAnswers: true,
-        randomizeQuestionsOrder: false,
-        randomizeMCQChoices: false,
-        examSections: [],
-        numberOfQuestions: 0,
-        numberOfStudents: 0,
-        successRate: 0,
-        timesUsed: 0,
-        createdAt: new Date().toISOString(),
-      };
-
-      const updatedExams = [createdExam, ...availableExams];
-      setAvailableExams(updatedExams);
-
-      finalExamId = createdExamId;
-      finalExamTitle = createdExam.title;
-    }
-
-    if (!finalExamId || !examTargetLessonId) return;
+    if (!examSelectedId || !examTargetLessonId) return;
+    const finalExamTitle = availableExams.find((e) => e.id === examSelectedId)?.title;
 
     setBankLessons((prev) =>
       prev.map((l) => {
@@ -256,7 +236,7 @@ export function LessonDialog({
           return {
             ...l,
             isLinkedToExam: true,
-            linkedExamId: finalExamId,
+            linkedExamId: examSelectedId,
             linkedExamTitle: finalExamTitle,
             isRequiredPassExam: examIsReqPass,
           };
@@ -268,15 +248,38 @@ export function LessonDialog({
     setIsExamModalOpen(false);
   };
 
+  // Filter available exams to exclude exams already linked to other lessons or sections in the course (Backend unique constraint)
+  const selectableExams = useMemo(() => {
+    const takenExamIds = new Set<string>();
+    sections.forEach((sec) => {
+      if (sec.linkedExamId) {
+        takenExamIds.add(String(sec.linkedExamId));
+      }
+      (sec.lessons || []).forEach((les) => {
+        if (les.linkedExamId && les.id !== initialLesson?.id) {
+          takenExamIds.add(String(les.linkedExamId));
+        }
+      });
+    });
+
+    return availableExams.filter(
+      (exam) =>
+        !takenExamIds.has(String(exam.id)) ||
+        (initialLesson?.linkedExamId && String(exam.id) === String(initialLesson.linkedExamId)),
+    );
+  }, [availableExams, sections, initialLesson]);
+
   // Populate state on open / initialLesson change
   useEffect(() => {
     if (open) {
       setActiveTab("create");
       if (initialLesson) {
-        setType(initialLesson.type || (initialLesson.lectureVideoLink ? "videoAndText" : "text"));
+        const lessonVideo =
+          initialLesson.lectureVideoLink || initialLesson.video_url || initialLesson.videoUrl || "";
+        setType(initialLesson.type || (lessonVideo ? "videoAndText" : "text"));
         setTitle(initialLesson.title || "");
         setDescription(initialLesson.description || initialLesson.writtenText || "");
-        setLectureVideoLink(initialLesson.lectureVideoLink || "");
+        setLectureVideoLink(lessonVideo);
         setCoverImage(
           initialLesson.coverImage ||
             initialLesson.cover_image ||
@@ -318,6 +321,7 @@ export function LessonDialog({
         setPublishStatus(initialLesson.publishStatus || "published");
         setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
         setScheduleDateError(null);
+        setVideoLinkError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
       } else {
@@ -326,6 +330,7 @@ export function LessonDialog({
         setTitle("");
         setDescription("");
         setLectureVideoLink("");
+        setVideoLinkError(null);
         setCoverImage("");
         setCoverImageFile(null);
         setRemoveCoverImage(false);
@@ -433,6 +438,14 @@ export function LessonDialog({
     }
 
     if (!title.trim() || !targetSectionId) return;
+
+    setVideoLinkError(null);
+    if (type === "videoAndText" && !lectureVideoLink.trim()) {
+      setVideoLinkError(
+        locale === "ar" ? "رابط فيديو المحاضرة مطلوب" : "Lecture video link is required",
+      );
+      return;
+    }
 
     // Validation: PDF files required if toggle is true
     if (hasPdfAttachments && pdfFiles.length === 0) {
@@ -758,10 +771,18 @@ export function LessonDialog({
                       id="les-video-link"
                       type="url"
                       value={lectureVideoLink}
-                      onChange={(e) => setLectureVideoLink(e.target.value)}
+                      onChange={(e) => {
+                        setLectureVideoLink(e.target.value);
+                        if (videoLinkError) setVideoLinkError(null);
+                      }}
                       placeholder={t("lectureVideoLinkPlaceholder")}
-                      required={type === "videoAndText" && activeTab === "create"}
+                      required={type === "videoAndText"}
                     />
+                    {videoLinkError && (
+                      <p className="text-xs text-destructive font-medium animate-in fade-in">
+                        {videoLinkError}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -942,8 +963,31 @@ export function LessonDialog({
                         label={t("selectExam")}
                         placeholder={t("selectExam")}
                         required={isLinkedToExam && activeTab === "create"}
-                        exams={availableExams}
+                        exams={selectableExams}
+                        emptyLabel={
+                          availableExams.length === 0
+                            ? locale === "ar"
+                              ? "لا توجد امتحانات متاحة لهذه الدورة"
+                              : "No exams available for this course"
+                            : locale === "ar"
+                              ? "جميع امتحانات الدورة مستخدمة بالفعل"
+                              : "All course exams are already linked"
+                        }
                       />
+
+                      {availableExams.length === 0 ? (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                          {locale === "ar"
+                            ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان وربطه بهذه الدورة من قسم إدارة الامتحانات."
+                            : "No exams found for this course yet. You can create an exam linked to this course from the Exams section."}
+                        </p>
+                      ) : selectableExams.length === 0 && !linkedExamId ? (
+                        <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
+                          {locale === "ar"
+                            ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى (لا يمكن ربط نفس الامتحان بأكثر من درس أو قسم)."
+                            : "All exams assigned to this course are already linked to other sections or lessons (an exam can only be linked once)."}
+                        </p>
+                      ) : null}
 
                       {/* Toggle Have to pass exam */}
                       <FormToggleSetting
@@ -1060,8 +1104,6 @@ export function LessonDialog({
         onOpenChange={(openVal) => {
           setIsExamModalOpen(openVal);
           if (!openVal) {
-            setIsCreatingExam(false);
-            setExamTitleInput("");
             setExamSelectedId("");
             setExamIsReqPass(false);
             setExamTargetLessonId(null);
@@ -1070,77 +1112,47 @@ export function LessonDialog({
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {isCreatingExam
-                ? locale === "ar"
-                  ? "إنشاء امتحان جديد"
-                  : "Create New Exam"
-                : tCourses("new.step2.addExamDialog.title")}
-            </DialogTitle>
-            <DialogDescription>
-              {isCreatingExam
-                ? locale === "ar"
-                  ? "أدخل تفاصيل الامتحان الجديد لإنشائه وربطه بالدرس"
-                  : "Enter details for the new exam to create and link to lesson"
-                : tCourses("new.step2.addExamDialog.subtitle")}
-            </DialogDescription>
+            <DialogTitle>{tCourses("new.step2.addExamDialog.title")}</DialogTitle>
+            <DialogDescription>{tCourses("new.step2.addExamDialog.subtitle")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* Exam Select + Plus Button (or Title input) */}
-            {!isCreatingExam ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <ExamSelect
-                      value={examSelectedId}
-                      onValueChange={setExamSelectedId}
-                      label={locale === "ar" ? "اختر الامتحان" : "Select Exam"}
-                      placeholder={
-                        t("selectExam") || (locale === "ar" ? "اختر الامتحان..." : "Select exam...")
-                      }
-                      required
-                      exams={availableExams}
-                      emptyLabel={locale === "ar" ? "لا توجد امتحانات متاحة" : "No exams available"}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant="default"
-                    size="icon"
-                    className="shrink-0 h-9 w-9 mt-6"
-                    onClick={() => setIsCreatingExam(true)}
-                    title={locale === "ar" ? "إنشاء امتحان جديد" : "Create new exam"}
-                  >
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1">
-                <div className="flex items-center justify-between">
-                  <label htmlFor="embed-exam-title" className="text-sm font-medium text-foreground">
-                    {tCourses("new.step2.addExamDialog.examTitle")}{" "}
-                    <span className="text-destructive">*</span>
-                  </label>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs text-primary"
-                    onClick={() => setIsCreatingExam(false)}
-                  >
-                    {locale === "ar" ? "اختيار من الموجود" : "Select existing"}
-                  </Button>
-                </div>
-                <Input
-                  id="embed-exam-title"
-                  value={examTitleInput}
-                  onChange={(e) => setExamTitleInput(e.target.value)}
-                  placeholder={tCourses("new.step2.addExamDialog.examTitlePlaceholder")}
-                />
-              </div>
-            )}
+            {/* Exam Select */}
+            <div className="flex flex-col gap-2">
+              <ExamSelect
+                value={examSelectedId}
+                onValueChange={setExamSelectedId}
+                label={locale === "ar" ? "اختر الامتحان" : "Select Exam"}
+                placeholder={
+                  t("selectExam") || (locale === "ar" ? "اختر الامتحان..." : "Select exam...")
+                }
+                required
+                exams={selectableExams}
+                emptyLabel={
+                  availableExams.length === 0
+                    ? locale === "ar"
+                      ? "لا توجد امتحانات متاحة لهذه الدورة"
+                      : "No exams available for this course"
+                    : locale === "ar"
+                      ? "جميع امتحانات الدورة مستخدمة بالفعل"
+                      : "All course exams are already linked"
+                }
+              />
+
+              {availableExams.length === 0 ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                  {locale === "ar"
+                    ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان للدورة من قسم الامتحانات."
+                    : "No exams found for this course yet. You can create an exam from the Exams section."}
+                </p>
+              ) : selectableExams.length === 0 && !examSelectedId ? (
+                <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
+                  {locale === "ar"
+                    ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى."
+                    : "All exams assigned to this course are already linked to other sections or lessons."}
+                </p>
+              ) : null}
+            </div>
 
             {/* Passing Required */}
             <FormToggleSetting
@@ -1156,11 +1168,7 @@ export function LessonDialog({
             <Button variant="outline" type="button" onClick={() => setIsExamModalOpen(false)}>
               {t("cancel")}
             </Button>
-            <Button
-              type="button"
-              onClick={handleSaveInternalExam}
-              disabled={isCreatingExam ? !examTitleInput.trim() : !examSelectedId}
-            >
+            <Button type="button" onClick={handleSaveInternalExam} disabled={!examSelectedId}>
               {locale === "ar" ? "حفظ وتعيين" : "Save & Link"}
             </Button>
           </DialogFooter>

@@ -39,8 +39,8 @@ import {
   saveStoredCustomSection,
 } from "@/lib/custom-categories-storage";
 import { cn } from "@/lib/utils";
-import { getStoredTeachers } from "@/lib/settings-storage";
-import { Teacher } from "@/types/settings";
+import { useLocale } from "next-intl";
+import { useProviderQuestionOptions } from "@/hooks/use-questions";
 import {
   ExamSection,
   MCQOption,
@@ -57,12 +57,22 @@ export interface QuestionFormContentProps {
   examGrade?: string;
   examSubject?: string;
   examTeacherName?: string;
+  initialEducationalStageId?: number | string;
+  initialSubjectId?: number | string;
+  initialInstructorId?: number | string;
   allowEditableAcademicProps?: boolean;
   onSave: (
     question: Question,
     sectionId?: string,
     keepOpen?: boolean,
-    academicContext?: { grade?: string; subject?: string; teacherName?: string },
+    academicContext?: {
+      grade?: string;
+      subject?: string;
+      teacherName?: string;
+      educationalStageId?: number;
+      subjectId?: number;
+      instructorId?: number;
+    },
   ) => void;
   onCancel?: () => void;
   submitLabel?: string;
@@ -77,6 +87,9 @@ export function QuestionFormContent({
   examGrade,
   examSubject,
   examTeacherName,
+  initialEducationalStageId,
+  initialSubjectId,
+  initialInstructorId,
   allowEditableAcademicProps = false,
   onSave,
   onCancel,
@@ -84,30 +97,81 @@ export function QuestionFormContent({
   cancelLabel,
   showSaveAndAddAnother = false,
 }: QuestionFormContentProps) {
+  const locale = useLocale();
   const t = useTranslations("exams.questionDialog");
   const tNew = useTranslations("questionsPage.newPage");
   const tGrades = useTranslations("courses.new.grades");
   const tSubjects = useTranslations("courses.new.subjects");
 
-  const [availableTeachers, setAvailableTeachers] = React.useState<Teacher[]>([]);
-
-  React.useEffect(() => {
-    const loadTeachers = () => {
-      setAvailableTeachers(getStoredTeachers());
-    };
-    loadTeachers();
-    window.addEventListener("rewaa_teachers_updated", loadTeachers);
-    return () => window.removeEventListener("rewaa_teachers_updated", loadTeachers);
-  }, []);
-
   const [sectionId, setSectionId] = React.useState<string>(
     initialSectionId || (sections && sections[0]?.id ? sections[0].id : ""),
   );
 
-  // Academic Context State when editable
-  const [selectedGrade, setSelectedGrade] = React.useState<string>(examGrade || "grade1");
-  const [selectedSubject, setSelectedSubject] = React.useState<string>(examSubject || "physics");
-  const [teacherNameInput, setTeacherNameInput] = React.useState<string>(examTeacherName || "");
+  // Academic Context State when editable (using real backend IDs when available)
+  const [selectedStageId, setSelectedStageId] = React.useState<string>(
+    initialEducationalStageId ? String(initialEducationalStageId) : examGrade || "",
+  );
+  const [selectedSubjId, setSelectedSubjId] = React.useState<string>(
+    initialSubjectId ? String(initialSubjectId) : examSubject || "",
+  );
+  const [selectedInstId, setSelectedInstId] = React.useState<string>(
+    initialInstructorId ? String(initialInstructorId) : examTeacherName || "",
+  );
+
+  // Live options query from backend
+  const { data: optionsData, isLoading: isLoadingOptions } = useProviderQuestionOptions(
+    selectedStageId || undefined,
+  );
+
+  // Map backend stages, subjects, instructors to Combobox options
+  const educationalStages = optionsData?.educational_stages;
+  const subjects = optionsData?.subjects;
+  const instructors = optionsData?.instructors;
+
+  const mappedStages = React.useMemo(() => {
+    return (educationalStages || []).map((s) => ({
+      id: s.id,
+      name: locale === "ar" ? s.name.ar || s.name.en || "" : s.name.en || s.name.ar || "",
+    }));
+  }, [educationalStages, locale]);
+
+  const mappedSubjects = React.useMemo(() => {
+    return (subjects || []).map((s) => ({
+      id: s.id,
+      name: locale === "ar" ? s.name.ar || s.name.en || "" : s.name.en || s.name.ar || "",
+    }));
+  }, [subjects, locale]);
+
+  const mappedInstructors = React.useMemo(() => {
+    return (instructors || []).map((i) => ({
+      id: i.id,
+      full_name: i.full_name,
+    }));
+  }, [instructors]);
+
+  // If initial props change or first loaded, sync selected values
+  React.useEffect(() => {
+    if (initialEducationalStageId) {
+      setSelectedStageId(String(initialEducationalStageId));
+    }
+  }, [initialEducationalStageId]);
+
+  React.useEffect(() => {
+    if (initialSubjectId) {
+      setSelectedSubjId(String(initialSubjectId));
+    }
+  }, [initialSubjectId]);
+
+  React.useEffect(() => {
+    if (initialInstructorId) {
+      setSelectedInstId(String(initialInstructorId));
+    }
+  }, [initialInstructorId]);
+
+  const handleStageChange = (newStage: string) => {
+    setSelectedStageId(newStage);
+    setSelectedSubjId(""); // reset dependent subject
+  };
 
   // Input groups state
   const [type, setType] = React.useState<QuestionType>(initialQuestion?.type || "mcq");
@@ -161,14 +225,23 @@ export function QuestionFormContent({
   };
 
   // Build combined question kinds options
-  const defaultQuestionKindOptions = [
-    { value: "theoretical", label: t("kinds.theoretical") },
-    { value: "practical", label: t("kinds.practical") },
-    { value: "application-based", label: t("kinds.applicationBased") },
-    { value: "analytical", label: t("kinds.analytical") },
-    { value: "oral", label: t("kinds.oral") },
-    { value: "skill-based", label: t("kinds.skillBased") },
-  ];
+  const classifications = optionsData?.classifications;
+  const defaultQuestionKindOptions = React.useMemo(() => {
+    if (classifications && Object.keys(classifications).length > 0) {
+      return Object.entries(classifications).map(([key, label]) => ({
+        value: key,
+        label,
+      }));
+    }
+    return [
+      { value: "theoretical", label: t("kinds.theoretical") },
+      { value: "practical", label: t("kinds.practical") },
+      { value: "application-based", label: t("kinds.applicationBased") },
+      { value: "analytical", label: t("kinds.analytical") },
+      { value: "oral", label: t("kinds.oral") },
+      { value: "skill-based", label: t("kinds.skillBased") },
+    ];
+  }, [classifications, t]);
 
   const allQuestionKindOptions = [
     ...defaultQuestionKindOptions,
@@ -244,7 +317,9 @@ export function QuestionFormContent({
 
   const isAcademicValid =
     !allowEditableAcademicProps ||
-    (Boolean(selectedGrade) && Boolean(selectedSubject) && Boolean(teacherNameInput.trim()));
+    (Boolean(selectedStageId) &&
+      Boolean(selectedSubjId) &&
+      (optionsData?.requires_instructor_selection === false || Boolean(selectedInstId)));
 
   const isValid =
     Boolean(questionName.trim()) &&
@@ -272,9 +347,12 @@ export function QuestionFormContent({
     };
 
     onSave(questionData, sectionId || undefined, keepOpen, {
-      grade: selectedGrade,
-      subject: selectedSubject,
-      teacherName: teacherNameInput.trim() || undefined,
+      grade: selectedStageId,
+      subject: selectedSubjId,
+      teacherName: selectedInstId,
+      educationalStageId: Number(selectedStageId) || undefined,
+      subjectId: Number(selectedSubjId) || undefined,
+      instructorId: Number(selectedInstId) || undefined,
     });
 
     if (keepOpen) {
@@ -457,26 +535,31 @@ export function QuestionFormContent({
           {allowEditableAcademicProps ? (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <GradeSelect
-                value={selectedGrade}
-                onValueChange={setSelectedGrade}
+                value={selectedStageId}
+                onValueChange={handleStageChange}
                 label={tNew("selectGrade")}
                 placeholder={tNew("selectGradePlaceholder")}
+                grades={mappedStages}
+                disabled={isLoadingOptions}
                 required
               />
               <SubjectSelect
-                value={selectedSubject}
-                onValueChange={setSelectedSubject}
+                value={selectedSubjId}
+                onValueChange={setSelectedSubjId}
                 label={tNew("selectSubject")}
                 placeholder={tNew("selectSubjectPlaceholder")}
+                subjects={mappedSubjects}
+                disabled={isLoadingOptions || !selectedStageId}
                 required
               />
               <TeacherSelect
-                value={teacherNameInput}
-                onValueChange={setTeacherNameInput}
+                value={selectedInstId}
+                onValueChange={setSelectedInstId}
                 label={tNew("teacherName")}
                 placeholder={tNew("teacherNamePlaceholder")}
-                teachers={availableTeachers}
-                required
+                teachers={mappedInstructors}
+                disabled={isLoadingOptions || optionsData?.requires_instructor_selection === false}
+                required={optionsData?.requires_instructor_selection !== false}
               />
             </div>
           ) : (

@@ -128,6 +128,7 @@ export function CurriculumView({
         newSecIsReqPass={curriculum.newSecIsReqPass}
         onIsReqPassChange={curriculum.setNewSecIsReqPass}
         newSecScheduleDateError={curriculum.newSecScheduleDateError}
+        sections={curriculum.sections}
         availableExams={curriculum.availableExams}
         courseId={courseId}
         locale={locale}
@@ -152,6 +153,7 @@ export function CurriculumView({
         initialLesson={curriculum.editingLesson?.lesson || null}
         initialSectionId={curriculum.editingLesson?.sectionId || curriculum.lessonTargetSectionId}
         parentCourseContext={curriculum.parentCourseContext}
+        availableExams={curriculum.availableExams}
         onSave={curriculum.handleSaveLesson}
         onSaveMany={curriculum.handleSaveManyLessons}
       />

@@ -1,7 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-"use client";
-
 import { useEffect, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -13,9 +12,9 @@ import {
   LessonType,
 } from "@/types/course";
 import { Exam } from "@/types/exam";
-import { getStoredExams } from "@/lib/exams-storage";
 import { getErrorMessage } from "@/lib/api-utils";
 import { coursesService } from "@/lib/api/courses-service";
+import { queryKeys } from "@/lib/api/queryKeys";
 import {
   useCourseSections,
   useProviderCourse,
@@ -24,7 +23,13 @@ import {
   useDeleteCourseSection,
   useReorderCourseSections,
 } from "@/hooks/use-courses";
-import { useCreateLesson, useUpdateLesson, useDeleteLesson } from "@/hooks/use-lessons";
+import {
+  useCreateLesson,
+  useUpdateLesson,
+  useDeleteLesson,
+  useProviderLessonOptions,
+} from "@/hooks/use-lessons";
+import { useProviderExams } from "@/hooks/use-exams";
 import { DialogType, EditingLessonState, LessonToDeleteState, ParentCourseContext } from "../types";
 
 interface UseCurriculumManagementProps {
@@ -47,16 +52,22 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
 
   // Parent Course Context for auto-filling
   const [parentCourseContext, setParentCourseContext] = useState<ParentCourseContext>({
+    courseId,
     grade: "",
     subject: "",
     teacherName: "",
     venue: "hybrid" as CourseVenue,
   });
 
-  // TanStack Query & Mutation hooks for Sections and Parent Course
-  const isBackendCourseId = courseId && !courseId.startsWith("course-");
+  const queryClient = useQueryClient();
+  const isBackendCourseId = Boolean(courseId && !courseId.startsWith("course-"));
   const { data: parentCourse } = useProviderCourse(isBackendCourseId ? courseId : undefined);
   const { data: backendSections } = useCourseSections(isBackendCourseId ? courseId : undefined);
+  const { data: courseExamsData } = useProviderExams(
+    isBackendCourseId ? { course_id: Number(courseId), per_page: 100 } : undefined,
+  );
+  const { data: lessonOptionsData } = useProviderLessonOptions();
+
   const createSectionMutation = useCreateCourseSection();
   const updateSectionMutation = useUpdateCourseSection();
   const deleteSectionMutation = useDeleteCourseSection();
@@ -83,15 +94,11 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   const [isImporting, setIsImporting] = useState(false);
   const [availableImportSections, setAvailableImportSections] = useState<CourseSection[]>([]);
 
-  // Load stored exams
-  useEffect(() => {
-    setAvailableExams(getStoredExams(locale));
-  }, [locale]);
-
   // Sync parent course context from backend course data
   useEffect(() => {
     if (parentCourse) {
       setParentCourseContext({
+        courseId,
         grade:
           parentCourse.educational_stage?.name?.[locale] ||
           parentCourse.educational_stage?.name?.ar ||
@@ -101,7 +108,87 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
         venue: parentCourse.delivery_mode || "hybrid",
       });
     }
-  }, [parentCourse, locale]);
+  }, [parentCourse, locale, courseId]);
+
+  // Sync available exams for this course from backend
+  useEffect(() => {
+    if (courseExamsData?.exams && courseExamsData.exams.length > 0) {
+      setAvailableExams(
+        courseExamsData.exams.map((e) => ({
+          id: String(e.id),
+          title:
+            typeof e.title === "string"
+              ? e.title
+              : e.title?.[locale] || e.title?.ar || e.title?.en || "",
+          description: "",
+          subject:
+            e.subject?.name?.[locale] || e.subject?.name?.ar || parentCourseContext.subject || "",
+          grade:
+            e.educational_stage?.name?.[locale] ||
+            e.educational_stage?.name?.ar ||
+            parentCourseContext.grade ||
+            "",
+          teacherName: e.instructor?.full_name || parentCourseContext.teacherName || "",
+          venue: parentCourseContext.venue || "hybrid",
+          category: "test",
+          examType: "course-dependent",
+          courseId,
+          triesAllowed: e.max_attempts || 1,
+          durationMinutes: e.duration_minutes || 60,
+          passingPercentage: e.passing_percentage,
+          showModelAnswers: e.show_correct_answers_after_submission,
+          randomizeQuestionsOrder: e.shuffle_questions,
+          randomizeMCQChoices: e.shuffle_answer_options,
+          examSections: [],
+          numberOfQuestions: e.questions_count || 0,
+          numberOfStudents: e.students_count || 0,
+          successRate: e.success_rate || 0,
+          timesUsed: e.attempts_count || 0,
+          createdAt: e.created_at || new Date().toISOString(),
+        })),
+      );
+    } else if (lessonOptionsData?.exams) {
+      const courseIdNum = isBackendCourseId ? Number(courseId) : null;
+      const matchedExams = courseIdNum
+        ? lessonOptionsData.exams.filter((e) => Number(e.course_id) === courseIdNum)
+        : [];
+      setAvailableExams(
+        matchedExams.map((e) => ({
+          id: String(e.id),
+          title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
+          description: "",
+          subject: parentCourseContext.subject || "",
+          grade: parentCourseContext.grade || "",
+          teacherName: parentCourseContext.teacherName || "",
+          venue: parentCourseContext.venue || "hybrid",
+          category: "test",
+          examType: "course-dependent",
+          courseId,
+          triesAllowed: 1,
+          durationMinutes: 60,
+          passingPercentage: e.passing_percentage,
+          showModelAnswers: true,
+          randomizeQuestionsOrder: false,
+          randomizeMCQChoices: false,
+          examSections: [],
+          numberOfQuestions: 0,
+          numberOfStudents: 0,
+          successRate: 0,
+          timesUsed: 0,
+          createdAt: new Date().toISOString(),
+        })),
+      );
+    } else {
+      setAvailableExams([]);
+    }
+  }, [
+    courseExamsData,
+    lessonOptionsData,
+    courseId,
+    isBackendCourseId,
+    locale,
+    parentCourseContext,
+  ]);
 
   // Sync backend sections into local state when fetched
   useEffect(() => {
@@ -121,7 +208,9 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               : "published") as LessonPublishStatus,
           isDraft: l.status === "draft",
           description: l.description?.[locale] || l.description?.ar || l.description?.en || "",
-          lectureVideoLink: l.intro_video_url || undefined,
+          lectureVideoLink: l.video_url || l.intro_video_url || undefined,
+          video_url: l.video_url || l.intro_video_url || undefined,
+          videoUrl: l.video_url || l.intro_video_url || undefined,
           coverImage: l.cover_image || l.cover_image_url || undefined,
           hasPdfAttachments: Boolean(
             l.has_pdf_attachments || (l.pdf_attachments && l.pdf_attachments.length > 0),
@@ -246,8 +335,44 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             lessons: (sec.lessons || []).map((l) => ({
               id: String(l.id),
               title: l.title?.[locale] || l.title?.ar || l.title?.en || "",
-              type: "videoAndText" as LessonType,
-              publishStatus: "published" as LessonPublishStatus,
+              type: (l.type === "text_only" ? "text" : "videoAndText") as LessonType,
+              publishStatus: (l.status === "draft"
+                ? "draft"
+                : l.status === "scheduled"
+                  ? "scheduled"
+                  : "published") as LessonPublishStatus,
+              isDraft: l.status === "draft",
+              description: l.description?.[locale] || l.description?.ar || l.description?.en || "",
+              lectureVideoLink: l.video_url || l.intro_video_url || undefined,
+              video_url: l.video_url || l.intro_video_url || undefined,
+              videoUrl: l.video_url || l.intro_video_url || undefined,
+              coverImage: l.cover_image || l.cover_image_url || undefined,
+              hasPdfAttachments: Boolean(
+                l.has_pdf_attachments || (l.pdf_attachments && l.pdf_attachments.length > 0),
+              ),
+              pdfFiles: (l.pdf_attachments || []).map((p) => ({
+                id: String(p.id),
+                title: p.name || p.file_name || "PDF Document",
+                fileUrl: p.url,
+                fileType: "pdf" as const,
+                sizeInBytes: p.size,
+              })),
+              hasImageAttachments: Boolean(
+                l.has_explanatory_images ||
+                (l.explanatory_images && l.explanatory_images.length > 0),
+              ),
+              imageFiles: (l.explanatory_images || []).map((img) => ({
+                id: String(img.id),
+                title: img.name || "Image",
+                fileUrl: img.url,
+                fileType: "image" as const,
+                sizeInBytes: img.size,
+              })),
+              isLinkedToExam: Boolean(l.exam_id),
+              linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
+              linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
+              isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
+              scheduledPublishDate: l.scheduled_publish_at || undefined,
             })),
           }));
           setAvailableImportSections(secs);
@@ -466,6 +591,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           finalLesson = {
             ...savedLesson,
             id: String(res.id),
+            lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,
             coverImageFile: null,
             removeCoverImage: false,
@@ -476,6 +602,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           finalLesson = {
             ...savedLesson,
             id: String(res.id),
+            lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,
             coverImageFile: null,
             removeCoverImage: false,
@@ -634,48 +761,85 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
 
     try {
       if (isBackendCourseId) {
-        const creationPromises = selectedImportSectionsList.map((sec) =>
-          coursesService.createSection(courseId, {
+        let totalImportedLessonsCount = 0;
+
+        for (const sec of selectedImportSectionsList) {
+          const createdSection = await coursesService.createSection(courseId, {
             title: {
               ar: sec.title,
               en: sec.title,
             },
             status: "draft",
-          }),
-        );
+          });
 
-        const createdSections = await Promise.all(creationPromises);
+          if (sec.lessons && sec.lessons.length > 0) {
+            const lessonPromises = sec.lessons.map((l) =>
+              createLessonMutation.mutateAsync({
+                classification: "course",
+                course_id: Number(courseId),
+                course_section_id: Number(createdSection.id),
+                original_lesson_id: !Number.isNaN(Number(l.id)) ? Number(l.id) : undefined,
+                type: l.type === "text" ? "text_only" : "video_and_text",
+                title: { ar: l.title, en: l.title },
+                description: l.description ? { ar: l.description, en: l.description } : undefined,
+                video_url: l.lectureVideoLink || undefined,
+                has_pdf_attachments: Boolean(l.hasPdfAttachments),
+                has_explanatory_images: Boolean(l.hasImageAttachments),
+                has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
+                exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
+                requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
+                status: l.publishStatus || "draft",
+                scheduled_publish_at: l.scheduledPublishDate || undefined,
+                is_active: true,
+              }),
+            );
+
+            await Promise.all(lessonPromises);
+            totalImportedLessonsCount += sec.lessons.length;
+          }
+        }
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.provider.courses.sections(courseId),
+        });
+        queryClient.invalidateQueries({
+          queryKey: [...queryKeys.provider.courses.detail(courseId), "content"],
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.provider.lessons.all(),
+        });
+
         toast.success(
           locale === "ar"
-            ? `تم استيراد ${createdSections.length} أقسام بنجاح!`
-            : `Successfully imported ${createdSections.length} sections!`,
+            ? `تم استيراد ${selectedImportSectionsList.length} أقسام و ${totalImportedLessonsCount} دروس بنجاح!`
+            : `Successfully imported ${selectedImportSectionsList.length} sections and ${totalImportedLessonsCount} lessons!`,
         );
+      } else {
+        const now = Date.now();
+        const clonedSections: CourseSection[] = selectedImportSectionsList.map((sec, sIndex) => {
+          const newSecId = `sec-${now}-${sIndex}`;
+          return {
+            id: newSecId,
+            title: sec.title,
+            isDraft: true,
+            status: "draft",
+            isLinkedToExam: Boolean(sec.isLinkedToExam),
+            linkedExamId: sec.linkedExamId,
+            linkedExamTitle: sec.linkedExamTitle,
+            isRequiredPassExamForNextSection: Boolean(sec.isRequiredPassExamForNextSection),
+            hasExamExpiryDate: sec.hasExamExpiryDate,
+            examStartDate: sec.examStartDate,
+            examExpiryDate: sec.examExpiryDate,
+            lessons: (sec.lessons || []).map((l, lIndex) => ({
+              ...l,
+              id: `les-${now}-${sIndex}-${lIndex}`,
+            })),
+          };
+        });
+
+        const updatedSections = [...sections, ...clonedSections];
+        setSections(updatedSections);
       }
-
-      const now = Date.now();
-      const clonedSections: CourseSection[] = selectedImportSectionsList.map((sec, sIndex) => {
-        const newSecId = `sec-${now}-${sIndex}`;
-        return {
-          id: newSecId,
-          title: sec.title,
-          isDraft: true,
-          status: "draft",
-          isLinkedToExam: Boolean(sec.isLinkedToExam),
-          linkedExamId: sec.linkedExamId,
-          linkedExamTitle: sec.linkedExamTitle,
-          isRequiredPassExamForNextSection: Boolean(sec.isRequiredPassExamForNextSection),
-          hasExamExpiryDate: sec.hasExamExpiryDate,
-          examStartDate: sec.examStartDate,
-          examExpiryDate: sec.examExpiryDate,
-          lessons: (sec.lessons || []).map((l, lIndex) => ({
-            ...l,
-            id: `les-${now}-${sIndex}-${lIndex}`,
-          })),
-        };
-      });
-
-      const updatedSections = [...sections, ...clonedSections];
-      setSections(updatedSections);
 
       setImportCourseId("");
       setSelectedImportSectionIds([]);

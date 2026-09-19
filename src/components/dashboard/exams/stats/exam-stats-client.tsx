@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -37,7 +36,6 @@ import {
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { PhoneLink } from "@/components/ui/phone-link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,14 +43,18 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentPagination } from "../../common/content-pagination";
 import { DashboardCard } from "../../overview/dashboard-card";
 
-import { getStoredExams } from "@/lib/exams-storage";
-import { generateExamStats } from "@/lib/mockExamStatsData";
-import { Exam, QuestionDifficulty } from "@/types/exam";
-import { ExamStatsData, ScoreDistributionBand } from "@/types/exam-stats";
+import { useProviderExam, useProviderExamAttempts } from "@/hooks/use-exams";
+import {
+  mapBackendExamAttemptsToStats,
+  mapBackendExamToFrontend,
+} from "@/lib/adapters/exam-adapters";
+import { QuestionDifficulty } from "@/types/exam";
+import { ScoreDistributionBand } from "@/types/exam-stats";
 
 interface ExamStatsClientProps {
   examId: string;
@@ -78,9 +80,33 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
   const tTable = useTranslations("exams.stats.studentResults");
   const tDetails = useTranslations("exams.details");
 
-  const [exam, setExam] = React.useState<Exam | null>(null);
-  const [stats, setStats] = React.useState<ExamStatsData | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const {
+    data: backendExam,
+    isLoading: isExamLoading,
+    refetch: refetchExam,
+  } = useProviderExam(examId);
+
+  const {
+    data: attemptsData,
+    isLoading: isAttemptsLoading,
+    refetch: refetchAttempts,
+  } = useProviderExamAttempts({
+    exam_id: examId,
+    per_page: 100,
+  });
+
+  const isLoading = isExamLoading || isAttemptsLoading;
+
+  const exam = React.useMemo(() => {
+    if (!backendExam) return null;
+    return mapBackendExamToFrontend(backendExam, locale);
+  }, [backendExam, locale]);
+
+  const stats = React.useMemo(() => {
+    if (!exam) return null;
+    return mapBackendExamAttemptsToStats(exam, attemptsData?.attempts || [], locale as "ar" | "en");
+  }, [exam, attemptsData, locale]);
+
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [lastUpdatedTime, setLastUpdatedTime] = React.useState<Date>(new Date());
   const [timeAgoText, setTimeAgoText] = React.useState<string>("");
@@ -92,33 +118,21 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
   const [currentPage, setCurrentPage] = React.useState(1);
   const itemsPerPage = 8;
 
-  // Load Exam and Stats
   const loadData = React.useCallback(
-    (showRefreshAnimation = false) => {
+    async (showRefreshAnimation = false) => {
       if (showRefreshAnimation) {
         setIsRefreshing(true);
       }
-      const stored = getStoredExams(locale);
-      const found = stored.find((e) => e.id === examId);
-      if (found) {
-        setExam(found);
-        const generated = generateExamStats(found, locale as "ar" | "en");
-        setStats(generated);
-        setLastUpdatedTime(new Date());
-      }
-      setIsLoading(false);
+      await Promise.all([refetchExam(), refetchAttempts()]);
+      setLastUpdatedTime(new Date());
       if (showRefreshAnimation) {
         setTimeout(() => {
           setIsRefreshing(false);
         }, 500);
       }
     },
-    [examId, locale],
+    [refetchExam, refetchAttempts],
   );
-
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // Compute time ago text dynamically
   React.useEffect(() => {

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -11,8 +10,7 @@ import {
   MoreVertical,
   Pencil,
   Phone,
-  RotateCcw,
-  Search,
+  RefreshCw,
   Share2,
   Trash2,
   User,
@@ -25,6 +23,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import {
   Dialog,
   DialogContent,
@@ -40,25 +39,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { PhoneLink } from "@/components/ui/phone-link";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ContentPagination } from "../../common/content-pagination";
 
 import {
-  dismissComplaint,
-  getStoredComplaints,
-  resetStoredComplaints,
-} from "@/lib/exam-complaints-storage";
-import { getStoredExams } from "@/lib/exams-storage";
+  useDeleteExamComplaint,
+  useProviderExam,
+  useProviderExamComplaints,
+} from "@/hooks/use-exams";
+import {
+  mapBackendComplaintToFrontend,
+  mapBackendExamToFrontend,
+} from "@/lib/adapters/exam-adapters";
+import { ExamComplaintFilterParams } from "@/types/api-contracts";
 import { ExamComplaint } from "@/types/complaint";
-import { Exam } from "@/types/exam";
 
 interface ExamComplaintsClientProps {
   examId: string;
 }
 
-export type ComplaintSortOption = "newest" | "oldest" | "title-asc" | "title-desc" | "student-asc";
+export type ComplaintSortOption =
+  | "latest"
+  | "oldest"
+  | "body_asc"
+  | "body_desc"
+  | "student_asc"
+  | "student_desc";
 
 function formatDate(iso: string, locale: string) {
   try {
@@ -82,57 +89,62 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
   const tComplaints = useTranslations("exams.complaints");
   const tDetails = useTranslations("exams.details");
 
-  const [exam, setExam] = React.useState<Exam | null>(null);
-  const [complaints, setComplaints] = React.useState<ExamComplaint[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isResetting, setIsResetting] = React.useState(false);
-
   // Filters & Sorting state
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [sortBy, setSortBy] = React.useState<ComplaintSortOption>("newest");
+  const [sortBy, setSortBy] = React.useState<ComplaintSortOption>("latest");
   const [currentPage, setCurrentPage] = React.useState(1);
-  const itemsPerPage = 6;
+  const itemsPerPage = 15;
 
   // Selected complaint for details dialog or delete confirmation
   const [viewComplaint, setViewComplaint] = React.useState<ExamComplaint | null>(null);
   const [complaintToDelete, setComplaintToDelete] = React.useState<ExamComplaint | null>(null);
 
-  // Load Exam and Complaints
-  const loadData = React.useCallback(() => {
-    const storedExams = getStoredExams(locale);
-    const foundExam = storedExams.find((e) => e.id === examId);
-    if (foundExam) {
-      setExam(foundExam);
+  // Backend queries & mutations
+  const { data: backendExam, isLoading: isExamLoading } = useProviderExam(examId);
+  const exam = React.useMemo(() => {
+    if (!backendExam) return null;
+    return mapBackendExamToFrontend(backendExam, locale);
+  }, [backendExam, locale]);
+
+  const complaintFilters = React.useMemo<ExamComplaintFilterParams>(() => {
+    return {
+      search: searchQuery.trim() || undefined,
+      sort: sortBy,
+      per_page: itemsPerPage,
+      page: currentPage,
+    };
+  }, [searchQuery, sortBy, itemsPerPage, currentPage]);
+
+  const {
+    data: complaintsData,
+    isLoading: isComplaintsLoading,
+    isFetching: isComplaintsFetching,
+    refetch: refetchComplaints,
+  } = useProviderExamComplaints(examId, complaintFilters);
+
+  const deleteComplaintMutation = useDeleteExamComplaint(examId);
+
+  // Map backend complaints to frontend model
+  const complaints = React.useMemo(() => {
+    if (!complaintsData?.complaints) return [];
+    return complaintsData.complaints.map((c) =>
+      mapBackendComplaintToFrontend(c, isAr ? "طالب" : "Student"),
+    );
+  }, [complaintsData, isAr]);
+
+  const pagination = complaintsData?.pagination;
+  const totalItems = pagination?.total ?? complaints.length;
+  const totalPages = pagination?.last_page ?? 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+
+  // Refresh handler
+  const handleRefresh = async () => {
+    try {
+      await refetchComplaints();
+      toast.success(tComplaints("actions.refreshedToast") || t("stats.refreshedToast"));
+    } catch {
+      toast.error(tComplaints("actions.refreshError") || "Failed to refresh complaints");
     }
-    const storedComplaints = getStoredComplaints(examId, locale);
-    setComplaints(storedComplaints);
-    setIsLoading(false);
-  }, [examId, locale]);
-
-  React.useEffect(() => {
-    loadData();
-
-    const handleUpdate = () => {
-      setComplaints(getStoredComplaints(examId, locale));
-    };
-
-    window.addEventListener("rewaa_complaints_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-
-    return () => {
-      window.removeEventListener("rewaa_complaints_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [loadData, examId, locale]);
-
-  // Reset Mock Data
-  const handleResetMockData = () => {
-    setIsResetting(true);
-    const fresh = resetStoredComplaints(examId, locale);
-    setComplaints(fresh);
-    setCurrentPage(1);
-    toast.success(tComplaints("actions.resetToast"));
-    setTimeout(() => setIsResetting(false), 400);
   };
 
   // Share Action: Copies plain text to clipboard
@@ -143,7 +155,7 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
       tComplaints("shareFormat.title", { complaintTitle: complaint.complaintTitle }),
       tComplaints("shareFormat.student", {
         studentName: complaint.studentName,
-        phoneNumber: complaint.phoneNumber,
+        phoneNumber: complaint.phoneNumber || "—",
       }),
       tComplaints("shareFormat.description", {
         complaintDescription: complaint.complaintDescription,
@@ -156,7 +168,6 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
         toast.success(tComplaints("actions.copiedToast"));
       })
       .catch(() => {
-        // Fallback for older browsers
         const textarea = document.createElement("textarea");
         textarea.value = shareText;
         document.body.appendChild(textarea);
@@ -167,74 +178,36 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
       });
   };
 
-  // Dismiss Action: Removes complaint
-  const handleConfirmDismiss = () => {
-    if (complaintToDelete) {
-      const updated = dismissComplaint(examId, locale, complaintToDelete.id);
-      setComplaints(updated);
-      setComplaintToDelete(null);
+  // Dismiss Action: Removes complaint via backend API
+  const handleConfirmDismiss = async () => {
+    if (!complaintToDelete) return;
+    try {
+      await deleteComplaintMutation.mutateAsync(complaintToDelete.id);
       toast.success(tComplaints("actions.dismissedToast"));
+      setComplaintToDelete(null);
+    } catch {
+      toast.error(tComplaints("actions.dismissError") || "Failed to delete complaint");
     }
   };
 
-  // Filtered complaints
-  const filteredComplaints = React.useMemo(() => {
-    return complaints.filter((item) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTitle = item.complaintTitle.toLowerCase().includes(q);
-        const matchesStudent = item.studentName.toLowerCase().includes(q);
-        const matchesPhone = item.phoneNumber.toLowerCase().includes(q);
-        const matchesDesc = item.complaintDescription.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesStudent && !matchesPhone && !matchesDesc) return false;
-      }
-      return true;
-    });
-  }, [complaints, searchQuery]);
-
-  // Sorted complaints
-  const sortedComplaints = React.useMemo(() => {
-    return [...filteredComplaints].sort((a, b) => {
-      switch (sortBy) {
-        case "oldest":
-          return new Date(a.dateOfComplaint).getTime() - new Date(b.dateOfComplaint).getTime();
-        case "title-asc":
-          return a.complaintTitle.localeCompare(b.complaintTitle, locale);
-        case "title-desc":
-          return b.complaintTitle.localeCompare(a.complaintTitle, locale);
-        case "student-asc":
-          return a.studentName.localeCompare(b.studentName, locale);
-        case "newest":
-        default:
-          return new Date(b.dateOfComplaint).getTime() - new Date(a.dateOfComplaint).getTime();
-      }
-    });
-  }, [filteredComplaints, sortBy, locale]);
-
-  // Pagination
-  const totalItems = sortedComplaints.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedComplaints = sortedComplaints.slice(startIndex, startIndex + itemsPerPage);
-
-  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "newest";
+  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "latest";
 
   const handleResetFilters = () => {
     setSearchQuery("");
-    setSortBy("newest");
+    setSortBy("latest");
     setCurrentPage(1);
   };
 
   const sortOptions: { value: ComplaintSortOption; label: string }[] = [
-    { value: "newest", label: tComplaints("sort.newest") },
+    { value: "latest", label: tComplaints("sort.newest") },
     { value: "oldest", label: tComplaints("sort.oldest") },
-    { value: "title-asc", label: tComplaints("sort.titleAsc") },
-    { value: "title-desc", label: tComplaints("sort.titleDesc") },
-    { value: "student-asc", label: tComplaints("sort.studentNameAsc") },
+    { value: "body_asc", label: tComplaints("sort.titleAsc") },
+    { value: "body_desc", label: tComplaints("sort.titleDesc") },
+    { value: "student_asc", label: tComplaints("sort.studentNameAsc") },
   ];
   const currentSortLabel = sortOptions.find((o) => o.value === sortBy)?.label || "";
 
-  if (isLoading) {
+  if (isExamLoading) {
     return (
       <div className="space-y-6 pb-12">
         <div className="flex items-center justify-between">
@@ -264,7 +237,7 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* ── 1. HEADER ROW with Standard Back Button & Reset Mock ────────────── */}
+      {/* ── 1. HEADER ROW with Standard Back Button & Quick Actions ────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left: Standard Round Back button + Title & Status */}
         <div className="flex items-center gap-3">
@@ -283,7 +256,7 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
                 variant="outline"
                 className="text-xs font-semibold bg-primary/10 text-primary border-primary/20"
               >
-                {tComplaints("stats.totalComplaints", { count: complaints.length })}
+                {tComplaints("stats.totalComplaints", { count: totalItems })}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground font-medium">
@@ -293,17 +266,19 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
           </div>
         </div>
 
-        {/* Right: Reset Mock Button & Quick Action Links */}
+        {/* Right: Refresh Button & Quick Action Links */}
         <div className="flex items-center gap-2.5 flex-wrap self-start md:self-auto">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleResetMockData}
-            disabled={isResetting}
+            onClick={handleRefresh}
+            disabled={isComplaintsFetching}
             className="gap-1.5 font-semibold text-foreground/80 hover:text-primary shadow-2xs cursor-pointer"
           >
-            <RotateCcw className={`size-3.5 ${isResetting ? "animate-spin text-primary" : ""}`} />
-            <span>{tComplaints("resetMock")}</span>
+            <RefreshCw
+              className={`size-3.5 ${isComplaintsFetching ? "animate-spin text-primary" : ""}`}
+            />
+            <span>{tComplaints("refresh") || t("stats.refresh")}</span>
           </Button>
 
           <Button asChild size="sm" variant="outline" className="gap-1.5 font-semibold shadow-2xs">
@@ -325,19 +300,15 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
       {/* ── 2. FILTERS & SEARCH TOOLBAR ─────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
         {/* Search Input */}
-        <div className="relative flex-1 min-w-55">
-          <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={tComplaints("searchPlaceholder")}
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="ps-9 bg-background"
-          />
-        </div>
+        <DebouncedSearchInput
+          value={searchQuery}
+          onValueChange={(val) => {
+            setSearchQuery(val);
+            setCurrentPage(1);
+          }}
+          placeholder={tComplaints("searchPlaceholder")}
+          delay={400}
+        />
 
         {/* Controls: Reset filters & Sort Menu */}
         <div className="flex items-center gap-2 self-start md:self-auto">
@@ -407,7 +378,31 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
             </thead>
 
             <tbody>
-              {paginatedComplaints.length === 0 ? (
+              {isComplaintsLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="border-b border-border/40">
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-48 mb-1.5" />
+                      <Skeleton className="h-3 w-32" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="size-8 rounded-full" />
+                        <Skeleton className="h-4 w-24" />
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-28" />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                    <td className="px-4 py-3 text-end">
+                      <Skeleton className="size-8 rounded-full ms-auto" />
+                    </td>
+                  </tr>
+                ))
+              ) : complaints.length === 0 ? (
                 <tr>
                   <td colSpan={5}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -422,7 +417,7 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
                   </td>
                 </tr>
               ) : (
-                paginatedComplaints.map((complaint, idx) => {
+                complaints.map((complaint, idx) => {
                   const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
                   return (
                     <tr
@@ -434,13 +429,10 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
                         <div className="space-y-1">
                           <button
                             onClick={() => setViewComplaint(complaint)}
-                            className="font-semibold text-foreground hover:text-primary transition-colors text-start cursor-pointer line-clamp-1 block text-xs"
+                            className="font-semibold text-foreground hover:text-primary transition-colors text-start cursor-pointer line-clamp-2 block text-xs"
                           >
                             {complaint.complaintTitle}
                           </button>
-                          <p className="text-[11px] text-muted-foreground line-clamp-1">
-                            {complaint.complaintDescription}
-                          </p>
                         </div>
                       </td>
 
@@ -468,13 +460,17 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
 
                       {/* 3. Phone Number */}
                       <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground font-mono">
-                        <PhoneLink
-                          phone={complaint.phoneNumber}
-                          className="flex items-center gap-1.5 text-muted-foreground hover:text-emerald-600"
-                        >
-                          <Phone className="size-3 text-muted-foreground/70 shrink-0" />
-                          <span dir="ltr">{complaint.phoneNumber}</span>
-                        </PhoneLink>
+                        {complaint.phoneNumber ? (
+                          <PhoneLink
+                            phone={complaint.phoneNumber}
+                            className="flex items-center gap-1.5 text-muted-foreground hover:text-emerald-600"
+                          >
+                            <Phone className="size-3 text-muted-foreground/70 shrink-0" />
+                            <span dir="ltr">{complaint.phoneNumber}</span>
+                          </PhoneLink>
+                        ) : (
+                          <span className="text-muted-foreground/50">—</span>
+                        )}
                       </td>
 
                       {/* 4. Date of Complaint */}
@@ -557,9 +553,9 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
       <Dialog open={!!viewComplaint} onOpenChange={(open) => !open && setViewComplaint(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg">
+            <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
               <CircleAlert className="size-5 text-primary shrink-0" />
-              <span>{viewComplaint?.complaintTitle}</span>
+              <span>{tComplaints("title")}</span>
             </DialogTitle>
             <DialogDescription>
               {exam.title} • {formatDate(viewComplaint?.dateOfComplaint || "", locale)}
@@ -587,12 +583,16 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
                   <div className="font-semibold text-foreground text-xs">
                     {viewComplaint.studentName}
                   </div>
-                  <PhoneLink
-                    phone={viewComplaint.phoneNumber}
-                    className="text-muted-foreground font-mono text-[11px] hover:text-emerald-600"
-                  >
-                    {viewComplaint.phoneNumber}
-                  </PhoneLink>
+                  {viewComplaint.phoneNumber ? (
+                    <PhoneLink
+                      phone={viewComplaint.phoneNumber}
+                      className="text-muted-foreground font-mono text-[11px] hover:text-emerald-600"
+                    >
+                      {viewComplaint.phoneNumber}
+                    </PhoneLink>
+                  ) : (
+                    <span className="text-muted-foreground text-[11px]">—</span>
+                  )}
                 </div>
               </div>
 
@@ -654,6 +654,7 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
               variant="outline"
               size="sm"
               onClick={() => setComplaintToDelete(null)}
+              disabled={deleteComplaintMutation.isPending}
               className="cursor-pointer"
             >
               {t("deleteDialog.cancel")}
@@ -662,9 +663,12 @@ export function ExamComplaintsClient({ examId }: ExamComplaintsClientProps) {
               variant="destructive"
               size="sm"
               onClick={handleConfirmDismiss}
+              disabled={deleteComplaintMutation.isPending}
               className="cursor-pointer"
             >
-              {tComplaints("actions.dismiss")}
+              {deleteComplaintMutation.isPending
+                ? t("actions.saving") || "..."
+                : tComplaints("actions.dismiss")}
             </Button>
           </DialogFooter>
         </DialogContent>

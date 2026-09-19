@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -26,6 +27,7 @@ import { Exam } from "@/types/exam";
 interface SectionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  sections?: CourseSection[];
   editingSection: CourseSection | null;
   newSecTitle: string;
   onTitleChange: (val: string) => void;
@@ -50,6 +52,7 @@ interface SectionFormDialogProps {
 export function SectionFormDialog({
   open,
   onOpenChange,
+  sections = [],
   editingSection,
   newSecTitle,
   onTitleChange,
@@ -71,6 +74,27 @@ export function SectionFormDialog({
   onCancel,
 }: SectionFormDialogProps) {
   const t = useTranslations("courses.new");
+
+  // Filter out exams already used in other sections or lessons
+  const selectableExams = useMemo(() => {
+    const takenExamIds = new Set<string>();
+    sections.forEach((sec) => {
+      if (sec.linkedExamId && sec.id !== editingSection?.id) {
+        takenExamIds.add(String(sec.linkedExamId));
+      }
+      (sec.lessons || []).forEach((les) => {
+        if (les.linkedExamId) {
+          takenExamIds.add(String(les.linkedExamId));
+        }
+      });
+    });
+
+    return availableExams.filter(
+      (exam) =>
+        !takenExamIds.has(String(exam.id)) ||
+        (editingSection?.linkedExamId && String(exam.id) === String(editingSection.linkedExamId)),
+    );
+  }, [availableExams, sections, editingSection]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -156,7 +180,7 @@ export function SectionFormDialog({
 
           {/* Select Exam (shown when link to exam is on) */}
           {newSecIsLinkedExam && (
-            <div className="animate-in fade-in slide-in-from-top-1">
+            <div className="animate-in fade-in slide-in-from-top-1 space-y-2">
               <ExamSelect
                 value={newSecLinkedExamId}
                 onValueChange={onLinkedExamIdChange}
@@ -165,9 +189,31 @@ export function SectionFormDialog({
                   t("step2.addLessonDialog.selectExam") ||
                   (locale === "ar" ? "اختر الامتحان..." : "Select exam...")
                 }
-                exams={availableExams}
-                emptyLabel={locale === "ar" ? "لا توجد امتحانات متاحة" : "No exams available"}
+                exams={selectableExams}
+                emptyLabel={
+                  availableExams.length === 0
+                    ? locale === "ar"
+                      ? "لا توجد امتحانات متاحة لهذه الدورة"
+                      : "No exams available for this course"
+                    : locale === "ar"
+                      ? "جميع امتحانات الدورة مستخدمة بالفعل"
+                      : "All course exams are already linked"
+                }
               />
+
+              {availableExams.length === 0 ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                  {locale === "ar"
+                    ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان وربطه بهذه الدورة من قسم إدارة الامتحانات."
+                    : "No exams found for this course yet. You can create an exam linked to this course from the Exams section."}
+                </p>
+              ) : selectableExams.length === 0 && !newSecLinkedExamId ? (
+                <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
+                  {locale === "ar"
+                    ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى (لا يمكن ربط نفس الامتحان بأكثر من قسم أو درس)."
+                    : "All exams assigned to this course are already linked to other sections or lessons (an exam can only be linked once)."}
+                </p>
+              ) : null}
             </div>
           )}
 

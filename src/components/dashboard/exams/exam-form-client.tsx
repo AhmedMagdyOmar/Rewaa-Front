@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -25,10 +26,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 
+import { toast } from "sonner";
+
 import { ArrangeSectionsDialog } from "@/components/dashboard/common/arrange-sections-dialog";
 import { FormTimelineSidebar } from "@/components/dashboard/common/form-timeline-sidebar";
 import { ImportFromExamsDialog } from "@/components/dashboard/exams/import-from-exams-dialog";
 import { QuestionDialog } from "@/components/dashboard/exams/question-dialog";
+import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -45,24 +49,40 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getStoredExams, saveStoredExams } from "@/lib/exams-storage";
-import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
 import { SelectWithAdd } from "@/components/ui/select-with-add";
+import {
+  useCreateExam,
+  useExamSectionMutations,
+  useProviderExam,
+  useProviderExamOptions,
+  useProviderExams,
+  usePublishExam,
+  useUpdateExam,
+} from "@/hooks/use-exams";
+import { useCreateQuestion, useDeleteQuestion, useUpdateQuestion } from "@/hooks/use-questions";
+import {
+  mapBackendExamToFrontend,
+  mapBackendQuestionToFrontend,
+  mapBackendSectionToFrontend,
+  mapFrontendCategoryToBackend,
+  mapFrontendKindToBackend,
+} from "@/lib/adapters/exam-adapters";
+import { getErrorMessage } from "@/lib/api-utils";
 import {
   getStoredCustomExamCategories,
   saveStoredCustomExamCategory,
 } from "@/lib/custom-categories-storage";
-import { getStoredTeachers } from "@/lib/settings-storage";
-import { Teacher } from "@/types/settings";
 import { cn } from "@/lib/utils";
-import { Exam, ExamCategory, ExamSection, ExamType, ExamVenue, Question } from "@/types/exam";
+import type { StoreExamData, StoreQuestionData } from "@/types/api-contracts";
+import { Exam, ExamCategory, ExamSection, ExamVenue, Question } from "@/types/exam";
 
 interface ExamFormClientProps {
   mode: "create" | "edit";
+  examId?: string;
   initialData?: Exam | null;
 }
 
-export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
+export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProps) {
   const locale = useLocale();
   const router = useRouter();
   const t = useTranslations("exams");
@@ -73,39 +93,124 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
   // Step state (1: Settings, 2: Sections & Questions)
   const [currentStep, setCurrentStep] = React.useState<1 | 2>(1);
 
-  const [availableTeachers, setAvailableTeachers] = React.useState<Teacher[]>([]);
+  // Saved Exam ID (either from prop or created in Step 1)
+  const [activeExamId, setActiveExamId] = React.useState<string | number | undefined>(
+    examId || initialData?.id,
+  );
 
-  React.useEffect(() => {
-    const loadTeachers = () => {
-      setAvailableTeachers(getStoredTeachers());
-    };
-    loadTeachers();
-    window.addEventListener("rewaa_teachers_updated", loadTeachers);
-    return () => window.removeEventListener("rewaa_teachers_updated", loadTeachers);
-  }, []);
+  // API Queries and Mutations
+  const { data: fetchedBackendExam } = useProviderExam(activeExamId);
+  const [educationalStageId, setEducationalStageId] = React.useState<string>("");
+  const { data: optionsData, isLoading: isLoadingOptions } =
+    useProviderExamOptions(educationalStageId);
+
+  const createExamMutation = useCreateExam();
+  const updateExamMutation = useUpdateExam();
+  const publishExamMutation = usePublishExam();
+  const createQuestionMutation = useCreateQuestion();
+  const updateQuestionMutation = useUpdateQuestion();
+  const deleteQuestionMutation = useDeleteQuestion();
+
+  // Section mutations hook (active once an exam ID is established)
+  const sectionMutations = useExamSectionMutations(activeExamId || 0);
 
   // Form State - Step 1
-  const [title, setTitle] = React.useState(initialData?.title || "");
-  const [description, setDescription] = React.useState(initialData?.description || "");
-  const [triesAllowed, setTriesAllowed] = React.useState<number>(initialData?.triesAllowed ?? 1);
-  const [durationMinutes, setDurationMinutes] = React.useState<number>(
-    initialData?.durationMinutes ?? 30,
-  );
-  const [passingPercentage, setPassingPercentage] = React.useState<number>(
-    initialData?.passingPercentage ?? 60,
-  );
-  const [numberOfQuestions, setNumberOfQuestions] = React.useState<number>(
-    initialData?.numberOfQuestions ?? 10,
-  );
+  const [title, setTitle] = React.useState("");
+  const [description, setDescription] = React.useState("");
+  const [triesAllowed, setTriesAllowed] = React.useState<number>(1);
+  const [durationMinutes, setDurationMinutes] = React.useState<number>(30);
+  const [passingPercentage, setPassingPercentage] = React.useState<number>(60);
+  const [numberOfQuestions, setNumberOfQuestions] = React.useState<number>(10);
 
   // Academic Info
-  const [grade, setGrade] = React.useState(initialData?.grade || "");
-  const [subject, setSubject] = React.useState(initialData?.subject || "");
-  const [teacherName, setTeacherName] = React.useState(initialData?.teacherName || "");
-  const [category, setCategory] = React.useState<ExamCategory>(initialData?.category || "test");
+  const [grade, setGrade] = React.useState("");
+  const [subject, setSubject] = React.useState("");
+  const [teacherName, setTeacherName] = React.useState("");
+  const [category, setCategory] = React.useState<ExamCategory>("test");
   const [customExamCategories, setCustomExamCategories] = React.useState<
     Array<{ id: string; name: string }>
   >([]);
+
+  // Advanced Settings
+  const [showModelAnswers, setShowModelAnswers] = React.useState(true);
+  const [randomizeQuestionsOrder, setRandomizeQuestionsOrder] = React.useState(true);
+  const [randomizeMCQChoices, setRandomizeMCQChoices] = React.useState(false);
+
+  // Classification & Venue / Publish Status
+  const [isIndependent, setIsIndependent] = React.useState<boolean>(true);
+  const [venue, setVenue] = React.useState<ExamVenue>("online");
+  const [coursesCount, setCoursesCount] = React.useState<number>(0);
+  const [performedCount, setPerformedCount] = React.useState<number>(0);
+
+  // Form State - Step 2 (Exam Sections & Questions)
+  const [examSections, setExamSections] = React.useState<ExamSection[]>([
+    {
+      id: "sec-1",
+      title: locale === "ar" ? "الفصل الأول - الأسئلة الرئيسية" : "Section 1 - Main Questions",
+      questions: [],
+    },
+  ]);
+
+  // Sync state from backend when editing
+  React.useEffect(() => {
+    if (fetchedBackendExam) {
+      const mapped = mapBackendExamToFrontend(fetchedBackendExam, locale);
+      setTitle(mapped.title);
+      setDescription(mapped.description || "");
+      setTriesAllowed(mapped.triesAllowed);
+      setDurationMinutes(mapped.durationMinutes);
+      setPassingPercentage(mapped.passingPercentage);
+      setNumberOfQuestions(mapped.numberOfQuestions);
+
+      const stageIdStr = String(fetchedBackendExam.educational_stage_id);
+      setGrade(stageIdStr);
+      setEducationalStageId(stageIdStr);
+      setSubject(String(fetchedBackendExam.subject_id));
+      setTeacherName(String(fetchedBackendExam.instructor_id));
+      setCategory(mapped.category);
+
+      setShowModelAnswers(mapped.showModelAnswers);
+      setRandomizeQuestionsOrder(mapped.randomizeQuestionsOrder);
+      setRandomizeMCQChoices(mapped.randomizeMCQChoices);
+
+      setIsIndependent(mapped.examType === "independent");
+      if (mapped.venue) setVenue(mapped.venue);
+      setCoursesCount(mapped.coursesCount ?? 0);
+      setPerformedCount(mapped.numberOfStudents ?? 0);
+
+      if (mapped.examSections && mapped.examSections.length > 0) {
+        setExamSections(mapped.examSections);
+      }
+    } else if (initialData) {
+      setTitle(initialData.title);
+      setDescription(initialData.description || "");
+      setTriesAllowed(initialData.triesAllowed);
+      setDurationMinutes(initialData.durationMinutes);
+      setPassingPercentage(initialData.passingPercentage);
+      setNumberOfQuestions(initialData.numberOfQuestions);
+      setGrade(initialData.grade);
+      setSubject(initialData.subject);
+      setTeacherName(initialData.teacherName);
+      setCategory(initialData.category);
+      setShowModelAnswers(initialData.showModelAnswers);
+      setRandomizeQuestionsOrder(initialData.randomizeQuestionsOrder);
+      setRandomizeMCQChoices(initialData.randomizeMCQChoices);
+      setIsIndependent(initialData.examType === "independent");
+      if (initialData.venue) setVenue(initialData.venue);
+      setCoursesCount(initialData.coursesCount ?? 0);
+      setPerformedCount(initialData.numberOfStudents ?? 0);
+      if (initialData.examSections && initialData.examSections.length > 0) {
+        setExamSections(initialData.examSections);
+      }
+    }
+  }, [fetchedBackendExam, initialData, locale]);
+
+  // Sync educationalStageId when grade changes
+  const handleGradeChange = (newGrade: string) => {
+    setGrade(newGrade);
+    setEducationalStageId(newGrade);
+    setSubject("");
+  };
 
   React.useEffect(() => {
     const loadCategories = () => {
@@ -144,36 +249,21 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
       .map((c) => ({ value: c.id, label: c.name })),
   ];
 
-  // Advanced Settings
-  const [showModelAnswers, setShowModelAnswers] = React.useState(
-    initialData?.showModelAnswers ?? true,
-  );
-  const [randomizeQuestionsOrder, setRandomizeQuestionsOrder] = React.useState(
-    initialData?.randomizeQuestionsOrder ?? true,
-  );
-  const [randomizeMCQChoices, setRandomizeMCQChoices] = React.useState(
-    initialData?.randomizeMCQChoices ?? false,
-  );
+  // Map backend stages and subjects to Combobox options
+  const mappedStages = (optionsData?.educational_stages || []).map((s) => ({
+    id: s.id,
+    name: locale === "ar" ? s.name.ar || s.name.en || "" : s.name.en || s.name.ar || "",
+  }));
 
-  // Classification & Venue / Publish Status
-  const [isIndependent, setIsIndependent] = React.useState<boolean>(
-    initialData ? initialData.examType === "independent" : true,
-  );
-  const [venue, setVenue] = React.useState<ExamVenue>(initialData?.venue || "online");
+  const mappedSubjects = (optionsData?.subjects || []).map((s) => ({
+    id: s.id,
+    name: locale === "ar" ? s.name.ar || s.name.en || "" : s.name.en || s.name.ar || "",
+  }));
 
-  // coursesCount comes directly from the exam record (populated by backend)
-  const [coursesCount] = React.useState<number>(initialData?.coursesCount ?? 0);
-
-  // Form State - Step 2 (Exam Sections & Questions)
-  const [examSections, setExamSections] = React.useState<ExamSection[]>(
-    initialData?.examSections || [
-      {
-        id: "sec-1",
-        title: "الفصل الأول - الأسئلة الرئيسية",
-        questions: [],
-      },
-    ],
-  );
+  const mappedInstructors = (optionsData?.instructors || []).map((i) => ({
+    id: i.id,
+    full_name: i.full_name,
+  }));
 
   // Step 2 Active Dialog State
   const [activeDialog, setActiveDialog] = React.useState<
@@ -185,18 +275,14 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
   } | null>(null);
   const [targetQuestionSectionId, setTargetQuestionSectionId] = React.useState<string>("");
 
-  // All stored exams for importing (excluding current exam being edited)
-  const [allExams, setAllExams] = React.useState<Exam[]>([]);
-
-  React.useEffect(() => {
-    const loadExams = () => {
-      const stored = getStoredExams(locale);
-      setAllExams(stored.filter((e) => e.id !== initialData?.id));
-    };
-    loadExams();
-    window.addEventListener("rewaa_exams_updated", loadExams);
-    return () => window.removeEventListener("rewaa_exams_updated", loadExams);
-  }, [locale, initialData?.id]);
+  // Available live exams for importing (fetching from backend)
+  const { data: allExamsResponse } = useProviderExams({ per_page: 50 });
+  const allExams: Exam[] = React.useMemo(() => {
+    if (!allExamsResponse?.exams) return [];
+    return allExamsResponse.exams
+      .filter((e) => String(e.id) !== String(activeExamId))
+      .map((e) => mapBackendExamToFrontend(e, locale));
+  }, [allExamsResponse, activeExamId, locale]);
 
   // Section Dialog states (Add, Edit, Delete)
   const [newSecTitle, setNewSecTitle] = React.useState("");
@@ -206,87 +292,130 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Helper to build exam object
-  const buildExamObject = (): Exam => {
-    const examType: ExamType = isIndependent ? "independent" : "course-dependent";
-    const totalQuestionsCount = examSections.reduce((acc, sec) => acc + sec.questions.length, 0);
+  // Helper to construct backend payload
+  const buildExamPayload = () => {
+    const stageId = Number(grade) || optionsData?.educational_stages?.[0]?.id || 1;
+    const subjId = Number(subject) || optionsData?.subjects?.[0]?.id || 1;
+    const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
+    const instId = requiresInstructor
+      ? Number(teacherName) || optionsData?.instructors?.[0]?.id
+      : undefined;
 
-    return {
-      id: initialData?.id || `exam-${Date.now()}`,
-      title: title.trim(),
-      description,
-      subject,
-      grade,
-      teacherName,
-      category,
-      examType,
-      venue: isIndependent ? venue : undefined,
+    const deliveryMode =
+      venue === "onsite" ? "in_person" : venue === "hybrid" ? "hybrid" : "online";
 
-      triesAllowed: Number(triesAllowed) || 1,
-      durationMinutes: Number(durationMinutes) || 30,
-      passingPercentage: Number(passingPercentage) || 60,
-      numberOfQuestions:
-        totalQuestionsCount > 0 ? totalQuestionsCount : Number(numberOfQuestions) || 10,
-
-      showModelAnswers,
-      randomizeQuestionsOrder,
-      randomizeMCQChoices,
-
-      examSections,
-      numberOfStudents: initialData?.numberOfStudents || 0,
-      successRate: initialData?.successRate || 0,
-      timesUsed: initialData?.timesUsed || 0,
-
-      createdAt: initialData?.createdAt || new Date().toISOString(),
+    const payload: StoreExamData = {
+      title: { ar: title.trim(), en: title.trim() },
+      description: description.trim()
+        ? { ar: description.trim(), en: description.trim() }
+        : undefined,
+      educational_stage_id: stageId,
+      subject_id: subjId,
+      ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
+      classification: mapFrontendCategoryToBackend(category),
+      duration_minutes: Number(durationMinutes) || 30,
+      passing_percentage: Number(passingPercentage) || 60,
+      max_attempts: Number(triesAllowed) || 1,
+      questions_limit: Number(numberOfQuestions) || 10,
+      show_correct_answers_after_submission: Boolean(showModelAnswers),
+      shuffle_questions: Boolean(randomizeQuestionsOrder),
+      shuffle_answer_options: Boolean(randomizeMCQChoices),
+      delivery_mode: deliveryMode,
+      is_active: true,
     };
+
+    return payload;
   };
 
-  // Save when proceeding to Step 2
-  const handleProceedToStep2 = () => {
-    if (!title.trim()) return;
-
-    const currentExam = buildExamObject();
-    const storedExams = getStoredExams(locale);
-    let updatedList: Exam[];
-
-    if (mode === "edit" && initialData) {
-      updatedList = storedExams.map((e) => (e.id === initialData.id ? currentExam : e));
-    } else {
-      const exists = storedExams.some((e) => e.id === currentExam.id);
-      if (exists) {
-        updatedList = storedExams.map((e) => (e.id === currentExam.id ? currentExam : e));
-      } else {
-        updatedList = [currentExam, ...storedExams];
-      }
+  // Save Step 1 and proceed to Step 2
+  const handleProceedToStep2 = async () => {
+    if (!title.trim()) {
+      toast.error(locale === "ar" ? "يرجى كتابة عنوان الامتحان" : "Please enter an exam title");
+      return;
     }
 
-    saveStoredExams(locale, updatedList);
-    setCurrentStep(2);
+    setIsSubmitting(true);
+    try {
+      const payload = buildExamPayload();
+
+      if (activeExamId) {
+        // Update existing draft or exam
+        await updateExamMutation.mutateAsync({ id: activeExamId, data: payload });
+        toast.success(locale === "ar" ? "تم حفظ بيانات الامتحان" : "Exam settings saved");
+      } else {
+        // Create new draft exam in backend
+        const created = await createExamMutation.mutateAsync(payload);
+        setActiveExamId(created.id);
+        toast.success(locale === "ar" ? "تم إنشاء مسودة الامتحان" : "Exam draft created");
+      }
+      setCurrentStep(2);
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err) ||
+          (locale === "ar" ? "حدث خطأ أثناء حفظ الامتحان" : "Error occurred while saving exam"),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Final Submit Handler
-  const handleSave = () => {
+  // Final Submit Handler: Publishes or Finalizes Exam
+  const handleSave = async () => {
     if (!title.trim()) return;
 
     setIsSubmitting(true);
-    const finalExam = buildExamObject();
-    const storedExams = getStoredExams(locale);
-    let updatedList: Exam[];
+    try {
+      if (activeExamId) {
+        // Ensure settings are synced
+        const payload = buildExamPayload();
+        await updateExamMutation.mutateAsync({ id: activeExamId, data: payload });
 
-    const exists = storedExams.some((e) => e.id === finalExam.id);
-    if (exists) {
-      updatedList = storedExams.map((e) => (e.id === finalExam.id ? finalExam : e));
-    } else {
-      updatedList = [finalExam, ...storedExams];
+        // Only publish when completing initial creation flow
+        if (mode === "create" && fetchedBackendExam?.status !== "published") {
+          await publishExamMutation.mutateAsync(activeExamId);
+        }
+      }
+      toast.success(
+        mode === "create"
+          ? locale === "ar"
+            ? "تم إنشاء ونشر الامتحان بنجاح"
+            : "Exam created and published successfully"
+          : locale === "ar"
+            ? "تم حفظ التعديلات بنجاح"
+            : "Changes saved successfully",
+      );
+      router.push(`/${locale}/dashboard/exams`);
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err) ||
+          (locale === "ar" ? "حدث خطأ أثناء إتمام العملية" : "An error occurred"),
+      );
+    } finally {
+      setIsSubmitting(false);
     }
-
-    saveStoredExams(locale, updatedList);
-    router.push(`/${locale}/dashboard/exams`);
   };
 
   // Step 2 Handlers
-  const handleAddSection = () => {
+  const handleAddSection = async () => {
     if (!newSecTitle.trim()) return;
+
+    if (activeExamId) {
+      try {
+        const created = await sectionMutations.createSection.mutateAsync({
+          title: { ar: newSecTitle.trim(), en: newSecTitle.trim() },
+          is_active: true,
+        });
+        const mapped = mapBackendSectionToFrontend(created, locale);
+        setExamSections((prev) => [...prev, mapped]);
+        setNewSecTitle("");
+        setActiveDialog(null);
+        toast.success(locale === "ar" ? "تم إضافة القسم بنجاح" : "Section added successfully");
+        return;
+      } catch {
+        toast.error(locale === "ar" ? "فشل إضافة القسم" : "Failed to add section");
+      }
+    }
+
     const newSec: ExamSection = {
       id: `sec-${Date.now()}`,
       title: newSecTitle.trim(),
@@ -302,8 +431,28 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     setEditSecTitle(sec.title);
   };
 
-  const handleSaveEditSection = () => {
+  const handleSaveEditSection = async () => {
     if (!editingSection || !editSecTitle.trim()) return;
+
+    if (activeExamId && !editingSection.id.startsWith("sec-")) {
+      try {
+        const updated = await sectionMutations.updateSection.mutateAsync({
+          sectionId: editingSection.id,
+          data: { title: { ar: editSecTitle.trim(), en: editSecTitle.trim() } },
+        });
+        const mapped = mapBackendSectionToFrontend(updated, locale);
+        setExamSections((prev) =>
+          prev.map((sec) => (sec.id === editingSection.id ? { ...sec, title: mapped.title } : sec)),
+        );
+        setEditingSection(null);
+        setEditSecTitle("");
+        toast.success(locale === "ar" ? "تم تحديث القسم بنجاح" : "Section updated successfully");
+        return;
+      } catch {
+        toast.error(locale === "ar" ? "فشل تحديث القسم" : "Failed to update section");
+      }
+    }
+
     setExamSections((prev) =>
       prev.map((sec) =>
         sec.id === editingSection.id ? { ...sec, title: editSecTitle.trim() } : sec,
@@ -313,13 +462,135 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     setEditSecTitle("");
   };
 
-  const handleDeleteSection = () => {
+  const handleDeleteSection = async () => {
     if (!sectionToDelete) return;
+
+    if (activeExamId && !sectionToDelete.id.startsWith("sec-")) {
+      try {
+        await sectionMutations.deleteSection.mutateAsync(sectionToDelete.id);
+        setExamSections((prev) => prev.filter((sec) => sec.id !== sectionToDelete.id));
+        setSectionToDelete(null);
+        toast.success(locale === "ar" ? "تم حذف القسم بنجاح" : "Section deleted successfully");
+        return;
+      } catch (err) {
+        toast.error(
+          getErrorMessage(err) || (locale === "ar" ? "فشل حذف القسم" : "Failed to delete section"),
+        );
+      }
+    }
+
     setExamSections((prev) => prev.filter((sec) => sec.id !== sectionToDelete.id));
     setSectionToDelete(null);
+    toast.success(locale === "ar" ? "تم حذف القسم محلياً" : "Section deleted locally");
   };
 
-  const handleSaveQuestion = (savedQuestion: Question, targetSecId: string, keepOpen?: boolean) => {
+  const handleSaveQuestion = async (
+    savedQuestion: Question,
+    targetSecId: string,
+    keepOpen = false,
+  ) => {
+    const isRealBackendSection = targetSecId && !targetSecId.startsWith("sec-");
+
+    if (activeExamId) {
+      try {
+        const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
+        const instId = requiresInstructor ? Number(teacherName) || undefined : undefined;
+
+        const payload: StoreQuestionData = {
+          title: { ar: savedQuestion.questionName, en: savedQuestion.questionName },
+          body: { ar: savedQuestion.questionContent, en: savedQuestion.questionContent },
+          type:
+            savedQuestion.type === "mcq"
+              ? "multiple_choice"
+              : savedQuestion.type === "true/false"
+                ? "true_false"
+                : "essay",
+          difficulty: savedQuestion.difficulty || "medium",
+          classification: mapFrontendKindToBackend(savedQuestion.questionType),
+          score: Number(savedQuestion.grade) || 1,
+          has_explanation: savedQuestion.hasAnswerExplanation,
+          is_active: true,
+          exam_id: Number(activeExamId),
+          exam_section_id: isRealBackendSection ? Number(targetSecId) : undefined,
+          educational_stage_id: Number(grade) || undefined,
+          subject_id: Number(subject) || undefined,
+          ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
+        };
+
+        if (savedQuestion.hasAnswerExplanation && savedQuestion.answerExplanation) {
+          payload.explanation = {
+            ar: savedQuestion.answerExplanation,
+            en: savedQuestion.answerExplanation,
+          };
+        }
+
+        if (savedQuestion.type === "text" && savedQuestion.modelAnswer) {
+          payload.model_answer = {
+            ar: savedQuestion.modelAnswer,
+            en: savedQuestion.modelAnswer,
+          };
+        } else if (savedQuestion.type === "true/false") {
+          payload.correct_answer = savedQuestion.modelAnswer === "true";
+        } else if (savedQuestion.type === "mcq" && savedQuestion.options) {
+          payload.options = savedQuestion.options.map((opt) => ({
+            text: { ar: opt.text, en: opt.text },
+            is_correct: opt.id === savedQuestion.modelAnswer,
+          }));
+        }
+
+        let syncedQuestion = savedQuestion;
+        if (!savedQuestion.id.startsWith("q-")) {
+          // Update existing question
+          const updated = await updateQuestionMutation.mutateAsync({
+            id: savedQuestion.id,
+            data: payload,
+          });
+          syncedQuestion = mapBackendQuestionToFrontend(updated, locale);
+          toast.success(
+            locale === "ar" ? "تم تحديث السؤال بنجاح" : "Question updated successfully",
+          );
+        } else {
+          // Create new question
+          const created = await createQuestionMutation.mutateAsync(payload);
+          syncedQuestion = mapBackendQuestionToFrontend(created, locale);
+          toast.success(locale === "ar" ? "تم إضافة السؤال بنجاح" : "Question added successfully");
+        }
+
+        setExamSections((prevSections) => {
+          return prevSections.map((sec) => {
+            if (sec.id === targetSecId) {
+              const questionExists = sec.questions.some((q) => q.id === syncedQuestion.id);
+              let updatedQuestions: Question[];
+              if (questionExists) {
+                updatedQuestions = sec.questions.map((q) =>
+                  q.id === syncedQuestion.id ? syncedQuestion : q,
+                );
+              } else {
+                updatedQuestions = [...sec.questions, syncedQuestion];
+              }
+              return { ...sec, questions: updatedQuestions };
+            } else {
+              return {
+                ...sec,
+                questions: sec.questions.filter((q) => q.id !== syncedQuestion.id),
+              };
+            }
+          });
+        });
+
+        if (!keepOpen) {
+          setEditingQuestion(null);
+          setActiveDialog(null);
+        }
+        return;
+      } catch (err) {
+        toast.error(
+          getErrorMessage(err) ||
+            (locale === "ar" ? "فشل في حفظ السؤال" : "Failed to save question"),
+        );
+      }
+    }
+
     setExamSections((prevSections) => {
       return prevSections.map((sec) => {
         if (sec.id === targetSecId) {
@@ -334,7 +605,6 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
           }
           return { ...sec, questions: updatedQuestions };
         } else {
-          // If moved to another section, remove from old section
           return {
             ...sec,
             questions: sec.questions.filter((q) => q.id !== savedQuestion.id),
@@ -349,7 +619,102 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
     }
   };
 
-  const handleDeleteQuestion = (secId: string, qId: string) => {
+  const handleSaveManyQuestions = async (questions: Question[], targetSecId: string) => {
+    if (!questions || questions.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const isRealBackendSection = !targetSecId.startsWith("sec-");
+      const requiresInstructor = optionsData?.requires_instructor_selection;
+      const instId = requiresInstructor
+        ? Number(teacherName) || optionsData?.instructors?.[0]?.id
+        : undefined;
+
+      const addedQuestions: Question[] = [];
+
+      for (const q of questions) {
+        if (activeExamId) {
+          const payload: StoreQuestionData = {
+            title: { ar: q.questionName, en: q.questionName },
+            body: q.questionContent ? { ar: q.questionContent, en: q.questionContent } : undefined,
+            type:
+              q.type === "mcq"
+                ? "multiple_choice"
+                : q.type === "true/false"
+                  ? "true_false"
+                  : "essay",
+            difficulty: q.difficulty || "medium",
+            classification: mapFrontendKindToBackend(q.questionType),
+            score: Number(q.grade) || 1,
+            has_explanation: q.hasAnswerExplanation,
+            is_active: true,
+            exam_id: Number(activeExamId),
+            exam_section_id: isRealBackendSection ? Number(targetSecId) : undefined,
+            educational_stage_id: Number(grade) || undefined,
+            subject_id: Number(subject) || undefined,
+            ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
+          };
+
+          if (q.hasAnswerExplanation && q.answerExplanation) {
+            payload.explanation = { ar: q.answerExplanation, en: q.answerExplanation };
+          }
+
+          if (q.type === "text" && q.modelAnswer) {
+            payload.model_answer = { ar: q.modelAnswer, en: q.modelAnswer };
+          } else if (q.type === "true/false") {
+            payload.correct_answer = q.modelAnswer === "true";
+          } else if (q.type === "mcq" && q.options) {
+            payload.options = q.options.map((opt) => ({
+              text: { ar: opt.text, en: opt.text },
+              is_correct: opt.id === q.modelAnswer,
+            }));
+          }
+
+          const created = await createQuestionMutation.mutateAsync(payload);
+          const mapped = mapBackendQuestionToFrontend(created, locale);
+          addedQuestions.push(mapped);
+        } else {
+          addedQuestions.push({
+            ...q,
+            id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          });
+        }
+      }
+
+      setExamSections((prevSections) =>
+        prevSections.map((sec) =>
+          sec.id === targetSecId
+            ? { ...sec, questions: [...sec.questions, ...addedQuestions] }
+            : sec,
+        ),
+      );
+
+      toast.success(
+        locale === "ar"
+          ? `تم إضافة ${addedQuestions.length} أسئلة بنجاح`
+          : `${addedQuestions.length} questions added successfully`,
+      );
+      setActiveDialog(null);
+      setEditingQuestion(null);
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(err) ||
+          (locale === "ar" ? "فشل إضافة بعض الأسئلة" : "Failed to add questions"),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteQuestion = async (secId: string, qId: string) => {
+    if (activeExamId && !qId.startsWith("q-")) {
+      try {
+        await deleteQuestionMutation.mutateAsync(qId);
+        toast.success(locale === "ar" ? "تم حذف السؤال بنجاح" : "Question deleted successfully");
+      } catch {
+        toast.error(locale === "ar" ? "فشل حذف السؤال" : "Failed to delete question");
+      }
+    }
     setExamSections((prev) =>
       prev.map((sec) =>
         sec.id === secId ? { ...sec, questions: sec.questions.filter((q) => q.id !== qId) } : sec,
@@ -425,7 +790,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
             disclaimerTitle={tCourses("new.disclaimerTitle")}
             disclaimerDescription={tCourses("new.disclaimerDescription")}
             onStepClick={
-              mode === "edit" || Boolean(initialData)
+              mode === "edit" || Boolean(activeExamId)
                 ? (stepId) => setCurrentStep(stepId as 1 | 2)
                 : undefined
             }
@@ -435,14 +800,14 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
         {/* Main Form Content Area */}
         <main className="lg:col-span-8 order-1 lg:order-2 space-y-6">
           {/* Warning banner when editing an exam that has already been taken by students */}
-          {mode === "edit" && (initialData?.numberOfStudents ?? 0) > 0 && (
+          {mode === "edit" && performedCount > 0 && (
             <div className="flex items-start gap-3 p-4 rounded-xl border bg-amber-500/10 border-amber-500/30 text-amber-900 ">
               <AlertTriangle className="size-5 shrink-0 text-amber-600  mt-0.5" />
               <div className="space-y-1 text-sm">
                 <h4 className="font-bold text-amber-800 ">{tForm("performedWarning.title")}</h4>
                 <p className="text-xs sm:text-sm text-amber-700  leading-relaxed">
                   {tForm("performedWarning.description", {
-                    count: initialData?.numberOfStudents ?? 0,
+                    count: performedCount,
                   })}
                 </p>
               </div>
@@ -558,9 +923,11 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                   {/* Grade Level */}
                   <GradeSelect
                     value={grade}
-                    onValueChange={setGrade}
+                    onValueChange={handleGradeChange}
                     label={tForm("fields.grade")}
                     placeholder={tForm("fields.selectGrade")}
+                    grades={mappedStages}
+                    disabled={isLoadingOptions}
                   />
 
                   {/* Subject */}
@@ -569,6 +936,8 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                     onValueChange={setSubject}
                     label={tForm("fields.subject")}
                     placeholder={tForm("fields.selectSubject")}
+                    subjects={mappedSubjects}
+                    disabled={isLoadingOptions}
                   />
 
                   {/* Teacher Select */}
@@ -577,7 +946,10 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
                     onValueChange={(val) => setTeacherName(val)}
                     label={tForm("fields.teacherName")}
                     placeholder={tForm("fields.selectTeacher")}
-                    teachers={availableTeachers}
+                    teachers={mappedInstructors}
+                    disabled={
+                      isLoadingOptions || optionsData?.requires_instructor_selection === false
+                    }
                   />
 
                   {/* Exam Category */}
@@ -986,6 +1358,7 @@ export function ExamFormClient({ mode, initialData }: ExamFormClientProps) {
         examSubject={subject}
         examTeacherName={teacherName}
         onSave={handleSaveQuestion}
+        onSaveMany={handleSaveManyQuestions}
       />
 
       {/* DIALOG 3: ARRANGE SECTIONS */}

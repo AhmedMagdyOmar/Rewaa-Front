@@ -9,6 +9,7 @@ export type StepNumber = 1 | 2;
 export type DialogType = "section" | "lesson" | "arrange" | "import" | null;
 
 export interface ParentCourseContext {
+  courseId?: string;
   grade: string;
   subject: string;
   teacherName: string;

@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { useLocale } from "next-intl";
-import { ArrowUpDown, Search, X } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { ArrowUpDown, X } from "lucide-react";
+import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,7 +35,7 @@ export interface ContentFiltersProps<TTab extends string = string, TSort extends
   defaultSort?: TSort;
   extraFilters?: React.ReactNode;
   isFilterActiveCustom?: boolean;
-  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onSearchChange: ((search: string) => void) | ((e: React.ChangeEvent<HTMLInputElement>) => void);
   onTabChange: (tab: TTab) => void;
   onSortChange: (sort: TSort) => void;
   onResetFilters?: () => void;
@@ -49,8 +49,8 @@ export function ContentFilters<TTab extends string = string, TSort extends strin
   sortBy,
   sortOptions,
   clearFiltersLabel,
-  defaultTab = "all" as TTab,
-  defaultSort = "date-newest" as TSort,
+  defaultTab,
+  defaultSort,
   extraFilters,
   isFilterActiveCustom = false,
   onSearchChange,
@@ -61,29 +61,39 @@ export function ContentFilters<TTab extends string = string, TSort extends strin
   const locale = useLocale();
   const isAr = locale === "ar";
 
+  const effectiveDefaultTab = defaultTab ?? (tabs[0]?.value || ("all" as TTab));
+  const effectiveDefaultSort = defaultSort ?? (sortOptions[0]?.value || ("latest" as TSort));
+
   const isFilterActive =
     searchQuery.trim() !== "" ||
-    activeTab !== defaultTab ||
-    sortBy !== defaultSort ||
+    activeTab !== effectiveDefaultTab ||
+    sortBy !== effectiveDefaultSort ||
     isFilterActiveCustom;
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
+
+  const handleSearchValueChange = (val: string) => {
+    if (typeof onSearchChange === "function") {
+      // Check if it's expecting event or string
+      try {
+        (onSearchChange as (s: string) => void)(val);
+      } catch {
+        // Fallback for SyntheticEvent handler
+        (onSearchChange as (e: unknown) => void)({ target: { value: val } });
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col md:flex-row md:flex-wrap items-stretch md:items-start justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
       {/* Search & Tabs */}
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-start gap-3 flex-1">
         {/* Search Box */}
-        <div className="relative flex-1 min-w-55">
-          <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={searchPlaceholder}
-            value={searchQuery}
-            onChange={onSearchChange}
-            className="ps-9 bg-background"
-          />
-        </div>
+        <DebouncedSearchInput
+          placeholder={searchPlaceholder}
+          value={searchQuery}
+          onValueChange={handleSearchValueChange}
+        />
 
         {/* Tab Selector */}
         <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto">

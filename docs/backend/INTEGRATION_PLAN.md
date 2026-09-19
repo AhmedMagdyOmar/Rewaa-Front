@@ -6,6 +6,7 @@
 > - [`API_SCHEMAS.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/API_SCHEMAS.md) (Request / Response DTO models & enums)
 > - [`API_ASSIMILATION_GUIDE.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/API_ASSIMILATION_GUIDE.md) (Component & state migration details)
 > - [`LESSONS_INTEGRATION_CONTEXT.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/LESSONS_INTEGRATION_CONTEXT.md) (Phase 4 Lessons deep architecture, API contracts & component mapping)
+> - [`EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md`](file:///home/amr-mohamed27/rewaa/frontend/docs/backend/EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md) (Phase 4 Exams & Questions deep architecture, API contracts & component mapping)
 
 ---
 
@@ -244,21 +245,36 @@ Eliminate `lessons-storage.ts`, `exams-storage.ts`, and `questions-storage.ts`. 
    - Completely eliminated `getStoredLessons`, `saveStoredLessons`, and `mockLessonsData` across all provider views.
    - Connected `LessonDialog` in `NewCourseClient` / Curriculum builder and standalone roster `ManageLessonsClient`.
 
-2. **Question Bank Management**:
+2. **Question Bank Management** [x]:
+   - **Context & Reference**: [EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md](./EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md)
    - **Endpoints**:
-     - `GET /api/dashboard/provider/questions` (Filter by subject, difficulty, type)
-     - `POST /api/dashboard/provider/questions` (MCQ, True/False, Essay, bilingual text and explanations)
+     - `GET /api/dashboard/provider/questions` (Filter by stage, subject, difficulty, type, classification, instructor, search, pagination)
+     - `GET /api/dashboard/provider/questions/options` (Stages, subjects, instructors, types, difficulties, classifications, exams)
+     - `POST /api/dashboard/provider/questions` (MCQ, True/False, Essay, bilingual text and explanations, options validation)
+     - `GET /api/dashboard/provider/questions/{question}`
      - `PUT /api/dashboard/provider/questions/{question}`
      - `DELETE /api/dashboard/provider/questions/{question}`
+     - `PATCH /api/dashboard/provider/questions/reorder`
+   - Completely eliminated local storage mock dependencies in Question management views (`ManageQuestionsClient`, `NewQuestionClient`, `EditQuestionClient`).
 
-3. **Exams Engine (`ManageExamsClient`)**:
+3. **Exams Engine (`ManageExamsClient`, `ExamFormClient`, `ExamDetailsClient`, `ExamStatsClient`, `ExamComplaintsClient`)** [x]:
+   - **Context & Reference**: [EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md](./EXAMS_AND_QUESTIONS_INTEGRATION_CONTEXT.md)
    - **Endpoints**:
-     - `GET /api/dashboard/provider/exams`
-     - `GET /api/dashboard/provider/exams/options`
-     - `POST /api/dashboard/provider/exams` (Settings: duration, passing percentage, attempts limit)
-     - `POST /api/dashboard/provider/exams/{exam}/sections` (Attach questions to exam sections)
-     - `GET /api/dashboard/provider/exam-attempts` (Review student submissions)
-     - `POST /api/dashboard/provider/exam-attempts/{attempt}/grade` (Manual grading of essay submissions)
+     - `GET /api/dashboard/provider/exams` (Status tabs with backend `status_counts`, filtering, search, pagination)
+     - `GET /api/dashboard/provider/exams/options` (Stages, subjects, instructors, courses)
+     - `POST /api/dashboard/provider/exams` (Settings: duration, passing percentage, attempts limit, delivery mode, classification)
+     - `GET /api/dashboard/provider/exams/{exam}` (Full exam details, sections, and questions)
+     - `PUT /api/dashboard/provider/exams/{exam}` (Update settings)
+     - `DELETE /api/dashboard/provider/exams/{exam}` (Soft delete)
+     - `PATCH /api/dashboard/provider/exams/{exam}/publish`
+     - `PATCH /api/dashboard/provider/exams/{exam}/schedule`
+     - `PATCH /api/dashboard/provider/exams/{exam}/convert-to-course`
+     - `GET /api/dashboard/provider/exams/{exam}/sections`
+     - `POST /api/dashboard/provider/exams/{exam}/sections`
+     - `PUT /api/dashboard/provider/exams/{exam}/sections/{section}`
+     - `DELETE /api/dashboard/provider/exams/{exam}/sections/{section}`
+     - `PATCH /api/dashboard/provider/exams/{exam}/sections/reorder`
+   - Completely eliminated mock storage fallbacks in provider exams views. Step 1 seamlessly creates draft exams and passes real IDs to Step 2 for sections and questions authoring.
 
 ---
 

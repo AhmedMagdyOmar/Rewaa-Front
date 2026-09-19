@@ -1,19 +1,17 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { ArrowLeft } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import * as React from "react";
+import { toast } from "sonner";
 
-import { Button } from "@/components/ui/button";
 import { QuestionFormContent } from "@/components/dashboard/questions/question-form-content";
-import {
-  getQuestionById,
-  updateStoredQuestion,
-  QuestionWithContext,
-} from "@/lib/questions-storage";
+import { Button } from "@/components/ui/button";
+import { useProviderQuestion, useUpdateQuestion } from "@/hooks/use-questions";
+import { mapBackendKindToFrontend, mapFrontendKindToBackend } from "@/lib/adapters/exam-adapters";
+import { getErrorMessage } from "@/lib/api-utils";
+import type { UpdateQuestionData } from "@/types/api-contracts";
 import { Question } from "@/types/exam";
 
 interface EditQuestionClientProps {
@@ -26,14 +24,8 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
   const t = useTranslations("questionsPage.editPage");
   const tDetails = useTranslations("questionsPage.details");
 
-  const [question, setQuestion] = React.useState<QuestionWithContext | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const found = getQuestionById(locale, questionId);
-    setQuestion(found);
-    setIsLoading(false);
-  }, [questionId, locale]);
+  const { data: question, isLoading } = useProviderQuestion(questionId);
+  const updateQuestionMutation = useUpdateQuestion();
 
   if (isLoading) {
     return (
@@ -58,13 +50,109 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
     );
   }
 
-  const handleSave = (updated: Question) => {
-    updateStoredQuestion(locale, updated);
-    router.push(`/${locale}/dashboard/questions/${questionId}`);
+  // Convert BackendQuestion to frontend Question model for QuestionFormContent
+  const mappedInitialQuestion: Question = {
+    id: String(question.id),
+    questionName: question.title[locale] || question.title.ar || "",
+    questionContent: question.body?.[locale] || question.body?.ar || "",
+    modelAnswer:
+      question.type === "essay"
+        ? question.model_answer?.[locale] || question.model_answer?.ar || ""
+        : question.type === "true_false"
+          ? String(question.correct_answer ?? true)
+          : (question.options?.find((o) => o.is_correct)?.id?.toString() ?? "opt-1"),
+    type:
+      question.type === "multiple_choice"
+        ? "mcq"
+        : question.type === "true_false"
+          ? "true/false"
+          : "text",
+    options: question.options?.map((o, idx) => ({
+      id: o.id ? String(o.id) : `opt-${idx + 1}`,
+      text: o.text[locale] || o.text.ar || "",
+    })),
+    grade: Number(question.score) || 1,
+    required: true,
+    questionType: mapBackendKindToFrontend(question.classification),
+    difficulty: question.difficulty || "medium",
+    hasAnswerExplanation: question.has_explanation,
+    answerExplanation: question.explanation?.[locale] || question.explanation?.ar || "",
+  };
+
+  const handleSave = async (
+    updated: Question,
+    _sectionId?: string,
+    _keepOpen?: boolean,
+    academicContext?: {
+      grade?: string;
+      subject?: string;
+      teacherName?: string;
+      educationalStageId?: number;
+      subjectId?: number;
+      instructorId?: number;
+    },
+  ) => {
+    try {
+      const payload: UpdateQuestionData = {
+        title: { ar: updated.questionName, en: updated.questionName },
+        body: { ar: updated.questionContent, en: updated.questionContent },
+        type:
+          updated.type === "mcq"
+            ? "multiple_choice"
+            : updated.type === "true/false"
+              ? "true_false"
+              : "essay",
+        difficulty: updated.difficulty || "medium",
+        classification: mapFrontendKindToBackend(updated.questionType),
+        score: Number(updated.grade) || 1,
+        has_explanation: updated.hasAnswerExplanation,
+        is_active: true,
+      };
+
+      if (updated.hasAnswerExplanation && updated.answerExplanation) {
+        payload.explanation = {
+          ar: updated.answerExplanation,
+          en: updated.answerExplanation,
+        };
+      }
+
+      if (updated.type === "text" && updated.modelAnswer) {
+        payload.model_answer = {
+          ar: updated.modelAnswer,
+          en: updated.modelAnswer,
+        };
+      } else if (updated.type === "true/false") {
+        payload.correct_answer = updated.modelAnswer === "true";
+      } else if (updated.type === "mcq" && updated.options) {
+        payload.options = updated.options.map((opt) => ({
+          text: { ar: opt.text, en: opt.text },
+          is_correct: opt.id === updated.modelAnswer,
+        }));
+      }
+
+      if (academicContext?.educationalStageId) {
+        payload.educational_stage_id = academicContext.educationalStageId;
+      }
+      if (academicContext?.subjectId) {
+        payload.subject_id = academicContext.subjectId;
+      }
+      if (academicContext?.instructorId) {
+        payload.instructor_id = academicContext.instructorId;
+      }
+
+      await updateQuestionMutation.mutateAsync({ id: question.id, data: payload });
+      toast.success(t("messages.savedSuccessfully") || "تم حفظ التعديلات بنجاح");
+      router.push(`/${locale}/dashboard/questions`);
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err) ||
+          (locale === "ar" ? "فشل في حفظ التعديلات" : "Failed to save question"),
+      );
+    }
   };
 
   const handleCancel = () => {
-    router.push(`/${locale}/dashboard/questions/${questionId}`);
+    router.push(`/${locale}/dashboard/questions`);
   };
 
   return (
@@ -87,10 +175,16 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
       {/* Main Question Form Card Container */}
       <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-xs space-y-6">
         <QuestionFormContent
-          initialQuestion={question}
-          examGrade={question.academicGrade}
-          examSubject={question.subject}
-          examTeacherName={question.teacherName}
+          initialQuestion={mappedInitialQuestion}
+          initialEducationalStageId={question.educational_stage_id}
+          initialSubjectId={question.subject_id}
+          initialInstructorId={question.instructor_id}
+          examGrade={
+            question.educational_stage?.name?.[locale] || question.educational_stage?.name?.ar
+          }
+          examSubject={question.subject?.name?.[locale] || question.subject?.name?.ar}
+          examTeacherName={question.instructor?.full_name}
+          allowEditableAcademicProps={true}
           onSave={handleSave}
           onCancel={handleCancel}
           submitLabel={t("saveChanges")}

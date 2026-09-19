@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -12,13 +11,14 @@ import {
   MoreVertical,
   Pencil,
   Plus,
-  RotateCcw,
+  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,39 +30,37 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { getStoredExams, resetStoredExams, saveStoredExams } from "@/lib/exams-storage";
-import { Exam } from "@/types/exam";
+import { useDeleteExam, useProviderExams } from "@/hooks/use-exams";
+import type { BackendExam } from "@/types/api-contracts";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteExamDialog } from "./delete-exam-dialog";
 
-export type ExamFilterTab = "all" | "independent" | "course-dependent";
-export type ExamSortOption = "date-newest" | "date-oldest" | "rating-high" | "rating-low";
+const emptySubscribe = () => () => {};
 
-// ─── Success-rate colour ──────────────────────────────────────────────────────
-function successRateColor(rate: number) {
-  if (rate >= 70) return "text-success";
-  if (rate >= 50) return "text-warning";
-  return "text-error";
-}
+export type ExamFilterTab = "all" | "published" | "draft" | "scheduled";
+export type ExamSortOption = "latest" | "oldest";
 
 export function ManageExamsClient() {
   const locale = useLocale();
   const t = useTranslations("exams");
-  const tCourses = useTranslations("courses");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const isMounted = React.useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as ExamFilterTab) || "all";
-  const sortBy = (searchParams.get("sort") as ExamSortOption) || "date-newest";
+  const sortBy = (searchParams.get("sort") as ExamSortOption) || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 10;
+  const itemsPerPage = 12;
 
   const updateUrlParams = React.useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -72,7 +70,7 @@ export function ManageExamsClient() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
-          (key === "sort" && value === "date-newest") ||
+          (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -86,69 +84,34 @@ export function ManageExamsClient() {
     [searchParams, pathname, router],
   );
 
-  // Local state synchronized with LocalStorage
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // Live Query from backend
+  const {
+    data: examsResponse,
+    isLoading,
+    isFetching,
+    refetch,
+  } = useProviderExams({
+    search: searchQuery || undefined,
+    status: activeTab !== "all" ? activeTab : undefined,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
 
-  React.useEffect(() => {
-    setExams(getStoredExams(locale));
-    setIsLoading(false);
+  const deleteExamMutation = useDeleteExam();
+  const [examToDelete, setExamToDelete] = React.useState<BackendExam | null>(null);
 
-    const handleUpdate = () => setExams(getStoredExams(locale));
-    window.addEventListener("rewaa_exams_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_exams_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale]);
-
-  const [examToDelete, setExamToDelete] = React.useState<Exam | null>(null);
-
-  // ─── Filter & Search ────────────────────────────────────────────────────────
-  const filteredExams = React.useMemo(() => {
-    return exams.filter((exam) => {
-      // Tab Filter (all vs independent vs course-dependent)
-      const isIndep = exam.examType === "independent" || (!exam.examType && !exam.courseId);
-      if (activeTab === "independent" && !isIndep) return false;
-      if (activeTab === "course-dependent" && isIndep) return false;
-
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          exam.title.toLowerCase().includes(q) ||
-          (exam.subject || "").toLowerCase().includes(q) ||
-          (exam.teacherName || "").toLowerCase().includes(q) ||
-          (exam.courseTitle || "").toLowerCase().includes(q) ||
-          (exam.grade || "").toLowerCase().includes(q)
-        );
-      }
-      return true;
-    });
-  }, [exams, activeTab, searchQuery]);
-
-  // ─── Sort ───────────────────────────────────────────────────────────────────
-  const sortedExams = React.useMemo(() => {
-    return [...filteredExams].sort((a, b) => {
-      switch (sortBy) {
-        case "rating-high":
-          return (b.successRate || 0) - (a.successRate || 0);
-        case "rating-low":
-          return (a.successRate || 0) - (b.successRate || 0);
-        case "date-oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "date-newest":
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
-  }, [filteredExams, sortBy]);
-
-  // ─── Pagination ─────────────────────────────────────────────────────────────
-  const totalItems = sortedExams.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const exams: BackendExam[] = examsResponse?.exams || [];
+  const statusCounts = examsResponse?.status_counts || {
+    all: 0,
+    published: 0,
+    draft: 0,
+    scheduled: 0,
+  };
+  const pagination = examsResponse?.pagination;
+  const totalItems = pagination?.total || 0;
+  const totalPages = pagination?.last_page || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedExams = sortedExams.slice(startIndex, startIndex + itemsPerPage);
 
   // ─── Handlers ───────────────────────────────────────────────────────────────
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -160,42 +123,28 @@ export function ManageExamsClient() {
 
   const handlePageChange = (page: number) => updateUrlParams({ page });
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (examToDelete) {
-      const updated = exams.filter((e) => e.id !== examToDelete.id);
-      setExams(updated);
-      saveStoredExams(locale, updated);
-      setExamToDelete(null);
+      try {
+        await deleteExamMutation.mutateAsync(examToDelete.id);
+        toast.success(locale === "ar" ? "تم حذف الامتحان بنجاح" : "Exam deleted successfully");
+        setExamToDelete(null);
+      } catch {
+        toast.error(locale === "ar" ? "فشل في حذف الامتحان" : "Failed to delete exam");
+      }
     }
-  };
-
-  const handleResetData = () => {
-    const reset = resetStoredExams(locale);
-    setExams(reset);
   };
 
   const handleResetFilters = () =>
     updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
 
   // ─── Format helpers ─────────────────────────────────────────────────────────
-  const formatGrade = (g?: string) => {
-    if (!g) return "";
-    return tGrades.has(g as Parameters<typeof tGrades.has>[0])
-      ? tGrades(g as Parameters<typeof tGrades>[0])
-      : g;
+  const formatGrade = (exam: BackendExam) => {
+    return exam.educational_stage?.name?.[locale] || exam.educational_stage?.name?.ar || "";
   };
 
-  const formatSubject = (s?: string) => {
-    if (!s) return "";
-    return tSubjects.has(s as Parameters<typeof tSubjects.has>[0])
-      ? tSubjects(s as Parameters<typeof tSubjects>[0])
-      : s;
-  };
-
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
+  const formatSubject = (exam: BackendExam) => {
+    return exam.subject?.name?.[locale] || exam.subject?.name?.ar || "";
   };
 
   const formatCategory = (cat: string) => {
@@ -207,26 +156,15 @@ export function ManageExamsClient() {
 
   // ─── Tabs & sort options ────────────────────────────────────────────────────
   const tabs: TabItem<ExamFilterTab>[] = [
-    { value: "all", label: t("tabs.all"), count: exams.length },
-    {
-      value: "independent",
-      label: t("tabs.independent"),
-      count: exams.filter((e) => e.examType === "independent" || (!e.examType && !e.courseId))
-        .length,
-    },
-    {
-      value: "course-dependent",
-      label: t("tabs.courseLinked"),
-      count: exams.filter((e) => !(e.examType === "independent" || (!e.examType && !e.courseId)))
-        .length,
-    },
+    { value: "all", label: t("tabs.all"), count: statusCounts.all },
+    { value: "published", label: "المنشورة", count: statusCounts.published },
+    { value: "draft", label: "المسودة", count: statusCounts.draft },
+    { value: "scheduled", label: "المجدولة", count: statusCounts.scheduled },
   ];
 
   const sortOptions: SortOptionItem<ExamSortOption>[] = [
-    { value: "date-newest", label: t("sort.newest") },
-    { value: "date-oldest", label: t("sort.oldest") },
-    { value: "rating-high", label: t("sort.ratingHigh") },
-    { value: "rating-low", label: t("sort.ratingLow") },
+    { value: "latest", label: t("sort.newest") },
+    { value: "oldest", label: t("sort.oldest") },
   ];
 
   const showingText = t("pagination.showing", {
@@ -238,7 +176,7 @@ export function ManageExamsClient() {
   // ─── Venue icon helper ──────────────────────────────────────────────────────
   function VenueIcon({ venue }: { venue?: string }) {
     if (venue === "online") return <Globe className="h-3.5 w-3.5 shrink-0" />;
-    if (venue === "center") return <House className="h-3.5 w-3.5 shrink-0" />;
+    if (venue === "onsite" || venue === "center") return <House className="h-3.5 w-3.5 shrink-0" />;
     return <Globe2 className="h-3.5 w-3.5 shrink-0" />;
   }
 
@@ -263,17 +201,19 @@ export function ManageExamsClient() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("manageSubtitle")}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            size="default"
-            onClick={handleResetData}
-            className="gap-2 shadow-xs font-semibold"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isMounted && isFetching}
+            className="gap-2"
           >
-            <RotateCcw className="h-4 w-4" />
-            <span>{t("resetExams")}</span>
+            <RefreshCw className={`h-4 w-4 ${isMounted && isFetching ? "animate-spin" : ""}`} />
+            <span>{locale === "ar" ? "تحديث" : "Refresh"}</span>
           </Button>
-          <Button asChild size="default" className="gap-2 shadow-sm font-semibold">
+
+          <Button asChild size="default" className="gap-2 shadow-xs font-semibold shrink-0">
             <Link href={`/${locale}/dashboard/exams/new`}>
               <Plus className="h-4 w-4" />
               <span>{t("addNewExam")}</span>
@@ -290,6 +230,8 @@ export function ManageExamsClient() {
         tabs={tabs}
         sortBy={sortBy}
         sortOptions={sortOptions}
+        defaultTab="all"
+        defaultSort="latest"
         clearFiltersLabel={t("clearFilters")}
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
@@ -311,7 +253,7 @@ export function ManageExamsClient() {
                   t("table.columns.typeVenue"),
                   t("table.columns.questions"),
                   t("table.columns.students"),
-                  t("table.columns.successRate"),
+                  t("table.columns.status"),
                   t("table.columns.actions"),
                 ].map((col) => (
                   <th
@@ -327,7 +269,7 @@ export function ManageExamsClient() {
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
-              ) : paginatedExams.length === 0 ? (
+              ) : exams.length === 0 ? (
                 <tr>
                   <td colSpan={8}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -342,10 +284,11 @@ export function ManageExamsClient() {
                   </td>
                 </tr>
               ) : (
-                paginatedExams.map((exam, idx) => {
+                exams.map((exam, idx) => {
                   const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
-                  const subjectStr = formatSubject(exam.subject);
-                  const gradeStr = formatGrade(exam.grade);
+                  const subjectStr = formatSubject(exam);
+                  const gradeStr = formatGrade(exam);
+                  const examTitle = exam.title[locale] || exam.title.ar || "";
 
                   return (
                     <tr
@@ -357,11 +300,16 @@ export function ManageExamsClient() {
                         <Link
                           href={`/${locale}/dashboard/exams/${exam.id}`}
                           className="group block"
-                          title={exam.title}
+                          title={examTitle}
                         >
                           <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-relaxed">
-                            {exam.title}
+                            {examTitle}
                           </p>
+                          {exam.instructor && (
+                            <p className="text-[11px] text-muted-foreground">
+                              {exam.instructor.full_name}
+                            </p>
+                          )}
                         </Link>
                       </td>
 
@@ -378,35 +326,35 @@ export function ManageExamsClient() {
                       {/* ── Category ─────────────────────────────────────── */}
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap`}
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap bg-muted/60`}
                         >
-                          {formatCategory(exam.category)}
+                          {exam.classification_label || formatCategory(exam.classification)}
                         </span>
                       </td>
 
                       {/* ── Type & Venue ──────────────────────────────────── */}
                       <td className="px-4 py-3 min-w-44">
-                        {exam.examType === "independent" ? (
-                          <div className="flex flex-row gap-1">
-                            <VenueIcon venue={exam.venue} />
-                            <span className="flex items-center gap-1.5 text-xs font-medium text-primary-dark/80">
+                        {exam.is_standalone ? (
+                          <div className="flex flex-row gap-1 items-center">
+                            <VenueIcon venue={exam.delivery_mode} />
+                            <span className="text-xs font-medium text-primary-dark/80">
                               {t("table.independent")}
                             </span>
-                            {exam.venue && (
-                              <span className="flex items-center gap-1 text-xs">
-                                - {formatVenue(exam.venue)}
+                            {exam.delivery_mode_label && (
+                              <span className="text-xs text-muted-foreground">
+                                - {exam.delivery_mode_label}
                               </span>
                             )}
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            {exam.courseId ? (
+                            {exam.course ? (
                               <Link
-                                href={`/${locale}/dashboard/courses/${exam.courseId}/edit`}
+                                href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
                                 className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
                               >
-                                <ExternalLink className="h-3 w-3 shrink-0" />
-                                {exam.courseTitle || exam.courseId}
+                                <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
+                                {exam.course.title[locale] || exam.course.title.ar}
                               </Link>
                             ) : null}
                           </div>
@@ -416,23 +364,29 @@ export function ManageExamsClient() {
                       {/* ── Questions ─────────────────────────────────────── */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
-                          {t("table.questionsCount", { count: exam.numberOfQuestions })}
+                          {t("table.questionsCount", { count: exam.questions_count || 0 })}
                         </span>
                       </td>
 
                       {/* ── Students ──────────────────────────────────────── */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
-                          {t("table.studentsCount", { count: exam.numberOfStudents })}
+                          {t("table.studentsCount", { count: exam.students_count || 0 })}
                         </span>
                       </td>
 
-                      {/* ── Success Rate ──────────────────────────────────── */}
+                      {/* ── Status Badge ──────────────────────────────────── */}
                       <td className="px-4 py-3">
                         <span
-                          className={`text-xs font-bold whitespace-nowrap ${successRateColor(exam.successRate)}`}
+                          className={`text-xs font-bold whitespace-nowrap px-2 py-0.5 rounded-full ${
+                            exam.status === "published"
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : exam.status === "scheduled"
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-muted text-muted-foreground"
+                          }`}
                         >
-                          {exam.successRate}%
+                          {exam.status_label || exam.status}
                         </span>
                       </td>
 

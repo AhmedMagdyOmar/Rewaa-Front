@@ -1259,7 +1259,7 @@
     "complaints": {
       "title": "شكاوى الامتحان",
       "subtitle": "متابعة وإدارة ملاحظات وشكاوى الطلاب المسجلة على هذا الامتحان.",
-      "resetMock": "إعادة ضبط البيانات",
+      "refresh": "تحديث البيانات",
       "searchPlaceholder": "ابحث بعنوان الشكوى أو اسم الطالب أو رقم الهاتف...",
       "clearFilters": "مسح الفلاتر",
       "stats": {
@@ -1287,7 +1287,9 @@
         "dismiss": "استبعاد / حذف",
         "copiedToast": "تم نسخ تفاصيل الشكوى إلى الحافظة",
         "dismissedToast": "تم حذف الشكوى بنجاح",
-        "resetToast": "تمت استعادة بيانات الشكاوى بنجاح"
+        "refreshedToast": "تم تحديث بيانات الشكاوى بنجاح",
+        "dismissError": "فشل في حذف الشكوى",
+        "refreshError": "فشل في تحديث بيانات الشكاوى"
       },
       "empty": {
         "title": "لا توجد شكاوى",
@@ -1308,6 +1310,10 @@
     "manageTitle": "بنك الأسئلة",
     "manageSubtitle": "عرض، تصفية، وتصفح جميع الأسئلة المتاحة في المنصة.",
     "addNewQuestion": "إضافة سؤال جديد",
+    "messages": {
+      "deletedSuccessfully": "تم حذف السؤال بنجاح",
+      "deleteFailed": "فشل في حذف السؤال"
+    },
     "searchPlaceholder": "ابحث باسم السؤال، النص، الإجابة النموذجية أو اسم المعلم...",
     "filterGrade": "كل المراحل",
     "filterSubject": "كل المواد",
@@ -1372,7 +1378,10 @@
       "title": "تعديل السؤال",
       "subtitle": "تعديل تفاصيل السؤال، الإجابة النموذجية وخيارات الإجابة.",
       "saveChanges": "حفظ التعديلات",
-      "cancel": "إلغاء"
+      "cancel": "إلغاء",
+      "messages": {
+        "savedSuccessfully": "تم حفظ التعديلات بنجاح"
+      }
     },
     "newPage": {
       "title": "إضافة سؤال جديد",
@@ -1388,7 +1397,10 @@
       "selectSubject": "المادة الدراسية",
       "selectSubjectPlaceholder": "اختر المادة الدراسية...",
       "teacherName": "اسم المعلم / المحاضر",
-      "teacherNamePlaceholder": "مثال: أ. محمد أحمد"
+      "teacherNamePlaceholder": "مثال: أ. محمد أحمد",
+      "messages": {
+        "createdSuccessfully": "تم إنشاء السؤال بنجاح"
+      }
     }
   },
   "lessons": {

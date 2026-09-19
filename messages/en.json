@@ -1259,7 +1259,7 @@
     "complaints": {
       "title": "Exam Complaints",
       "subtitle": "Review and manage all student issues and complaints submitted for this exam.",
-      "resetMock": "Reset Data",
+      "refresh": "Refresh Data",
       "searchPlaceholder": "Search by complaint title, student name, or phone...",
       "clearFilters": "Clear Filters",
       "stats": {
@@ -1287,7 +1287,9 @@
         "dismiss": "Dismiss",
         "copiedToast": "Complaint details copied to clipboard",
         "dismissedToast": "Complaint has been dismissed",
-        "resetToast": "Complaints data has been reset"
+        "refreshedToast": "Complaints data has been refreshed",
+        "dismissError": "Failed to delete complaint",
+        "refreshError": "Failed to refresh complaints data"
       },
       "empty": {
         "title": "No complaints found",
@@ -1308,6 +1310,10 @@
     "manageTitle": "Questions Bank",
     "manageSubtitle": "Browse, search, and filter all available questions across all exams.",
     "addNewQuestion": "Add New Question",
+    "messages": {
+      "deletedSuccessfully": "Question deleted successfully",
+      "deleteFailed": "Failed to delete question"
+    },
     "searchPlaceholder": "Search by question name, content, model answer, or teacher...",
     "filterGrade": "All Grades",
     "filterSubject": "All Subjects",
@@ -1372,7 +1378,10 @@
       "title": "Edit Question",
       "subtitle": "Update question details, model answers, and choices.",
       "saveChanges": "Save Changes",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "messages": {
+        "savedSuccessfully": "Question saved successfully"
+      }
     },
     "newPage": {
       "title": "Add New Question",
@@ -1388,7 +1397,10 @@
       "selectSubject": "Subject",
       "selectSubjectPlaceholder": "Select subject...",
       "teacherName": "Teacher / Instructor Name",
-      "teacherNamePlaceholder": "e.g., Mr. Mohamed Ahmed"
+      "teacherNamePlaceholder": "e.g., Mr. Mohamed Ahmed",
+      "messages": {
+        "createdSuccessfully": "Question created successfully"
+      }
     }
   },
   "lessons": {

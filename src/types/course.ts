@@ -27,6 +27,8 @@ export interface Lesson {
   cover_image?: string;
   coverImageFile?: File | null;
   removeCoverImage?: boolean;
+  video_url?: string;
+  videoUrl?: string;
   lectureVideoLink?: string;
   grade?: string;
   subject?: string;
