@@ -28,14 +28,20 @@ export interface Student {
   image?: string;
   password?: string;
   country: string;
+  countryId?: number;
   state: string; // state/governorate
+  governorateId?: number;
   grade: string;
+  educationalStageId?: number;
   registrationType: RegistrationType;
   coursesCount?: number;
   enrolledCourseIds?: string[];
   balance?: number;
   averageRating?: number;
   gpa?: string;
+  examsPerformed?: number;
+  correctQuestions?: number;
+  wrongQuestions?: number;
   status?: StudentStatus;
   createdAt?: string;
   updatedAt?: string;

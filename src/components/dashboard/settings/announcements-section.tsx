@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 import {
@@ -15,6 +15,7 @@ import {
   XCircle,
   ExternalLink,
   ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,21 +42,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { AnnouncementItem } from "@/types/settings";
+import type { AnnouncementItem } from "@/types/settings";
+import { adaptBackendAnnouncementToUI } from "@/lib/adapters/settings-adapter";
 import {
-  getStoredAnnouncements,
-  saveAnnouncement,
-  toggleAnnouncementActive,
-  deleteAnnouncement,
-  resetAnnouncements,
-} from "@/lib/settings-storage";
+  useAnnouncementsList,
+  useCreateAnnouncement,
+  useDeleteAnnouncement,
+  useUpdateAnnouncement,
+} from "@/hooks/use-settings";
+import { toast } from "sonner";
 import { AnnouncementDialog } from "./announcement-dialog";
 import { AnnouncementDetailsDialog } from "./announcement-details-dialog";
 
 export function AnnouncementsSection() {
   const t = useTranslations("settings.announcements");
 
-  const [announcements, setAnnouncements] = useState<AnnouncementItem[]>([]);
+  const { data: backendAnnouncements, isLoading, refetch } = useAnnouncementsList();
+  const createAnnouncementMutation = useCreateAnnouncement();
+  const updateAnnouncementMutation = useUpdateAnnouncement();
+  const deleteAnnouncementMutation = useDeleteAnnouncement();
+
+  const announcements: AnnouncementItem[] = (backendAnnouncements || []).map((a) =>
+    adaptBackendAnnouncementToUI(a),
+  );
+
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [announcementToEdit, setAnnouncementToEdit] = useState<AnnouncementItem | null>(null);
 
@@ -67,22 +77,11 @@ export function AnnouncementsSection() {
 
   const [deactivationToastNotice, setDeactivationToastNotice] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handleLoad = () => setAnnouncements(getStoredAnnouncements());
-    handleLoad();
-    window.addEventListener("rewaa_announcements_updated", handleLoad);
-    return () => window.removeEventListener("rewaa_announcements_updated", handleLoad);
-  }, []);
-
   const activeCount = announcements.filter((a) => a.active).length;
   const activeAnnouncementsSorted = announcements
     .filter((a) => a.active)
     .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
   const oldestActiveTitle = activeAnnouncementsSorted[0]?.title;
-
-  const handleReset = () => {
-    resetAnnouncements();
-  };
 
   const handleOpenAdd = () => {
     setAnnouncementToEdit(null);
@@ -104,38 +103,81 @@ export function AnnouncementsSection() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (announcementToDelete) {
-      deleteAnnouncement(announcementToDelete.id);
-      setAnnouncementToDelete(null);
-      setDeleteDialogOpen(false);
+      try {
+        await deleteAnnouncementMutation.mutateAsync(announcementToDelete.id);
+        toast.success(t("deleteDialog.title"));
+        setAnnouncementToDelete(null);
+        setDeleteDialogOpen(false);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to delete announcement";
+        toast.error(errorMsg);
+      }
     }
   };
 
-  const handleToggleStatus = (announcement: AnnouncementItem) => {
-    const res = toggleAnnouncementActive(announcement.id);
-    if (res.deactivatedAnnouncementTitle) {
-      setDeactivationToastNotice(
-        t("deactivatedNotice", { name: res.deactivatedAnnouncementTitle }),
-      );
-      setTimeout(() => setDeactivationToastNotice(null), 5000);
+  const handleToggleStatus = async (announcement: AnnouncementItem) => {
+    try {
+      await updateAnnouncementMutation.mutateAsync({
+        announcementId: announcement.id,
+        data: {
+          is_active: !announcement.active,
+        },
+      });
+      toast.success(t("title"));
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to update status";
+      toast.error(errorMsg);
     }
   };
 
-  const handleSave = (data: {
+  const handleSave = async (data: {
     id?: string;
     title: string;
     description: string;
     coverImage?: string;
+    coverImageFile?: File;
     url?: string;
     active?: boolean;
   }) => {
-    const res = saveAnnouncement(data);
-    if (res.deactivatedAnnouncementTitle) {
-      setDeactivationToastNotice(
-        t("deactivatedNotice", { name: res.deactivatedAnnouncementTitle }),
-      );
-      setTimeout(() => setDeactivationToastNotice(null), 5000);
+    try {
+      if (data.id) {
+        await updateAnnouncementMutation.mutateAsync({
+          announcementId: data.id,
+          data: {
+            title: { ar: data.title, en: data.title },
+            details: { ar: data.description, en: data.description },
+            image: data.coverImageFile,
+            image_url:
+              !data.coverImageFile && data.coverImage?.startsWith("http")
+                ? data.coverImage
+                : undefined,
+            remove_image: !data.coverImageFile && !data.coverImage,
+            link: data.url,
+            url: data.url,
+            is_active: data.active,
+          },
+        });
+      } else {
+        await createAnnouncementMutation.mutateAsync({
+          title: { ar: data.title, en: data.title },
+          details: { ar: data.description, en: data.description },
+          image: data.coverImageFile,
+          image_url:
+            !data.coverImageFile && data.coverImage?.startsWith("http")
+              ? data.coverImage
+              : undefined,
+          link: data.url,
+          url: data.url,
+          is_active: data.active ?? true,
+        });
+      }
+      toast.success(t("title"));
+      setCreateDialogOpen(false);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to save announcement";
+      toast.error(errorMsg);
     }
   };
 
@@ -175,9 +217,14 @@ export function AnnouncementsSection() {
 
         {/* Action Header Buttons */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" onClick={handleReset} className="gap-1.5">
-            <RotateCcw className="size-3.5" />
-            <span>{t("resetAnnouncements")}</span>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isLoading}
+            className="gap-1.5"
+          >
+            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{t("refreshAnnouncements")}</span>
           </Button>
           <Button onClick={handleOpenAdd} className="gap-1.5">
             <Plus className="size-4" />
@@ -199,7 +246,16 @@ export function AnnouncementsSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {announcements.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <span className="text-xs">Loading announcements...</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : announcements.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
                   {t("noAnnouncements")}
@@ -288,7 +344,6 @@ export function AnnouncementsSection() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-48">
-                        {/* View Details */}
                         <DropdownMenuItem
                           onClick={() => handleOpenDetails(item)}
                           className="gap-2 cursor-pointer"
@@ -297,7 +352,6 @@ export function AnnouncementsSection() {
                           <span>{t("actions.viewDetails")}</span>
                         </DropdownMenuItem>
 
-                        {/* Edit */}
                         <DropdownMenuItem
                           onClick={() => handleOpenEdit(item)}
                           className="gap-2 cursor-pointer"
@@ -306,7 +360,6 @@ export function AnnouncementsSection() {
                           <span>{t("actions.edit")}</span>
                         </DropdownMenuItem>
 
-                        {/* Mark Active / Inactive */}
                         <DropdownMenuItem
                           onClick={() => handleToggleStatus(item)}
                           className="gap-2 cursor-pointer"
@@ -326,7 +379,6 @@ export function AnnouncementsSection() {
 
                         <DropdownMenuSeparator />
 
-                        {/* Delete */}
                         <DropdownMenuItem
                           onClick={() => handleOpenDelete(item)}
                           className="gap-2 cursor-pointer text-destructive focus:text-destructive"
@@ -374,7 +426,11 @@ export function AnnouncementsSection() {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               {t("deleteDialog.cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteAnnouncementMutation.isPending}
+            >
               {t("deleteDialog.confirm")}
             </Button>
           </DialogFooter>

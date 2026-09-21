@@ -133,4 +133,7 @@ export interface Course {
   durationHours?: number;
   badge?: CourseBadge;
   scheduledPublishDate?: string;
+  progressPercentage?: number;
+  completedLessons?: number;
+  totalLessons?: number;
 }

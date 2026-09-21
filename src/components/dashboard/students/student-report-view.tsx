@@ -67,12 +67,22 @@ export function StudentReportView({
   const currentYear = new Date().getFullYear();
 
   // Metrics calculation
-  const enrolledCoursesList = courses.slice(0, student.coursesCount || 3);
-  const examsCount = 12;
-  const correctQuestions = 140;
-  const wrongQuestions = 20;
+  const enrolledCoursesList = courses.slice(0, student.coursesCount || 0);
+  const examsCount = student.examsPerformed ?? exams.length ?? 0;
+  const correctQuestions = student.correctQuestions ?? 0;
+  const wrongQuestions = student.wrongQuestions ?? 0;
   const totalQuestions = correctQuestions + wrongQuestions;
-  const avgPoints = 88; // out of 100
+  const avgPoints =
+    student.averageRating && student.averageRating > 0
+      ? Math.round(
+          student.averageRating <= 5 ? (student.averageRating / 5) * 100 : student.averageRating,
+        )
+      : exams.length > 0
+        ? Math.round(
+            exams.reduce((acc, curr) => acc + (curr.score ?? curr.successRate ?? 0), 0) /
+              exams.length,
+          )
+        : 0;
 
   const handleDownloadPdf = async () => {
     if (isGeneratingPdf) return;
@@ -265,45 +275,70 @@ export function StudentReportView({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {exams.slice(0, 5).map((exam, idx) => {
-                  const score = 92 - idx * 7;
-                  const isPassed = score >= 60;
-                  return (
-                    <TableRow key={exam.id}>
-                      <TableCell className="font-bold text-xs text-foreground">
-                        {exam.title}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {exam.courseTitle || "-"}
-                      </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        {new Date(exam.createdAt).toLocaleDateString(
-                          locale === "ar" ? "ar-EG" : "en-GB",
-                          { year: "numeric", month: "short", day: "numeric" },
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center text-xs font-mono">1</TableCell>
-                      <TableCell className="text-end">
-                        <div
-                          className="inline-flex items-center gap-1.5 font-bold text-xs"
-                          dir="ltr"
-                        >
-                          <span>{score}%</span>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${
-                              isPassed
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                : "bg-rose-500/10 text-rose-600 border-rose-500/20"
-                            }`}
+                {exams.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      {tDetails("examsTab.empty")}
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  exams.slice(0, 5).map((exam, idx) => {
+                    const score =
+                      typeof exam.score === "number"
+                        ? exam.score
+                        : typeof exam.successRate === "number"
+                          ? exam.successRate
+                          : 92 - idx * 7;
+                    const isPassed =
+                      typeof exam.isPassed === "boolean"
+                        ? exam.isPassed
+                        : score >= (exam.passingPercentage || 60);
+                    return (
+                      <TableRow key={exam.id}>
+                        <TableCell className="font-bold text-xs text-foreground">
+                          {exam.title}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {exam.courseTitle || "-"}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {exam.createdAt
+                            ? new Date(
+                                exam.createdAt.includes("T")
+                                  ? exam.createdAt
+                                  : exam.createdAt.replace(" ", "T"),
+                              ).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                              })
+                            : "-"}
+                        </TableCell>
+                        <TableCell className="text-center text-xs font-mono">
+                          {exam.timesUsed || 1}
+                        </TableCell>
+                        <TableCell className="text-end">
+                          <div
+                            className="inline-flex items-center gap-1.5 font-bold text-xs"
+                            dir="ltr"
                           >
-                            {isPassed ? tDetails("examsTab.passed") : tDetails("examsTab.failed")}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
+                            <span>{score}%</span>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] ${
+                                isPassed
+                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  : "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                              }`}
+                            >
+                              {isPassed ? tDetails("examsTab.passed") : tDetails("examsTab.failed")}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
               </TableBody>
             </Table>
           </div>
@@ -323,8 +358,8 @@ export function StudentReportView({
 
           {/* 1 Column List of Courses with Progress Bar */}
           <div className="space-y-3">
-            {enrolledCoursesList.map((course, idx) => {
-              const progressPct = 80 - idx * 18;
+            {enrolledCoursesList.map((course) => {
+              const progressPct = course.progressPercentage ?? 0;
               return (
                 <div
                   key={course.id}

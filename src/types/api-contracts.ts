@@ -771,7 +771,15 @@ export interface BackendExamAttempt {
   max_score: number;
   percentage?: number | null;
   is_passed?: boolean | null;
+  result_summary?: {
+    questions_count: number;
+    correct_answers_count: number;
+    incorrect_answers_count: number;
+    pending_review_count: number;
+  } | null;
   questions?: BackendExamAttemptQuestion[];
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface ExamAttemptsListResponse {
@@ -805,4 +813,515 @@ export interface ExamComplaintFilterParams {
 export interface ExamComplaintsListResponse {
   complaints: BackendExamComplaint[];
   pagination: ApiPaginationMeta;
+}
+
+// -------------------------------------------------------------
+// Students & Wallet Contracts (Provider Dashboard)
+// -------------------------------------------------------------
+
+export type BackendGender = "male" | "female";
+export type BackendRegistrationType = "center" | "online" | "hybrid" | "external" | string;
+export type BackendStudentStatus = "active" | "suspended";
+
+export interface BackendStudent {
+  id: number;
+  provider_id?: number;
+  first_name: string;
+  father_name?: string | null;
+  family_name: string;
+  additional_name?: string | null;
+  full_name?: string;
+  phone_code?: string | null;
+  phone?: string | null;
+  guardian_phone_code?: string | null;
+  guardian_phone?: string | null;
+  gender: BackendGender;
+  email: string;
+  avatar?: string | null;
+  country_id?: number | null;
+  country?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  governorate_id?: number | null;
+  governorate?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  educational_stage_id?: number | null;
+  educational_stage?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  registration_type: BackendRegistrationType;
+  registration_type_label?: string;
+  status: BackendStudentStatus;
+  status_label?: string;
+  wallet?: {
+    balance: number | string;
+    currency_code?: string | null;
+  } | null;
+  balance?: number | string;
+  enrolled_courses_count?: number;
+  courses_count?: number;
+  average_rating?: number;
+  gpa?: string | null;
+  enrolled_courses?: Array<{
+    id: number;
+    title: Record<string, string>;
+    cover_image?: string | null;
+    progress?: {
+      completed_lessons: number;
+      total_lessons: number;
+      percentage: number;
+    };
+  }>;
+  registered_at?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentFilterParams {
+  search?: string;
+  country_id?: number | string;
+  governorate_id?: number | string;
+  educational_stage_id?: number | string;
+  registration_type?: string;
+  status?: string;
+  sort?: string;
+  per_page?: number;
+  page?: number;
+}
+
+export interface StudentsListResponse {
+  students: BackendStudent[];
+  pagination: ApiPaginationMeta;
+}
+
+export interface BackendStudentOptions {
+  countries: Array<{
+    id: number;
+    name: Record<string, string>;
+  }>;
+  governorates: Array<{
+    id: number;
+    country_id: number;
+    name: Record<string, string>;
+  }>;
+  educational_stages: Array<{
+    id: number;
+    name: Record<string, string>;
+  }>;
+  registration_types: Record<string, string>;
+  statuses: Record<string, string>;
+}
+
+export interface StoreStudentData {
+  first_name: string;
+  father_name?: string;
+  family_name: string;
+  additional_name?: string;
+  phone_code?: string;
+  phone: string;
+  guardian_phone_code?: string;
+  guardian_phone: string;
+  gender: BackendGender;
+  email: string;
+  password?: string;
+  password_confirmation?: string;
+  country_id?: number;
+  governorate_id?: number;
+  educational_stage_id?: number;
+  registration_type: BackendRegistrationType;
+  status: BackendStudentStatus;
+  avatar?: File | null;
+}
+
+export type UpdateStudentData = Partial<StoreStudentData> & {
+  remove_avatar?: boolean;
+};
+
+export interface BackendWalletTransaction {
+  id: number;
+  wallet_id: number;
+  order_id?: number | null;
+  order_number?: string | null;
+  direction: "credit" | "debit";
+  reason: string;
+  reason_label?: string;
+  funding_source?: string | null;
+  amount: number | string;
+  balance_before?: number | string;
+  balance_after?: number | string;
+  performed_by?: {
+    id: number;
+    full_name: string;
+  } | null;
+  notes?: string | null;
+  created_at: string;
+}
+
+export interface AdjustWalletData {
+  direction: "credit" | "debit";
+  amount: number;
+  reason: string;
+  notes?: string;
+  funding_source?: string;
+  idempotency_key: string;
+}
+
+export interface WalletTransactionsResponse {
+  transactions: BackendWalletTransaction[];
+  pagination: ApiPaginationMeta;
+}
+
+// -------------------------------------------------------------
+// Activation Codes Contracts (Provider Dashboard)
+// -------------------------------------------------------------
+
+export type BackendActivationCodeStatus = "available" | "sold" | "used";
+
+export interface BackendActivationCodeGroup {
+  id: number;
+  provider_id: number;
+  course_id: number;
+  course?: {
+    id: number;
+    title: Record<string, string>;
+  } | null;
+  price: number | string;
+  quantity: number;
+  total_codes?: number;
+  available_codes?: number;
+  sold_codes?: number;
+  used_codes?: number;
+  code_prefix?: string | null;
+  prefix?: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface BackendActivationCode {
+  id: number;
+  activation_code_group_id: number;
+  group_id?: number;
+  course_id: number;
+  course?: {
+    id: number;
+    title: Record<string, string>;
+  } | null;
+  code: string;
+  price: number | string;
+  cost?: number | string;
+  status: BackendActivationCodeStatus;
+  status_label?: string;
+  student?: {
+    id: number;
+    full_name: string;
+  } | null;
+  used_at?: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface ActivationCodeGroupsListResponse {
+  groups: BackendActivationCodeGroup[];
+  pagination: ApiPaginationMeta;
+  statistics?: {
+    total_codes: number;
+    available_codes: number;
+    sold_codes: number;
+    used_codes: number;
+  };
+}
+
+export interface ActivationCodesListResponse {
+  codes: BackendActivationCode[];
+  pagination: ApiPaginationMeta;
+}
+
+// -------------------------------------------------------------
+// Billing, Orders & Finance Contracts (Provider Dashboard)
+// -------------------------------------------------------------
+
+export type BackendOrderStatus = "pending" | "paid" | "partially_paid" | "cancelled" | "refunded";
+export type BackendPaymentStatus = "pending" | "approved" | "rejected";
+export type BackendPaymentMethod =
+  | "instapay"
+  | "vodafone_cash"
+  | "bank"
+  | "wallet"
+  | "fawry"
+  | "credit_card"
+  | string;
+
+export interface BackendPaymentAccount {
+  id: number;
+  provider_id: number;
+  type: BackendPaymentMethod;
+  type_label?: string;
+  account_name: Record<string, string>;
+  account_number: string;
+  instructions?: Record<string, string> | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BackendOrderItem {
+  id: number;
+  order_id?: number;
+  course_id: number;
+  course_title: Record<string, string>;
+  instructor_id?: number | null;
+  instructor_name?: string | null;
+  educational_stage_name?: Record<string, string> | null;
+  delivery_mode: string;
+  selected_delivery_mode?: string | null;
+  original_price: number | string;
+  discount_amount?: number | string;
+  final_price: number | string;
+  access_duration_days?: number | null;
+}
+
+export interface BackendOrder {
+  id: number;
+  order_number: string;
+  invoice_number?: string | null;
+  provider_id: number;
+  student_id: number;
+  student?: BackendStudent | null;
+  full_name?: string | null;
+  phone_code?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  status: BackendOrderStatus;
+  status_label?: string;
+  subtotal: number | string;
+  discount_amount: number | string;
+  total_amount: number | string;
+  paid_amount: number | string;
+  remaining_amount: number | string;
+  currency_code?: string | null;
+  items?: BackendOrderItem[];
+  payments?: BackendPayment[];
+  paid_at?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
+export interface BackendPayment {
+  id: number;
+  payment_number: string;
+  order_id: number;
+  provider_id: number;
+  student_id: number;
+  student?: BackendStudent | null;
+  full_name?: string | null;
+  phone_code?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  order?: BackendOrder | null;
+  method: BackendPaymentMethod;
+  method_label?: string;
+  status: BackendPaymentStatus;
+  status_label?: string;
+  amount: number | string;
+  currency_code?: string | null;
+  payment_account_id?: number | null;
+  destination_account?: Record<string, unknown> | null;
+  submitted_phone?: string | null;
+  transaction_reference?: string | null;
+  proof?: {
+    url: string;
+    file_name: string;
+    mime_type: string;
+  } | null;
+  proof_endpoint?: string | null;
+  reviewer?: {
+    id: number;
+    full_name: string;
+  } | null;
+  reviewed_at?: string | null;
+  rejection_reason?: string | null;
+  created_at: string;
+}
+
+export interface BackendFinancePeriodStat {
+  total: string | number;
+  previous_total: string | number;
+  change_percentage: number;
+}
+
+export interface BackendFinanceInstructorSale {
+  instructor_id: number;
+  instructor_name: string;
+  courses_sold: number;
+  orders_count: number;
+  gross_sales: string | number;
+}
+
+export interface BackendFinanceSummary {
+  year: number;
+  total_sales: string | number;
+  paid_orders_count: number;
+  monthly_sales: Record<string | number, string | number>;
+  weekly_sales: Record<string | number, Record<string | number, string | number>>;
+  periods: {
+    today: BackendFinancePeriodStat;
+    this_week: BackendFinancePeriodStat;
+    this_month: BackendFinancePeriodStat;
+  };
+  average_monthly_sales: string | number;
+  highest_month: {
+    month: number | null;
+    total: string | number;
+  };
+  lowest_month: {
+    month: number | null;
+    total: string | number;
+  };
+  instructors: BackendFinanceInstructorSale[];
+}
+
+export interface OrdersListResponse {
+  orders: BackendOrder[];
+  pagination: ApiPaginationMeta;
+}
+
+export interface PaymentsListResponse {
+  payments: BackendPayment[];
+  pagination: ApiPaginationMeta;
+}
+
+// -------------------------------------------------------------
+// Settings & Platform Contracts (Provider Dashboard)
+// -------------------------------------------------------------
+
+export interface BackendEducationalStage {
+  id: number;
+  name: Record<string, string>;
+  desc?: Record<string, string> | null;
+  academic_year?: number | null;
+  is_active: boolean;
+  image?: string | null;
+  students_count?: number;
+  courses_count?: number;
+  created_at?: string;
+}
+
+export interface BackendSubject {
+  id: number;
+  name: Record<string, string>;
+  desc?: Record<string, string> | null;
+  educational_stages?: BackendEducationalStage[];
+  educational_stage_ids?: number[];
+  is_active: boolean;
+  image?: string | null;
+  courses_count?: number;
+  teachers_count?: number;
+  created_at?: string;
+}
+
+export interface BackendTeacher {
+  id: number;
+  provider_id?: number;
+  full_name: string;
+  email: string;
+  phone_code?: string | null;
+  phone?: string | null;
+  is_active: boolean;
+  avatar?: string | null;
+  avatar_url?: string | null;
+  educational_stage_ids?: number[];
+  subject_ids?: number[];
+  educational_stages?: Array<{
+    id: number;
+    name: Record<string, string>;
+    is_active?: boolean;
+  }>;
+  subjects?: Array<{
+    id: number;
+    name: Record<string, string>;
+    is_active?: boolean;
+  }>;
+  courses_count?: number;
+  exams_count?: number;
+  lessons_count?: number;
+  questions_count?: number;
+  created_at?: string;
+}
+
+export interface BackendAdmin {
+  id: number;
+  provider_id?: number | null;
+  full_name: string;
+  national_id?: string | null;
+  email: string;
+  phone_code?: string | null;
+  phone?: string | null;
+  user_type?: "center" | "teacher" | "assistant" | "group" | string;
+  teachers_limit?: number | null;
+  flag?: string | null;
+  avatar_url?: string | null;
+  is_active: boolean;
+  locale?: string;
+  supported_locales?: string[];
+  is_multilingual?: boolean;
+  allow_notification?: boolean;
+  allow_dark_mode?: boolean;
+  roles?: Array<{
+    id: number;
+    name: string;
+    display_name?: string;
+  }>;
+  permissions?: string[];
+  created_at?: string;
+}
+
+export type BackendProviderProfile = BackendAdmin;
+
+export interface UpdateProviderProfilePayload {
+  full_name: string;
+  email: string;
+  phone_code?: string | null;
+  phone?: string | null;
+  flag?: File | string | null;
+  remove_flag?: boolean;
+}
+
+export interface UpdateProviderPasswordPayload {
+  current_password: string;
+  password: string;
+  password_confirmation: string;
+}
+
+export interface BackendAnnouncement {
+  id: number;
+  title: Record<string, string>;
+  details: Record<string, string>;
+  description?: Record<string, string>;
+  image?: string | null;
+  link?: string | null;
+  url?: string | null;
+  is_active: boolean;
+  active?: boolean;
+  created_at: string;
+}
+
+export interface BackendPlatformSettings {
+  support_phone_code?: string | null;
+  support_phone?: string | null;
+  whatsapp_phone_code?: string | null;
+  whatsapp_phone?: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
+  tiktok_url?: string | null;
+  additional_links?: Array<{
+    id: string;
+    title: Record<string, string>;
+    url: string;
+  }>;
+  about?: Record<string, string> | null;
+  terms?: Record<string, string> | null;
+  supported_locales?: string[];
 }

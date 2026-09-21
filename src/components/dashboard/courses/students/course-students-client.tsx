@@ -304,11 +304,11 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
           <Button
             variant="outline"
             onClick={handleResetData}
-            title={tGlobalStudents("resetData")}
+            title={tGlobalStudents("refreshData")}
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="size-4" />
-            <span className="hidden md:inline">{tGlobalStudents("resetData")}</span>
+            <span className="hidden md:inline">{tGlobalStudents("refreshData")}</span>
           </Button>
 
           <Button asChild className="gap-2 shadow-xs font-semibold">

@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -45,18 +44,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-
-import { getStoredCourses } from "@/lib/courses-storage";
-import { getStoredExams } from "@/lib/exams-storage";
+import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
 import {
-  deleteStoredStudent,
-  getStoredStudents,
-  resetStoredStudents,
-  updateStoredStudent,
-} from "@/lib/students-storage";
-import { Course } from "@/types/course";
-import { Exam } from "@/types/exam";
+  useAdjustStudentWallet,
+  useDeleteStudent,
+  useStudentOptions,
+  useStudentsList,
+  useUpdateStudentStatus,
+} from "@/hooks/use-students";
 import { RegistrationType, Student, TransactionType } from "@/types/student";
+import { toast } from "sonner";
 import { ContentPagination } from "../common/content-pagination";
 import { BalanceTransactionDialog } from "./balance-transaction-dialog";
 import { DeleteStudentDialog } from "./delete-student-dialog";
@@ -127,47 +124,69 @@ export function ManageStudentsClient() {
     [searchParams, pathname, router],
   );
 
-  const [students, setStudents] = React.useState<Student[]>([]);
-  const [courses, setCourses] = React.useState<Course[]>([]);
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // Queries and Mutations
+  const { data: optionsData, refetch: refetchOptions } = useStudentOptions();
+
+  const educationalStagesList = React.useMemo(() => {
+    if (!optionsData?.educational_stages) return undefined;
+    return optionsData.educational_stages.map((s) => ({
+      id: String(s.id),
+      name: s.name[locale] || s.name.ar || s.name.en || "",
+    }));
+  }, [optionsData, locale]);
+
+  const selectedStageId = React.useMemo(() => {
+    if (selectedGrade === "all") return undefined;
+    const matched = optionsData?.educational_stages?.find(
+      (s) =>
+        String(s.id) === selectedGrade ||
+        (s.name[locale] || s.name.ar || s.name.en) === selectedGrade,
+    );
+    return matched ? matched.id : Number(selectedGrade) || undefined;
+  }, [selectedGrade, optionsData, locale]);
+
+  const {
+    data: studentsData,
+    isLoading,
+    isRefetching,
+    refetch: refetchStudents,
+  } = useStudentsList({
+    search: searchQuery || undefined,
+    country_id: selectedCountry !== "all" ? selectedCountry : undefined,
+    governorate_id: selectedState !== "all" ? selectedState : undefined,
+    educational_stage_id: selectedStageId,
+    registration_type: selectedRegType !== "all" ? selectedRegType : undefined,
+    per_page: itemsPerPage,
+    page: currentPage,
+  });
+
+  const updateStatusMutation = useUpdateStudentStatus();
+  const deleteStudentMutation = useDeleteStudent();
+  const adjustWalletMutation = useAdjustStudentWallet();
+
+  const students: Student[] = React.useMemo(() => {
+    if (!studentsData?.students) return [];
+    return studentsData.students.map((s) => adaptBackendStudentToUI(s, locale));
+  }, [studentsData, locale]);
 
   // Dialog & Modal States
   const [deletingStudent, setDeletingStudent] = React.useState<Student | null>(null);
   const [balanceStudent, setBalanceStudent] = React.useState<Student | null>(null);
   const [reportStudent, setReportStudent] = React.useState<Student | null>(null);
 
-  React.useEffect(() => {
-    setStudents(getStoredStudents(locale));
-    setCourses(getStoredCourses(locale));
-    setExams(getStoredExams(locale));
-    setIsLoading(false);
-
-    const handleUpdate = () => {
-      setStudents(getStoredStudents(locale));
-      setCourses(getStoredCourses(locale));
-      setExams(getStoredExams(locale));
-    };
-
-    window.addEventListener("rewaa_students_updated", handleUpdate);
-    window.addEventListener("rewaa_courses_updated", handleUpdate);
-    window.addEventListener("rewaa_exams_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_students_updated", handleUpdate);
-      window.removeEventListener("rewaa_courses_updated", handleUpdate);
-      window.removeEventListener("rewaa_exams_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale]);
-
-  const availableCountries = React.useMemo(() => {
+  const availableCountries: string[] = React.useMemo(() => {
+    if (optionsData?.countries) {
+      return optionsData.countries.map((c) => c.name[locale] || c.name.ar || c.name.en || "");
+    }
     const set = new Set<string>();
     students.forEach((s) => s.country && set.add(s.country));
     return Array.from(set);
-  }, [students]);
+  }, [optionsData, students, locale]);
 
-  const availableStates = React.useMemo(() => {
+  const availableStates: string[] = React.useMemo(() => {
+    if (optionsData?.governorates) {
+      return optionsData.governorates.map((g) => g.name[locale] || g.name.ar || g.name.en || "");
+    }
     const set = new Set<string>();
     students.forEach((s) => {
       if (selectedCountry === "all" || s.country === selectedCountry) {
@@ -175,7 +194,7 @@ export function ManageStudentsClient() {
       }
     });
     return Array.from(set);
-  }, [students, selectedCountry]);
+  }, [optionsData, students, selectedCountry, locale]);
 
   // Safe Grade Formatter
   const formatGrade = React.useCallback(
@@ -283,12 +302,10 @@ export function ManageStudentsClient() {
   }, [filteredStudents, sortBy, locale]);
 
   // Pagination Logic
-  const totalItems = sortedStudents.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedStudents = React.useMemo(() => {
-    return sortedStudents.slice(startIndex, startIndex + itemsPerPage);
-  }, [sortedStudents, startIndex, itemsPerPage]);
+  const totalItems = studentsData?.pagination?.total ?? sortedStudents.length;
+  const totalPages =
+    studentsData?.pagination?.last_page ?? (Math.ceil(totalItems / itemsPerPage) || 1);
+  const paginatedStudents = sortedStudents;
 
   const isFilterActive =
     searchQuery.trim() !== "" ||
@@ -312,45 +329,122 @@ export function ManageStudentsClient() {
 
   const handleSuspendToggle = (student: Student) => {
     const newStatus = student.status === "suspended" ? "active" : "suspended";
-    updateStoredStudent(locale, student.id, { status: newStatus });
-    setStudents((prev) => prev.map((s) => (s.id === student.id ? { ...s, status: newStatus } : s)));
+    updateStatusMutation.mutate(
+      {
+        studentId: student.id,
+        status: newStatus,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            newStatus === "suspended"
+              ? locale === "ar"
+                ? "تم تجميد حساب الطالب"
+                : "Student suspended successfully"
+              : locale === "ar"
+                ? "تم تنشيط حساب الطالب"
+                : "Student activated successfully",
+          );
+        },
+        onError: (err: unknown) => {
+          const message =
+            (err as { apiMessage?: string })?.apiMessage ||
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            (err as { message?: string })?.message ||
+            (locale === "ar"
+              ? "حدث خطأ أثناء تعديل حالة الطالب"
+              : "Failed to update student status");
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleBalanceSubmit = ({
     type,
     amount,
+    notes,
   }: {
     type: TransactionType;
     amount: number;
     notes?: string;
   }) => {
     if (!balanceStudent) return;
-    const current = balanceStudent.balance ?? 0;
-    let newBalance = current;
+    const direction = type === "withdraw" ? "debit" : "credit";
+    const reason = type === "deposit" ? "admin_top_up" : "adjustment";
+    const fundingSource = type === "deposit" ? "cash" : undefined;
+    const idempotencyKey =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+          });
 
-    if (type === "deposit" || type === "refund") {
-      newBalance = current + amount;
-    } else if (type === "withdraw") {
-      newBalance = Math.max(0, current - amount);
-    } else if (type === "adjustment") {
-      newBalance = amount;
-    }
-
-    const updated = updateStoredStudent(locale, balanceStudent.id, { balance: newBalance });
-    if (updated) {
-      setStudents((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
-    }
+    adjustWalletMutation.mutate(
+      {
+        studentId: balanceStudent.id,
+        data: {
+          direction,
+          amount,
+          reason,
+          funding_source: fundingSource,
+          notes,
+          idempotency_key: idempotencyKey,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            locale === "ar" ? "تم تعديل رصيد الطالب بنجاح" : "Student balance updated successfully",
+          );
+          setBalanceStudent(null);
+        },
+        onError: (err: unknown) => {
+          const validationErrors =
+            (err as { validationErrors?: unknown })?.validationErrors ||
+            (err as { response?: { data?: { errors?: unknown } } })?.response?.data?.errors;
+          if (validationErrors) {
+            const firstError = Object.values(validationErrors).flat()[0] as string;
+            if (firstError) {
+              toast.error(firstError);
+              return;
+            }
+          }
+          const message =
+            (err as { apiMessage?: string })?.apiMessage ||
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            (err as { message?: string })?.message ||
+            (locale === "ar"
+              ? "حدث خطأ أثناء تعديل الرصيد"
+              : "An error occurred while updating balance");
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleDeleteConfirm = () => {
     if (!deletingStudent) return;
-    deleteStoredStudent(locale, deletingStudent.id);
-    setDeletingStudent(null);
+    deleteStudentMutation.mutate(deletingStudent.id, {
+      onSuccess: () => {
+        toast.success(locale === "ar" ? "تم حذف الطالب بنجاح" : "Student deleted successfully");
+        setDeletingStudent(null);
+      },
+      onError: (err: unknown) => {
+        const message =
+          (err as { apiMessage?: string })?.apiMessage ||
+          (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+          (err as { message?: string })?.message ||
+          (locale === "ar" ? "حدث خطأ أثناء حذف الطالب" : "Failed to delete student");
+        toast.error(message);
+      },
+    });
   };
 
-  const handleResetData = () => {
-    const fresh = resetStoredStudents(locale);
-    setStudents(fresh);
+  const handleRefresh = () => {
+    refetchStudents();
+    refetchOptions();
   };
 
   const sortOptions = [
@@ -383,11 +477,12 @@ export function ManageStudentsClient() {
           <Button
             variant="outline"
             size="default"
-            onClick={handleResetData}
+            onClick={handleRefresh}
+            disabled={isRefetching}
             className="gap-2 shadow-xs font-semibold"
           >
-            <RotateCcw className="h-4 w-4" />
-            <span>{t("resetData")}</span>
+            <RotateCcw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
+            <span>{t("refreshData")}</span>
           </Button>
 
           <Button asChild size="default" className="gap-2 shadow-xs font-semibold">
@@ -454,6 +549,7 @@ export function ManageStudentsClient() {
             placeholder={t("allGrades")}
             showAllOption
             allOptionLabel={t("allGrades")}
+            grades={educationalStagesList}
             triggerClassName="bg-background h-9 text-xs w-full"
             className="w-full"
           />
@@ -795,11 +891,11 @@ export function ManageStudentsClient() {
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalItems}
-              startIndex={startIndex}
+              startIndex={(currentPage - 1) * itemsPerPage}
               itemsPerPage={itemsPerPage}
               showingText={t("showing", {
-                start: Math.min(startIndex + 1, totalItems),
-                end: Math.min(startIndex + itemsPerPage, totalItems),
+                start: Math.min((currentPage - 1) * itemsPerPage + 1, totalItems),
+                end: Math.min((currentPage - 1) * itemsPerPage + itemsPerPage, totalItems),
                 total: totalItems,
               })}
               onPageChange={(page) => updateUrlParams({ page })}
@@ -814,6 +910,7 @@ export function ManageStudentsClient() {
           studentName={[balanceStudent.firstName, balanceStudent.lastName]
             .filter(Boolean)
             .join(" ")}
+          studentId={balanceStudent.id}
           currentBalance={balanceStudent.balance ?? 0}
           isOpen={!!balanceStudent}
           onClose={() => setBalanceStudent(null)}
@@ -825,8 +922,6 @@ export function ManageStudentsClient() {
       {reportStudent && (
         <StudentReportModal
           student={reportStudent}
-          courses={courses}
-          exams={exams}
           isOpen={!!reportStudent}
           onClose={() => setReportStudent(null)}
           formatGrade={formatGrade}

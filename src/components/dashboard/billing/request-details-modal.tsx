@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { PhoneLink } from "@/components/ui/phone-link";
-import { BillingRequestItem } from "@/types/billing-request";
+import type { BackendPayment } from "@/types/api-contracts";
 import {
   AlertCircle,
   BookOpen,
@@ -25,25 +25,26 @@ import {
   User,
   XCircle,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import React from "react";
 
 interface RequestDetailsModalProps {
-  request: BillingRequestItem | null;
+  payment: BackendPayment | null;
   isOpen: boolean;
   onClose: () => void;
-  onAccept: (id: string) => void;
-  onReject: (id: string, reason: string) => void;
+  onAccept: (id: string | number) => void;
+  onReject: (id: string | number, reason: string) => void;
 }
 
 export function RequestDetailsModal({
-  request,
+  payment,
   isOpen,
   onClose,
   onAccept,
   onReject,
 }: RequestDetailsModalProps) {
+  const locale = useLocale();
   const t = useTranslations("billingRequestsPage.modal");
   const tStatus = useTranslations("billingRequestsPage.status");
   const tDetails = useTranslations("studentsPage.details");
@@ -60,23 +61,91 @@ export function RequestDetailsModal({
     }
   }, [isOpen]);
 
-  if (!request) return null;
+  if (!payment) return null;
 
   const handleConfirmReject = () => {
     if (!rejectionReason.trim()) {
       setRejectionError(true);
       return;
     }
-    onReject(request.id, rejectionReason.trim());
+    onReject(payment.id, rejectionReason.trim());
     onClose();
   };
 
   const statusBadgeVariant =
-    request.status === "pending"
+    payment.status === "pending"
       ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-      : request.status === "accepted"
+      : payment.status === "approved"
         ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
         : "bg-red-500/10 text-red-600 border-red-500/20";
+
+  const studentName =
+    payment.full_name ||
+    payment.student?.full_name ||
+    [payment.student?.first_name, payment.student?.father_name, payment.student?.family_name]
+      .filter(Boolean)
+      .join(" ") ||
+    "-";
+
+  const studentPhone = payment.submitted_phone || payment.phone || payment.student?.phone || "-";
+
+  const studentEmail = payment.email || payment.student?.email;
+
+  const orderItems = payment.order?.items || [];
+  const primaryItem = orderItems[0];
+  const courseTitle =
+    primaryItem?.course_title?.[locale] ||
+    primaryItem?.course_title?.ar ||
+    primaryItem?.course_title?.en ||
+    "-";
+
+  const stageName =
+    primaryItem?.educational_stage_name?.[locale] ||
+    primaryItem?.educational_stage_name?.ar ||
+    primaryItem?.educational_stage_name?.en ||
+    payment.student?.educational_stage?.name?.[locale] ||
+    payment.student?.educational_stage?.name?.ar ||
+    "-";
+
+  const deliveryMode =
+    primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
+
+  const formatDeliveryMode = (mode: string) => {
+    if (mode === "center" || mode === "onsite") return locale === "ar" ? "سنتر" : "Center / Onsite";
+    if (mode === "online") return locale === "ar" ? "أونلاين" : "Online";
+    if (mode === "hybrid") return locale === "ar" ? "مدمج" : "Hybrid";
+    return mode;
+  };
+
+  const proofUrl = payment.proof?.url || (payment.proof_endpoint ? payment.proof_endpoint : null);
+
+  const formatPaymentMethod = (method?: string) => {
+    if (!method) return locale === "ar" ? "أخرى" : "Other";
+    const m = method.toLowerCase();
+    if (m.includes("insta")) return locale === "ar" ? "إنستاباي / InstaPay" : "InstaPay";
+    if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
+      return locale === "ar" ? "فودافون كاش / Vodafone Cash" : "Vodafone Cash";
+    if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
+      return locale === "ar" ? "بطاقة ائتمان / Credit Card" : "Credit Card";
+    if (m.includes("fawry")) return locale === "ar" ? "فوري / Fawry" : "Fawry";
+    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي / Manual" : "Manual Transfer";
+    return method;
+  };
+
+  const formattedDate = payment.created_at
+    ? new Date(payment.created_at).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "-";
+
+  const formattedTime = payment.created_at
+    ? new Date(payment.created_at).toLocaleTimeString(locale === "ar" ? "ar-EG" : "en-US", {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "-";
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -90,11 +159,16 @@ export function RequestDetailsModal({
                 variant="outline"
                 className={`capitalize font-mono text-xs ${statusBadgeVariant}`}
               >
-                {tStatus(request.status)}
+                {tStatus(
+                  payment.status === "approved"
+                    ? "accepted"
+                    : (payment.status as "pending" | "rejected" | "accepted"),
+                )}
               </Badge>
             </div>
             <DialogDescription className="text-xs font-mono text-muted-foreground" dir="ltr">
-              ID: #{request.id}
+              Payment #: {payment.payment_number || payment.id} | Order #:{" "}
+              {payment.order?.order_number || payment.order_id}
             </DialogDescription>
           </div>
         </DialogHeader>
@@ -112,22 +186,22 @@ export function RequestDetailsModal({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("fullName")}</span>
-                  <span className="font-semibold text-foreground">{request.studentFullName}</span>
+                  <span className="font-semibold text-foreground">{studentName}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("phone")}</span>
                   <PhoneLink
-                    phone={request.studentPhoneNumber}
+                    phone={studentPhone}
                     className="font-medium text-foreground hover:text-emerald-600"
                   >
-                    {request.studentPhoneNumber}
+                    {studentPhone}
                   </PhoneLink>
                 </div>
-                {request.studentEmail && (
+                {studentEmail && (
                   <div className="flex justify-between items-center">
                     <span className="text-muted-foreground text-xs">{t("email")}</span>
                     <span className="font-medium text-foreground dir-ltr" dir="ltr">
-                      {request.studentEmail}
+                      {studentEmail}
                     </span>
                   </div>
                 )}
@@ -143,14 +217,40 @@ export function RequestDetailsModal({
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("courseName")}</span>
-                  <span className="font-semibold text-foreground max-w-50 text-end">
-                    {request.courseName}
+                  <span className="font-semibold text-foreground max-w-60 text-end">
+                    {courseTitle}
                   </span>
+                </div>
+                {primaryItem?.instructor_name && (
+                  <div className="flex justify-between items-center border-b border-border/40 pb-2">
+                    <span className="text-muted-foreground text-xs">
+                      {locale === "ar" ? "المحاضر" : "Instructor"}
+                    </span>
+                    <span className="font-medium text-foreground">
+                      {primaryItem.instructor_name}
+                    </span>
+                  </div>
+                )}
+                {stageName && (
+                  <div className="flex justify-between items-center border-b border-border/40 pb-2">
+                    <span className="text-muted-foreground text-xs">
+                      {locale === "ar" ? "المرحلة التعليمية" : "Stage"}
+                    </span>
+                    <span className="font-medium text-foreground">{stageName}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center border-b border-border/40 pb-2">
+                  <span className="text-muted-foreground text-xs">
+                    {locale === "ar" ? "نوع الحضور" : "Venue / Mode"}
+                  </span>
+                  <Badge variant="outline" className="text-xs">
+                    {formatDeliveryMode(deliveryMode)}
+                  </Badge>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-xs">{t("amountRequired")}</span>
                   <span className="font-bold text-primary text-base">
-                    {request.amount} {tDetails("currency")}
+                    {payment.amount} {payment.currency_code || tDetails("currency")}
                   </span>
                 </div>
               </div>
@@ -166,48 +266,52 @@ export function RequestDetailsModal({
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("paymentMethod")}</span>
                   <Badge variant="secondary" className="text-xs font-medium">
-                    {request.paymentMethod === "vodafoneCash"
-                      ? "فودافون كاش / Vodafone Cash"
-                      : request.paymentMethod === "creditCard"
-                        ? "بطاقة ائتمان / Credit Card"
-                        : request.paymentMethod === "fawry"
-                          ? "فوري / Fawry"
-                          : request.paymentMethod === "instaPay"
-                            ? "إنستاباي / InstaPay"
-                            : "أخرى / Other"}
+                    {formatPaymentMethod(payment.method)}
                   </Badge>
                 </div>
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("date")}</span>
-                  <span className="font-medium text-foreground">{request.createdAt}</span>
+                  <span className="font-medium text-foreground">{formattedDate}</span>
                 </div>
                 <div className="flex justify-between items-center border-b border-border/40 pb-2">
                   <span className="text-muted-foreground text-xs">{t("time")}</span>
                   <span className="font-medium text-foreground" dir="ltr">
-                    {request.transactionTime}
+                    {formattedTime}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-muted-foreground text-xs">{t("phoneUsed")}</span>
-                  <PhoneLink
-                    phone={request.phoneUsedForTransaction}
-                    className="font-semibold text-foreground hover:text-emerald-600"
-                  >
-                    {request.phoneUsedForTransaction}
-                  </PhoneLink>
-                </div>
+                {payment.submitted_phone && (
+                  <div className="flex justify-between items-center border-b border-border/40 pb-2">
+                    <span className="text-muted-foreground text-xs">{t("phoneUsed")}</span>
+                    <PhoneLink
+                      phone={payment.submitted_phone}
+                      className="font-semibold text-foreground hover:text-emerald-600"
+                    >
+                      {payment.submitted_phone}
+                    </PhoneLink>
+                  </div>
+                )}
+                {payment.transaction_reference && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted-foreground text-xs">
+                      {locale === "ar" ? "مرجع العملية" : "Transaction Ref"}
+                    </span>
+                    <span className="font-mono text-xs text-foreground" dir="ltr">
+                      {payment.transaction_reference}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* If already rejected, display stored rejection reason */}
-            {request.status === "rejected" && request.rejectionReason && (
+            {payment.status === "rejected" && payment.rejection_reason && (
               <div className="rounded-xl border border-red-500/30 p-4 bg-red-500/5 space-y-2">
                 <h3 className="text-xs font-bold text-red-600 flex items-center gap-2">
                   <AlertCircle className="size-4" />
                   {t("rejectionReasonTitle")}
                 </h3>
                 <p className="text-xs text-foreground bg-background/50 p-2.5 rounded-lg border border-red-500/20">
-                  {request.rejectionReason}
+                  {payment.rejection_reason}
                 </p>
               </div>
             )}
@@ -217,7 +321,7 @@ export function RequestDetailsModal({
           <div className="space-y-4 flex flex-col">
             <div className="rounded-xl border border-border/70 p-4 bg-muted/20 flex-1 flex flex-col">
               <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2 mb-3">
-                {request.proofType === "receipt" ? (
+                {payment.proof?.mime_type?.includes("pdf") ? (
                   <Receipt className="size-4 text-primary" />
                 ) : (
                   <ImageIcon className="size-4 text-primary" />
@@ -227,25 +331,39 @@ export function RequestDetailsModal({
               <p className="text-xs text-muted-foreground mb-3">{t("screenshotNote")}</p>
 
               <div className="relative flex-1 min-h-65 rounded-lg overflow-hidden border border-border/80 bg-background flex items-center justify-center group">
-                <Image
-                  src={request.proofUrl}
-                  fill
-                  alt={t("transactionProof")}
-                  className="w-full h-full object-contain max-h-87.5 transition-transform duration-300 group-hover:scale-105"
-                />
-                <div className="absolute top-2 inset-e-2 z-10 opacity-90 transition-opacity hover:opacity-100">
-                  <Button
-                    asChild
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 px-2.5 bg-background/80 hover:bg-background backdrop-blur-md border border-border/80 text-xs font-semibold shadow-xs"
-                  >
-                    <a href={request.proofUrl} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="size-3.5 me-1.5" />
-                      {t("openFullScreen")}
-                    </a>
-                  </Button>
-                </div>
+                {proofUrl ? (
+                  <>
+                    <Image
+                      src={proofUrl}
+                      fill
+                      alt={t("transactionProof")}
+                      className="w-full h-full object-contain max-h-87.5 transition-transform duration-300 group-hover:scale-105"
+                      unoptimized
+                    />
+                    <div className="absolute top-2 inset-e-2 z-10 opacity-90 transition-opacity hover:opacity-100">
+                      <Button
+                        asChild
+                        variant="secondary"
+                        size="sm"
+                        className="h-8 px-2.5 bg-background/80 hover:bg-background backdrop-blur-md border border-border/80 text-xs font-semibold shadow-xs"
+                      >
+                        <a href={proofUrl} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="size-3.5 me-1.5" />
+                          {t("openFullScreen")}
+                        </a>
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-muted-foreground p-6 text-center space-y-2">
+                    <Receipt className="size-10 text-muted-foreground/40" />
+                    <span className="text-xs">
+                      {locale === "ar"
+                        ? "لا يوجد إشعار تحويل مرفق"
+                        : "No transfer receipt uploaded"}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -296,7 +414,7 @@ export function RequestDetailsModal({
             {t("actions.close")}
           </Button>
 
-          {request.status === "pending" && !isRejecting && (
+          {payment.status === "pending" && !isRejecting && (
             <div className="flex items-center gap-3">
               <Button
                 variant="destructive"
@@ -308,7 +426,7 @@ export function RequestDetailsModal({
               </Button>
               <Button
                 onClick={() => {
-                  onAccept(request.id);
+                  onAccept(payment.id);
                   onClose();
                 }}
                 className="font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -319,10 +437,10 @@ export function RequestDetailsModal({
             </div>
           )}
 
-          {request.status === "accepted" && (
+          {payment.status === "approved" && (
             <Button
               onClick={() => {
-                onAccept(request.id);
+                onAccept(payment.id);
                 onClose();
               }}
               className="font-bold bg-primary hover:bg-primary/90 text-white"

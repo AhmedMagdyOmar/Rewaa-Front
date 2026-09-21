@@ -41,8 +41,12 @@ export const queryKeys = {
         [...queryKeys.provider.exams.all(), "list", filters ?? {}] as const,
       detail: (id: number | string) => [...queryKeys.provider.exams.all(), "detail", id] as const,
       options: () => [...queryKeys.provider.exams.all(), "options"] as const,
-      attempts: (examId?: number | string) =>
-        [...queryKeys.provider.exams.all(), "attempts", { examId }] as const,
+      attempts: (filters?: Record<string, unknown> | number | string) =>
+        [
+          ...queryKeys.provider.exams.all(),
+          "attempts",
+          typeof filters === "object" ? (filters ?? {}) : { examId: filters },
+        ] as const,
       complaints: (examId?: number | string, filters?: Record<string, unknown>) =>
         [...queryKeys.provider.exams.detail(examId || ""), "complaints", filters ?? {}] as const,
     },
@@ -62,11 +66,12 @@ export const queryKeys = {
         [...queryKeys.provider.students.all(), "list", filters ?? {}] as const,
       detail: (id: number | string) =>
         [...queryKeys.provider.students.all(), "detail", id] as const,
-      options: () => [...queryKeys.provider.students.all(), "options"] as const,
+      options: (countryId?: number | string) =>
+        [...queryKeys.provider.students.all(), "options", { countryId }] as const,
       wallet: (id: number | string) =>
         [...queryKeys.provider.students.detail(id), "wallet"] as const,
-      transactions: (id: number | string) =>
-        [...queryKeys.provider.students.detail(id), "transactions"] as const,
+      transactions: (id: number | string, filters?: Record<string, unknown>) =>
+        [...queryKeys.provider.students.detail(id), "transactions", filters ?? {}] as const,
     },
 
     // Activation Codes

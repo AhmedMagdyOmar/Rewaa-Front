@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { GraduationCap, Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { GraduationCap, Plus, Pencil, Trash2, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -20,30 +21,34 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { GradeItem } from "@/types/settings";
-import { getStoredGrades, saveGrade, deleteGrade, resetGrades } from "@/lib/settings-storage";
+import type { GradeItem } from "@/types/settings";
+import { adaptBackendStageToGradeItem } from "@/lib/adapters/settings-adapter";
+import {
+  useCreateStage,
+  useDeleteStage,
+  useStagesList,
+  useUpdateStage,
+} from "@/hooks/use-settings";
+import { toast } from "sonner";
 import { GradeDialog } from "./grade-dialog";
 
-export function GradesSection() {
+export function GradesSection({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const t = useTranslations("settings.grades");
 
-  const [grades, setGrades] = useState<GradeItem[]>([]);
+  const { data: backendStages, isLoading, refetch } = useStagesList();
+  const createStageMutation = useCreateStage();
+  const updateStageMutation = useUpdateStage();
+  const deleteStageMutation = useDeleteStage();
+
+  const grades: GradeItem[] = (backendStages || []).map((s) => adaptBackendStageToGradeItem(s));
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [gradeToEdit, setGradeToEdit] = useState<GradeItem | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [gradeToDelete, setGradeToDelete] = useState<GradeItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const handleLoad = () => setGrades(getStoredGrades());
-    handleLoad();
-    window.addEventListener("rewaa_grades_updated", handleLoad);
-    return () => window.removeEventListener("rewaa_grades_updated", handleLoad);
-  }, []);
-
-  const handleReset = () => {
-    resetGrades();
-  };
 
   const handleOpenAdd = () => {
     setGradeToEdit(null);
@@ -60,16 +65,43 @@ export function GradesSection() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (gradeToDelete) {
-      deleteGrade(gradeToDelete.id);
-      setGradeToDelete(null);
-      setDeleteDialogOpen(false);
+      try {
+        await deleteStageMutation.mutateAsync(gradeToDelete.id);
+        toast.success(t("deleteDialog.title"));
+        setGradeToDelete(null);
+        setDeleteDialogOpen(false);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to delete stage";
+        toast.error(errorMsg);
+      }
     }
   };
 
-  const handleSave = (data: { id?: string; name: string; year: number }) => {
-    saveGrade(data);
+  const handleSave = async (data: { id?: string; name: string; year: number }) => {
+    try {
+      if (data.id) {
+        await updateStageMutation.mutateAsync({
+          stageId: data.id,
+          data: {
+            name: { ar: data.name, en: data.name },
+            academic_year: data.year,
+          },
+        });
+      } else {
+        await createStageMutation.mutateAsync({
+          name: { ar: data.name, en: data.name },
+          academic_year: data.year,
+          is_active: true,
+        });
+      }
+      toast.success(t("title"));
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to save stage";
+      toast.error(errorMsg);
+    }
   };
 
   return (
@@ -86,14 +118,22 @@ export function GradesSection() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
-            <RotateCcw className="size-3.5" />
-            <span>{t("resetGrades")}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={mounted && isLoading}
+            className="gap-1.5"
+          >
+            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{t("refreshGrades")}</span>
           </Button>
-          <Button onClick={handleOpenAdd} size="sm" className="gap-1.5">
-            <Plus className="size-4" />
-            <span>{t("addGrade")}</span>
-          </Button>
+          {!isReadOnly && (
+            <Button onClick={handleOpenAdd} size="sm" className="gap-1.5">
+              <Plus className="size-4" />
+              <span>{t("addGrade")}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -110,7 +150,16 @@ export function GradesSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {grades.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <span className="text-xs">{t("loading")}</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : grades.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} className="h-28 text-center text-muted-foreground">
                   {t("noGrades")}
@@ -124,24 +173,26 @@ export function GradesSection() {
                   <TableCell className="text-xs font-mono">{grade.coursesCount}</TableCell>
                   <TableCell className="text-xs font-mono">{grade.teachersCount}</TableCell>
                   <TableCell className="text-end">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 rounded-md text-muted-foreground hover:text-foreground"
-                        onClick={() => handleOpenEdit(grade)}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleOpenDelete(grade)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
+                    {!isReadOnly && (
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+                          onClick={() => handleOpenEdit(grade)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleOpenDelete(grade)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -171,7 +222,11 @@ export function GradesSection() {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               {t("deleteDialog.cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteStageMutation.isPending}
+            >
               {t("deleteDialog.confirm")}
             </Button>
           </DialogFooter>

@@ -3,6 +3,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Upload, X, User } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -43,7 +44,7 @@ export function ImageUploadField({
   hint,
   changePrompt,
   placeholderIcon,
-  previewAlt = "Image preview",
+  previewAlt,
   previewHeightClassName,
   previewWidthClassName,
   className,
@@ -51,6 +52,8 @@ export function ImageUploadField({
   disabled = false,
   required = false,
 }: ImageUploadFieldProps) {
+  const t = useTranslations("common.imageUpload");
+  const effectiveAlt = previewAlt || t("previewAlt");
   const inputId = React.useId();
   const actualId = id || inputId;
 
@@ -105,7 +108,7 @@ export function ImageUploadField({
               >
                 <Image
                   src={value}
-                  alt={previewAlt}
+                  alt={effectiveAlt}
                   fill
                   className="object-cover"
                   unoptimized
@@ -130,7 +133,7 @@ export function ImageUploadField({
               >
                 <Image
                   src={value}
-                  alt={previewAlt}
+                  alt={effectiveAlt}
                   fill
                   className="object-cover"
                   unoptimized
@@ -142,7 +145,7 @@ export function ImageUploadField({
             <div className="flex items-center gap-2 pt-1">
               <span className="text-xs font-semibold text-primary flex items-center gap-1.5 pointer-events-none">
                 <Upload className="size-3.5" />
-                <span>{changePrompt || "Change Image"}</span>
+                <span>{changePrompt || t("changeImage")}</span>
               </span>
 
               {onClear && (
@@ -156,7 +159,7 @@ export function ImageUploadField({
                     onClear();
                   }}
                   className="relative z-10 size-6 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                  title="Remove image"
+                  title={t("removeImage")}
                 >
                   <X className="size-3.5" />
                 </Button>
@@ -183,9 +186,7 @@ export function ImageUploadField({
             </div>
 
             <div className="space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                {prompt || "Click or drag image to upload"}
-              </p>
+              <p className="text-sm font-medium text-foreground">{prompt || t("clickOrDrag")}</p>
               {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
             </div>
           </div>

@@ -31,6 +31,7 @@ interface AnnouncementDialogProps {
     title: string;
     description: string;
     coverImage?: string;
+    coverImageFile?: File;
     url?: string;
     active?: boolean;
   }) => void;
@@ -49,6 +50,7 @@ export function AnnouncementDialog({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [coverImage, setCoverImage] = useState("");
+  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [url, setUrl] = useState("");
   const [error, setError] = useState("");
 
@@ -65,6 +67,7 @@ export function AnnouncementDialog({
       setTitle(announcementToEdit?.title || "");
       setDescription(announcementToEdit?.description || "");
       setCoverImage(announcementToEdit?.coverImage || "");
+      setCoverImageFile(null);
       setUrl(announcementToEdit?.url || "");
       setError("");
     }
@@ -88,6 +91,7 @@ export function AnnouncementDialog({
       title: title.trim(),
       description: description.trim(),
       coverImage: coverImage.trim() || undefined,
+      coverImageFile: coverImageFile || undefined,
       url: url.trim() || undefined,
       active: targetWillBeActive,
     });
@@ -124,8 +128,14 @@ export function AnnouncementDialog({
             id="announcement-cover-image"
             label={t("coverImageLabel")}
             value={coverImage}
-            onChange={(dataUrl) => setCoverImage(dataUrl)}
-            onClear={() => setCoverImage("")}
+            onChange={(dataUrl, file) => {
+              setCoverImage(dataUrl);
+              setCoverImageFile(file || null);
+            }}
+            onClear={() => {
+              setCoverImage("");
+              setCoverImageFile(null);
+            }}
             aspectRatio="banner"
             prompt={t("uploadCoverPrompt")}
             hint={t("uploadCoverFormats")}

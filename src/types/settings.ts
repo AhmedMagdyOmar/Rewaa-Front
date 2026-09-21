@@ -5,6 +5,8 @@ export interface Teacher {
   image?: string;
   grades: string[]; // e.g. ["grade_1", "grade_2"] or display names
   subjects: string[]; // e.g. ["math", "physics"] or display names
+  stageIds?: number[];
+  subjectIds?: number[];
 }
 
 export interface GradeItem {

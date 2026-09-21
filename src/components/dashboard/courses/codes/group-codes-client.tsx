@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import * as React from "react";
@@ -48,19 +47,23 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentPagination } from "@/components/dashboard/common/content-pagination";
+import type { ActivationCode, CodeStatus } from "@/types/activation-code";
+import type { CodeGroup } from "@/types/code-group";
 
-import { ActivationCode, CodeStatus } from "@/types/activation-code";
-import { CodeGroup } from "@/types/code-group";
 import {
-  addStoredActivationCode,
-  addStoredActivationCodesBatch,
-  deleteStoredActivationCode,
-  getStoredActivationCodes,
-  resetStoredActivationCodes,
-  updateStoredActivationCode,
-  updateStoredActivationCodeStatus,
-} from "@/lib/activation-codes-storage";
-import { getStoredCodeGroups } from "@/lib/code-groups-storage";
+  adaptBackendActivationCodeToUI,
+  adaptBackendCodeGroupToUI,
+} from "@/lib/adapters/activation-code-adapter";
+import {
+  useBulkGenerateCodes,
+  useCodeGroupDetail,
+  useCreateCode,
+  useDeleteCode,
+  useGroupCodesList,
+  useMarkCodeSold,
+  useMarkCodeUsed,
+  useUpdateCode,
+} from "@/hooks/use-activation-codes";
 import { EditCodeDialog } from "./edit-code-dialog";
 import { CreateCodeDialog } from "./create-code-dialog";
 import { DeleteCodeDialog } from "./delete-code-dialog";
@@ -69,6 +72,18 @@ import { CreateBatchCodesDialog } from "./create-batch-codes-dialog";
 interface GroupCodesClientProps {
   courseId: string;
   groupId: string;
+}
+
+function formatDate(dateStr?: string, locale: string = "ar") {
+  if (!dateStr) return "-";
+  const normalized = dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T");
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesClientProps) {
@@ -82,7 +97,7 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("status") as "all" | CodeStatus) || "all";
-  const sortBy = searchParams.get("sort") || "newest";
+  const sortBy = searchParams.get("sort") || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 8;
 
@@ -94,7 +109,7 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
           value === null ||
           value === "" ||
           (key === "status" && value === "all") ||
-          (key === "sort" && value === "newest") ||
+          (key === "sort" && (value === "latest" || value === "newest")) ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -108,9 +123,38 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
     [searchParams, pathname, router],
   );
 
-  // Local state for activation codes & parent group
-  const [allCodes, setAllCodes] = React.useState<ActivationCode[]>([]);
-  const [currentGroup, setCurrentGroup] = React.useState<CodeGroup | null>(null);
+  // Queries
+  const { data: rawGroup, refetch: refetchGroup } = useCodeGroupDetail(groupId);
+  const {
+    data: rawCodesData,
+    isRefetching: isCodesRefetching,
+    refetch: refetchCodes,
+  } = useGroupCodesList(groupId, {
+    search: searchQuery || undefined,
+    status: activeTab !== "all" ? activeTab : undefined,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
+
+  // Mutations
+  const createCodeMutation = useCreateCode();
+  const bulkGenerateMutation = useBulkGenerateCodes();
+  const updateCodeMutation = useUpdateCode();
+  const deleteCodeMutation = useDeleteCode();
+  const markSoldMutation = useMarkCodeSold();
+  const markUsedMutation = useMarkCodeUsed();
+
+  const currentGroup: CodeGroup | null = React.useMemo(() => {
+    if (!rawGroup) return null;
+    return adaptBackendCodeGroupToUI(rawGroup, locale);
+  }, [rawGroup, locale]);
+
+  const groupCodes: ActivationCode[] = React.useMemo(() => {
+    if (!rawCodesData?.codes) return [];
+    return rawCodesData.codes.map((c) => adaptBackendActivationCodeToUI(c, locale));
+  }, [rawCodesData, locale]);
+
   const [copiedCodeId, setCopiedCodeId] = React.useState<string | null>(null);
   const [editingCode, setEditingCode] = React.useState<ActivationCode | null>(null);
   const [codeToDelete, setCodeToDelete] = React.useState<ActivationCode | null>(null);
@@ -118,54 +162,18 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
   const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
   const [isBatchDialogOpen, setIsBatchDialogOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    const loadedCodes = getStoredActivationCodes(locale);
-    setAllCodes(loadedCodes);
-
-    const loadedGroups = getStoredCodeGroups(locale);
-    const targetGroup = loadedGroups.find((g) => g.id === groupId) || null;
-    setCurrentGroup(targetGroup);
-
-    const handleUpdate = () => {
-      setAllCodes(getStoredActivationCodes(locale));
-      const freshGroups = getStoredCodeGroups(locale);
-      setCurrentGroup(freshGroups.find((g) => g.id === groupId) || null);
-    };
-
-    window.addEventListener("rewaa_activation_codes_updated", handleUpdate);
-    window.addEventListener("rewaa_code_groups_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_activation_codes_updated", handleUpdate);
-      window.removeEventListener("rewaa_code_groups_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale, groupId]);
-
-  // Codes belonging to this specific group
-  const groupCodes = React.useMemo(() => {
-    return allCodes.filter((item) => item.groupId === groupId);
-  }, [allCodes, groupId]);
-
   // Computed stat counts for this code group
   const stats = React.useMemo(() => {
-    return groupCodes.reduce(
-      (acc, item) => {
-        acc.total += 1;
-        if (item.status === "available") acc.available += 1;
-        if (item.status === "sold") acc.sold += 1;
-        if (item.status === "used") acc.used += 1;
-        return acc;
-      },
-      { total: 0, sold: 0, used: 0, available: 0 },
-    );
-  }, [groupCodes]);
-
-  // Reset Data to initial mock dataset
-  const handleResetData = () => {
-    const freshCodes = resetStoredActivationCodes(locale);
-    setAllCodes(freshCodes);
-  };
+    if (currentGroup) {
+      return {
+        total: currentGroup.totalCodes,
+        available: currentGroup.availableCodes,
+        sold: currentGroup.soldCodes,
+        used: currentGroup.usedCodes,
+      };
+    }
+    return { total: 0, sold: 0, used: 0, available: 0 };
+  }, [currentGroup]);
 
   // Copy code to clipboard
   const handleCopyCode = (codeId: string, codeString: string) => {
@@ -176,33 +184,35 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
 
   // Status transition handler (available -> sold -> used)
   const handleStatusTransition = (codeId: string, currentStatus: CodeStatus) => {
-    const nextStatus: CodeStatus = currentStatus === "available" ? "sold" : "used";
-    const updated = updateStoredActivationCodeStatus(locale, codeId, nextStatus);
-    setAllCodes(updated);
+    if (currentStatus === "available") {
+      markSoldMutation.mutate({ codeId, groupId });
+    } else if (currentStatus === "sold") {
+      markUsedMutation.mutate({ codeId, groupId });
+    }
   };
 
   // Confirm delete code handler
   const confirmDeleteCode = () => {
     if (codeToDelete) {
-      const updated = deleteStoredActivationCode(locale, codeToDelete.id);
-      setAllCodes(updated);
-      setCodeToDelete(null);
+      deleteCodeMutation.mutate(
+        { codeId: codeToDelete.id, groupId },
+        {
+          onSuccess: () => setCodeToDelete(null),
+        },
+      );
     }
   };
 
   // Create new code in group handler
   const handleCreateCode = (data: { code: string; cost: number; expiryDate: string }) => {
-    if (!currentGroup) return;
-    const updated = addStoredActivationCode(locale, {
-      groupId: currentGroup.id,
-      courseId: currentGroup.courseId,
-      courseTitle: currentGroup.courseTitle,
-      code: data.code,
-      cost: data.cost,
-      status: "available",
-      expiryDate: data.expiryDate,
+    createCodeMutation.mutate({
+      groupId,
+      data: {
+        code: data.code,
+        price: data.cost,
+        expires_at: data.expiryDate,
+      },
     });
-    setAllCodes(updated);
   };
 
   // Create batch of codes in group handler
@@ -212,27 +222,14 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
     cost: number;
     expiryDate: string;
   }) => {
-    if (!currentGroup) return;
-    const prefixToUse = data.prefix
-      ? data.prefix.endsWith("-")
-        ? data.prefix
-        : `${data.prefix}-`
-      : "RW-CODE-";
-    const newItems = Array.from({ length: data.count }).map((_, idx) => {
-      const randomNum = Math.floor(1000 + Math.random() * 9000);
-      const randomStr = Math.random().toString(36).substring(2, 5).toUpperCase();
-      return {
-        groupId: currentGroup.id,
-        courseId: currentGroup.courseId,
-        courseTitle: currentGroup.courseTitle,
-        code: `${prefixToUse}${randomNum}-${randomStr}-${idx + 1}`,
-        cost: data.cost,
-        status: "available" as const,
-        expiryDate: data.expiryDate,
-      };
+    bulkGenerateMutation.mutate({
+      groupId,
+      data: {
+        quantity: data.count,
+        price: data.cost,
+        expires_at: data.expiryDate,
+      },
     });
-    const updated = addStoredActivationCodesBatch(locale, newItems);
-    setAllCodes(updated);
   };
 
   // Save edited code info
@@ -243,60 +240,44 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
     expiryDate: string;
   }) => {
     if (!editingCode) return;
-    const updated = updateStoredActivationCode(locale, editingCode.id, updatedData);
-    setAllCodes(updated);
-    setEditingCode(null);
+    updateCodeMutation.mutate(
+      {
+        codeId: editingCode.id,
+        groupId,
+        data: {
+          code: updatedData.code,
+          price: updatedData.cost,
+          status: updatedData.status,
+          expires_at: updatedData.expiryDate,
+        },
+      },
+      {
+        onSuccess: () => setEditingCode(null),
+      },
+    );
   };
 
-  // Filter & Sort logic
-  const filteredAndSortedCodes = React.useMemo(() => {
-    return groupCodes
-      .filter((item) => {
-        // Tab status filter
-        if (activeTab !== "all" && item.status !== activeTab) {
-          return false;
-        }
-
-        // Search query filter
-        if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          const matchesCode = item.code.toLowerCase().includes(query);
-          const matchesId = item.id.toLowerCase().includes(query);
-          if (!matchesCode && !matchesId) return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "oldest") {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
-        if (sortBy === "costDesc") {
-          return b.cost - a.cost;
-        }
-        if (sortBy === "costAsc") {
-          return a.cost - b.cost;
-        }
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [groupCodes, activeTab, searchQuery, sortBy]);
-
-  // Pagination calculations
-  const totalItems = filteredAndSortedCodes.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  // Pagination calculations from backend
+  const totalItems = rawCodesData?.pagination?.total ?? groupCodes.length;
+  const totalPages =
+    rawCodesData?.pagination?.last_page ?? (Math.ceil(totalItems / itemsPerPage) || 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedCodes = React.useMemo(() => {
-    return filteredAndSortedCodes.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedCodes, startIndex, itemsPerPage]);
+  const paginatedCodes = groupCodes;
 
-  const isFiltered = searchQuery.trim() !== "" || activeTab !== "all" || sortBy !== "newest";
+  const isFiltered =
+    searchQuery.trim() !== "" ||
+    activeTab !== "all" ||
+    (sortBy !== "latest" && sortBy !== "newest");
 
   const handleResetFilters = () => {
     updateUrlParams({ search: null, status: null, sort: null, page: 1 });
   };
 
-  const showingNumber =
-    Math.min(startIndex + itemsPerPage, totalItems) - Math.min(startIndex + 1, totalItems) + 1;
+  // Refresh data from API
+  const handleRefresh = () => {
+    refetchGroup();
+    refetchCodes();
+  };
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
@@ -324,12 +305,13 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
         <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
-            onClick={handleResetData}
-            title={t("resetData")}
+            onClick={handleRefresh}
+            disabled={isCodesRefetching}
+            title={t("refreshData")}
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
-            <RotateCcw className="size-4" />
-            <span>{t("resetData")}</span>
+            <RotateCcw className={`size-4 ${isCodesRefetching ? "animate-spin" : ""}`} />
+            <span>{t("refreshData")}</span>
           </Button>
 
           <Button
@@ -445,10 +427,10 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
                 <SelectValue placeholder={t("filters.sortBy")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">{t("filters.newest")}</SelectItem>
+                <SelectItem value="latest">{t("filters.newest")}</SelectItem>
                 <SelectItem value="oldest">{t("filters.oldest")}</SelectItem>
-                <SelectItem value="costDesc">{t("filters.costDesc")}</SelectItem>
-                <SelectItem value="costAsc">{t("filters.costAsc")}</SelectItem>
+                <SelectItem value="price_desc">{t("filters.costDesc")}</SelectItem>
+                <SelectItem value="price_asc">{t("filters.costAsc")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -567,8 +549,8 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
                     </TableCell>
 
                     {/* Expiry Date */}
-                    <TableCell className="text-xs text-muted-foreground">
-                      {item.expiryDate}
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDate(item.expiryDate, locale)}
                     </TableCell>
 
                     {/* Actions Menu */}
@@ -641,7 +623,7 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
             totalItems={totalItems}
             startIndex={startIndex}
             itemsPerPage={itemsPerPage}
-            showingText={`${locale === "ar" ? "عرض" : "Showing"} ${showingNumber} ${locale === "ar" ? "من إجمالي" : "of"} ${totalItems}`}
+            showingText={`${locale === "ar" ? "عرض" : "Showing"} ${Math.min(startIndex + 1, totalItems)} - ${Math.min(startIndex + itemsPerPage, totalItems)} ${locale === "ar" ? "من إجمالي" : "of"} ${totalItems}`}
             onPageChange={(page) => updateUrlParams({ page })}
           />
         </div>
@@ -661,7 +643,7 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
         group={currentGroup}
-        existingCodes={allCodes}
+        existingCodes={groupCodes}
         onSubmit={handleCreateCode}
       />
 
@@ -669,7 +651,7 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
         open={isBatchDialogOpen}
         onOpenChange={setIsBatchDialogOpen}
         group={currentGroup}
-        existingCodes={allCodes}
+        existingCodes={groupCodes}
         onSubmit={handleCreateBatchCodes}
       />
 

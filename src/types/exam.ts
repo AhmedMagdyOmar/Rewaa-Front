@@ -91,6 +91,8 @@ export interface Exam {
   numberOfQuestions: number; // denormalized count for fast display
   numberOfStudents: number;
   successRate: number; // 0–100
+  score?: number; // student-specific attempt score percentage (0-100)
+  isPassed?: boolean;
   timesUsed: number;
 
   // ── Dates ─────────────────────────────────────────────────────────────────

@@ -21,14 +21,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { resetPlatformInfoGroup, savePlatformInfoCommunication } from "@/lib/settings-storage";
-import { PlatformCustomLink, PlatformInfoGroupCommunication } from "@/types/settings";
+import type { PlatformCustomLink, PlatformInfoGroupCommunication } from "@/types/settings";
 import { AddLinkDialog } from "./add-link-dialog";
 
 interface CommunicationGroupProps {
   data: PlatformInfoGroupCommunication;
+  onSaveCustom?: (data: PlatformInfoGroupCommunication) => Promise<void> | void;
 }
 
-export function CommunicationGroup({ data }: CommunicationGroupProps) {
+export function CommunicationGroup({ data, onSaveCustom }: CommunicationGroupProps) {
   const t = useTranslations("settings.platformInfo.communication");
   const [isEditing, setIsEditing] = useState(false);
   const [formState, setFormState] = useState<PlatformInfoGroupCommunication>(data);
@@ -43,8 +44,12 @@ export function CommunicationGroup({ data }: CommunicationGroupProps) {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    savePlatformInfoCommunication(formState);
+  const handleSave = async () => {
+    if (onSaveCustom) {
+      await onSaveCustom(formState);
+    } else {
+      savePlatformInfoCommunication(formState);
+    }
     setIsEditing(false);
   };
 
@@ -63,7 +68,11 @@ export function CommunicationGroup({ data }: CommunicationGroupProps) {
     const updatedState = { ...formState, customLinks: updatedCustom };
     setFormState(updatedState);
     if (!isEditing) {
-      savePlatformInfoCommunication(updatedState);
+      if (onSaveCustom) {
+        onSaveCustom(updatedState);
+      } else {
+        savePlatformInfoCommunication(updatedState);
+      }
     }
   };
 
@@ -72,7 +81,11 @@ export function CommunicationGroup({ data }: CommunicationGroupProps) {
     const updatedState = { ...formState, customLinks: updatedCustom };
     setFormState(updatedState);
     if (!isEditing) {
-      savePlatformInfoCommunication(updatedState);
+      if (onSaveCustom) {
+        onSaveCustom(updatedState);
+      } else {
+        savePlatformInfoCommunication(updatedState);
+      }
     }
   };
 

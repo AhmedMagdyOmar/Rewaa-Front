@@ -13,6 +13,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { WhatsAppIcon, getWhatsAppUrl } from "@/components/ui/phone-link";
+import { useProviderExamAttempts } from "@/hooks/use-exams";
+import { useStudentDetail } from "@/hooks/use-students";
+import { adaptBackendExamAttemptToExam } from "@/lib/adapters/exam-adapters";
+import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
 import { Course } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { Student } from "@/types/student";
@@ -20,17 +24,17 @@ import { StudentReportView } from "./student-report-view";
 
 interface StudentReportModalProps {
   student: Student;
-  courses: Course[];
-  exams: Exam[];
+  courses?: Course[];
+  exams?: Exam[];
   isOpen: boolean;
   onClose: () => void;
   formatGrade: (key?: string) => string;
 }
 
 export function StudentReportModal({
-  student,
-  courses,
-  exams,
+  student: initialStudent,
+  courses: initialCourses,
+  exams: initialExams,
   isOpen,
   onClose,
   formatGrade,
@@ -41,12 +45,94 @@ export function StudentReportModal({
 
   const [isSending, setIsSending] = React.useState(false);
 
+  const studentId = initialStudent?.id;
+  const shouldFetchDetail =
+    isOpen &&
+    Boolean(studentId) &&
+    (!initialCourses || initialCourses.length === 0 || !initialExams || initialExams.length === 0);
+
+  const { data: backendStudent, isLoading: isStudentLoading } = useStudentDetail(
+    shouldFetchDetail ? studentId : undefined,
+  );
+  const { data: attemptsData, isLoading: isAttemptsLoading } = useProviderExamAttempts({
+    student_id: shouldFetchDetail ? studentId : undefined,
+  });
+
+  const student: Student = React.useMemo(() => {
+    if (backendStudent) {
+      const adapted = adaptBackendStudentToUI(backendStudent, locale);
+      return {
+        ...initialStudent,
+        ...adapted,
+      };
+    }
+    return initialStudent;
+  }, [backendStudent, initialStudent, locale]);
+
+  const courses: Course[] = React.useMemo(() => {
+    if (initialCourses && initialCourses.length > 0) {
+      return initialCourses;
+    }
+    if (backendStudent?.enrolled_courses && backendStudent.enrolled_courses.length > 0) {
+      return backendStudent.enrolled_courses.map((ec) => ({
+        id: String(ec.id),
+        title:
+          typeof ec.title === "string"
+            ? ec.title
+            : ec.title?.[locale] || ec.title?.ar || ec.title?.en || `Course #${ec.id}`,
+        coverImage: ec.cover_image || "",
+        description: "",
+        subject: "",
+        grade: student.grade || "",
+        teacherName: "",
+        period: "term",
+        date: "",
+        numberOfLessons: ec.progress?.total_lessons ?? 0,
+        progressPercentage: ec.progress?.percentage ?? 0,
+        completedLessons: ec.progress?.completed_lessons ?? 0,
+        totalLessons: ec.progress?.total_lessons ?? 0,
+        price: 0,
+        isFree: false,
+        currency: "EGP",
+        hasOffer: false,
+        hasTimeLimit: false,
+        isSplitToSections: false,
+        venue: "online",
+        numberOfParticipants: 0,
+        isDraft: false,
+        sections: [],
+      }));
+    }
+    return [];
+  }, [initialCourses, backendStudent, student.grade, locale]);
+
+  const exams: Exam[] = React.useMemo(() => {
+    if (initialExams && initialExams.length > 0) {
+      return initialExams;
+    }
+    if (attemptsData?.attempts && attemptsData.attempts.length > 0) {
+      return attemptsData.attempts.map((attempt) =>
+        adaptBackendExamAttemptToExam(attempt, locale, student.grade || ""),
+      );
+    }
+    return [];
+  }, [initialExams, attemptsData, student.grade, locale]);
+
   const fullName = [student.firstName, student.middleName, student.lastName, student.additionalName]
     .filter(Boolean)
     .join(" ");
 
   const currentYear = new Date().getFullYear();
-  const avgPoints = 88; // out of 100
+  const avgPoints = student.averageRating
+    ? Math.round(
+        student.averageRating <= 5 ? (student.averageRating / 5) * 100 : student.averageRating,
+      )
+    : exams.length > 0
+      ? Math.round(
+          exams.reduce((acc, curr) => acc + (curr.score ?? curr.successRate ?? 0), 0) /
+            exams.length,
+        )
+      : 0;
 
   const handleSendToParent = () => {
     if (isSending) return;
@@ -78,6 +164,8 @@ export function StudentReportModal({
     }
   };
 
+  const isDataLoading = shouldFetchDetail && (isStudentLoading || isAttemptsLoading);
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-3xl max-h-[88vh] p-0 flex flex-col overflow-hidden">
@@ -89,13 +177,20 @@ export function StudentReportModal({
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1 p-6">
-          <StudentReportView
-            student={student}
-            courses={courses}
-            exams={exams}
-            formatGrade={formatGrade}
-            showDownloadButton={false}
-          />
+          {isDataLoading ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+              <Loader2 className="size-8 animate-spin text-primary" />
+              <p className="text-sm">{tDetails("personalInfoSubtitle")}...</p>
+            </div>
+          ) : (
+            <StudentReportView
+              student={student}
+              courses={courses}
+              exams={exams}
+              formatGrade={formatGrade}
+              showDownloadButton={false}
+            />
+          )}
         </div>
 
         <DialogFooter className="p-4 pb-8 pe-8 border-t border-border bg-muted/20 gap-2">
@@ -104,7 +199,7 @@ export function StudentReportModal({
           </Button>
           <Button
             onClick={handleSendToParent}
-            disabled={isSending}
+            disabled={isSending || isDataLoading}
             className="gap-2 font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {isSending ? (

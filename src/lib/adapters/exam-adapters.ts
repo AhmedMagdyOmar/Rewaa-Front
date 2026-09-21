@@ -533,3 +533,54 @@ export function mapBackendComplaintToFrontend(
     dateOfComplaint: complaint.created_at || new Date().toISOString(),
   };
 }
+
+/**
+ * Maps a single BackendExamAttempt to the frontend Exam model for student reports and details
+ */
+export function adaptBackendExamAttemptToExam(
+  attempt: BackendExamAttempt,
+  locale: string = "ar",
+  studentGrade: string = "",
+): Exam {
+  const score =
+    attempt.percentage !== null && attempt.percentage !== undefined
+      ? Math.round(Number(attempt.percentage))
+      : attempt.score !== null && attempt.score !== undefined && attempt.max_score > 0
+        ? Math.round((Number(attempt.score) / Number(attempt.max_score)) * 100)
+        : 0;
+  const passingPercentage = attempt.exam?.passing_percentage ?? 60;
+
+  return {
+    id: String(attempt.id),
+    title:
+      attempt.exam?.title?.[locale] ||
+      attempt.exam?.title?.ar ||
+      attempt.exam?.title?.en ||
+      (locale === "ar" ? `اختبار #${attempt.exam_id}` : `Exam #${attempt.exam_id}`),
+    courseTitle:
+      attempt.course?.title?.[locale] ||
+      attempt.course?.title?.ar ||
+      attempt.course?.title?.en ||
+      "",
+    subject: "",
+    grade: studentGrade || "",
+    teacherName: "",
+    category: "final",
+    examType: "course-dependent",
+    triesAllowed: 1,
+    durationMinutes: attempt.duration_minutes || 0,
+    passingPercentage,
+    showModelAnswers: false,
+    randomizeQuestionsOrder: false,
+    randomizeMCQChoices: false,
+    examSections: [],
+    numberOfQuestions: attempt.result_summary?.questions_count ?? attempt.questions?.length ?? 0,
+    numberOfStudents: 1,
+    successRate: score,
+    score,
+    isPassed: attempt.is_passed ?? score >= passingPercentage,
+    timesUsed: attempt.attempt_number || 1,
+    createdAt:
+      attempt.submitted_at || attempt.started_at || attempt.created_at || new Date().toISOString(),
+  };
+}

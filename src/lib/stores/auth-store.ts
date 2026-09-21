@@ -20,6 +20,8 @@ export interface AuthUser {
   full_name: string;
   email: string;
   role: AuthRole;
+  /** Backend user_type: e.g. "center", "group", "teacher", "assistant" */
+  user_type?: string | null;
   avatarUrl?: string | null;
 }
 

@@ -20,6 +20,12 @@
       "save": "إضافة وحفظ",
       "cancel": "إلغاء",
       "nameRequired": "يرجى كتابة الاسم أولاً"
+    },
+    "imageUpload": {
+      "clickOrDrag": "انقر أو اسحب الصورة للرفع",
+      "changeImage": "تغيير الصورة",
+      "removeImage": "إزالة الصورة",
+      "previewAlt": "معاينة الصورة"
     }
   },
   "notFound": {
@@ -467,7 +473,8 @@
       "attachments": "{count, plural, =0 {لا مرفقات} zero {لا مرفقات} one {مرفق واحد} two {مرفقين} few {{count} مرفقات} many {{count} مرفقاً} other {{count} مرفق}}",
       "watchVideo": "مشاهدة الشرح"
     },
-    "resetCourses": "إعادة ضبط بيانات الدورات",
+    "refreshCourses": "تحديث الدورات",
+    "resetCourses": "تحديث الدورات",
     "new": {
       "title": "إنشاء دورة جديدة",
       "editTitle": "تعديل الدورة",
@@ -853,7 +860,8 @@
     "manageTitle": "إدارة الامتحانات",
     "manageSubtitle": "عرض، تصفية، وإدارة كافة الامتحانات العامة والمرتبطة بالدورات.",
     "addNewExam": "إضافة امتحان جديد",
-    "resetExams": "إعادة ضبط البيانات",
+    "refreshExams": "تحديث البيانات",
+    "resetExams": "تحديث البيانات",
     "searchPlaceholder": "ابحث في الامتحانات حسب العنوان، المادة، المعلم...",
     "clearFilters": "مسح الفلاتر",
     "tabs": {
@@ -1407,7 +1415,8 @@
     "manageTitle": "إدارة الدروس",
     "manageSubtitle": "عرض، تصفية، إنشاء، وإدارة كافة الدروس التعليمية العامة والمرتبطة بالدورات.",
     "addNewLesson": "إضافة درس جديد",
-    "resetLessons": "إعادة ضبط البيانات",
+    "refreshLessons": "تحديث البيانات",
+    "resetLessons": "تحديث البيانات",
     "searchPlaceholder": "ابحث في الدروس حسب العنوان، المادة، المعلم...",
     "clearFilters": "مسح الفلاتر",
     "metadata": "معلومات عن الدرس",
@@ -1533,7 +1542,9 @@
     "title": "إدارة الطلاب",
     "subtitle": "عرض وإدارة كافة الطلاب المسجلين والتحكم في بياناتهم والفلترة حسب المحافظة والصف ونوع التسجيل.",
     "addNewStudent": "إضافة طالب جديد",
-    "resetData": "إعادة ضبط البيانات",
+    "refresh": "تحديث",
+    "refreshData": "تحديث البيانات",
+    "resetData": "تحديث البيانات",
     "searchPlaceholder": "ابحث باسم الطالب، رقم الهاتف، البريد الإلكتروني...",
     "allGrades": "جميع الصفوف",
     "allRegistrationTypes": "جميع أنواع التسجيل",
@@ -1884,7 +1895,8 @@
     "title": "ملخص المالية",
     "description": "استعراض الإيرادات والتحليلات المالية الشهرية لسنوات الخدمة",
     "selectYear": "اختر السنة المالية",
-    "resetData": "إعادة ضبط البيانات",
+    "refreshData": "تحديث البيانات",
+    "resetData": "تحديث البيانات",
     "viewRequests": "طلبات الدفع والفواتير",
     "stats": {
       "todayPayments": "إجمالي مدفوعات اليوم",
@@ -1928,7 +1940,8 @@
     "title": "مجموعات أكواد التفعيل",
     "subtitle": "إدارة ومتابعة مجموعات الأكواد الخاصة بالدورات",
     "createButton": "إنشاء أكواد جديدة",
-    "resetData": "إعادة ضبط البيانات",
+    "refreshData": "تحديث البيانات",
+    "resetData": "تحديث البيانات",
     "stats": {
       "totalCodes": "إجمالي الأكواد",
       "totalCodesDesc": "عبر كافة الدورات والمجموعات",
@@ -1983,7 +1996,8 @@
   "groupCodesPage": {
     "title": "أكواد مجموعة الدورة",
     "subtitle": "عرض وتعديل تفاصيل وأكواد التفعيل التابعة للمجموعة",
-    "resetData": "إعادة ضبط البيانات",
+    "refreshData": "تحديث البيانات",
+    "resetData": "تحديث البيانات",
     "backToGroups": "مجموعات الأكواد",
     "stats": {
       "totalCodes": "إجمالي الأكواد بالمجموعة",
@@ -2077,6 +2091,198 @@
       "confirm": "تأكيد الحذف"
     }
   },
+  "providerProfile": {
+    "title": "الملف الشخصي",
+    "subtitle": "إدارة معلوماتك الشخصية، بيانات الأمان، التفضيلات، وصلاحيات الحساب.",
+    "loadingProfile": "جارٍ تحميل بيانات الملف الشخصي...",
+    "errorLoadingTitle": "فشل تحميل الملف الشخصي",
+    "errorLoadingSubtitle": "حدث خطأ أثناء جلب بيانات الملف الشخصي من الخادم.",
+    "retry": "إعادة المحاولة",
+    "refreshData": "تحديث البيانات",
+    "tabs": {
+      "general": "البيانات الأساسية",
+      "security": "الأمان وكلمة المرور",
+      "preferences": "التفضيلات",
+      "permissions": "الأدوار والصلاحيات"
+    },
+    "general": {
+      "title": "البيانات الشخصية",
+      "subtitle": "تحديث بياناتك الشخصية وصورة الحساب.",
+      "saving": "جارٍ الحفظ...",
+      "saveChanges": "حفظ التغييرات",
+      "fields": {
+        "avatarLabel": "صورة الملف الشخصي / شعار المنشأة",
+        "avatarHint": "يدعم صيغ PNG, JPG, أو WEBP بحد أقصى 2 ميجابايت",
+        "avatarDisabledHint": "تعديل صورة الحساب متاح لمدير المنصة فقط",
+        "nameLabel": "الاسم بالكامل",
+        "namePlaceholder": "مثال: د. أحمد حسان",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "مثال: name@example.com",
+        "phoneCodeLabel": "رمز الدولة",
+        "phoneLabel": "رقم الهاتف",
+        "phonePlaceholder": "مثال: 01012345678"
+      },
+      "errors": {
+        "nameRequired": "يرجى إدخال الاسم بالكامل",
+        "emailRequired": "يرجى إدخال بريد إلكتروني صحيح",
+        "updateFailed": "فشل تحديث بيانات الملف الشخصي"
+      }
+    },
+    "security": {
+      "title": "كلمة المرور والأمان",
+      "subtitle": "تحديث كلمة المرور الخاصة بحسابك لضمان أمان البيانات.",
+      "updating": "جارٍ تحديث كلمة المرور...",
+      "updatePassword": "تحديث كلمة المرور",
+      "fields": {
+        "currentLabel": "كلمة المرور الحالية",
+        "currentPlaceholder": "أدخل كلمة المرور الحالية",
+        "newLabel": "كلمة المرور الجديدة",
+        "newPlaceholder": "أدخل كلمة المرور الجديدة",
+        "confirmLabel": "تأكيد كلمة المرور الجديدة",
+        "confirmPlaceholder": "أعد إدخال كلمة المرور الجديدة",
+        "passwordRequirements": "يجب ألا تقل عن 8 أحرف وأن تكون مختلفة عن كلمة المرور الحالية."
+      },
+      "errors": {
+        "currentRequired": "يرجى إدخال كلمة المرور الحالية",
+        "passwordMinLength": "يجب ألا تقل كلمة المرور عن 8 أحرف",
+        "passwordsMismatch": "كلمتا المرور غير متطابقتين",
+        "passwordMustBeDifferent": "يجب أن تكون كلمة المرور الجديدة مختلفة عن الحالية",
+        "updateFailed": "فشل تحديث كلمة المرور"
+      }
+    },
+    "preferences": {
+      "title": "تفضيلات النظام والواجهة",
+      "subtitle": "تخصيص لغة لوحة التحكم، الإشعارات، والمظهر.",
+      "language": {
+        "title": "لغة لوحة التحكم",
+        "subtitle": "حدد اللغة المفضلة لعرض واجهة لوحة التحكم",
+        "selectPlaceholder": "اختر اللغة"
+      },
+      "notifications": {
+        "title": "إشعارات النظام",
+        "subtitle": "تلقي تنبيهات المنصة الهامة وتسليمات الاختبارات والأنشطة"
+      },
+      "darkMode": {
+        "title": "الوضع الداكن (Dark Mode)",
+        "subtitle": "التبديل بين الوضع الليلي والوضع الفاتح"
+      },
+      "toasts": {
+        "notificationsEnabled": "تم تفعيل الإشعارات بنجاح",
+        "notificationsDisabled": "تم تعطيل الإشعارات بنجاح",
+        "darkModeEnabled": "تم تفعيل الوضع الداكن بنجاح",
+        "darkModeDisabled": "تم تعطيل الوضع الداكن بنجاح"
+      },
+      "errors": {
+        "localeUpdateFailed": "فشل تحديث تفضيل اللغة",
+        "notificationUpdateFailed": "فشل تحديث إعدادات الإشعارات",
+        "darkModeUpdateFailed": "فشل تحديث الوضع الداكن"
+      }
+    },
+    "permissionsTab": {
+      "title": "أدوار الحساب والصلاحيات",
+      "subtitle": "نظرة عامة على نوع الحساب، حالته، والصلاحيات الممنوحة.",
+      "accountType": "نوع الحساب",
+      "accountStatus": "حالة الحساب",
+      "active": "نشط",
+      "inactive": "غير نشط",
+      "memberSince": "تاريخ الانضمام",
+      "assignedRoles": "الأدوار المسندة",
+      "grantedAuthorities": "الصلاحيات والأذونات الممنوحة",
+      "noExplicitPermissions": "لا توجد أذونات فردية مخصصة (موروثة من الدور الأساسي).",
+      "searchPlaceholder": "بحث وتصفية الصلاحيات بالاسم أو الكود...",
+      "categories": {
+        "all": "جميع الأقسام",
+        "provider_courses": "الكورسات والدورات",
+        "provider_exams": "الامتحانات والاختبارات",
+        "provider_questions": "بنك الأسئلة",
+        "provider_activation_codes": "أكواد التفعيل",
+        "provider_students": "الطلاب والاشتراكات",
+        "provider_educational_stages": "المراحل والصفوف",
+        "provider_subjects": "المواد الدراسية",
+        "provider_finance": "المالية والتقارير",
+        "provider_orders": "الطلبات",
+        "provider_payments": "المدفوعات",
+        "provider_wallets": "المحافظ",
+        "provider_payment_accounts": "حسابات التحويل",
+        "provider_admins": "المسؤولين والمساعدين",
+        "provider_teachers": "المعلمين",
+        "provider_roles": "الأدوار",
+        "provider_announcements": "الإعلانات",
+        "provider_dashboard": "لوحة المنصة",
+        "other": "أخرى"
+      },
+      "authoritiesLabels": {
+        "dashboard:read": "عرض لوحة التحكم",
+        "provider_dashboard:read": "عرض إحصائيات لوحة مقدم الخدمة",
+        "admins:read": "عرض المديرين",
+        "admins:create": "إنشاء المديرين",
+        "admins:update": "تعديل المديرين",
+        "admins:delete": "حذف المديرين",
+        "roles:read": "عرض الأدوار",
+        "roles:create": "إنشاء الأدوار",
+        "roles:update": "تعديل الأدوار",
+        "roles:delete": "حذف الأدوار",
+        "providers:read": "عرض مقدمي الخدمة",
+        "providers:create": "إنشاء مقدمي الخدمة",
+        "providers:update": "تعديل مقدمي الخدمة",
+        "providers:delete": "حذف مقدمي الخدمة",
+        "provider_admins:read": "عرض مسؤولي مقدم الخدمة",
+        "provider_admins:create": "إنشاء مسؤولي مقدم الخدمة",
+        "provider_admins:update": "تعديل مسؤولي مقدم الخدمة",
+        "provider_admins:delete": "حذف مسؤولي مقدم الخدمة",
+        "provider_teachers:read": "عرض مدرسي مقدم الخدمة",
+        "provider_teachers:create": "إنشاء مدرسي مقدم الخدمة",
+        "provider_teachers:update": "تعديل مدرسي مقدم الخدمة",
+        "provider_teachers:delete": "حذف مدرسي مقدم الخدمة",
+        "provider_students:read": "عرض طلاب مقدم الخدمة",
+        "provider_students:create": "إنشاء طلاب مقدم الخدمة",
+        "provider_students:update": "تعديل طلاب مقدم الخدمة",
+        "provider_students:delete": "حذف طلاب مقدم الخدمة",
+        "provider_roles:read": "عرض أدوار مقدم الخدمة",
+        "provider_roles:create": "إنشاء أدوار مقدم الخدمة",
+        "provider_roles:update": "تعديل أدوار مقدم الخدمة",
+        "provider_roles:delete": "حذف أدوار مقدم الخدمة",
+        "provider_courses:read": "عرض دورات مقدم الخدمة",
+        "provider_courses:create": "إنشاء دورات مقدم الخدمة",
+        "provider_courses:update": "تعديل دورات مقدم الخدمة",
+        "provider_courses:delete": "حذف دورات مقدم الخدمة",
+        "provider_activation_codes:read": "عرض أكواد تفعيل مقدم الخدمة",
+        "provider_activation_codes:create": "إنشاء أكواد تفعيل مقدم الخدمة",
+        "provider_activation_codes:update": "تعديل أكواد تفعيل مقدم الخدمة",
+        "provider_activation_codes:delete": "حذف أكواد تفعيل مقدم الخدمة",
+        "provider_educational_stages:read": "عرض صفوف مقدم الخدمة",
+        "provider_educational_stages:create": "إنشاء صفوف مقدم الخدمة",
+        "provider_educational_stages:update": "تعديل صفوف مقدم الخدمة",
+        "provider_educational_stages:delete": "حذف صفوف مقدم الخدمة",
+        "provider_subjects:read": "عرض مواد مقدم الخدمة",
+        "provider_subjects:create": "إنشاء مواد مقدم الخدمة",
+        "provider_subjects:update": "تعديل مواد مقدم الخدمة",
+        "provider_subjects:delete": "حذف مواد مقدم الخدمة",
+        "provider_orders:read": "عرض طلبات شراء مقدم الخدمة",
+        "provider_payments:read": "عرض مدفوعات مقدم الخدمة",
+        "provider_payments:review": "مراجعة مدفوعات مقدم الخدمة",
+        "provider_wallets:read": "عرض محافظ الطلاب",
+        "provider_wallets:update": "تعديل أرصدة محافظ الطلاب",
+        "provider_finance:read": "عرض التقارير المالية لمقدم الخدمة",
+        "provider_payment_accounts:read": "عرض حسابات التحويل",
+        "provider_payment_accounts:create": "إنشاء حسابات التحويل",
+        "provider_payment_accounts:update": "تعديل حسابات التحويل",
+        "provider_payment_accounts:delete": "حذف حسابات التحويل",
+        "provider_announcements:read": "عرض إعلانات مقدم الخدمة",
+        "provider_announcements:create": "إنشاء إعلانات مقدم الخدمة",
+        "provider_announcements:update": "تعديل إعلانات مقدم الخدمة",
+        "provider_announcements:delete": "حذف إعلانات مقدم الخدمة",
+        "provider_exams:read": "عرض امتحانات مقدم الخدمة",
+        "provider_exams:create": "إنشاء امتحانات مقدم الخدمة",
+        "provider_exams:update": "تعديل امتحانات مقدم الخدمة",
+        "provider_exams:delete": "حذف امتحانات مقدم الخدمة",
+        "provider_questions:read": "عرض أسئلة مقدم الخدمة",
+        "provider_questions:create": "إنشاء أسئلة مقدم الخدمة",
+        "provider_questions:update": "تعديل أسئلة مقدم الخدمة",
+        "provider_questions:delete": "حذف أسئلة مقدم الخدمة"
+      }
+    }
+  },
   "settings": {
     "title": "إعدادات المنصة",
     "subtitle": "إدارة حسابات المعلمين، الصفوف الدراسية، المواد والمساعدين للمنصة.",
@@ -2089,7 +2295,9 @@
       "title": "المعلمون",
       "subtitle": "إدارة حسابات المعلمين والمواد والصفوف المسندة لهم",
       "addTeacher": "إضافة معلم",
-      "resetTeachers": "استعادة البيانات الافتراضية",
+      "refreshTeachers": "تحديث البيانات",
+      "loading": "جاري تحميل المعلمين...",
+      "resetTeachers": "تحديث البيانات",
       "columns": {
         "image": "الصورة",
         "name": "اسم المعلم",
@@ -2127,7 +2335,9 @@
       "title": "الصفوف الدراسية",
       "subtitle": "إدارة المراحل والصفوف الدراسية",
       "addGrade": "صف جديد",
-      "resetGrades": "إعادة تعيين الصفوف",
+      "refreshGrades": "تحديث الصفوف",
+      "loading": "جاري تحميل الصفوف...",
+      "resetGrades": "تحديث الصفوف",
       "columns": {
         "name": "اسم الصف",
         "studentsCount": "الطلاب",
@@ -2158,7 +2368,9 @@
       "title": "المواد الدراسية",
       "subtitle": "إدارة المواد المقررة على المنصة",
       "addSubject": "مادة جديدة",
-      "resetSubjects": "إعادة تعيين المواد",
+      "refreshSubjects": "تحديث المواد",
+      "loading": "جاري تحميل المواد...",
+      "resetSubjects": "تحديث المواد",
       "columns": {
         "name": "اسم المادة",
         "coursesCount": "الدورات",
@@ -2186,7 +2398,9 @@
       "title": "المساعدون",
       "subtitle": "إدارة حسابات المساعدين وصلاحياتهم على المنصة",
       "addAssistant": "إضافة مساعد",
-      "resetAssistants": "استعادة البيانات الافتراضية",
+      "refreshAssistants": "تحديث البيانات",
+      "loading": "جاري تحميل المساعدين...",
+      "resetAssistants": "تحديث البيانات",
       "columns": {
         "name": "اسم المساعد",
         "phone": "رقم الهاتف",
@@ -2286,7 +2500,8 @@
       "title": "الإعلانات والتنويهات",
       "subtitle": "إدارة الشريط الإعلاني والإشعارات البارزة على المنصة",
       "addAnnouncement": "إعلـان جديد",
-      "resetAnnouncements": "استعادة الافتراضي",
+      "refreshAnnouncements": "تحديث البيانات",
+      "resetAnnouncements": "تحديث البيانات",
       "activeCountBadge": "{count} / {max} نشط",
       "noAnnouncements": "لا توجد إعلانات مضافة حالياً.",
       "deactivatedNotice": "تم إلغاء تفعيل الإعلان القديم \"{name}\" تلقائياً للحفاظ على حد الـ 3 إعلانات النشطة.",

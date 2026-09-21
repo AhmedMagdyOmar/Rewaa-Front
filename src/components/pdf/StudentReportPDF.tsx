@@ -155,6 +155,20 @@ export function StudentReportPDF({ student, courses, exams, locale, strings }: P
     .filter(Boolean)
     .join(" ");
 
+  const totalQuestions = (student.correctQuestions ?? 0) + (student.wrongQuestions ?? 0);
+  const examsCount = student.examsPerformed ?? exams.length ?? 0;
+  const avgPoints =
+    student.averageRating && student.averageRating > 0
+      ? Math.round(
+          student.averageRating <= 5 ? (student.averageRating / 5) * 100 : student.averageRating,
+        )
+      : exams.length > 0
+        ? Math.round(
+            exams.reduce((acc, curr) => acc + (curr.score ?? curr.successRate ?? 0), 0) /
+              exams.length,
+          )
+        : 0;
+
   return (
     <Document>
       {/* wrap={false} tells the renderer to strictly constrain this to one page */}
@@ -207,19 +221,19 @@ export function StudentReportPDF({ student, courses, exams, locale, strings }: P
         </Text>
         <View style={{ ...styles.statsGrid, flexDirection: isRtl ? "row-reverse" : "row" }}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>160</Text>
+            <Text style={styles.statValue}>{totalQuestions}</Text>
             <Text style={styles.statLabel}>{strings.questionsAnswered}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>12</Text>
+            <Text style={styles.statValue}>{examsCount}</Text>
             <Text style={styles.statLabel}>{strings.examsPerformed}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{student.coursesCount || 0}</Text>
+            <Text style={styles.statValue}>{student.coursesCount || courses.length || 0}</Text>
             <Text style={styles.statLabel}>{strings.coursesEnrolled}</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>88 / 100</Text>
+            <Text style={styles.statValue}>{avgPoints} / 100</Text>
             <Text style={styles.statLabel}>{strings.avgPoints}</Text>
           </View>
         </View>
@@ -246,30 +260,56 @@ export function StudentReportPDF({ student, courses, exams, locale, strings }: P
               {strings.result}
             </Text>
           </View>
-          {exams.slice(0, 5).map((exam, idx) => (
-            <View
-              key={exam.id}
-              style={{ ...styles.tableRow, flexDirection: isRtl ? "row-reverse" : "row" }}
-            >
-              <Text
-                style={{ ...styles.col2, fontWeight: 700, textAlign: isRtl ? "right" : "left" }}
-              >
-                {exam.title}
-              </Text>
-              <Text style={{ ...styles.col3, textAlign: isRtl ? "right" : "left" }}>
-                {exam.courseTitle || "-"}
-              </Text>
-              <Text style={{ ...styles.col3, textAlign: isRtl ? "right" : "left" }}>
-                {new Date(exam.createdAt).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB")}
-              </Text>
-              <Text style={styles.colCenter}>1</Text>
-              <Text
-                style={{ ...styles.colEnd, fontWeight: 700, textAlign: isRtl ? "left" : "right" }}
-              >
-                {92 - idx * 7}%
+          {exams.length === 0 ? (
+            <View style={styles.tableRow}>
+              <Text style={{ width: "100%", fontSize: 9, textAlign: "center", color: "#64748b" }}>
+                -
               </Text>
             </View>
-          ))}
+          ) : (
+            exams.slice(0, 5).map((exam, idx) => {
+              const score =
+                typeof exam.score === "number"
+                  ? exam.score
+                  : typeof exam.successRate === "number"
+                    ? exam.successRate
+                    : 92 - idx * 7;
+              return (
+                <View
+                  key={exam.id}
+                  style={{ ...styles.tableRow, flexDirection: isRtl ? "row-reverse" : "row" }}
+                >
+                  <Text
+                    style={{ ...styles.col2, fontWeight: 700, textAlign: isRtl ? "right" : "left" }}
+                  >
+                    {exam.title}
+                  </Text>
+                  <Text style={{ ...styles.col3, textAlign: isRtl ? "right" : "left" }}>
+                    {exam.courseTitle || "-"}
+                  </Text>
+                  <Text style={{ ...styles.col3, textAlign: isRtl ? "right" : "left" }}>
+                    {exam.createdAt
+                      ? new Date(
+                          exam.createdAt.includes("T")
+                            ? exam.createdAt
+                            : exam.createdAt.replace(" ", "T"),
+                        ).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB")
+                      : "-"}
+                  </Text>
+                  <Text style={styles.colCenter}>{exam.timesUsed || 1}</Text>
+                  <Text
+                    style={{
+                      ...styles.colEnd,
+                      fontWeight: 700,
+                      textAlign: isRtl ? "left" : "right",
+                    }}
+                  >
+                    {score}%
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </View>
 
         {/* COURSES LIST */}

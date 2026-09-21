@@ -72,6 +72,7 @@ export const authService = {
           full_name: u.full_name,
           email: u.email,
           role: "provider",
+          user_type: u.user_type ?? null,
         },
         "provider",
       );

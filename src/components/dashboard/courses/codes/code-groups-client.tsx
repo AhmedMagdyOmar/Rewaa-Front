@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -37,15 +36,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-import {
-  addStoredCodeGroup,
-  getStoredCodeGroups,
-  resetStoredCodeGroups,
-} from "@/lib/code-groups-storage";
-import { getStoredCourses } from "@/lib/courses-storage";
+import { adaptBackendCodeGroupToUI } from "@/lib/adapters/activation-code-adapter";
+import { adaptBackendCourseToCourse } from "@/components/dashboard/courses/manage-courses/manage-courses-utils";
+import { useCodeGroupsList, useCreateCodeGroup } from "@/hooks/use-activation-codes";
+import { useProviderCourses } from "@/hooks/use-courses";
 import { CodeGroup } from "@/types/code-group";
 import { Course } from "@/types/course";
 import { AddCodeGroupDialog } from "./add-code-group-dialog";
+
+function formatDate(dateStr?: string, locale: string = "ar") {
+  if (!dateStr) return "-";
+  const normalized = dateStr.includes("T") ? dateStr : dateStr.replace(" ", "T");
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
 
 export function CodeGroupsClient() {
   const locale = useLocale();
@@ -58,7 +67,7 @@ export function CodeGroupsClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const selectedCourseFilter = searchParams.get("courseId") || "all";
-  const sortBy = searchParams.get("sort") || "newest";
+  const sortBy = searchParams.get("sort") || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 8;
 
@@ -70,7 +79,7 @@ export function CodeGroupsClient() {
           value === null ||
           value === "" ||
           (key === "courseId" && value === "all") ||
-          (key === "sort" && value === "newest") ||
+          (key === "sort" && (value === "latest" || value === "newest")) ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -84,32 +93,47 @@ export function CodeGroupsClient() {
     [searchParams, pathname, router],
   );
 
-  // Local state for code groups & courses
-  const [groups, setGroups] = React.useState<CodeGroup[]>([]);
-  const [courses, setCourses] = React.useState<Course[]>([]);
+  // Queries
+  const {
+    data: rawGroupsData,
+    isRefetching: isGroupsRefetching,
+    refetch: refetchGroups,
+  } = useCodeGroupsList({
+    search: searchQuery || undefined,
+    course_id: selectedCourseFilter !== "all" ? selectedCourseFilter : undefined,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
+
+  const { data: rawCoursesData } = useProviderCourses({ per_page: 100 });
+
+  // Mutations
+  const createCodeGroupMutation = useCreateCodeGroup();
+
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    setGroups(getStoredCodeGroups(locale));
-    setCourses(getStoredCourses(locale));
+  // Adapted backend data
+  const groups: CodeGroup[] = React.useMemo(() => {
+    if (!rawGroupsData?.groups) return [];
+    return rawGroupsData.groups.map((g) => adaptBackendCodeGroupToUI(g, locale));
+  }, [rawGroupsData, locale]);
 
-    const handleUpdate = () => {
-      setGroups(getStoredCodeGroups(locale));
-      setCourses(getStoredCourses(locale));
-    };
-
-    window.addEventListener("rewaa_code_groups_updated", handleUpdate);
-    window.addEventListener("rewaa_courses_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_code_groups_updated", handleUpdate);
-      window.removeEventListener("rewaa_courses_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale]);
+  const courses: Course[] = React.useMemo(() => {
+    if (!rawCoursesData?.courses) return [];
+    return rawCoursesData.courses.map((c) => adaptBackendCourseToCourse(c, locale));
+  }, [rawCoursesData, locale]);
 
   // Overall platform statistics calculation
   const stats = React.useMemo(() => {
+    if (rawGroupsData?.statistics) {
+      return {
+        total: rawGroupsData.statistics.total_codes,
+        available: rawGroupsData.statistics.available_codes,
+        sold: rawGroupsData.statistics.sold_codes,
+        used: rawGroupsData.statistics.used_codes,
+      };
+    }
     return groups.reduce(
       (acc, item) => {
         acc.total += item.totalCodes;
@@ -120,13 +144,7 @@ export function CodeGroupsClient() {
       },
       { total: 0, sold: 0, used: 0, available: 0 },
     );
-  }, [groups]);
-
-  // Handle data reset
-  const handleResetData = () => {
-    const freshGroups = resetStoredCodeGroups(locale);
-    setGroups(freshGroups);
-  };
+  }, [rawGroupsData, groups]);
 
   // Handle adding new code group
   const handleAddCodeGroup = (data: {
@@ -135,59 +153,36 @@ export function CodeGroupsClient() {
     price: number;
     totalCodes: number;
     availableCodes: number;
+    codePrefix?: string;
     expiryDate: string;
   }) => {
-    addStoredCodeGroup(locale, data);
-    setGroups(getStoredCodeGroups(locale));
+    createCodeGroupMutation.mutate(
+      {
+        course_id: Number(data.courseId) || data.courseId,
+        price: data.price,
+        quantity: data.totalCodes,
+        prefix: data.codePrefix,
+        expires_at: data.expiryDate,
+      },
+      {
+        onSuccess: () => {
+          setIsAddDialogOpen(false);
+        },
+      },
+    );
   };
 
-  // Filter & Sort Logic
-  const filteredAndSortedGroups = React.useMemo(() => {
-    return groups
-      .filter((group) => {
-        // Filter by course dropdown
-        if (selectedCourseFilter !== "all" && group.courseId !== selectedCourseFilter) {
-          return false;
-        }
-
-        // Filter by search query
-        if (searchQuery.trim()) {
-          const query = searchQuery.toLowerCase();
-          const matchesTitle = group.courseTitle.toLowerCase().includes(query);
-          const matchesId = group.id.toLowerCase().includes(query);
-          if (!matchesTitle && !matchesId) return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "oldest") {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
-        if (sortBy === "priceDesc") {
-          return b.price - a.price;
-        }
-        if (sortBy === "priceAsc") {
-          return a.price - b.price;
-        }
-        if (sortBy === "totalCodesDescSort") {
-          return b.totalCodes - a.totalCodes;
-        }
-        // Default: newest
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      });
-  }, [groups, selectedCourseFilter, searchQuery, sortBy]);
-
-  // Pagination bounds
-  const totalItems = filteredAndSortedGroups.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  // Pagination bounds from backend
+  const totalItems = rawGroupsData?.pagination?.total ?? groups.length;
+  const totalPages =
+    rawGroupsData?.pagination?.last_page ?? (Math.ceil(totalItems / itemsPerPage) || 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedGroups = React.useMemo(() => {
-    return filteredAndSortedGroups.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedGroups, startIndex, itemsPerPage]);
+  const paginatedGroups = groups;
 
   const isFiltered =
-    searchQuery.trim() !== "" || selectedCourseFilter !== "all" || sortBy !== "newest";
+    searchQuery.trim() !== "" ||
+    selectedCourseFilter !== "all" ||
+    (sortBy !== "latest" && sortBy !== "newest");
 
   const handleResetFilters = () => {
     updateUrlParams({ search: null, courseId: null, sort: null, page: 1 });
@@ -209,12 +204,13 @@ export function CodeGroupsClient() {
         <div className="flex items-center gap-3 shrink-0">
           <Button
             variant="outline"
-            onClick={handleResetData}
-            title={t("resetData")}
+            onClick={() => refetchGroups()}
+            disabled={isGroupsRefetching}
+            title={t("refreshData")}
             className="gap-2 text-muted-foreground hover:text-foreground"
           >
-            <RotateCcw className="size-4" />
-            <span className="hidden md:inline">{t("resetData")}</span>
+            <RotateCcw className={`size-4 ${isGroupsRefetching ? "animate-spin" : ""}`} />
+            <span className="hidden md:inline">{t("refreshData")}</span>
           </Button>
 
           <Button
@@ -331,11 +327,11 @@ export function CodeGroupsClient() {
               <SelectValue placeholder={t("filters.sortBy")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">{t("filters.newest")}</SelectItem>
+              <SelectItem value="latest">{t("filters.newest")}</SelectItem>
               <SelectItem value="oldest">{t("filters.oldest")}</SelectItem>
-              <SelectItem value="priceDesc">{t("filters.priceDesc")}</SelectItem>
-              <SelectItem value="priceAsc">{t("filters.priceAsc")}</SelectItem>
-              <SelectItem value="totalCodesDescSort">{t("filters.totalCodesDescSort")}</SelectItem>
+              <SelectItem value="price_desc">{t("filters.priceDesc")}</SelectItem>
+              <SelectItem value="price_asc">{t("filters.priceAsc")}</SelectItem>
+              <SelectItem value="codes_desc">{t("filters.totalCodesDescSort")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -420,8 +416,8 @@ export function CodeGroupsClient() {
                     </TableCell>
 
                     {/* Date of Creation */}
-                    <TableCell className="text-xs text-muted-foreground">
-                      {group.createdAt}
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDate(group.createdAt, locale)}
                     </TableCell>
 
                     {/* Actions: View Details button linking to /dashboard/courses/[courseId]/codes/[groupId] */}
@@ -468,6 +464,7 @@ export function CodeGroupsClient() {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         courses={courses}
+        isLoading={createCodeGroupMutation.isPending}
         onSubmit={handleAddCodeGroup}
       />
     </div>

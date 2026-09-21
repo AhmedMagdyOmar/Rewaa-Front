@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { AlertCircle, ArrowLeft, CheckCircle2, KeyRound, Loader2, ShieldCheck } from "lucide-react";
@@ -11,6 +10,10 @@ import { StudentReportView } from "@/components/dashboard/students/student-repor
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { adaptBackendExamAttemptToExam } from "@/lib/adapters/exam-adapters";
+import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
+import { examsService } from "@/lib/api/exams-service";
+import { studentsService } from "@/lib/api/students-service";
 import { getStoredCourses } from "@/lib/courses-storage";
 import { getStoredExams } from "@/lib/exams-storage";
 import { getStudentById } from "@/lib/students-storage";
@@ -53,36 +56,97 @@ export function StudentReportClient({ studentId }: StudentReportClientProps) {
 
   // Load student and related data
   React.useEffect(() => {
-    try {
-      const foundStudent = getStudentById(locale, studentId);
-      const allCourses = getStoredCourses(locale);
-      const allExams = getStoredExams(locale);
+    let isMounted = true;
+    (async () => {
+      try {
+        setIsLoading(true);
+        let foundStudent: Student | null = null;
+        let studentCourses: Course[] = getStoredCourses(locale);
+        let studentExams: Exam[] = [];
 
-      setStudent(foundStudent);
-      setCourses(allCourses);
-      setExams(allExams);
+        try {
+          const backendData = await studentsService.getStudent(studentId);
+          if (backendData) {
+            foundStudent = adaptBackendStudentToUI(backendData, locale);
+            if (backendData.enrolled_courses && backendData.enrolled_courses.length > 0) {
+              studentCourses = backendData.enrolled_courses.map((ec) => ({
+                id: String(ec.id),
+                title:
+                  typeof ec.title === "string"
+                    ? ec.title
+                    : ec.title?.[locale] || ec.title?.ar || ec.title?.en || `Course #${ec.id}`,
+                coverImage: ec.cover_image || "",
+                description: "",
+                subject: "",
+                grade: foundStudent?.grade || "",
+                teacherName: "",
+                period: "term",
+                date: "",
+                numberOfLessons: ec.progress?.total_lessons ?? 0,
+                progressPercentage: ec.progress?.percentage ?? 0,
+                completedLessons: ec.progress?.completed_lessons ?? 0,
+                totalLessons: ec.progress?.total_lessons ?? 0,
+                price: 0,
+                isFree: false,
+                currency: "EGP",
+                hasOffer: false,
+                hasTimeLimit: false,
+                isSplitToSections: false,
+                venue: "online",
+                numberOfParticipants: 0,
+                isDraft: false,
+                sections: [],
+              }));
+            }
 
-      // Check code from URL query parameter
-      const urlCode = searchParams.get("code")?.trim();
-      if (foundStudent && urlCode) {
-        const expectedCodes = [
-          foundStudent.password?.trim().toLowerCase(),
-          foundStudent.id.replace(/\D/g, "").trim(),
-          "123456",
-        ].filter(Boolean);
-
-        if (expectedCodes.includes(urlCode.toLowerCase())) {
-          setIsVerified(true);
-        } else {
-          setInputCode(urlCode);
-          setErrorMessage(t("invalidCode"));
+            try {
+              const attemptsData = await examsService.getExamAttempts({ student_id: studentId });
+              if (attemptsData?.attempts && attemptsData.attempts.length > 0) {
+                studentExams = attemptsData.attempts.map((attempt) =>
+                  adaptBackendExamAttemptToExam(attempt, locale, foundStudent?.grade || ""),
+                );
+              }
+            } catch {
+              // Non-fatal if attempts cannot be fetched
+            }
+          }
+        } catch {
+          foundStudent = getStudentById(locale, studentId);
         }
+
+        if (!isMounted) return;
+        const allExams = studentExams.length > 0 ? studentExams : getStoredExams(locale);
+
+        setStudent(foundStudent);
+        setCourses(studentCourses);
+        setExams(allExams);
+
+        // Check code from URL query parameter
+        const urlCode = searchParams.get("code")?.trim();
+        if (foundStudent && urlCode) {
+          const expectedCodes = [
+            foundStudent.password?.trim().toLowerCase(),
+            foundStudent.id.replace(/\D/g, "").trim(),
+            "123456",
+          ].filter(Boolean);
+
+          if (expectedCodes.includes(urlCode.toLowerCase())) {
+            setIsVerified(true);
+          } else {
+            setInputCode(urlCode);
+            setErrorMessage(t("invalidCode"));
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load student report data:", err);
+      } finally {
+        if (isMounted) setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Failed to load student report data:", err);
-    } finally {
-      setIsLoading(false);
-    }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [locale, studentId, searchParams, t]);
 
   const handleVerifyCode = (e: React.FormEvent) => {

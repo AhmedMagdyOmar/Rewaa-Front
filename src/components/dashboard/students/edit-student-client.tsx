@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import * as React from "react";
@@ -9,8 +8,10 @@ import { ArrowLeft, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { StudentForm, StudentFormData } from "@/components/dashboard/students/student-form";
-import { getStudentById, updateStoredStudent } from "@/lib/students-storage";
+import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
+import { useStudentDetail, useStudentOptions, useUpdateStudent } from "@/hooks/use-students";
 import { Student } from "@/types/student";
+import { toast } from "sonner";
 
 interface EditStudentClientProps {
   studentId: string;
@@ -23,14 +24,24 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
   const tForm = useTranslations("studentsPage.form");
   const tDetails = useTranslations("studentsPage.details");
 
-  const [student, setStudent] = React.useState<Student | null>(null);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { data: backendStudent, isLoading } = useStudentDetail(studentId);
+  const { data: optionsData } = useStudentOptions();
+  const updateStudentMutation = useUpdateStudent();
 
-  React.useEffect(() => {
-    const found = getStudentById(locale, studentId);
-    setStudent(found);
-    setIsLoading(false);
-  }, [studentId, locale]);
+  const student: Student | null = React.useMemo(() => {
+    if (!backendStudent) return null;
+    return adaptBackendStudentToUI(backendStudent, locale);
+  }, [backendStudent, locale]);
+
+  const educationalStagesList = React.useMemo(() => {
+    if (!optionsData?.educational_stages) return undefined;
+    return optionsData.educational_stages.map(
+      (s: { id: number; name: Record<string, string> }) => ({
+        id: String(s.id),
+        name: s.name[locale] || s.name.ar || s.name.en || "",
+      }),
+    );
+  }, [optionsData, locale]);
 
   if (isLoading) {
     return (
@@ -59,24 +70,82 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
   }
 
   const handleSubmit = (data: StudentFormData) => {
-    updateStoredStudent(locale, studentId, {
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      additionalName: data.additionalName,
-      phoneNumber: data.phoneNumber,
-      parentPhoneNumber: data.parentPhoneNumber,
+    const matchedStage = optionsData?.educational_stages?.find(
+      (s: { id: number; name: Record<string, string> }) =>
+        String(s.id) === data.grade || (s.name[locale] || s.name.ar || s.name.en) === data.grade,
+    );
+    const stageId = matchedStage ? matchedStage.id : Number(data.grade) || undefined;
+    const country = optionsData?.countries.find(
+      (c: { id: number; name: Record<string, string> }) =>
+        (c.name[locale] || c.name.ar || c.name.en) === data.country,
+    );
+    const governorate = optionsData?.governorates.find(
+      (g: { id: number; name: Record<string, string> }) =>
+        (g.name[locale] || g.name.ar || g.name.en) === data.state,
+    );
+
+    const payloadData: Record<string, unknown> = {
+      first_name: data.firstName,
+      father_name: data.middleName || undefined,
+      family_name: data.lastName,
+      additional_name: data.additionalName || undefined,
+      phone_code: "+20",
+      phone: data.phoneNumber,
+      guardian_phone_code: "+20",
+      guardian_phone: data.parentPhoneNumber,
       gender: data.gender,
       email: data.email,
-      image: data.image,
-      password: data.password || student.password,
-      country: data.country,
-      state: data.state,
-      grade: data.grade,
-      registrationType: data.registrationType,
-    });
+      country_id: country?.id,
+      governorate_id: governorate?.id,
+      educational_stage_id: stageId,
+      registration_type: data.registrationType,
+    };
 
-    router.push(`/${locale}/dashboard/students/${studentId}`);
+    if (data.password) {
+      payloadData.password = data.password;
+      payloadData.password_confirmation = data.confirmPassword || data.password;
+    }
+
+    if (data.imageFile) {
+      payloadData.avatar = data.imageFile;
+    } else if (data.removeAvatar) {
+      payloadData.remove_avatar = true;
+    }
+
+    updateStudentMutation.mutate(
+      {
+        studentId,
+        data: payloadData,
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            locale === "ar" ? "تم تعديل بيانات الطالب بنجاح" : "Student updated successfully",
+          );
+          router.push(`/${locale}/dashboard/students/${studentId}`);
+        },
+        onError: (err: unknown) => {
+          const validationErrors =
+            (err as { validationErrors?: unknown })?.validationErrors ||
+            (err as { response?: { data?: { errors?: unknown } } })?.response?.data?.errors;
+          if (validationErrors) {
+            const firstError = Object.values(validationErrors).flat()[0] as string;
+            if (firstError) {
+              toast.error(firstError);
+              return;
+            }
+          }
+          const message =
+            (err as { apiMessage?: string })?.apiMessage ||
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            (err as { message?: string })?.message ||
+            (locale === "ar"
+              ? "حدث خطأ أثناء حفظ التعديلات"
+              : "An error occurred while updating student");
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleCancel = () => {
@@ -105,6 +174,7 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
       <StudentForm
         initialData={student}
         isEditing={true}
+        educationalStages={educationalStagesList}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
       />

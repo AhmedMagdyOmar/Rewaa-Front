@@ -9,9 +9,11 @@ import { GradesSection } from "@/components/dashboard/settings/grades-section";
 import { SubjectsSection } from "@/components/dashboard/settings/subjects-section";
 import { AnnouncementsSection } from "@/components/dashboard/settings/announcements-section";
 import { PlatformInfoTab } from "@/components/dashboard/settings/platform-info/platform-info-tab";
+import { useProviderRole } from "@/hooks/use-provider-role";
 
 export default function SettingsPage() {
   const t = useTranslations("settings");
+  const { isAdmin } = useProviderRole();
 
   return (
     <div className="space-y-6">
@@ -40,17 +42,17 @@ export default function SettingsPage() {
 
         {/* Tab 1: Platform Settings */}
         <TabsContent value="platform-settings" className="space-y-6">
-          {/* Teachers Section */}
-          <TeachersSection />
+          {/* Teachers Section — admin only */}
+          {isAdmin && <TeachersSection />}
 
-          {/* Grades and Subjects Row */}
+          {/* Grades and Subjects Row — visible to all, read-only for non-admins */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GradesSection />
-            <SubjectsSection />
+            <GradesSection isReadOnly={!isAdmin} />
+            <SubjectsSection isReadOnly={!isAdmin} />
           </div>
 
-          {/* Assistants Section */}
-          <AssistantsSection />
+          {/* Assistants Section — admin only */}
+          {isAdmin && <AssistantsSection />}
         </TabsContent>
 
         {/* Tab 2: Platform Information */}

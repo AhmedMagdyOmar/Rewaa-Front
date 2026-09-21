@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +15,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Teacher } from "@/types/settings";
 import { Check } from "lucide-react";
-import { useTranslations } from "next-intl";
-import { useState, useEffect } from "react";
-import { getStoredGrades, getStoredSubjects } from "@/lib/settings-storage";
+import { useLocale, useTranslations } from "next-intl";
+import { useState } from "react";
+import { useStagesList, useSubjectsList } from "@/hooks/use-settings";
 
 interface TeacherDialogProps {
   open: boolean;
@@ -57,6 +56,10 @@ const AVAILABLE_SUBJECTS = [
 
 export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: TeacherDialogProps) {
   const t = useTranslations("settings.teachers.dialog");
+  const locale = useLocale();
+
+  const { data: backendStages } = useStagesList();
+  const { data: backendSubjects } = useSubjectsList();
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -67,21 +70,21 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
   const [prevTeacher, setPrevTeacher] = useState<Teacher | null | undefined>(undefined);
   const [prevOpen, setPrevOpen] = useState(false);
 
-  const [gradesList, setGradesList] = useState(AVAILABLE_GRADES);
-  const [subjectsList, setSubjectsList] = useState(AVAILABLE_SUBJECTS);
+  const gradesList =
+    backendStages && backendStages.length > 0
+      ? backendStages.map((g) => ({
+          id: String(g.id),
+          label: g.name?.[locale] || g.name?.ar || g.name?.en || `المرحلة ${g.id}`,
+        }))
+      : AVAILABLE_GRADES;
 
-  useEffect(() => {
-    if (open) {
-      const storedG = getStoredGrades();
-      if (storedG.length > 0) {
-        setGradesList(storedG.map((g) => ({ id: g.id, label: g.name })));
-      }
-      const storedS = getStoredSubjects();
-      if (storedS.length > 0) {
-        setSubjectsList(storedS.map((s) => ({ id: s.name, label: s.name })));
-      }
-    }
-  }, [open]);
+  const subjectsList =
+    backendSubjects && backendSubjects.length > 0
+      ? backendSubjects.map((s) => ({
+          id: String(s.id),
+          label: s.name?.[locale] || s.name?.ar || s.name?.en || `المادة ${s.id}`,
+        }))
+      : AVAILABLE_SUBJECTS;
 
   if (open !== prevOpen || teacherToEdit !== prevTeacher) {
     setPrevOpen(open);
@@ -90,8 +93,16 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
       setName(teacherToEdit.name || "");
       setPhone(teacherToEdit.phone || "");
       setImage(teacherToEdit.image || "");
-      setSelectedGrades(teacherToEdit.grades || []);
-      setSelectedSubjects(teacherToEdit.subjects || []);
+      setSelectedGrades(
+        teacherToEdit.stageIds && teacherToEdit.stageIds.length > 0
+          ? teacherToEdit.stageIds.map(String)
+          : teacherToEdit.grades || [],
+      );
+      setSelectedSubjects(
+        teacherToEdit.subjectIds && teacherToEdit.subjectIds.length > 0
+          ? teacherToEdit.subjectIds.map(String)
+          : teacherToEdit.subjects || [],
+      );
     } else {
       setName("");
       setPhone("");
@@ -101,21 +112,49 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
     }
   }
 
-  const toggleGrade = (gradeId: string) => {
-    setSelectedGrades((prev) =>
-      prev.includes(gradeId) ? prev.filter((g) => g !== gradeId) : [...prev, gradeId],
-    );
+  const toggleGrade = (gradeId: string, label: string) => {
+    setSelectedGrades((prev) => {
+      const hasId = prev.includes(gradeId);
+      const hasLabel = prev.includes(label);
+      if (hasId || hasLabel) {
+        return prev.filter((g) => g !== gradeId && g !== label);
+      }
+      return [...prev, gradeId];
+    });
   };
 
-  const toggleSubject = (subjectId: string) => {
-    setSelectedSubjects((prev) =>
-      prev.includes(subjectId) ? prev.filter((s) => s !== subjectId) : [...prev, subjectId],
-    );
+  const toggleSubject = (subjectId: string, label: string) => {
+    setSelectedSubjects((prev) => {
+      const hasId = prev.includes(subjectId);
+      const hasLabel = prev.includes(label);
+      if (hasId || hasLabel) {
+        return prev.filter((s) => s !== subjectId && s !== label);
+      }
+      return [...prev, subjectId];
+    });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
+
+    const stageIds = selectedGrades
+      .map((g) => {
+        const found = backendStages?.find(
+          (s) => String(s.id) === g || s.name?.ar === g || s.name?.en === g,
+        );
+        return found ? found.id : Number(g);
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+
+    const subjectIds = selectedSubjects
+      .map((s) => {
+        const found = backendSubjects?.find(
+          (sb) => String(sb.id) === s || sb.name?.ar === s || sb.name?.en === s,
+        );
+        return found ? found.id : Number(s);
+      })
+      .filter((n) => !isNaN(n) && n > 0);
 
     onSave({
       id: teacherToEdit?.id,
@@ -124,6 +163,8 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
       image,
       grades: selectedGrades,
       subjects: selectedSubjects,
+      stageIds: stageIds.length > 0 ? stageIds : undefined,
+      subjectIds: subjectIds.length > 0 ? subjectIds : undefined,
     });
     onOpenChange(false);
   };
@@ -181,7 +222,8 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
             <Label>{t("gradesLabel")}</Label>
             <div className="flex flex-wrap gap-1.5 p-3 rounded-lg border bg-muted/10 max-h-36 overflow-y-auto">
               {gradesList.map((g) => {
-                const isSelected = selectedGrades.includes(g.id);
+                const isSelected =
+                  selectedGrades.includes(g.id) || selectedGrades.includes(g.label);
                 return (
                   <Badge
                     key={g.id}
@@ -191,7 +233,7 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : "hover:bg-accent"
                     }`}
-                    onClick={() => toggleGrade(g.id)}
+                    onClick={() => toggleGrade(g.id, g.label)}
                   >
                     {isSelected && <Check className="size-3 me-1 shrink-0" />}
                     {g.label}
@@ -206,7 +248,8 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
             <Label>{t("subjectsLabel")}</Label>
             <div className="flex flex-wrap gap-1.5 p-3 rounded-lg border bg-muted/10 max-h-36 overflow-y-auto">
               {subjectsList.map((s) => {
-                const isSelected = selectedSubjects.includes(s.id);
+                const isSelected =
+                  selectedSubjects.includes(s.id) || selectedSubjects.includes(s.label);
                 return (
                   <Badge
                     key={s.id}
@@ -216,7 +259,7 @@ export function TeacherDialog({ open, onOpenChange, teacherToEdit, onSave }: Tea
                         ? "bg-primary text-primary-foreground shadow-xs"
                         : "hover:bg-accent"
                     }`}
-                    onClick={() => toggleSubject(s.id)}
+                    onClick={() => toggleSubject(s.id, s.label)}
                   >
                     {isSelected && <Check className="size-3 me-1 shrink-0" />}
                     {s.label}

@@ -15,6 +15,7 @@ import {
   Mail,
   MapPin,
   MessageSquare,
+  UserCheck,
   Users,
   Wallet,
 } from "lucide-react";
@@ -25,6 +26,7 @@ import * as React from "react";
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PhoneLink, WhatsAppIcon, getWhatsAppUrl } from "@/components/ui/phone-link";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -35,16 +37,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { getStoredExams } from "@/lib/exams-storage";
-import { getStudentById, updateStoredStudent } from "@/lib/students-storage";
+import { useProviderExamAttempts } from "@/hooks/use-exams";
+import {
+  useAdjustStudentWallet,
+  useStudentDetail,
+  useStudentTransactions,
+  useStudentWallet,
+} from "@/hooks/use-students";
+import { adaptBackendExamAttemptToExam } from "@/lib/adapters/exam-adapters";
+import {
+  adaptBackendStudentToUI,
+  adaptBackendWalletTransactionToUI,
+} from "@/lib/adapters/student-adapter";
 import { Course } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { RegistrationType, Student, StudentTransaction, TransactionType } from "@/types/student";
+import { toast } from "sonner";
 import { BalanceTransactionDialog } from "./balance-transaction-dialog";
 import { StudentInvoiceModal } from "./student-invoice-modal";
 import { StudentReportModal } from "./student-report-modal";
-import { PhoneLink, WhatsAppIcon, getWhatsAppUrl } from "@/components/ui/phone-link";
 
 interface StudentDetailsClientProps {
   studentId: string;
@@ -59,33 +70,14 @@ const REGISTRATION_TYPE_BADGES: Record<RegistrationType, string> = {
 
 function formatDate(iso?: string, locale: string = "ar") {
   if (!iso) return "-";
-  return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+  const normalized = iso.includes("T") ? iso : iso.replace(" ", "T");
+  const d = new Date(normalized);
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
-}
-
-// Mock mock transactions generator if student has none stored
-function getMockStudentTransactions(studentId: string): StudentTransaction[] {
-  return [
-    {
-      id: `tx-${studentId}-101`,
-      studentId,
-      type: "deposit",
-      amount: 500,
-      notes: "إيداع رصيد من السنتر / Center deposit",
-      createdAt: "2026-02-15T14:30:00Z",
-    },
-    {
-      id: `tx-${studentId}-102`,
-      studentId,
-      type: "withdraw",
-      amount: 150,
-      notes: "اشتراك في دورة الفيزياء الحديثة / Modern Physics Course",
-      createdAt: "2026-02-18T10:15:00Z",
-    },
-  ];
 }
 
 export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
@@ -96,28 +88,47 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
   const tModal = useTranslations("studentsPage.transactionModal");
   const tGrades = useTranslations("courses.new.grades");
 
-  const [student, setStudent] = React.useState<Student | null>(null);
-  const [courses, setCourses] = React.useState<Course[]>([]);
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [transactions, setTransactions] = React.useState<StudentTransaction[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const { data: backendStudent, isLoading } = useStudentDetail(studentId);
+  const { data: walletData } = useStudentWallet(studentId);
+  const { data: txData } = useStudentTransactions(studentId);
+  const { data: attemptsData } = useProviderExamAttempts({ student_id: studentId });
+  const adjustWalletMutation = useAdjustStudentWallet();
+
+  const student: Student | null = React.useMemo(() => {
+    if (!backendStudent) return null;
+    const base = adaptBackendStudentToUI(backendStudent, locale);
+    if (walletData && typeof walletData.balance !== "undefined") {
+      const num = Number(walletData.balance);
+      base.balance = isNaN(num) ? 0 : num;
+    }
+    return base;
+  }, [backendStudent, walletData, locale]);
+
+  const transactions: StudentTransaction[] = React.useMemo(() => {
+    if (!txData?.transactions) return [];
+    return txData.transactions.map(adaptBackendWalletTransactionToUI);
+  }, [txData]);
+
+  const studentExams = React.useMemo<Exam[]>(() => {
+    if (!attemptsData?.attempts || attemptsData.attempts.length === 0) {
+      return [];
+    }
+    return attemptsData.attempts.map((attempt) =>
+      adaptBackendExamAttemptToExam(attempt, locale, student?.grade || ""),
+    );
+  }, [attemptsData, locale, student?.grade]);
+
+  const [imageError, setImageError] = React.useState(false);
+
+  React.useEffect(() => {
+    setImageError(false);
+  }, [student?.image]);
 
   const [isTransactionOpen, setIsTransactionOpen] = React.useState(false);
   const [selectedInvoiceTransaction, setSelectedInvoiceTransaction] =
     React.useState<StudentTransaction | null>(null);
   const [isInvoiceOpen, setIsInvoiceOpen] = React.useState(false);
   const [isReportOpen, setIsReportOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    const found = getStudentById(locale, studentId);
-    const allCourses = getStoredCourses(locale);
-    const allExams = getStoredExams(locale);
-    setStudent(found);
-    setCourses(allCourses);
-    setExams(allExams);
-    setTransactions(getMockStudentTransactions(studentId));
-    setIsLoading(false);
-  }, [studentId, locale]);
 
   const formatGrade = React.useCallback(
     (key?: string) => {
@@ -163,15 +174,87 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
     `registrationTypes.${student.registrationType}` as Parameters<typeof t>[0],
   );
 
-  const enrolledCoursesList = courses.slice(0, student.coursesCount || 3);
+  const enrolledCoursesList =
+    backendStudent?.enrolled_courses && backendStudent.enrolled_courses.length > 0
+      ? backendStudent.enrolled_courses.map((ec) => ({
+          id: String(ec.id),
+          title:
+            typeof ec.title === "string"
+              ? ec.title
+              : ec.title?.[locale] || ec.title?.ar || ec.title?.en || `Course #${ec.id}`,
+          cover_image: ec.cover_image,
+          grade: student.grade,
+          teacherName: "",
+          progressPercentage: ec.progress?.percentage ?? 0,
+          completedLessons: ec.progress?.completed_lessons ?? 0,
+          totalLessons: ec.progress?.total_lessons ?? 0,
+        }))
+      : [];
 
-  // Performance calculation numbers (mocked intelligently per student)
-  const avgScore = 88;
-  const examsCount = 12;
-  const correctQuestions = 140;
-  const wrongQuestions = 20;
+  const studentCoursesForReport: Course[] =
+    backendStudent?.enrolled_courses && backendStudent.enrolled_courses.length > 0
+      ? backendStudent.enrolled_courses.map((ec) => ({
+          id: String(ec.id),
+          title:
+            typeof ec.title === "string"
+              ? ec.title
+              : ec.title?.[locale] || ec.title?.ar || ec.title?.en || `Course #${ec.id}`,
+          coverImage: ec.cover_image || "",
+          description: "",
+          subject: "",
+          grade: student?.grade || "",
+          teacherName: "",
+          period: "term",
+          date: "",
+          numberOfLessons: ec.progress?.total_lessons ?? 0,
+          progressPercentage: ec.progress?.percentage ?? 0,
+          completedLessons: ec.progress?.completed_lessons ?? 0,
+          totalLessons: ec.progress?.total_lessons ?? 0,
+          price: 0,
+          isFree: false,
+          currency: "EGP",
+          hasOffer: false,
+          hasTimeLimit: false,
+          isSplitToSections: false,
+          venue: "online",
+          numberOfParticipants: 0,
+          isDraft: false,
+          sections: [],
+        }))
+      : [];
+
+  // Performance calculation numbers derived from real student record and exam attempts
+  const examsCount =
+    student.examsPerformed && student.examsPerformed > 0
+      ? student.examsPerformed
+      : studentExams.length;
+  const avgScore =
+    student.averageRating && student.averageRating > 0
+      ? Math.round(
+          student.averageRating <= 5 ? (student.averageRating / 5) * 100 : student.averageRating,
+        )
+      : studentExams.length > 0
+        ? Math.round(
+            studentExams.reduce((acc, curr) => acc + (curr.score ?? curr.successRate ?? 0), 0) /
+              studentExams.length,
+          )
+        : 0;
+
+  const attempts = attemptsData?.attempts || [];
+  const summaryCorrect = attempts.reduce(
+    (acc, a) => acc + (a.result_summary?.correct_answers_count ?? 0),
+    0,
+  );
+  const summaryIncorrect = attempts.reduce(
+    (acc, a) => acc + (a.result_summary?.incorrect_answers_count ?? 0),
+    0,
+  );
+  const hasAttemptSummaries = attempts.some((a) => a.result_summary != null);
+
+  const correctQuestions = hasAttemptSummaries ? summaryCorrect : (student.correctQuestions ?? 0);
+  const wrongQuestions = hasAttemptSummaries ? summaryIncorrect : (student.wrongQuestions ?? 0);
   const totalQuestions = correctQuestions + wrongQuestions;
-  const correctPct = Math.round((correctQuestions / totalQuestions) * 100);
+  const correctPct = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
 
   const handleTransactionSubmit = ({
     type,
@@ -183,30 +266,58 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
     notes?: string;
   }) => {
     if (!student) return;
-    const current = student.balance ?? 0;
-    let newBalance = current;
+    const direction = type === "withdraw" ? "debit" : "credit";
+    const reason = type === "deposit" ? "admin_top_up" : "adjustment";
+    const fundingSource = type === "deposit" ? "cash" : undefined;
+    const idempotencyKey =
+      typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+        ? crypto.randomUUID()
+        : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+          });
 
-    if (type === "deposit" || type === "refund") {
-      newBalance = current + amount;
-    } else if (type === "withdraw") {
-      newBalance = Math.max(0, current - amount);
-    } else if (type === "adjustment") {
-      newBalance = amount;
-    }
-
-    const updated = updateStoredStudent(locale, student.id, { balance: newBalance });
-    if (updated) {
-      setStudent(updated);
-      const newTx: StudentTransaction = {
-        id: `tx-${student.id}-${Date.now().toString().slice(-4)}`,
+    adjustWalletMutation.mutate(
+      {
         studentId: student.id,
-        type,
-        amount,
-        notes,
-        createdAt: new Date().toISOString(),
-      };
-      setTransactions((prev) => [newTx, ...prev]);
-    }
+        data: {
+          direction,
+          amount,
+          reason,
+          funding_source: fundingSource,
+          notes,
+          idempotency_key: idempotencyKey,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(
+            locale === "ar" ? "تم تعديل رصيد الطالب بنجاح" : "Student balance updated successfully",
+          );
+          setIsTransactionOpen(false);
+        },
+        onError: (err: unknown) => {
+          const validationErrors =
+            (err as { validationErrors?: unknown })?.validationErrors ||
+            (err as { response?: { data?: { errors?: unknown } } })?.response?.data?.errors;
+          if (validationErrors) {
+            const firstError = Object.values(validationErrors).flat()[0] as string;
+            if (firstError) {
+              toast.error(firstError);
+              return;
+            }
+          }
+          const message =
+            (err as { apiMessage?: string })?.apiMessage ||
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            (err as { message?: string })?.message ||
+            (locale === "ar"
+              ? "حدث خطأ أثناء تعديل الرصيد"
+              : "An error occurred while updating balance");
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleOpenInvoice = (tx: StudentTransaction) => {
@@ -242,14 +353,19 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
 
             {/* Avatar / Image Div */}
             <div className="relative size-20 sm:size-24 rounded-2xl overflow-hidden bg-primary/10 border-2 border-primary/20 shrink-0 flex items-center justify-center shadow-xs">
-              {student.image ? (
+              {student.image && !imageError ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={student.image} alt={fullName} className="size-full object-cover" />
+                <img
+                  src={student.image}
+                  alt={fullName}
+                  className="size-full object-cover"
+                  onError={() => setImageError(true)}
+                />
               ) : (
                 <span className="text-2xl font-black text-primary">
                   {locale === "ar"
-                    ? `${student.firstName[0]}. ${student.lastName[0]}.`
-                    : `${student.firstName[0]}${student.lastName[0]}`}
+                    ? `${student.firstName[0] || ""}. ${student.lastName[0] || ""}.`
+                    : `${student.firstName[0] || ""}${student.lastName[0] || ""}`}
                 </span>
               )}
             </div>
@@ -298,6 +414,7 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                 <PhoneLink
                   phone={student.phoneNumber}
                   className="flex items-center gap-1 text-muted-foreground hover:text-emerald-600"
+                  title={locale === "ar" ? "هاتف الطالب (واتساب)" : "Student Phone (WhatsApp)"}
                 >
                   <WhatsAppIcon className="size-3.5" />
                   <span dir="ltr">{student.phoneNumber}</span>
@@ -305,9 +422,16 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                 {student.parentPhoneNumber && (
                   <PhoneLink
                     phone={student.parentPhoneNumber}
-                    className="flex items-center gap-1 text-muted-foreground hover:text-emerald-600"
+                    className="flex items-center gap-1.5 text-muted-foreground hover:text-emerald-600 bg-muted/40 px-2 py-0.5 rounded-md border border-border/40"
+                    title={
+                      locale === "ar" ? "هاتف ولي الأمر (واتساب)" : "Guardian Phone (WhatsApp)"
+                    }
                   >
-                    <WhatsAppIcon className="size-3.5" />
+                    <UserCheck className="size-3.5 text-primary shrink-0" />
+                    <span className="text-[11px] font-medium text-foreground/80">
+                      {locale === "ar" ? "ولي الأمر:" : "Guardian:"}
+                    </span>
+                    <WhatsAppIcon className="size-3 text-emerald-600 shrink-0" />
                     <span dir="ltr">{student.parentPhoneNumber}</span>
                   </PhoneLink>
                 )}
@@ -431,21 +555,29 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
         <DashboardCard className="p-4 space-y-2 bg-card sm:col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-foreground">{tDetails("questionPerformance")}</span>
-            <span className="font-mono text-muted-foreground">{correctPct}%</span>
+            <span className="font-mono text-muted-foreground">
+              {totalQuestions > 0 ? `${correctPct}%` : "-"}
+            </span>
           </div>
 
           {/* Dual Segment Progress Bar */}
-          <div className="h-3 w-full rounded-full bg-rose-500/20 overflow-hidden flex">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-300"
-              style={{ width: `${correctPct}%` }}
-              title={`${correctQuestions} ${tDetails("correctQuestions")}`}
-            />
-            <div
-              className="h-full bg-rose-500 transition-all duration-300"
-              style={{ width: `${100 - correctPct}%` }}
-              title={`${wrongQuestions} ${tDetails("wrongQuestions")}`}
-            />
+          <div className="h-3 w-full rounded-full bg-muted overflow-hidden flex">
+            {totalQuestions > 0 ? (
+              <>
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{ width: `${correctPct}%` }}
+                  title={`${correctQuestions} ${tDetails("correctQuestions")}`}
+                />
+                <div
+                  className="h-full bg-rose-500 transition-all duration-300"
+                  style={{ width: `${100 - correctPct}%` }}
+                  title={`${wrongQuestions} ${tDetails("wrongQuestions")}`}
+                />
+              </>
+            ) : (
+              <div className="h-full w-full bg-muted" />
+            )}
           </div>
 
           <div className="flex items-center justify-between text-[11px] pt-1">
@@ -492,7 +624,7 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {enrolledCoursesList.map((course, idx) => {
-                const progressPct = 75 - idx * 15;
+                const progressPct = course.progressPercentage ?? 0;
                 const courseExamsCount = 4 - idx;
                 const courseCorrectAnswers = 35 - idx * 5;
 
@@ -515,7 +647,11 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                         <h4 className="font-bold text-foreground text-base line-clamp-1">
                           {course.title}
                         </h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">{course.teacherName}</p>
+                        {course.teacherName && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {course.teacherName}
+                          </p>
+                        )}
                       </div>
 
                       {/* Course Progress Bar */}
@@ -559,15 +695,15 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
 
         {/* ─── TAB 2: EXAMS ────────────────────────────────────────────────────── */}
         <TabsContent value="exams" className="space-y-4">
-          {exams.length === 0 ? (
+          {studentExams.length === 0 ? (
             <DashboardCard className="p-8 text-center text-muted-foreground border-dashed">
               {tDetails("examsTab.empty")}
             </DashboardCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {exams.slice(0, 6).map((exam, i) => {
-                const score = 90 - i * 6;
-                const isPassed = score >= 60;
+              {studentExams.map((exam) => {
+                const score = exam.successRate;
+                const isPassed = score >= (exam.passingPercentage || 60);
                 return (
                   <DashboardCard
                     key={exam.id}
@@ -593,7 +729,9 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                       <h4 className="font-bold text-foreground text-sm line-clamp-1">
                         {exam.title}
                       </h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">{exam.courseTitle}</p>
+                      {exam.courseTitle && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{exam.courseTitle}</p>
+                      )}
                     </div>
 
                     <div className="space-y-1">
@@ -695,6 +833,7 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
       {/* Balance Transaction Dialog */}
       <BalanceTransactionDialog
         studentName={fullName}
+        studentId={student.id}
         currentBalance={student.balance ?? 0}
         isOpen={isTransactionOpen}
         onClose={() => setIsTransactionOpen(false)}
@@ -717,8 +856,8 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
       {/* Student Comprehensive Report Modal */}
       <StudentReportModal
         student={student}
-        courses={courses}
-        exams={exams}
+        courses={studentCoursesForReport}
+        exams={studentExams}
         isOpen={isReportOpen}
         onClose={() => setIsReportOpen(false)}
         formatGrade={formatGrade}

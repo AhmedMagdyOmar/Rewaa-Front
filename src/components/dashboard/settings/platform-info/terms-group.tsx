@@ -7,14 +7,15 @@ import { FileText, Pencil, RotateCcw, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { PlatformInfoGroupTerms } from "@/types/settings";
+import type { PlatformInfoGroupTerms } from "@/types/settings";
 import { savePlatformInfoTerms, resetPlatformInfoGroup } from "@/lib/settings-storage";
 
 interface TermsGroupProps {
   data: PlatformInfoGroupTerms;
+  onSaveCustom?: (content: string) => Promise<void> | void;
 }
 
-export function TermsGroup({ data }: TermsGroupProps) {
+export function TermsGroup({ data, onSaveCustom }: TermsGroupProps) {
   const t = useTranslations("settings.platformInfo.terms");
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -31,8 +32,12 @@ export function TermsGroup({ data }: TermsGroupProps) {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    savePlatformInfoTerms(content);
+  const handleSave = async () => {
+    if (onSaveCustom) {
+      await onSaveCustom(content);
+    } else {
+      savePlatformInfoTerms(content);
+    }
     setIsEditing(false);
   };
 

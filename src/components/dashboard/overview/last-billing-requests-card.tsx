@@ -12,33 +12,37 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  getStoredBillingRequests,
-  updateBillingRequestStatus,
-} from "@/lib/billing-requests-storage";
-import { BillingRequestItem } from "@/types/billing-request";
-import { Student, StudentTransaction } from "@/types/student";
-import { CreditCard, Eye } from "lucide-react";
+import { useApprovePayment, usePaymentsList, useRejectPayment } from "@/hooks/use-billing";
+import type { BackendPayment } from "@/types/api-contracts";
+import type { Student, StudentTransaction } from "@/types/student";
+import { CreditCard, Eye, Loader2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { DashboardCard } from "./dashboard-card";
 import { DashboardCardHeader } from "./dashboard-card-header";
 
-export type BillingRequest = BillingRequestItem;
+export type BillingRequest = BackendPayment;
 
 interface LastBillingRequestsCardProps {
-  billingRequests?: BillingRequestItem[];
-  onSelectInvoice?: (invoice: BillingRequestItem) => void;
+  onSelectInvoice?: (payment: BackendPayment) => void;
 }
 
-export function LastBillingRequestsCard({
-  billingRequests: initialRequests,
-  onSelectInvoice,
-}: LastBillingRequestsCardProps) {
+export function LastBillingRequestsCard({ onSelectInvoice }: LastBillingRequestsCardProps) {
   const locale = useLocale();
   const t = useTranslations("dashboard");
-  const [requests, setRequests] = useState<BillingRequestItem[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<BillingRequestItem | null>(null);
+
+  const { data: paymentsData, isLoading } = usePaymentsList({
+    per_page: 10,
+    sort: "latest",
+  });
+
+  const approvePaymentMutation = useApprovePayment();
+  const rejectPaymentMutation = useRejectPayment();
+
+  const payments: BackendPayment[] = paymentsData?.payments ?? [];
+
+  const [selectedPayment, setSelectedPayment] = useState<BackendPayment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Generated printable invoice modal state
@@ -48,75 +52,112 @@ export function LastBillingRequestsCard({
   } | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
-  useEffect(() => {
-    const loadRequests = () => {
-      if (initialRequests && initialRequests.length > 0) {
-        setRequests(initialRequests);
-      } else {
-        setRequests(getStoredBillingRequests());
-      }
-    };
+  const pendingPayments = payments.filter((p) => p.status === "pending");
+  const displayedPayments = payments.slice(0, 5);
 
-    loadRequests();
-
-    const handleStorageUpdate = () => {
-      setRequests(getStoredBillingRequests());
-    };
-
-    window.addEventListener("rewaa_billing_requests_updated", handleStorageUpdate);
-    return () => {
-      window.removeEventListener("rewaa_billing_requests_updated", handleStorageUpdate);
-    };
-  }, [initialRequests]);
-
-  const pendingRequests = requests.filter((r) => r.status === "pending");
-  const displayedRequests = requests.slice(0, 5);
-
-  const handleEyeClick = (req: BillingRequestItem) => {
-    setSelectedRequest(req);
+  const handleEyeClick = (payment: BackendPayment) => {
+    setSelectedPayment(payment);
     setIsModalOpen(true);
     if (onSelectInvoice) {
-      onSelectInvoice(req);
+      onSelectInvoice(payment);
     }
   };
 
-  const handleAccept = (id: string) => {
-    const targetReq = requests.find((r) => r.id === id);
-    if (!targetReq) return;
+  const handleAccept = async (id: string | number) => {
+    const targetPayment = payments.find((p) => String(p.id) === String(id));
+    if (!targetPayment) return;
 
-    const updated = updateBillingRequestStatus(id, "accepted");
-    setRequests(updated);
+    try {
+      await approvePaymentMutation.mutateAsync(id);
+      toast.success(locale === "ar" ? "تم قبول طلب الدفع بنجاح" : "Payment approved successfully");
 
-    const mockStudent: Student = {
-      id: targetReq.studentId,
-      firstName: targetReq.studentFullName,
-      lastName: "",
-      phoneNumber: targetReq.studentPhoneNumber,
-      parentPhoneNumber: targetReq.studentPhoneNumber,
-      gender: "male",
-      email: targetReq.studentEmail || "student@example.com",
-      country: locale === "ar" ? "مصر" : "Egypt",
-      state: locale === "ar" ? "القاهرة" : "Cairo",
-      grade: targetReq.grade,
-      registrationType: targetReq.venue === "online" ? "online" : "center",
-    };
+      const studentName =
+        targetPayment.full_name ||
+        targetPayment.student?.full_name ||
+        [
+          targetPayment.student?.first_name,
+          targetPayment.student?.father_name,
+          targetPayment.student?.family_name,
+        ]
+          .filter(Boolean)
+          .join(" ") ||
+        "Student";
 
-    const mockTransaction: StudentTransaction = {
-      id: targetReq.id,
-      studentId: targetReq.studentId,
-      type: "deposit",
-      amount: targetReq.amount,
-      notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${targetReq.courseName}`,
-      createdAt: new Date().toISOString(),
-    };
+      const primaryItem = targetPayment.order?.items?.[0];
+      const courseTitle =
+        primaryItem?.course_title?.[locale] ||
+        primaryItem?.course_title?.ar ||
+        primaryItem?.course_title?.en ||
+        targetPayment.order?.order_number ||
+        "Course Subscription";
 
-    setGeneratedInvoiceData({ student: mockStudent, transaction: mockTransaction });
-    setIsInvoiceModalOpen(true);
+      const deliveryMode =
+        primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
+
+      const studentPhone =
+        targetPayment.submitted_phone || targetPayment.phone || targetPayment.student?.phone || "";
+
+      const studentGrade =
+        primaryItem?.educational_stage_name?.[locale] ||
+        primaryItem?.educational_stage_name?.ar ||
+        targetPayment.student?.educational_stage?.name?.[locale] ||
+        targetPayment.student?.educational_stage?.name?.ar ||
+        "-";
+
+      const studentObj: Student = {
+        id: String(targetPayment.student_id || targetPayment.student?.id || id),
+        firstName: studentName,
+        lastName: "",
+        phoneNumber: studentPhone,
+        parentPhoneNumber: studentPhone,
+        gender: "male",
+        email: targetPayment.email || targetPayment.student?.email || "student@example.com",
+        country: locale === "ar" ? "مصر" : "Egypt",
+        state: locale === "ar" ? "القاهرة" : "Cairo",
+        grade: studentGrade,
+        registrationType: deliveryMode === "online" ? "online" : "center",
+      };
+
+      const transactionObj: StudentTransaction = {
+        id: String(targetPayment.id),
+        studentId: String(targetPayment.student_id),
+        type: "deposit",
+        amount: Number(targetPayment.amount || 0),
+        notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${courseTitle}`,
+        createdAt: targetPayment.created_at || new Date().toISOString(),
+      };
+
+      setGeneratedInvoiceData({ student: studentObj, transaction: transactionObj });
+      setIsInvoiceModalOpen(true);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to approve payment";
+      toast.error(errorMsg);
+    }
   };
 
-  const handleReject = (id: string, reason: string) => {
-    const updated = updateBillingRequestStatus(id, "rejected", reason);
-    setRequests(updated);
+  const handleReject = async (id: string | number, reason: string) => {
+    try {
+      await rejectPaymentMutation.mutateAsync({
+        paymentId: id,
+        data: { rejection_reason: reason },
+      });
+      toast.success(locale === "ar" ? "تم رفض الطلب بنجاح" : "Payment rejected successfully");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to reject payment";
+      toast.error(errorMsg);
+    }
+  };
+
+  const formatPaymentMethod = (method?: string) => {
+    if (!method) return locale === "ar" ? "أخرى" : "Other";
+    const m = method.toLowerCase();
+    if (m.includes("insta")) return "InstaPay";
+    if (m.includes("voda") || m.includes("cash") || m.includes("wallet")) return "Vodafone Cash";
+    if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
+      return "Credit Card";
+    if (m.includes("fawry")) return "Fawry";
+    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي" : "Manual Transfer";
+    return method;
   };
 
   return (
@@ -132,7 +173,7 @@ export function LastBillingRequestsCard({
                   variant="outline"
                   className="text-xs bg-amber-500/10 text-amber-600 border-amber-500/20"
                 >
-                  {t("pendingRequestsCount", { count: pendingRequests.length })}
+                  {t("pendingRequestsCount", { count: pendingPayments.length })}
                 </Badge>
               }
               action={{
@@ -156,67 +197,99 @@ export function LastBillingRequestsCard({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayedRequests.map((req) => {
-                    const statusBadgeVariant =
-                      req.status === "pending"
-                        ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                        : req.status === "accepted"
-                          ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                          : "bg-red-500/10 text-red-600 border-red-500/20";
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center">
+                        <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                          <Loader2 className="size-4 animate-spin text-primary" />
+                          <span className="text-xs">
+                            {locale === "ar" ? "جارٍ التحميل..." : "Loading..."}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ) : displayedPayments.length === 0 ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="h-32 text-center text-xs text-muted-foreground"
+                      >
+                        {locale === "ar"
+                          ? "لا توجد طلبات فواتير حديثة"
+                          : "No recent billing requests"}
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    displayedPayments.map((payment) => {
+                      const statusBadgeVariant =
+                        payment.status === "pending"
+                          ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          : payment.status === "approved"
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                            : "bg-red-500/10 text-red-600 border-red-500/20";
 
-                    return (
-                      <TableRow key={req.id} className="hover:bg-muted/30">
-                        <TableCell className="text-xs font-medium">
-                          <div className="font-bold text-foreground truncate max-w-36">
-                            {req.studentFullName}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs font-semibold text-primary">
-                          {t("currencyEgp", { amount: req.amount })}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-[11px] font-medium">
-                              {req.paymentMethod
-                                ? t(`paymentMethods.${req.paymentMethod}`)
-                                : locale === "ar"
-                                  ? "أخرى"
-                                  : "Other"}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-xs">
-                          <Badge
-                            variant="outline"
-                            className={`text-[11px] font-medium ${statusBadgeVariant}`}
-                          >
-                            {req.status === "pending"
-                              ? locale === "ar"
-                                ? "قيد الانتظار"
-                                : "Pending"
-                              : req.status === "accepted"
+                      const studentName =
+                        payment.full_name ||
+                        payment.student?.full_name ||
+                        [
+                          payment.student?.first_name,
+                          payment.student?.father_name,
+                          payment.student?.family_name,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") ||
+                        "Student";
+
+                      return (
+                        <TableRow key={payment.id} className="hover:bg-muted/30">
+                          <TableCell className="text-xs font-medium">
+                            <div className="font-bold text-foreground truncate max-w-36">
+                              {studentName}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs font-semibold text-primary">
+                            {t("currencyEgp", { amount: payment.amount })}
+                          </TableCell>
+                          <TableCell className="text-xs text-muted-foreground hidden sm:table-cell">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-[11px] font-medium">
+                                {formatPaymentMethod(payment.method)}
+                              </Badge>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs">
+                            <Badge
+                              variant="outline"
+                              className={`text-[11px] font-medium ${statusBadgeVariant}`}
+                            >
+                              {payment.status === "pending"
                                 ? locale === "ar"
-                                  ? "مقبول"
-                                  : "Accepted"
-                                : locale === "ar"
-                                  ? "مرفوض"
-                                  : "Rejected"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-end">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="size-8"
-                            onClick={() => handleEyeClick(req)}
-                            title={t("billingTable.viewInvoice")}
-                          >
-                            <Eye className="size-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                                  ? "قيد الانتظار"
+                                  : "Pending"
+                                : payment.status === "approved"
+                                  ? locale === "ar"
+                                    ? "مقبول"
+                                    : "Accepted"
+                                  : locale === "ar"
+                                    ? "مرفوض"
+                                    : "Rejected"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-end">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-8"
+                              onClick={() => handleEyeClick(payment)}
+                              title={t("billingTable.viewInvoice")}
+                            >
+                              <Eye className="size-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
                 </TableBody>
               </Table>
             </div>
@@ -226,7 +299,7 @@ export function LastBillingRequestsCard({
 
       {/* Request Details Modal */}
       <RequestDetailsModal
-        request={selectedRequest}
+        payment={selectedPayment}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAccept={handleAccept}

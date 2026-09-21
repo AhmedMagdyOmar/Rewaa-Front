@@ -1,8 +1,7 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { StudentInvoiceModal } from "@/components/dashboard/students/student-invoice-modal";
-import { Student, StudentTransaction } from "@/types/student";
+import type { Student, StudentTransaction } from "@/types/student";
 
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +24,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getStoredBillingRequests,
-  resetStoredBillingRequests,
-  updateBillingRequestStatus,
-} from "@/lib/billing-requests-storage";
-import { BillingRequestItem, BillingRequestStatus } from "@/types/billing-request";
+import { useApprovePayment, usePaymentsList, useRejectPayment } from "@/hooks/use-billing";
+import type { BackendPayment, BackendPaymentStatus } from "@/types/api-contracts";
 import {
   ArrowUpDown,
   BarChart3,
@@ -39,6 +34,7 @@ import {
   Clock,
   CreditCard,
   Eye,
+  Loader2,
   MapPin,
   Receipt,
   RotateCcw,
@@ -49,13 +45,20 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { toast } from "sonner";
 import { RequestDetailsModal } from "./request-details-modal";
 
+const emptySubscribe = () => () => {};
+
 export function BillingRequestsClient() {
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage");
-  const tGrades = useTranslations("courses.new.grades");
 
   const router = useRouter();
   const pathname = usePathname();
@@ -63,14 +66,14 @@ export function BillingRequestsClient() {
 
   // Read URL query params
   const searchQuery = searchParams.get("search") || "";
-  const statusTab = (searchParams.get("status") as "all" | BillingRequestStatus) || "all";
+  const statusTab = (searchParams.get("status") as "all" | BackendPaymentStatus) || "all";
   const venueFilter = (searchParams.get("venue") as "all" | "center" | "online") || "all";
   const sortBy =
     (searchParams.get("sort") as "newest" | "oldest" | "amountDesc" | "amountAsc") || "newest";
 
   const isFilterActive =
     Boolean(searchQuery.trim()) ||
-    (statusTab !== "all" && statusTab !== "pending") ||
+    statusTab !== "all" ||
     venueFilter !== "all" ||
     sortBy !== "newest";
 
@@ -80,7 +83,7 @@ export function BillingRequestsClient() {
       if (
         value === null ||
         value === "" ||
-        (key === "status" && value === "pending") ||
+        (key === "status" && value === "all") ||
         (key === "venue" && value === "all") ||
         (key === "sort" && value === "newest")
       ) {
@@ -104,57 +107,73 @@ export function BillingRequestsClient() {
     });
   };
 
-  const [requests, setRequests] = useState<BillingRequestItem[]>([]);
-  const [selectedRequest, setSelectedRequest] = useState<BillingRequestItem | null>(null);
+  // Queries & Mutations
+  const {
+    data: paymentsData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = usePaymentsList({
+    search: searchQuery.trim() || undefined,
+    status: statusTab !== "all" ? statusTab : undefined,
+    sort:
+      sortBy === "oldest"
+        ? "oldest"
+        : sortBy === "amountDesc"
+          ? "amount_desc"
+          : sortBy === "amountAsc"
+            ? "amount_asc"
+            : "latest",
+    per_page: 50,
+  });
+
+  const isSpinning = isMounted && (isLoading || isFetching);
+
+  const approvePaymentMutation = useApprovePayment();
+  const rejectPaymentMutation = useRejectPayment();
+
+  const payments: BackendPayment[] = useMemo(
+    () => paymentsData?.payments ?? [],
+    [paymentsData?.payments],
+  );
+
+  const [selectedPayment, setSelectedPayment] = useState<BackendPayment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  useEffect(() => {
-    setRequests(getStoredBillingRequests());
-  }, []);
-
-  // Compute stat counts
+  // Compute stat counts from payments list
   const stats = useMemo(() => {
-    const totalPayments = requests.reduce((sum, req) => sum + req.amount, 0);
-    const pendingCount = requests.filter((r) => r.status === "pending").length;
-    const acceptedCount = requests.filter((r) => r.status === "accepted").length;
-    const rejectedCount = requests.filter((r) => r.status === "rejected").length;
+    const totalPayments = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+    const pendingCount = payments.filter((p) => p.status === "pending").length;
+    const acceptedCount = payments.filter((p) => p.status === "approved").length;
+    const rejectedCount = payments.filter((p) => p.status === "rejected").length;
     return {
       totalPayments,
       pendingCount,
       acceptedCount,
       rejectedCount,
     };
-  }, [requests]);
+  }, [payments]);
 
-  // Format grade helper
-  const formatGrade = (gradeKey: string) => {
-    if (!gradeKey) return "-";
-    return tGrades.has(gradeKey as Parameters<typeof tGrades.has>[0])
-      ? tGrades(gradeKey as Parameters<typeof tGrades>[0])
-      : gradeKey;
-  };
-
-  // Format venue helper
-  const formatVenue = (venue: string) => {
-    if (venue === "center") return locale === "ar" ? "سنتر" : "Center";
-    if (venue === "online") return locale === "ar" ? "أونلاين" : "Online";
-    return locale === "ar" ? "الكل" : "All";
+  // Format delivery mode / venue helper
+  const formatVenue = (mode?: string | null) => {
+    if (mode === "center" || mode === "onsite") return locale === "ar" ? "سنتر" : "Center";
+    if (mode === "online") return locale === "ar" ? "أونلاين" : "Online";
+    if (mode === "hybrid") return locale === "ar" ? "مدمج" : "Hybrid";
+    return locale === "ar" ? "أونلاين" : "Online";
   };
 
   // Format payment method helper
   const formatPaymentMethod = (method?: string) => {
-    switch (method) {
-      case "vodafoneCash":
-        return locale === "ar" ? "فودافون كاش" : "Vodafone Cash";
-      case "creditCard":
-        return locale === "ar" ? "بطاقة ائتمان" : "Credit Card";
-      case "fawry":
-        return locale === "ar" ? "فوري" : "Fawry";
-      case "instaPay":
-        return locale === "ar" ? "إنستاباي" : "InstaPay";
-      default:
-        return locale === "ar" ? "أخرى" : "Other";
-    }
+    if (!method) return locale === "ar" ? "أخرى" : "Other";
+    const m = method.toLowerCase();
+    if (m.includes("insta")) return locale === "ar" ? "إنستاباي" : "InstaPay";
+    if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
+      return locale === "ar" ? "فودافون كاش" : "Vodafone Cash";
+    if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
+      return locale === "ar" ? "بطاقة ائتمان" : "Credit Card";
+    if (m.includes("fawry")) return locale === "ar" ? "فوري" : "Fawry";
+    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي" : "Manual Transfer";
+    return method;
   };
 
   // Invoice modal state
@@ -165,101 +184,107 @@ export function BillingRequestsClient() {
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
   // Handle Accept / Reject actions
-  const handleAccept = (id: string) => {
-    const targetReq = requests.find((r) => r.id === id);
-    if (!targetReq) return;
+  const handleAccept = async (id: string | number) => {
+    const targetPayment = payments.find((p) => String(p.id) === String(id));
+    if (!targetPayment) return;
 
-    const updated = updateBillingRequestStatus(id, "accepted");
-    setRequests(updated);
+    try {
+      await approvePaymentMutation.mutateAsync(id);
+      toast.success(locale === "ar" ? "تم قبول طلب الدفع بنجاح" : "Payment approved successfully");
 
-    // Build mock Student and StudentTransaction to render in StudentInvoiceModal
-    const mockStudent: Student = {
-      id: targetReq.studentId,
-      firstName: targetReq.studentFullName,
-      lastName: "",
-      phoneNumber: targetReq.studentPhoneNumber,
-      parentPhoneNumber: targetReq.studentPhoneNumber,
-      gender: "male",
-      email: targetReq.studentEmail || "student@example.com",
-      country: locale === "ar" ? "مصر" : "Egypt",
-      state: locale === "ar" ? "القاهرة" : "Cairo",
-      grade: targetReq.grade,
-      registrationType: targetReq.venue === "online" ? "online" : "center",
-    };
+      const studentName =
+        targetPayment.full_name ||
+        targetPayment.student?.full_name ||
+        [
+          targetPayment.student?.first_name,
+          targetPayment.student?.father_name,
+          targetPayment.student?.family_name,
+        ]
+          .filter(Boolean)
+          .join(" ") ||
+        "Student";
 
-    const mockTransaction: StudentTransaction = {
-      id: targetReq.id,
-      studentId: targetReq.studentId,
-      type: "deposit",
-      amount: targetReq.amount,
-      notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${targetReq.courseName}`,
-      createdAt: new Date().toISOString(),
-    };
+      const primaryItem = targetPayment.order?.items?.[0];
+      const courseTitle =
+        primaryItem?.course_title?.[locale] ||
+        primaryItem?.course_title?.ar ||
+        primaryItem?.course_title?.en ||
+        targetPayment.order?.order_number ||
+        "Course Subscription";
 
-    setGeneratedInvoiceData({ student: mockStudent, transaction: mockTransaction });
-    setIsInvoiceModalOpen(true);
+      const deliveryMode =
+        primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
+
+      const studentPhone =
+        targetPayment.submitted_phone || targetPayment.phone || targetPayment.student?.phone || "";
+
+      const studentGrade =
+        primaryItem?.educational_stage_name?.[locale] ||
+        primaryItem?.educational_stage_name?.ar ||
+        targetPayment.student?.educational_stage?.name?.[locale] ||
+        targetPayment.student?.educational_stage?.name?.ar ||
+        "-";
+
+      const studentObj: Student = {
+        id: String(targetPayment.student_id || targetPayment.student?.id || id),
+        firstName: studentName,
+        lastName: "",
+        phoneNumber: studentPhone,
+        parentPhoneNumber: studentPhone,
+        gender: "male",
+        email: targetPayment.email || targetPayment.student?.email || "student@example.com",
+        country: locale === "ar" ? "مصر" : "Egypt",
+        state: locale === "ar" ? "القاهرة" : "Cairo",
+        grade: studentGrade,
+        registrationType: deliveryMode === "online" ? "online" : "center",
+      };
+
+      const transactionObj: StudentTransaction = {
+        id: String(targetPayment.id),
+        studentId: String(targetPayment.student_id),
+        type: "deposit",
+        amount: Number(targetPayment.amount || 0),
+        notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${courseTitle}`,
+        createdAt: targetPayment.created_at || new Date().toISOString(),
+      };
+
+      setGeneratedInvoiceData({ student: studentObj, transaction: transactionObj });
+      setIsInvoiceModalOpen(true);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to approve payment";
+      toast.error(errorMsg);
+    }
   };
 
-  const handleReject = (id: string, reason: string) => {
-    const updated = updateBillingRequestStatus(id, "rejected", reason);
-    setRequests(updated);
-  };
-
-  // Filter & Sort Logic
-  const filteredAndSortedRequests = useMemo(() => {
-    return requests
-      .filter((req) => {
-        // Status filter tab
-        if (statusTab !== "all" && req.status !== statusTab) {
-          return false;
-        }
-
-        // Venue filter
-        if (venueFilter !== "all" && req.venue !== venueFilter) {
-          return false;
-        }
-
-        // Search query
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const matchName = req.studentFullName.toLowerCase().includes(q);
-          const matchPhone = req.studentPhoneNumber.includes(q);
-          const matchId = req.id.toLowerCase().includes(q);
-          const matchCourse = req.courseName.toLowerCase().includes(q);
-          if (!matchName && !matchPhone && !matchId && !matchCourse) {
-            return false;
-          }
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "newest") {
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        }
-        if (sortBy === "oldest") {
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
-        if (sortBy === "amountDesc") {
-          return b.amount - a.amount;
-        }
-        if (sortBy === "amountAsc") {
-          return a.amount - b.amount;
-        }
-        return 0;
+  const handleReject = async (id: string | number, reason: string) => {
+    try {
+      await rejectPaymentMutation.mutateAsync({
+        paymentId: id,
+        data: { rejection_reason: reason },
       });
-  }, [requests, statusTab, venueFilter, searchQuery, sortBy]);
-
-  const handleReset = () => {
-    const fresh = resetStoredBillingRequests();
-    setRequests(fresh);
+      toast.success(locale === "ar" ? "تم رفض الطلب بنجاح" : "Payment rejected successfully");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to reject payment";
+      toast.error(errorMsg);
+    }
   };
+
+  // Client-side venue filter when selected
+  const filteredPayments = useMemo(() => {
+    return payments.filter((payment) => {
+      if (venueFilter === "all") return true;
+      const firstItem = payment.order?.items?.[0];
+      const deliveryMode =
+        firstItem?.selected_delivery_mode || firstItem?.delivery_mode || "online";
+      if (venueFilter === "center") return deliveryMode === "center" || deliveryMode === "onsite";
+      if (venueFilter === "online") return deliveryMode === "online";
+      return true;
+    });
+  }, [payments, venueFilter]);
 
   return (
     <div className="space-y-6">
-      {/* ─────────────────────────────────────────────────────────────────────────────
-          SECTION 1: PAGE HEADER & TITLE
-      ────────────────────────────────────────────────────────────────────────────── */}
+      {/* SECTION 1: PAGE HEADER & TITLE */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col gap-1">
           <h1 className="text-2xl font-bold tracking-tight text-foreground">{t("title")}</h1>
@@ -268,11 +293,12 @@ export function BillingRequestsClient() {
         <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
-            onClick={handleReset}
+            onClick={() => refetch()}
             className="self-start sm:self-auto font-semibold"
+            disabled={isSpinning}
           >
-            <RotateCcw className="size-3.5 me-1.5" />
-            {locale === "ar" ? "إعادة ضبط البيانات" : "Reset Mock Data"}
+            <RotateCcw className={`size-3.5 me-1.5 ${isSpinning ? "animate-spin" : ""}`} />
+            {locale === "ar" ? "تحديث البيانات" : "Refresh"}
           </Button>
           <Button asChild variant="outline" className="font-semibold">
             <Link href={`/${locale}/dashboard/courses/codes`}>
@@ -289,15 +315,8 @@ export function BillingRequestsClient() {
         </div>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────────────────────
-          SECTION 2: 4 STAT CARDS
-          - Total Payments
-          - Pending Requests
-          - Accepted Requests
-          - Rejected Requests
-      ────────────────────────────────────────────────────────────────────────────── */}
+      {/* SECTION 2: 4 STAT CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Payments */}
         <DashboardCard className="border-border/80 p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -317,7 +336,6 @@ export function BillingRequestsClient() {
           </div>
         </DashboardCard>
 
-        {/* Pending Requests */}
         <DashboardCard className="border-border/80 p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -332,7 +350,6 @@ export function BillingRequestsClient() {
           </div>
         </DashboardCard>
 
-        {/* Accepted Requests */}
         <DashboardCard className="border-border/80 p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -347,7 +364,6 @@ export function BillingRequestsClient() {
           </div>
         </DashboardCard>
 
-        {/* Rejected Requests */}
         <DashboardCard className="border-border/80 p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-muted-foreground">
@@ -363,63 +379,62 @@ export function BillingRequestsClient() {
         </DashboardCard>
       </div>
 
-      {/* ─────────────────────────────────────────────────────────────────────────────
-          SECTION 3: FILTERS & SEARCH BAR
-          - Search Input
-          - Status Tabs (Pending | Accepted | Rejected | All)
-          - Sort Select
-      ────────────────────────────────────────────────────────────────────────────── */}
+      {/* SECTION 3: FILTER & SEARCH BAR */}
       <DashboardCard className="p-4 border-border/80 shadow-xs">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
-          {/* Search Input (Takes all available space) */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="relative flex-1">
             <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
             <Input
+              type="text"
+              placeholder={t("filters.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => updateUrlParams({ search: e.target.value })}
-              placeholder={t("filters.searchPlaceholder")}
-              className="ps-9 h-9 text-xs w-full"
+              className="ps-9 pe-8 h-9 text-xs"
             />
+            {searchQuery && (
+              <button
+                onClick={() => updateUrlParams({ search: null })}
+                className="absolute inset-e-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
           </div>
 
-          {/* Status Tabs, Venue, Sort & Clear Container */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2.5 w-full md:w-auto">
             {isFilterActive && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleResetFilters}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-9 px-2.5 shrink-0 self-start sm:self-auto"
+                className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground"
               >
-                <X className="h-3.5 w-3.5 me-1.5" />
+                <RotateCcw className="size-3.5 me-1.5" />
                 {t("filters.resetFilters")}
               </Button>
             )}
 
-            {/* Status Tabs */}
             <Tabs
-              defaultValue="pending"
               value={statusTab}
-              onValueChange={(v) => updateUrlParams({ status: v })}
+              onValueChange={(val) => updateUrlParams({ status: val })}
               className="w-full sm:w-auto"
             >
-              <TabsList className="grid grid-cols-4 w-full sm:w-auto *:py-2">
-                <TabsTrigger value="pending" className="text-xs font-medium">
+              <TabsList className="h-9 bg-muted/60">
+                <TabsTrigger value="pending" className="text-xs font-medium h-9">
                   {t("filters.tabs.pending")}
                 </TabsTrigger>
-                <TabsTrigger value="accepted" className="text-xs font-medium">
+                <TabsTrigger value="approved" className="text-xs font-medium h-9">
                   {t("filters.tabs.accepted")}
                 </TabsTrigger>
-                <TabsTrigger value="rejected" className="text-xs font-medium">
+                <TabsTrigger value="rejected" className="text-xs font-medium h-9">
                   {t("filters.tabs.rejected")}
                 </TabsTrigger>
-                <TabsTrigger value="all" className="text-xs font-medium">
+                <TabsTrigger value="all" className="text-xs font-medium h-9">
                   {t("filters.tabs.all")}
                 </TabsTrigger>
               </TabsList>
             </Tabs>
 
-            {/* Venue Filter Select */}
             <Select value={venueFilter} onValueChange={(v) => updateUrlParams({ venue: v })}>
               <SelectTrigger className="h-9 text-xs w-full sm:w-36 shrink-0">
                 <div className="flex items-center gap-2">
@@ -440,7 +455,6 @@ export function BillingRequestsClient() {
               </SelectContent>
             </Select>
 
-            {/* Sort Select */}
             <Select value={sortBy} onValueChange={(v) => updateUrlParams({ sort: v })}>
               <SelectTrigger className="h-9 text-xs w-full sm:w-44 shrink-0">
                 <div className="flex items-center gap-2">
@@ -467,19 +481,7 @@ export function BillingRequestsClient() {
         </div>
       </DashboardCard>
 
-      {/* ─────────────────────────────────────────────────────────────────────────────
-          SECTION 4: BILLING REQUESTS TABLE
-          Columns:
-          1. Student Full Name
-          2. Student Phone Number
-          3. Grade
-          4. Amount
-          5. Payment Method
-          6. Course
-          7. Venue
-          8. Status
-          9. Actions: Eye Icon to view details
-      ────────────────────────────────────────────────────────────────────────────── */}
+      {/* SECTION 4: BILLING REQUESTS TABLE */}
       <DashboardCard className="p-0 overflow-hidden border-border/80 shadow-xs">
         <div className="overflow-x-auto">
           <Table>
@@ -505,7 +507,20 @@ export function BillingRequestsClient() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAndSortedRequests.length === 0 ? (
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="h-48 text-center">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                      <Loader2 className="size-8 animate-spin text-primary" />
+                      <p className="font-semibold text-sm">
+                        {locale === "ar"
+                          ? "جارٍ تحميل طلبات الفواتير..."
+                          : "Loading billing requests..."}
+                      </p>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : filteredPayments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
@@ -516,83 +531,113 @@ export function BillingRequestsClient() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAndSortedRequests.map((req) => {
+                filteredPayments.map((payment) => {
                   const statusBadgeVariant =
-                    req.status === "pending"
+                    payment.status === "pending"
                       ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                      : req.status === "accepted"
+                      : payment.status === "approved"
                         ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         : "bg-red-500/10 text-red-600 border-red-500/20";
 
+                  const studentName =
+                    payment.full_name ||
+                    payment.student?.full_name ||
+                    [
+                      payment.student?.first_name,
+                      payment.student?.father_name,
+                      payment.student?.family_name,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") ||
+                    "-";
+
+                  const studentPhone =
+                    payment.submitted_phone || payment.phone || payment.student?.phone || "-";
+
+                  const firstItem = payment.order?.items?.[0];
+                  const courseTitle =
+                    firstItem?.course_title?.[locale] ||
+                    firstItem?.course_title?.ar ||
+                    firstItem?.course_title?.en ||
+                    "-";
+
+                  const stageName =
+                    firstItem?.educational_stage_name?.[locale] ||
+                    firstItem?.educational_stage_name?.ar ||
+                    payment.student?.educational_stage?.name?.[locale] ||
+                    payment.student?.educational_stage?.name?.ar ||
+                    "-";
+
+                  const deliveryMode =
+                    firstItem?.selected_delivery_mode || firstItem?.delivery_mode || "online";
+
+                  const displayStatus = payment.status === "approved" ? "accepted" : payment.status;
+
                   return (
-                    <TableRow key={req.id} className="hover:bg-muted/30 transition-colors">
-                      {/* Student Full Name */}
+                    <TableRow key={payment.id} className="hover:bg-muted/30 transition-colors">
                       <TableCell className="text-xs font-bold text-foreground">
-                        {req.studentFullName}
+                        {studentName}
                       </TableCell>
 
-                      {/* Student Phone Number */}
                       <TableCell className="text-xs text-muted-foreground font-mono">
-                        <PhoneLink
-                          phone={req.studentPhoneNumber}
-                          className="inline-flex items-center gap-1.5 text-xs text-foreground font-medium w-fit hover:text-emerald-600 transition-colors"
-                        >
-                          <span className="flex items-center justify-center size-4 rounded bg-emerald-500/10 text-emerald-600 shrink-0">
-                            <WhatsAppIcon className="size-3" />
-                          </span>
-                          <span dir="ltr" className="tracking-tight">
-                            {req.studentPhoneNumber}
-                          </span>
-                        </PhoneLink>
+                        {studentPhone !== "-" ? (
+                          <PhoneLink
+                            phone={studentPhone}
+                            className="inline-flex items-center gap-1.5 text-xs text-foreground font-medium w-fit hover:text-emerald-600 transition-colors"
+                          >
+                            <span className="flex items-center justify-center size-4 rounded bg-emerald-500/10 text-emerald-600 shrink-0">
+                              <WhatsAppIcon className="size-3" />
+                            </span>
+                            <span dir="ltr" className="tracking-tight">
+                              {studentPhone}
+                            </span>
+                          </PhoneLink>
+                        ) : (
+                          "-"
+                        )}
                       </TableCell>
 
-                      {/* Grade */}
-                      <TableCell className="text-xs text-muted-foreground">
-                        {formatGrade(req.grade)}
-                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{stageName}</TableCell>
 
-                      {/* Amount */}
                       <TableCell className="text-xs font-extrabold text-primary">
-                        {req.amount} {locale === "ar" ? "ج" : "EGP"}
+                        {payment.amount} {payment.currency_code || (locale === "ar" ? "ج" : "EGP")}
                       </TableCell>
 
-                      {/* Payment Method */}
                       <TableCell className="text-xs font-medium text-foreground">
                         <Badge variant="secondary" className="text-[11px] font-medium">
-                          {formatPaymentMethod(req.paymentMethod)}
+                          {formatPaymentMethod(payment.method)}
                         </Badge>
                       </TableCell>
 
-                      {/* Course */}
-                      <TableCell className="text-xs font-medium text-foreground max-w-50 truncate">
-                        {req.courseName}
+                      <TableCell
+                        className="text-xs font-medium text-foreground max-w-50 truncate"
+                        title={courseTitle}
+                      >
+                        {courseTitle}
                       </TableCell>
 
-                      {/* Venue */}
                       <TableCell className="text-xs">
                         <Badge variant="outline" className="text-[11px] font-normal">
-                          {formatVenue(req.venue)}
+                          {formatVenue(deliveryMode)}
                         </Badge>
                       </TableCell>
 
-                      {/* Status */}
                       <TableCell className="text-xs">
                         <Badge
                           variant="outline"
                           className={`text-[11px] font-medium ${statusBadgeVariant}`}
                         >
-                          {t(`status.${req.status}` as Parameters<typeof t>[0])}
+                          {t(`status.${displayStatus}` as Parameters<typeof t>[0])}
                         </Badge>
                       </TableCell>
 
-                      {/* Actions */}
-                      <TableCell className="text-start">
+                      <TableCell className="text-end">
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-8 rounded-lg"
                           onClick={() => {
-                            setSelectedRequest(req);
+                            setSelectedPayment(payment);
                             setIsModalOpen(true);
                           }}
                           title={t("table.viewDetails")}
@@ -611,7 +656,7 @@ export function BillingRequestsClient() {
 
       {/* Details Modal */}
       <RequestDetailsModal
-        request={selectedRequest}
+        payment={selectedPayment}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAccept={handleAccept}

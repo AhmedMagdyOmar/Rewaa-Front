@@ -22,6 +22,7 @@ interface AddCodeGroupDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   courses: Course[];
+  isLoading?: boolean;
   onSubmit: (data: {
     courseId: string;
     courseTitle: string;
@@ -37,6 +38,7 @@ export function AddCodeGroupDialog({
   open,
   onOpenChange,
   courses,
+  isLoading = false,
   onSubmit,
 }: AddCodeGroupDialogProps) {
   const t = useTranslations("codeGroupsPage.addDialog");
@@ -195,10 +197,17 @@ export function AddCodeGroupDialog({
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoading}
+              onClick={() => onOpenChange(false)}
+            >
               {t("cancel")}
             </Button>
-            <Button type="submit">{t("save")}</Button>
+            <Button type="submit" disabled={isLoading}>
+              {t("save")}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

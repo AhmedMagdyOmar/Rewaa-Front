@@ -20,6 +20,12 @@
       "save": "Add & Select",
       "cancel": "Cancel",
       "nameRequired": "Please enter a name first"
+    },
+    "imageUpload": {
+      "clickOrDrag": "Click or drag image to upload",
+      "changeImage": "Change Image",
+      "removeImage": "Remove image",
+      "previewAlt": "Image preview"
     }
   },
   "notFound": {
@@ -467,7 +473,8 @@
       "attachments": "{count, plural, =0 {Attachments & Resources} =1 {1 Attachment} other {{count} Attachments}}",
       "watchVideo": "Watch Lecture"
     },
-    "resetCourses": "Reset courses data",
+    "refreshCourses": "Refresh courses data",
+    "resetCourses": "Refresh courses data",
     "new": {
       "title": "Create New Course",
       "editTitle": "Edit Course",
@@ -850,11 +857,12 @@
     }
   },
   "exams": {
-    "manageTitle": "Manage Exams",
-    "manageSubtitle": "View, filter, and manage all standalone and course-linked exams.",
+    "manageTitle": "Exams Management",
+    "manageSubtitle": "View, filter, and manage all independent and course-linked exams.",
     "addNewExam": "Add New Exam",
-    "resetExams": "Reset Data",
-    "searchPlaceholder": "Search exams by title, subject, teacher...",
+    "refreshExams": "Refresh Data",
+    "resetExams": "Refresh Data",
+    "searchPlaceholder": "Search exams by title, subject, instructor...",
     "clearFilters": "Clear Filters",
     "tabs": {
       "all": "All Exams",
@@ -1405,29 +1413,25 @@
   },
   "lessons": {
     "manageTitle": "Manage Lessons",
-    "manageSubtitle": "View, filter, create, and manage all standalone and course lessons.",
+    "manageSubtitle": "View, filter, create, and manage all standalone and course-linked educational lessons.",
     "addNewLesson": "Add New Lesson",
-    "resetLessons": "Reset Data",
+    "refreshLessons": "Refresh Data",
+    "resetLessons": "Refresh Data",
     "searchPlaceholder": "Search lessons by title, subject, teacher...",
     "clearFilters": "Clear Filters",
-    "metadata": "Lesson Metadata",
+    "metadata": "Lesson Information",
     "tabs": {
       "all": "All Lessons",
       "general": "General Lessons",
-      "courseLinked": "Course-Linked"
+      "courseLinked": "Course Linked"
     },
     "filterType": {
-      "all": "All Types",
-      "independent": "Independent Lessons",
-      "courseDependent": "Course-Linked"
+      "all": "All",
+      "general": "General Lessons",
+      "courseLinked": "Course Linked"
     },
     "sort": {
       "newest": "Newest First",
-      "oldest": "Oldest First",
-      "titleAsc": "Title (A-Z)",
-      "titleDesc": "Title (Z-A)"
-    },
-    "card": {
       "videoText": "Video & Text",
       "textOnly": "Text Only",
       "independent": "Independent",
@@ -1533,7 +1537,9 @@
     "title": "Students Management",
     "subtitle": "View and manage all registered students, control their data, and filter by governorate, grade, and registration type.",
     "addNewStudent": "Add New Student",
-    "resetData": "Reset Data",
+    "refresh": "Refresh",
+    "refreshData": "Refresh Data",
+    "resetData": "Refresh Data",
     "searchPlaceholder": "Search by student name, phone number, email...",
     "allGrades": "All Grades",
     "allRegistrationTypes": "All Registration Types",
@@ -1928,7 +1934,8 @@
     "title": "Activation Code Groups",
     "subtitle": "Manage and monitor course activation code groups",
     "createButton": "Create new codes",
-    "resetData": "Reset Data",
+    "refreshData": "Refresh Data",
+    "resetData": "Refresh Data",
     "stats": {
       "totalCodes": "Total Codes Across Platform",
       "totalCodesDesc": "Across all courses & groups",
@@ -1940,40 +1947,40 @@
       "availableCodesDesc": "Available for activation"
     },
     "filters": {
-      "searchPlaceholder": "Search by course title...",
+      "searchPlaceholder": "Search by course name...",
       "allCourses": "All Courses",
-      "sortBy": "Sort by",
-      "newest": "Newest",
-      "oldest": "Oldest",
-      "priceDesc": "Price (Highest first)",
-      "priceAsc": "Price (Lowest first)",
-      "totalCodesDescSort": "Total Codes (Most first)",
+      "sortBy": "Sort By",
+      "newest": "Newest Created",
+      "oldest": "Oldest Created",
+      "priceDesc": "Price (High to Low)",
+      "priceAsc": "Price (Low to High)",
+      "totalCodesDescSort": "Codes (Most First)",
       "resetFilters": "Reset Filters"
     },
     "table": {
       "courseName": "Course Name",
       "codePrice": "Code Price",
       "totalCodes": "Total Codes",
-      "availableCodes": "Available",
+      "availableCodes": "Available Codes",
       "soldCodes": "Sold",
       "usedCodes": "Used",
-      "createdAt": "Date of Creation",
+      "createdAt": "Created At",
       "actions": "Actions",
       "viewDetails": "View Details",
-      "noData": "No code groups found"
+      "noData": "No matching code groups found"
     },
     "addDialog": {
       "title": "Add Code Group",
-      "description": "Enter details for the new course activation code group",
+      "description": "Enter the details for the new code group for the selected course",
       "selectCourse": "Select Course",
-      "selectCoursePlaceholder": "Choose target course",
-      "unitPrice": "Unit Price",
+      "selectCoursePlaceholder": "Choose assigned course",
+      "unitPrice": "Code Price",
       "unitPricePlaceholder": "e.g. 450",
-      "amount": "Amount (Available Quantity)",
+      "amount": "Available Quantity (Amount)",
       "amountPlaceholder": "e.g. 100",
       "codePrefix": "Code Prefix (Optional)",
       "codePrefixPlaceholder": "e.g. RW-PHYS-",
-      "codePrefixHint": "Optional prefix used when generating random activation codes for this group",
+      "codePrefixHint": "Optional prefix used when generating new activation codes for this group",
       "expiryDate": "Expiry Date",
       "save": "Save",
       "cancel": "Cancel",
@@ -1981,9 +1988,10 @@
     }
   },
   "groupCodesPage": {
-    "title": "Course Code Group Details",
-    "subtitle": "View and manage activation codes for this group",
-    "resetData": "Reset Data",
+    "title": "Course Group Codes",
+    "subtitle": "View and edit details and activation codes belonging to this group",
+    "refreshData": "Refresh Data",
+    "resetData": "Refresh Data",
     "backToGroups": "Code Groups",
     "stats": {
       "totalCodes": "Total Codes in Group",
@@ -2077,6 +2085,198 @@
       "confirm": "Delete Code"
     }
   },
+  "providerProfile": {
+    "title": "Profile Settings",
+    "subtitle": "Manage your personal information, security credentials, preferences, and account permissions.",
+    "loadingProfile": "Loading profile data...",
+    "errorLoadingTitle": "Failed to load profile",
+    "errorLoadingSubtitle": "An error occurred while fetching your profile information from the server.",
+    "retry": "Retry",
+    "refreshData": "Refresh",
+    "tabs": {
+      "general": "General Info",
+      "security": "Security & Password",
+      "preferences": "Preferences",
+      "permissions": "Roles & Permissions"
+    },
+    "general": {
+      "title": "Personal Details",
+      "subtitle": "Update your personal details and account photo.",
+      "saving": "Saving...",
+      "saveChanges": "Save Changes",
+      "fields": {
+        "avatarLabel": "Profile Image / Organization Logo",
+        "avatarHint": "Supports PNG, JPG, or WEBP up to 2MB",
+        "avatarDisabledHint": "Profile image editing is restricted to platform administrators",
+        "nameLabel": "Full Name",
+        "namePlaceholder": "e.g. Dr. Ahmed Hassan",
+        "emailLabel": "Email Address",
+        "emailPlaceholder": "e.g. name@example.com",
+        "phoneCodeLabel": "Country Dial Code",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "e.g. 01012345678"
+      },
+      "errors": {
+        "nameRequired": "Full name is required",
+        "emailRequired": "Valid email address is required",
+        "updateFailed": "Failed to update profile details"
+      }
+    },
+    "security": {
+      "title": "Password & Security",
+      "subtitle": "Update your account password to ensure account security.",
+      "updating": "Updating Password...",
+      "updatePassword": "Update Password",
+      "fields": {
+        "currentLabel": "Current Password",
+        "currentPlaceholder": "Enter current password",
+        "newLabel": "New Password",
+        "newPlaceholder": "Enter new password",
+        "confirmLabel": "Confirm New Password",
+        "confirmPlaceholder": "Re-enter new password",
+        "passwordRequirements": "Must be at least 8 characters long and different from current password."
+      },
+      "errors": {
+        "currentRequired": "Current password is required",
+        "passwordMinLength": "New password must be at least 8 characters",
+        "passwordsMismatch": "New passwords do not match",
+        "passwordMustBeDifferent": "New password must be different from current password",
+        "updateFailed": "Failed to update password"
+      }
+    },
+    "preferences": {
+      "title": "System & Interface Preferences",
+      "subtitle": "Configure your language, notification, and theme preferences.",
+      "language": {
+        "title": "Dashboard Language",
+        "subtitle": "Select your preferred language for the control panel interface",
+        "selectPlaceholder": "Select language"
+      },
+      "notifications": {
+        "title": "System Notifications",
+        "subtitle": "Receive essential platform updates, exam submissions, and activity alerts"
+      },
+      "darkMode": {
+        "title": "Dark Mode Theme",
+        "subtitle": "Toggle between light and dark visual themes"
+      },
+      "toasts": {
+        "notificationsEnabled": "Notifications enabled successfully",
+        "notificationsDisabled": "Notifications disabled successfully",
+        "darkModeEnabled": "Dark mode enabled successfully",
+        "darkModeDisabled": "Dark mode disabled successfully"
+      },
+      "errors": {
+        "localeUpdateFailed": "Failed to update language preference",
+        "notificationUpdateFailed": "Failed to update notification preference",
+        "darkModeUpdateFailed": "Failed to update dark mode preference"
+      }
+    },
+    "permissionsTab": {
+      "title": "Account Roles & Authorities",
+      "subtitle": "Overview of your assigned role, account status, and platform access authorities.",
+      "accountType": "Account Type",
+      "accountStatus": "Account Status",
+      "active": "Active",
+      "inactive": "Inactive",
+      "memberSince": "Member Since",
+      "assignedRoles": "Assigned Roles",
+      "grantedAuthorities": "Granted Authorities & Permissions",
+      "noExplicitPermissions": "No explicit individual permissions granted (inherited from role).",
+      "searchPlaceholder": "Filter permissions by name or code...",
+      "categories": {
+        "all": "All Categories",
+        "provider_courses": "Courses",
+        "provider_exams": "Exams",
+        "provider_questions": "Question Bank",
+        "provider_activation_codes": "Activation Codes",
+        "provider_students": "Students",
+        "provider_educational_stages": "Stages & Grades",
+        "provider_subjects": "Subjects",
+        "provider_finance": "Finance & Wallets",
+        "provider_orders": "Orders",
+        "provider_payments": "Payments",
+        "provider_wallets": "Wallets",
+        "provider_payment_accounts": "Payment Accounts",
+        "provider_admins": "Staff & Admins",
+        "provider_teachers": "Teachers",
+        "provider_roles": "Roles",
+        "provider_announcements": "Announcements",
+        "provider_dashboard": "Dashboard",
+        "other": "Other"
+      },
+      "authoritiesLabels": {
+        "dashboard:read": "View dashboard",
+        "provider_dashboard:read": "View provider dashboard statistics",
+        "admins:read": "View admins",
+        "admins:create": "Create admins",
+        "admins:update": "Update admins",
+        "admins:delete": "Delete admins",
+        "roles:read": "View roles",
+        "roles:create": "Create roles",
+        "roles:update": "Update roles",
+        "roles:delete": "Delete roles",
+        "providers:read": "View providers",
+        "providers:create": "Create providers",
+        "providers:update": "Update providers",
+        "providers:delete": "Delete providers",
+        "provider_admins:read": "View provider admins",
+        "provider_admins:create": "Create provider admins",
+        "provider_admins:update": "Update provider admins",
+        "provider_admins:delete": "Delete provider admins",
+        "provider_teachers:read": "View provider teachers",
+        "provider_teachers:create": "Create provider teachers",
+        "provider_teachers:update": "Update provider teachers",
+        "provider_teachers:delete": "Delete provider teachers",
+        "provider_students:read": "View provider students",
+        "provider_students:create": "Create provider students",
+        "provider_students:update": "Update provider students",
+        "provider_students:delete": "Delete provider students",
+        "provider_roles:read": "View provider roles",
+        "provider_roles:create": "Create provider roles",
+        "provider_roles:update": "Update provider roles",
+        "provider_roles:delete": "Delete provider roles",
+        "provider_courses:read": "View provider courses",
+        "provider_courses:create": "Create provider courses",
+        "provider_courses:update": "Update provider courses",
+        "provider_courses:delete": "Delete provider courses",
+        "provider_activation_codes:read": "View provider activation codes",
+        "provider_activation_codes:create": "Create provider activation codes",
+        "provider_activation_codes:update": "Update provider activation codes",
+        "provider_activation_codes:delete": "Delete provider activation codes",
+        "provider_educational_stages:read": "View provider educational stages",
+        "provider_educational_stages:create": "Create provider educational stages",
+        "provider_educational_stages:update": "Update provider educational stages",
+        "provider_educational_stages:delete": "Delete provider educational stages",
+        "provider_subjects:read": "View provider subjects",
+        "provider_subjects:create": "Create provider subjects",
+        "provider_subjects:update": "Update provider subjects",
+        "provider_subjects:delete": "Delete provider subjects",
+        "provider_orders:read": "View provider orders",
+        "provider_payments:read": "View provider payments",
+        "provider_payments:review": "Review provider payments",
+        "provider_wallets:read": "View student wallets",
+        "provider_wallets:update": "Adjust student wallets",
+        "provider_finance:read": "View provider finance reports",
+        "provider_payment_accounts:read": "View payment accounts",
+        "provider_payment_accounts:create": "Create payment accounts",
+        "provider_payment_accounts:update": "Update payment accounts",
+        "provider_payment_accounts:delete": "Delete payment accounts",
+        "provider_announcements:read": "View provider announcements",
+        "provider_announcements:create": "Create provider announcements",
+        "provider_announcements:update": "Update provider announcements",
+        "provider_announcements:delete": "Delete provider announcements",
+        "provider_exams:read": "View provider exams",
+        "provider_exams:create": "Create provider exams",
+        "provider_exams:update": "Update provider exams",
+        "provider_exams:delete": "Delete provider exams",
+        "provider_questions:read": "View provider questions",
+        "provider_questions:create": "Create provider questions",
+        "provider_questions:update": "Update provider questions",
+        "provider_questions:delete": "Delete provider questions"
+      }
+    }
+  },
   "settings": {
     "title": "Platform Settings",
     "subtitle": "Manage teachers, grade levels, subjects, and assistant accounts for your platform.",
@@ -2089,7 +2289,9 @@
       "title": "Teachers",
       "subtitle": "Manage teacher accounts and assigned subjects & grades",
       "addTeacher": "Add Teacher",
-      "resetTeachers": "Reset Data",
+      "refreshTeachers": "Refresh Data",
+      "loading": "Loading teachers...",
+      "resetTeachers": "Refresh Data",
       "columns": {
         "image": "Image",
         "name": "Teacher Name",
@@ -2127,7 +2329,9 @@
       "title": "Grades",
       "subtitle": "Platform academic grade levels",
       "addGrade": "New Grade",
-      "resetGrades": "Reset Grades",
+      "refreshGrades": "Refresh Grades",
+      "loading": "Loading grades...",
+      "resetGrades": "Refresh Grades",
       "columns": {
         "name": "Grade Name",
         "studentsCount": "Students",
@@ -2158,7 +2362,9 @@
       "title": "Subjects",
       "subtitle": "Platform educational subjects",
       "addSubject": "New Subject",
-      "resetSubjects": "Reset Subjects",
+      "refreshSubjects": "Refresh Subjects",
+      "loading": "Loading subjects...",
+      "resetSubjects": "Refresh Subjects",
       "columns": {
         "name": "Subject Name",
         "coursesCount": "Courses",
@@ -2186,7 +2392,9 @@
       "title": "Assistants",
       "subtitle": "Manage assistant accounts and platform administrative permissions",
       "addAssistant": "Add Assistant",
-      "resetAssistants": "Reset Data",
+      "refreshAssistants": "Refresh Data",
+      "loading": "Loading assistants...",
+      "resetAssistants": "Refresh Data",
       "columns": {
         "name": "Assistant Name",
         "phone": "Phone Number",
@@ -2286,7 +2494,8 @@
       "title": "Announcements & Notices",
       "subtitle": "Manage platform banner announcements and featured notices",
       "addAnnouncement": "New Announcement",
-      "resetAnnouncements": "Reset Data",
+      "refreshAnnouncements": "Refresh Data",
+      "resetAnnouncements": "Refresh Data",
       "activeCountBadge": "{count} / {max} active",
       "noAnnouncements": "No announcements created yet.",
       "deactivatedNotice": "Older announcement \"{name}\" was automatically deactivated to maintain the limit of 3 active announcements.",

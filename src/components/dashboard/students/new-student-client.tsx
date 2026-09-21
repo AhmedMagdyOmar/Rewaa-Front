@@ -8,8 +8,8 @@ import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { StudentForm, StudentFormData } from "@/components/dashboard/students/student-form";
-import { addStoredStudent } from "@/lib/students-storage";
-import { incrementCourseParticipants } from "@/lib/courses-storage";
+import { useCreateStudent, useStudentOptions } from "@/hooks/use-students";
+import { toast } from "sonner";
 
 export function NewStudentClient() {
   const locale = useLocale();
@@ -23,58 +23,90 @@ export function NewStudentClient() {
     ? `/${locale}/dashboard/courses/${courseId}/students`
     : `/${locale}/dashboard/students`;
 
+  const { data: optionsData } = useStudentOptions();
+  const createStudentMutation = useCreateStudent();
+
+  const educationalStagesList = React.useMemo(() => {
+    if (!optionsData?.educational_stages) return undefined;
+    return optionsData.educational_stages.map(
+      (s: { id: number; name: Record<string, string> }) => ({
+        id: String(s.id),
+        name: s.name[locale] || s.name.ar || s.name.en || "",
+      }),
+    );
+  }, [optionsData, locale]);
+
   const handleSubmit = (data: StudentFormData) => {
-    addStoredStudent(locale, {
-      firstName: data.firstName,
-      middleName: data.middleName,
-      lastName: data.lastName,
-      additionalName: data.additionalName,
-      phoneNumber: data.phoneNumber,
-      parentPhoneNumber: data.parentPhoneNumber,
-      gender: data.gender,
-      email: data.email,
-      image: data.image,
-      password: data.password,
-      country: data.country,
-      state: data.state,
-      grade: data.grade,
-      registrationType: data.registrationType,
-      coursesCount: courseId ? 1 : 0,
-      enrolledCourseIds: courseId ? [courseId] : [],
-    });
+    // Resolve stage, country, and governorate IDs if possible
+    const matchedStage = optionsData?.educational_stages?.find(
+      (s: { id: number; name: Record<string, string> }) =>
+        String(s.id) === data.grade || (s.name[locale] || s.name.ar || s.name.en) === data.grade,
+    );
+    const stageId = matchedStage ? matchedStage.id : Number(data.grade) || undefined;
+    const country = optionsData?.countries.find(
+      (c: { id: number; name: Record<string, string> }) =>
+        (c.name[locale] || c.name.ar || c.name.en) === data.country,
+    );
+    const governorate = optionsData?.governorates.find(
+      (g: { id: number; name: Record<string, string> }) =>
+        (g.name[locale] || g.name.ar || g.name.en) === data.state,
+    );
 
-    if (courseId) {
-      incrementCourseParticipants(locale, courseId);
-    }
+    const password = data.password || "Password123!";
+    const passwordConfirmation = data.confirmPassword || password;
 
-    router.push(redirectPath);
+    createStudentMutation.mutate(
+      {
+        first_name: data.firstName,
+        father_name: data.middleName || undefined,
+        family_name: data.lastName,
+        additional_name: data.additionalName || undefined,
+        phone_code: "+20",
+        phone: data.phoneNumber,
+        guardian_phone_code: "+20",
+        guardian_phone: data.parentPhoneNumber,
+        gender: data.gender,
+        email: data.email,
+        password,
+        password_confirmation: passwordConfirmation,
+        country_id: country?.id,
+        governorate_id: governorate?.id,
+        educational_stage_id: stageId,
+        registration_type: data.registrationType,
+        status: "active",
+        avatar: data.imageFile || undefined,
+      },
+      {
+        onSuccess: () => {
+          toast.success(locale === "ar" ? "تم إنشاء الطالب بنجاح" : "Student created successfully");
+          router.push(redirectPath);
+        },
+        onError: (err: unknown) => {
+          const validationErrors =
+            (err as { validationErrors?: unknown })?.validationErrors ||
+            (err as { response?: { data?: { errors?: unknown } } })?.response?.data?.errors;
+          if (validationErrors) {
+            const firstError = Object.values(validationErrors).flat()[0] as string;
+            if (firstError) {
+              toast.error(firstError);
+              return;
+            }
+          }
+          const message =
+            (err as { apiMessage?: string })?.apiMessage ||
+            (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+            (err as { message?: string })?.message ||
+            (locale === "ar"
+              ? "حدث خطأ أثناء إضافة الطالب"
+              : "An error occurred while creating student");
+          toast.error(message);
+        },
+      },
+    );
   };
 
   const handleSaveDraft = (data: StudentFormData) => {
-    addStoredStudent(locale, {
-      firstName: data.firstName || "Draft Student",
-      middleName: data.middleName,
-      lastName: data.lastName || "Draft",
-      additionalName: data.additionalName,
-      phoneNumber: data.phoneNumber || "+2000000000",
-      parentPhoneNumber: data.parentPhoneNumber || "+2000000000",
-      gender: data.gender || "male",
-      email: data.email || `draft-${Date.now()}@example.com`,
-      image: data.image,
-      password: data.password,
-      country: data.country || "Egypt",
-      state: data.state || "Cairo",
-      grade: data.grade || "grade1",
-      registrationType: data.registrationType || "center",
-      coursesCount: courseId ? 1 : 0,
-      enrolledCourseIds: courseId ? [courseId] : [],
-    });
-
-    if (courseId) {
-      incrementCourseParticipants(locale, courseId);
-    }
-
-    router.push(redirectPath);
+    handleSubmit(data);
   };
 
   const handleCancel = () => {
@@ -100,7 +132,12 @@ export function NewStudentClient() {
       </div>
 
       {/* Main Student Form */}
-      <StudentForm onSubmit={handleSubmit} onSaveDraft={handleSaveDraft} onCancel={handleCancel} />
+      <StudentForm
+        educationalStages={educationalStagesList}
+        onSubmit={handleSubmit}
+        onSaveDraft={handleSaveDraft}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

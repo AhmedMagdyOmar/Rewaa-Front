@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectWithAdd } from "@/components/ui/select-with-add";
+import { useStudentWallet } from "@/hooks/use-students";
 import {
   getStoredCustomTransactionTypes,
   saveStoredCustomTransactionType,
@@ -26,6 +27,7 @@ import { TransactionType } from "@/types/student";
 
 interface BalanceTransactionDialogProps {
   studentName: string;
+  studentId?: string;
   currentBalance: number;
   isOpen: boolean;
   onClose: () => void;
@@ -34,6 +36,7 @@ interface BalanceTransactionDialogProps {
 
 export function BalanceTransactionDialog({
   studentName,
+  studentId,
   currentBalance,
   isOpen,
   onClose,
@@ -41,6 +44,12 @@ export function BalanceTransactionDialog({
 }: BalanceTransactionDialogProps) {
   const tModal = useTranslations("studentsPage.transactionModal");
   const tDetails = useTranslations("studentsPage.details");
+
+  const { data: walletData } = useStudentWallet(isOpen && studentId ? studentId : undefined);
+  const activeBalance =
+    walletData?.balance !== undefined && !isNaN(Number(walletData.balance))
+      ? Number(walletData.balance)
+      : currentBalance;
 
   const [transactionType, setTransactionType] = React.useState<TransactionType>("deposit");
   const [customTxTypes, setCustomTxTypes] = React.useState<Array<{ id: string; name: string }>>([]);
@@ -69,13 +78,13 @@ export function BalanceTransactionDialog({
     switch (transactionType) {
       case "deposit":
       case "refund":
-        return currentBalance + amountNumber;
+        return activeBalance + amountNumber;
       case "withdraw":
-        return Math.max(0, currentBalance - amountNumber);
+        return Math.max(0, activeBalance - amountNumber);
       case "adjustment":
         return amountNumber;
       default:
-        return currentBalance;
+        return activeBalance;
     }
   };
 
@@ -124,7 +133,7 @@ export function BalanceTransactionDialog({
           <DialogDescription className="text-xs text-muted-foreground">
             {tModal("previousBalance")}:{" "}
             <span className="font-semibold text-foreground" dir="ltr">
-              {currentBalance} {tDetails("currency")}
+              {activeBalance} {tDetails("currency")}
             </span>
           </DialogDescription>
         </DialogHeader>

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -21,22 +22,32 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
+import type { AssistantItem, AssistantPermission } from "@/types/settings";
+import { adaptBackendAdminToAssistantItem } from "@/lib/adapters/settings-adapter";
 import {
-  deleteAssistant,
-  getStoredAssistants,
-  resetAssistants,
-  saveAssistant,
-} from "@/lib/settings-storage";
-import { AssistantItem, AssistantPermission } from "@/types/settings";
-import { KeyRound, Pencil, Plus, RotateCcw, Trash2, UserLock } from "lucide-react";
+  useCreateStaffAdmin,
+  useDeleteStaffAdmin,
+  useStaffAdminsList,
+  useUpdateStaffAdmin,
+} from "@/hooks/use-settings";
+import { KeyRound, Loader2, Pencil, Plus, RotateCcw, Trash2, UserLock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { AssistantDialog } from "./assistant-dialog";
 
 export function AssistantsSection() {
   const t = useTranslations("settings.assistants");
 
-  const [assistants, setAssistants] = useState<AssistantItem[]>([]);
+  const { data: backendAdmins, isLoading, refetch } = useStaffAdminsList("assistant");
+  const createAssistantMutation = useCreateStaffAdmin();
+  const updateAssistantMutation = useUpdateStaffAdmin();
+  const deleteAssistantMutation = useDeleteStaffAdmin();
+
+  const assistants: AssistantItem[] = (backendAdmins || []).map((admin) =>
+    adaptBackendAdminToAssistantItem(admin),
+  );
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [assistantToEdit, setAssistantToEdit] = useState<AssistantItem | null>(null);
 
@@ -48,17 +59,8 @@ export function AssistantsSection() {
   );
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-
-  useEffect(() => {
-    const handleLoad = () => setAssistants(getStoredAssistants());
-    handleLoad();
-    window.addEventListener("rewaa_assistants_updated", handleLoad);
-    return () => window.removeEventListener("rewaa_assistants_updated", handleLoad);
-  }, []);
-
-  const handleResetData = () => {
-    resetAssistants();
-  };
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleOpenAdd = () => {
     setAssistantToEdit(null);
@@ -75,11 +77,17 @@ export function AssistantsSection() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (assistantToDelete) {
-      deleteAssistant(assistantToDelete.id);
-      setAssistantToDelete(null);
-      setDeleteDialogOpen(false);
+      try {
+        await deleteAssistantMutation.mutateAsync(assistantToDelete.id);
+        toast.success(t("deleteDialog.title"));
+        setAssistantToDelete(null);
+        setDeleteDialogOpen(false);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to delete assistant";
+        toast.error(errorMsg);
+      }
     }
   };
 
@@ -89,16 +97,53 @@ export function AssistantsSection() {
     setResetPasswordDialogOpen(true);
   };
 
-  const handleConfirmResetPassword = () => {
+  const handleConfirmResetPassword = async () => {
     if (assistantToResetPassword && newPassword) {
-      setResetPasswordDialogOpen(false);
-      setAssistantToResetPassword(null);
-      setNewPassword("");
+      try {
+        await updateAssistantMutation.mutateAsync({
+          adminId: assistantToResetPassword.id,
+          data: { password: newPassword },
+        });
+        toast.success(t("resetPasswordDialog.title"));
+        setResetPasswordDialogOpen(false);
+        setAssistantToResetPassword(null);
+        setNewPassword("");
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to reset password";
+        toast.error(errorMsg);
+      }
     }
   };
 
-  const handleSave = (data: Omit<AssistantItem, "id"> & { id?: string }) => {
-    saveAssistant(data);
+  const handleSave = async (data: Omit<AssistantItem, "id"> & { id?: string }) => {
+    try {
+      if (data.id) {
+        await updateAssistantMutation.mutateAsync({
+          adminId: data.id,
+          data: {
+            full_name: data.name,
+            national_id: data.nationalId,
+            phone: data.phone,
+            permissions: data.permissions,
+          },
+        });
+      } else {
+        await createAssistantMutation.mutateAsync({
+          full_name: data.name,
+          national_id: data.nationalId,
+          email: `${data.phone ? data.phone.replace(/\+/g, "") : Date.now()}@rewaa.local`,
+          phone: data.phone,
+          role: "assistant",
+          permissions: data.permissions,
+          is_active: true,
+        });
+      }
+      toast.success(t("title"));
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to save assistant";
+      toast.error(errorMsg);
+    }
   };
 
   return (
@@ -115,9 +160,14 @@ export function AssistantsSection() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" onClick={handleResetData} className="gap-1.5">
-            <RotateCcw className="size-3.5" />
-            <span>{t("resetAssistants")}</span>
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={mounted && isLoading}
+            className="gap-1.5"
+          >
+            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{t("refreshAssistants")}</span>
           </Button>
           <Button onClick={handleOpenAdd} className="gap-1.5">
             <Plus className="size-4" />
@@ -138,7 +188,16 @@ export function AssistantsSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {assistants.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <span className="text-xs">{t("loading")}</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : assistants.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-32 text-center text-muted-foreground">
                   {t("noAssistants")}
@@ -147,10 +206,8 @@ export function AssistantsSection() {
             ) : (
               assistants.map((assistant) => (
                 <TableRow key={assistant.id} className="hover:bg-muted/30">
-                  {/* Name */}
                   <TableCell className="font-medium text-sm">{assistant.name}</TableCell>
 
-                  {/* Phone */}
                   <TableCell className="">
                     {assistant.phone ? (
                       <PhoneLink
@@ -169,22 +226,26 @@ export function AssistantsSection() {
                     )}
                   </TableCell>
 
-                  {/* Permissions Badges */}
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {assistant.permissions && assistant.permissions.length > 0 ? (
-                        assistant.permissions.map((perm: AssistantPermission) => (
-                          <Badge key={perm} variant="secondary" className="text-[11px]">
-                            {t(`dialog.permissions.${perm}`)}
-                          </Badge>
-                        ))
+                        Array.from(new Set(assistant.permissions)).map(
+                          (perm: AssistantPermission) => (
+                            <Badge
+                              key={`${assistant.id}-${perm}`}
+                              variant="secondary"
+                              className="text-[11px]"
+                            >
+                              {t(`dialog.permissions.${perm}`)}
+                            </Badge>
+                          ),
+                        )
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </div>
                   </TableCell>
 
-                  {/* Action Buttons */}
                   <TableCell className="text-end">
                     <div className="flex items-center justify-end gap-1">
                       <Button
@@ -244,7 +305,11 @@ export function AssistantsSection() {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               {t("deleteDialog.cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteAssistantMutation.isPending}
+            >
               {t("deleteDialog.confirm")}
             </Button>
           </DialogFooter>
@@ -276,7 +341,10 @@ export function AssistantsSection() {
             <Button variant="outline" onClick={() => setResetPasswordDialogOpen(false)}>
               {t("resetPasswordDialog.cancel")}
             </Button>
-            <Button disabled={!newPassword} onClick={handleConfirmResetPassword}>
+            <Button
+              disabled={!newPassword || updateAssistantMutation.isPending}
+              onClick={handleConfirmResetPassword}
+            >
               {t("resetPasswordDialog.confirm")}
             </Button>
           </DialogFooter>

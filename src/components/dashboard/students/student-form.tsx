@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { MapPin, ShieldCheck, User } from "lucide-react";
@@ -30,6 +31,8 @@ export interface StudentFormData {
   gender: Gender;
   email: string;
   image?: string;
+  imageFile?: File | null;
+  removeAvatar?: boolean;
   password?: string;
   confirmPassword?: string;
   country: string;
@@ -45,6 +48,7 @@ interface StudentFormProps {
   onSaveDraft?: (data: StudentFormData) => void;
   onCancel: () => void;
   submitLabel?: string;
+  educationalStages?: Array<{ id: string | number; name: string }>;
 }
 
 export function StudentForm({
@@ -54,6 +58,7 @@ export function StudentForm({
   onSaveDraft,
   onCancel,
   submitLabel,
+  educationalStages,
 }: StudentFormProps) {
   const locale = useLocale();
 
@@ -73,9 +78,35 @@ export function StudentForm({
     confirmPassword: initialData?.password || "",
     country: initialData?.country || (locale === "ar" ? "مصر" : "Egypt"),
     state: initialData?.state || (locale === "ar" ? "القاهرة" : "Cairo"),
-    grade: initialData?.grade || "grade3",
+    grade: initialData?.educationalStageId
+      ? String(initialData.educationalStageId)
+      : initialData?.grade || "grade3",
     registrationType: initialData?.registrationType || "center",
   });
+
+  React.useEffect(() => {
+    if (initialData) {
+      setFormData({
+        firstName: initialData.firstName || "",
+        middleName: initialData.middleName || "",
+        lastName: initialData.lastName || "",
+        additionalName: initialData.additionalName || "",
+        phoneNumber: initialData.phoneNumber || "",
+        parentPhoneNumber: initialData.parentPhoneNumber || "",
+        gender: initialData.gender || "male",
+        email: initialData.email || "",
+        image: initialData.image || "",
+        password: initialData.password || "",
+        confirmPassword: initialData.password || "",
+        country: initialData.country || (locale === "ar" ? "مصر" : "Egypt"),
+        state: initialData.state || (locale === "ar" ? "القاهرة" : "Cairo"),
+        grade: initialData.educationalStageId
+          ? String(initialData.educationalStageId)
+          : initialData.grade || "grade3",
+        registrationType: initialData.registrationType || "center",
+      });
+    }
+  }, [initialData, locale]);
 
   const [customRegTypes, setCustomRegTypes] = React.useState<Array<{ id: string; name: string }>>(
     [],
@@ -156,8 +187,24 @@ export function StudentForm({
             id="student-image"
             label={tForm("imageLabel")}
             value={formData.image}
-            onChange={(dataUrl) => handleChange("image", dataUrl)}
-            onClear={() => handleChange("image", "")}
+            onChange={(dataUrl, file) => {
+              setFormData((prev) => ({
+                ...prev,
+                image: dataUrl,
+                imageFile: file || prev.imageFile,
+                removeAvatar: false,
+              }));
+              if (errorMsg) setErrorMsg(null);
+            }}
+            onClear={() => {
+              setFormData((prev) => ({
+                ...prev,
+                image: "",
+                imageFile: null,
+                removeAvatar: true,
+              }));
+              if (errorMsg) setErrorMsg(null);
+            }}
             variant="avatar"
             prompt={tForm("imagePrompt")}
             changePrompt={tForm("imageChange")}
@@ -344,6 +391,7 @@ export function StudentForm({
             onValueChange={(val) => handleChange("grade", val)}
             label={tForm("gradeLabel")}
             placeholder={tForm("selectGrade")}
+            grades={educationalStages}
           />
 
           {/* Registration Type */}

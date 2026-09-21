@@ -7,14 +7,15 @@ import { Info, Pencil, RotateCcw, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { PlatformInfoGroupWhoWeAre } from "@/types/settings";
+import type { PlatformInfoGroupWhoWeAre } from "@/types/settings";
 import { savePlatformInfoWhoWeAre, resetPlatformInfoGroup } from "@/lib/settings-storage";
 
 interface WhoWeAreGroupProps {
   data: PlatformInfoGroupWhoWeAre;
+  onSaveCustom?: (content: string) => Promise<void> | void;
 }
 
-export function WhoWeAreGroup({ data }: WhoWeAreGroupProps) {
+export function WhoWeAreGroup({ data, onSaveCustom }: WhoWeAreGroupProps) {
   const t = useTranslations("settings.platformInfo.whoWeAre");
   const locale = useLocale();
   const isRtl = locale === "ar";
@@ -31,8 +32,12 @@ export function WhoWeAreGroup({ data }: WhoWeAreGroupProps) {
     setIsEditing(false);
   };
 
-  const handleSave = () => {
-    savePlatformInfoWhoWeAre(content);
+  const handleSave = async () => {
+    if (onSaveCustom) {
+      await onSaveCustom(content);
+    } else {
+      savePlatformInfoWhoWeAre(content);
+    }
     setIsEditing(false);
   };
 

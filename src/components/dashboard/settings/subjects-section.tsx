@@ -1,8 +1,9 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { useState, useEffect } from "react";
 import { useTranslations } from "next-intl";
-import { BookOpen, Plus, Pencil, Trash2, RotateCcw } from "lucide-react";
+import { BookOpen, Plus, Pencil, Trash2, RotateCcw, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -20,35 +21,36 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { SubjectItem } from "@/types/settings";
+import type { SubjectItem } from "@/types/settings";
+import { adaptBackendSubjectToSubjectItem } from "@/lib/adapters/settings-adapter";
 import {
-  getStoredSubjects,
-  saveSubject,
-  deleteSubject,
-  resetSubjects,
-} from "@/lib/settings-storage";
+  useCreateSubject,
+  useDeleteSubject,
+  useSubjectsList,
+  useUpdateSubject,
+} from "@/hooks/use-settings";
+import { toast } from "sonner";
 import { SubjectDialog } from "./subject-dialog";
 
-export function SubjectsSection() {
+export function SubjectsSection({ isReadOnly = false }: { isReadOnly?: boolean }) {
   const t = useTranslations("settings.subjects");
 
-  const [subjects, setSubjects] = useState<SubjectItem[]>([]);
+  const { data: backendSubjects, isLoading, refetch } = useSubjectsList();
+  const createSubjectMutation = useCreateSubject();
+  const updateSubjectMutation = useUpdateSubject();
+  const deleteSubjectMutation = useDeleteSubject();
+
+  const subjects: SubjectItem[] = (backendSubjects || []).map((s) =>
+    adaptBackendSubjectToSubjectItem(s),
+  );
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [subjectToEdit, setSubjectToEdit] = useState<SubjectItem | null>(null);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [subjectToDelete, setSubjectToDelete] = useState<SubjectItem | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-
-  useEffect(() => {
-    const handleLoad = () => setSubjects(getStoredSubjects());
-    handleLoad();
-    window.addEventListener("rewaa_subjects_updated", handleLoad);
-    return () => window.removeEventListener("rewaa_subjects_updated", handleLoad);
-  }, []);
-
-  const handleReset = () => {
-    resetSubjects();
-  };
 
   const handleOpenAdd = () => {
     setSubjectToEdit(null);
@@ -65,16 +67,41 @@ export function SubjectsSection() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (subjectToDelete) {
-      deleteSubject(subjectToDelete.id);
-      setSubjectToDelete(null);
-      setDeleteDialogOpen(false);
+      try {
+        await deleteSubjectMutation.mutateAsync(subjectToDelete.id);
+        toast.success(t("deleteDialog.title"));
+        setSubjectToDelete(null);
+        setDeleteDialogOpen(false);
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to delete subject";
+        toast.error(errorMsg);
+      }
     }
   };
 
-  const handleSave = (data: { id?: string; name: string }) => {
-    saveSubject(data);
+  const handleSave = async (data: { id?: string; name: string }) => {
+    try {
+      if (data.id) {
+        await updateSubjectMutation.mutateAsync({
+          subjectId: data.id,
+          data: {
+            name: { ar: data.name, en: data.name },
+          },
+        });
+      } else {
+        await createSubjectMutation.mutateAsync({
+          name: { ar: data.name, en: data.name },
+          is_active: true,
+        });
+      }
+      toast.success(t("title"));
+      setDialogOpen(false);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to save subject";
+      toast.error(errorMsg);
+    }
   };
 
   return (
@@ -91,14 +118,22 @@ export function SubjectsSection() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" onClick={handleReset} className="gap-1.5">
-            <RotateCcw className="size-3.5" />
-            <span>{t("resetSubjects")}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={mounted && isLoading}
+            className="gap-1.5"
+          >
+            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
+            <span>{t("refreshSubjects")}</span>
           </Button>
-          <Button onClick={handleOpenAdd} size="sm" className="gap-1.5">
-            <Plus className="size-4" />
-            <span>{t("addSubject")}</span>
-          </Button>
+          {!isReadOnly && (
+            <Button onClick={handleOpenAdd} size="sm" className="gap-1.5">
+              <Plus className="size-4" />
+              <span>{t("addSubject")}</span>
+            </Button>
+          )}
         </div>
       </div>
 
@@ -114,7 +149,16 @@ export function SubjectsSection() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {subjects.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
+                  <div className="flex items-center justify-center gap-2">
+                    <Loader2 className="size-4 animate-spin text-primary" />
+                    <span className="text-xs">{t("loading")}</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : subjects.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} className="h-28 text-center text-muted-foreground">
                   {t("noSubjects")}
@@ -127,24 +171,26 @@ export function SubjectsSection() {
                   <TableCell className="text-xs font-mono">{subject.coursesCount}</TableCell>
                   <TableCell className="text-xs font-mono">{subject.teachersCount}</TableCell>
                   <TableCell className="text-end">
-                    <div className="flex items-center justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 rounded-md text-muted-foreground hover:text-foreground"
-                        onClick={() => handleOpenEdit(subject)}
-                      >
-                        <Pencil className="size-3.5" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="size-7 rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => handleOpenDelete(subject)}
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
+                    {!isReadOnly && (
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 rounded-md text-muted-foreground hover:text-foreground"
+                          onClick={() => handleOpenEdit(subject)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-7 rounded-md text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleOpenDelete(subject)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
+                      </div>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
@@ -174,7 +220,11 @@ export function SubjectsSection() {
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
               {t("deleteDialog.cancel")}
             </Button>
-            <Button variant="destructive" onClick={handleConfirmDelete}>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteSubjectMutation.isPending}
+            >
               {t("deleteDialog.confirm")}
             </Button>
           </DialogFooter>

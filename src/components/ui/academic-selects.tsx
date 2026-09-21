@@ -99,7 +99,12 @@ export function ComboboxSelect({
   const [open, setOpen] = React.useState(false);
   const [isAddOpen, setIsAddOpen] = React.useState(false);
 
-  const selectedOption = options.find((opt) => opt.value === value);
+  const selectedOption = options.find(
+    (opt) =>
+      opt.value === value ||
+      (value && typeof value === "string" && opt.label?.trim() === value.trim()) ||
+      (value !== undefined && value !== null && String(opt.value) === String(value)),
+  );
 
   const handleAdd = async (newName: string) => {
     if (onAddNewOption) {

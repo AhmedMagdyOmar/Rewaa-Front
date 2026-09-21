@@ -43,16 +43,19 @@ export function StudentInvoiceModal({
   ].filter(Boolean);
   const fullName = nameParts.length > 0 ? nameParts.join(" ") : student.firstName || "";
 
-  const formattedDate = new Date(transaction.createdAt).toLocaleDateString(
-    locale === "ar" ? "ar-EG" : "en-GB",
-    {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    },
-  );
+  const normalizedDate = transaction.createdAt?.includes("T")
+    ? transaction.createdAt
+    : transaction.createdAt?.replace(" ", "T");
+  const parsedDate = normalizedDate ? new Date(normalizedDate) : new Date();
+  const formattedDate = isNaN(parsedDate.getTime())
+    ? transaction.createdAt
+    : parsedDate.toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
   const isDeposit = transaction.type === "deposit" || transaction.type === "refund";
 

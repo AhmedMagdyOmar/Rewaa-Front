@@ -174,9 +174,9 @@ export function useProviderExamAttempts(filters: {
   page?: number;
 }) {
   return useQuery({
-    queryKey: queryKeys.provider.exams.attempts(filters.exam_id),
+    queryKey: queryKeys.provider.exams.attempts(filters),
     queryFn: () => examsService.getExamAttempts(filters),
-    enabled: Boolean(filters.exam_id),
+    enabled: Boolean(filters.exam_id || filters.student_id),
     staleTime: 15 * 1000,
   });
 }
