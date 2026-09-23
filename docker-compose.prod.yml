@@ -1,6 +1,6 @@
 services:
   app:
-    image: ghcr.io/amrmohamed27/rewaa:latest
+    image: ghcr.io/ahmedmagdyomar/rewaa-front:latest
     container_name: rewaa-app
     restart: always
     environment:
