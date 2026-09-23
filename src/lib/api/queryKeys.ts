@@ -11,6 +11,10 @@ export const queryKeys = {
     all: ["provider"] as const,
     profile: () => [...queryKeys.provider.all, "profile"] as const,
     settings: () => [...queryKeys.provider.all, "settings"] as const,
+    dashboard: {
+      all: () => [...queryKeys.provider.all, "dashboard"] as const,
+      statistics: () => [...queryKeys.provider.all, "dashboard", "statistics"] as const,
+    },
 
     // Courses & Curriculum
     courses: {

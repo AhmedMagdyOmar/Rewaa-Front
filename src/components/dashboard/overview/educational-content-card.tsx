@@ -3,37 +3,62 @@
 import React from "react";
 import { useTranslations } from "next-intl";
 import { BookOpen, Video, HelpCircle, FileText } from "lucide-react";
-import { dashboardMockData } from "@/lib/mockData";
+import { Skeleton } from "@/components/ui/skeleton";
 import { DashboardCard } from "./dashboard-card";
 import { DashboardCardHeader } from "./dashboard-card-header";
 import { StatTile } from "./stat-tile";
 
-interface EducationalContentCardProps {
-  educationalContent: typeof dashboardMockData.educationalContent;
+export interface EducationalContentStatsData {
+  courses_count?: number;
+  courses?: number;
+  lectures_count?: number;
+  lectures?: number;
+  lessons_count?: number;
+  questions_count?: number;
+  questions?: number;
+  exams_count?: number;
+  exams?: number;
 }
 
-export function EducationalContentCard({ educationalContent }: EducationalContentCardProps) {
+interface EducationalContentCardProps {
+  educationalContent?: EducationalContentStatsData;
+  isLoading?: boolean;
+}
+
+export function EducationalContentCard({
+  educationalContent,
+  isLoading = false,
+}: EducationalContentCardProps) {
   const t = useTranslations("dashboard");
+
+  const courses = educationalContent?.courses_count ?? educationalContent?.courses ?? 0;
+  const lectures =
+    educationalContent?.lectures_count ??
+    educationalContent?.lessons_count ??
+    educationalContent?.lectures ??
+    0;
+  const questions = educationalContent?.questions_count ?? educationalContent?.questions ?? 0;
+  const exams = educationalContent?.exams_count ?? educationalContent?.exams ?? 0;
 
   const items = [
     {
       label: t("coursesCount"),
-      value: educationalContent.courses,
+      value: isLoading ? <Skeleton className="h-7 w-12 mx-auto" /> : courses.toLocaleString(),
       icon: <BookOpen className="size-5 text-primary" />,
     },
     {
       label: t("lecturesCount"),
-      value: educationalContent.lectures,
+      value: isLoading ? <Skeleton className="h-7 w-12 mx-auto" /> : lectures.toLocaleString(),
       icon: <Video className="size-5 text-primary" />,
     },
     {
       label: t("questionsCount"),
-      value: educationalContent.questions.toLocaleString(),
+      value: isLoading ? <Skeleton className="h-7 w-12 mx-auto" /> : questions.toLocaleString(),
       icon: <HelpCircle className="size-5 text-primary" />,
     },
     {
       label: t("examsCount"),
-      value: educationalContent.exams,
+      value: isLoading ? <Skeleton className="h-7 w-12 mx-auto" /> : exams.toLocaleString(),
       icon: <FileText className="size-5 text-primary" />,
     },
   ];
@@ -51,17 +76,7 @@ export function EducationalContentCard({ educationalContent }: EducationalConten
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 h-full">
         {items.map((item, idx) => (
-          <StatTile
-            key={idx}
-            label={item.label}
-            value={item.value}
-            icon={item.icon}
-            subtitle={
-              <span className="text-xs font-semibold text-success text-center">
-                {t("addedToday", { count: 5 })}
-              </span>
-            }
-          />
+          <StatTile key={idx} label={item.label} value={item.value} icon={item.icon} />
         ))}
       </div>
     </DashboardCard>
