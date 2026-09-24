@@ -1,26 +1,21 @@
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { mockCoursesData } from "@/lib/mockCoursesData";
-import { getStoredTeachers } from "@/lib/settings-storage";
+import { useStudentCourseContent } from "@/hooks/use-student-course-content";
+import { useStudentCourseDetail } from "@/hooks/use-student-course-detail";
+import { useStudentEnroll } from "@/hooks/use-student-enroll";
+import { useStudentLessonDetail, useToggleLessonCompletion } from "@/hooks/use-student-lesson";
 import { cn } from "@/lib/utils";
 import {
-  calculateCourseProgress,
-  getCompletedLessons,
-  getPassedExams,
-  getSectionLockStatus,
-  toggleLessonCompletion,
-} from "@/lib/student-course-progress";
-import {
-  enrollCourse,
-  getEnrolledCourseIds,
-  isCourseEnrolled,
-} from "@/lib/student-enrollment-storage";
-import { Course, CourseSection, Lesson } from "@/types/course";
-import { useLocale } from "next-intl";
+  BackendCourseContentSection,
+  BackendCourseContentSectionLesson,
+  BackendCourseContentSectionLessonExam,
+} from "@/types/api-contracts";
+import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
+import { toast } from "sonner";
 import { StudentCourseContentSidebar } from "./StudentCourseContentSidebar";
+import { StudentCourseLessonView } from "./StudentCourseLessonView";
 import { StudentCourseMainView } from "./StudentCourseMainView";
 import { StudentCoursePreviewView } from "./StudentCoursePreviewView";
 import { StudentLockedSectionDialog } from "./StudentLockedSectionDialog";
@@ -31,195 +26,79 @@ interface StudentCourseDetailClientProps {
 
 export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClientProps) {
   const locale = useLocale();
+  const tPreview = useTranslations("studentDashboard.coursePreview");
 
-  const [storedCourses, setStoredCourses] = React.useState<Course[]>([]);
-  const [teachers, setTeachers] = React.useState(getStoredTeachers());
-  const [enrolledIds, setEnrolledIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isEnrolling, setIsEnrolling] = React.useState(false);
+  // React Query for live backend course details
+  const {
+    data: backendCourse,
+    isLoading: isDetailsLoading,
+    error: detailsError,
+  } = useStudentCourseDetail(courseId);
 
-  // Selected active lesson (null = Course Overview)
-  const [selectedLessonId, setSelectedLessonId] = React.useState<string | null>(null);
+  // React Query for live course syllabus tree (only enabled when enrolled)
+  const isEnrolled = Boolean(backendCourse?.is_enrolled);
+  const { data: backendContent, isLoading: isContentLoading } = useStudentCourseContent(
+    courseId,
+    isEnrolled,
+  );
 
-  // Completed lessons
-  const [completedLessons, setCompletedLessons] = React.useState<string[]>([]);
+  // React Query mutation for enrollment / checkout order creation
+  const enrollMutation = useStudentEnroll();
 
-  // Passed exams
-  const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
-
-  // Locked Section Modal State
+  const [selectedLessonId, setSelectedLessonId] = React.useState<number | null>(null);
   const [lockedModalOpen, setLockedModalOpen] = React.useState(false);
   const [lockedSectionData, setLockedSectionData] = React.useState<{
-    section: CourseSection | null;
-    requiredExamId?: string;
+    section: BackendCourseContentSection | null;
+    requiredExam?: BackendCourseContentSectionLessonExam | null;
   }>({ section: null });
-
-  // Sidebar collapsed state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
-  // Load course, stored completions, and passed exams
-  React.useEffect(() => {
-    const loadData = () => {
-      const courses = getStoredCourses(locale);
-      setStoredCourses(courses);
-      setTeachers(getStoredTeachers());
-      setEnrolledIds(getEnrolledCourseIds());
-      setCompletedLessons(getCompletedLessons(courseId));
-      setPassedExamIds(getPassedExams());
-      setIsLoading(false);
-    };
+  // React Query for active selected lesson
+  const { data: activeLesson, isLoading: isLessonLoading } = useStudentLessonDetail(
+    courseId,
+    selectedLessonId,
+    Boolean(selectedLessonId && isEnrolled),
+  );
 
-    loadData();
+  // Mutation to toggle lesson completion
+  const toggleCompletionMutation = useToggleLessonCompletion(courseId);
 
-    const handleCoursesUpdate = () => {
-      setStoredCourses(getStoredCourses(locale));
-      setTeachers(getStoredTeachers());
-    };
-
-    const handleEnrollmentUpdate = () => {
-      setEnrolledIds(getEnrolledCourseIds());
-    };
-
-    const handleProgressUpdate = () => {
-      setCompletedLessons(getCompletedLessons(courseId));
-    };
-
-    const handlePassedExamsUpdate = () => {
-      setPassedExamIds(getPassedExams());
-    };
-
-    window.addEventListener("rewaa_courses_updated", handleCoursesUpdate);
-    window.addEventListener("rewaa_settings_updated", handleCoursesUpdate);
-    window.addEventListener("rewaa_student_enrollment_updated", handleEnrollmentUpdate);
-    window.addEventListener("storage", handleEnrollmentUpdate);
-    window.addEventListener("rewaa_student_progress_updated", handleProgressUpdate);
-    window.addEventListener("rewaa_student_passed_exams_updated", handlePassedExamsUpdate);
-
-    return () => {
-      window.removeEventListener("rewaa_courses_updated", handleCoursesUpdate);
-      window.removeEventListener("rewaa_settings_updated", handleCoursesUpdate);
-      window.removeEventListener("rewaa_student_enrollment_updated", handleEnrollmentUpdate);
-      window.removeEventListener("storage", handleEnrollmentUpdate);
-      window.removeEventListener("rewaa_student_progress_updated", handleProgressUpdate);
-      window.removeEventListener("rewaa_student_passed_exams_updated", handlePassedExamsUpdate);
-    };
-  }, [locale, courseId]);
-
-  // Current Course - must be published
-  const courseList = React.useMemo(() => {
-    const raw =
-      storedCourses.length > 0
-        ? storedCourses
-        : mockCoursesData[locale as "ar" | "en"] || mockCoursesData.ar;
-    return raw.filter((c) => !c.isDraft);
-  }, [storedCourses, locale]);
-
-  const rawCourse = React.useMemo(() => {
-    return courseList.find((c) => c.id === courseId) || null;
-  }, [courseList, courseId]);
-
-  // Sanitize course to ensure all sections & lessons are published (non-draft)
-  const currentCourse = React.useMemo((): Course | null => {
-    if (!rawCourse || rawCourse.isDraft) return null;
-
-    const publishedSections = (rawCourse.sections || [])
-      .filter((section) => !section.isDraft && section.status !== "draft")
-      .map((section) => ({
-        ...section,
-        lessons: (section.lessons || []).filter((lesson) => lesson.publishStatus !== "draft"),
-      }));
-
-    const totalPublishedLessons = publishedSections.reduce((acc, s) => acc + s.lessons.length, 0);
-
-    return {
-      ...rawCourse,
-      numberOfLessons: totalPublishedLessons,
-      sections: publishedSections,
-    };
-  }, [rawCourse]);
-
-  // Find instructor image & info
-  const matchedTeacher = React.useMemo(() => {
-    if (!currentCourse) return undefined;
-    return teachers.find(
-      (tch) =>
-        tch.name.trim().toLowerCase() === currentCourse.teacherName?.trim().toLowerCase() ||
-        (currentCourse.teacherName && tch.name.includes(currentCourse.teacherName)) ||
-        (currentCourse.teacherName && currentCourse.teacherName.includes(tch.name)),
-    );
-  }, [teachers, currentCourse]);
-
-  // Check enrollment
-  const isEnrolled = React.useMemo(() => {
-    if (!currentCourse) return false;
-    return enrolledIds.includes(currentCourse.id) || isCourseEnrolled(currentCourse.id);
-  }, [enrolledIds, currentCourse]);
-
-  // Handle Enrollment Action
-  const handleEnroll = (targetCourseId: string) => {
-    setIsEnrolling(true);
-    setTimeout(() => {
-      const updated = enrollCourse(targetCourseId);
-      setEnrolledIds(updated);
-      setIsEnrolling(false);
-    }, 400);
-  };
-
-  // Flat lessons list for next/prev navigation
-  const flatLessons: Lesson[] = React.useMemo(() => {
-    if (!currentCourse) return [];
-    return currentCourse.sections.flatMap((s) => s.lessons);
-  }, [currentCourse]);
-
-  const selectedLesson = React.useMemo(() => {
-    if (!selectedLessonId) return null;
-    return flatLessons.find((l) => l.id === selectedLessonId) || null;
-  }, [flatLessons, selectedLessonId]);
+  // Flattened lessons list from content tree for Previous / Next navigation
+  const flatLessons: BackendCourseContentSectionLesson[] = React.useMemo(() => {
+    if (!backendContent?.sections) return [];
+    return backendContent.sections.flatMap((s) => s.lessons || []);
+  }, [backendContent]);
 
   const currentLessonIndex = flatLessons.findIndex((l) => l.id === selectedLessonId);
   const hasPreviousLesson = currentLessonIndex > 0;
   const hasNextLesson = currentLessonIndex !== -1 && currentLessonIndex < flatLessons.length - 1;
 
-  // Check if the next lesson belongs to a locked section
   const isNextLessonLocked = React.useMemo(() => {
-    if (!hasNextLesson || !currentCourse) return false;
+    if (!hasNextLesson) return false;
     const nextLesson = flatLessons[currentLessonIndex + 1];
-    if (!nextLesson) return false;
-    const targetSecIdx = currentCourse.sections.findIndex((s) =>
-      s.lessons.some((l) => l.id === nextLesson.id),
+    return Boolean(nextLesson?.is_locked);
+  }, [hasNextLesson, flatLessons, currentLessonIndex]);
+
+  // Current lesson completed state
+  const isCurrentLessonCompleted = React.useMemo(() => {
+    if (!selectedLessonId) return false;
+    const item = flatLessons.find((l) => l.id === selectedLessonId);
+    return Boolean(item?.is_completed);
+  }, [flatLessons, selectedLessonId]);
+
+  // Handle Enrollment Action via backend order creation
+  const handleEnroll = (targetCourseId: number) => {
+    enrollMutation.mutate(
+      { course_ids: [targetCourseId] },
+      {
+        onSuccess: () => {
+          toast.success(tPreview("enrollSuccess"));
+        },
+      },
     );
-    if (targetSecIdx <= 0) return false;
-    const lockStatus = getSectionLockStatus(targetSecIdx, currentCourse.sections, passedExamIds);
-    return lockStatus.isLocked;
-  }, [hasNextLesson, flatLessons, currentLessonIndex, currentCourse, passedExamIds]);
+  };
 
-  // Handle lesson navigation with lock check
-  const handleSelectLesson = (lessonId: string | null) => {
-    if (!lessonId) {
-      setSelectedLessonId(null);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    if (!currentCourse) return;
-
-    // Determine target section
-    const targetSecIdx = currentCourse.sections.findIndex((s) =>
-      s.lessons.some((l) => l.id === lessonId),
-    );
-
-    if (targetSecIdx > 0) {
-      const lockStatus = getSectionLockStatus(targetSecIdx, currentCourse.sections, passedExamIds);
-      if (lockStatus.isLocked) {
-        setLockedSectionData({
-          section: currentCourse.sections[targetSecIdx] || null,
-          requiredExamId: lockStatus.requiredExamId,
-        });
-        setLockedModalOpen(true);
-        return;
-      }
-    }
-
+  const handleSelectLesson = (lessonId: number | null) => {
     setSelectedLessonId(lessonId);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -227,7 +106,7 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   const handleNextLesson = () => {
     if (hasNextLesson) {
       const nextLesson = flatLessons[currentLessonIndex + 1];
-      if (nextLesson) {
+      if (nextLesson && !nextLesson.is_locked) {
         handleSelectLesson(nextLesson.id);
       }
     }
@@ -235,45 +114,61 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
 
   const handlePreviousLesson = () => {
     if (hasPreviousLesson) {
-      handleSelectLesson(flatLessons[currentLessonIndex - 1].id);
+      const prevLesson = flatLessons[currentLessonIndex - 1];
+      if (prevLesson) {
+        handleSelectLesson(prevLesson.id);
+      }
     }
   };
 
-  const handleAttemptLockedLesson = (section: CourseSection, requiredExamId?: string) => {
+  const handleAttemptLockedLesson = (
+    section: BackendCourseContentSection,
+    requiredExam?: BackendCourseContentSectionLessonExam | null,
+  ) => {
     setLockedSectionData({
       section,
-      requiredExamId,
+      requiredExam,
     });
     setLockedModalOpen(true);
   };
 
-  // Toggle completion
-  const handleToggleCompletion = (lessonId: string) => {
-    const res = toggleLessonCompletion(courseId, lessonId);
-    setCompletedLessons(res.completedLessons);
+  const handleToggleCompletion = (lessonId: number) => {
+    const item = flatLessons.find((l) => l.id === lessonId);
+    const newStatus = !item?.is_completed;
+    toggleCompletionMutation.mutate({
+      lessonId,
+      isCompleted: newStatus,
+    });
   };
 
-  // Progress percentage
-  const totalLessons = flatLessons.length;
-  const completedCount = flatLessons.filter((l) => completedLessons.includes(l.id)).length;
-  const progressPercentage = calculateCourseProgress(totalLessons, completedCount);
-
-  if (isLoading) {
+  if (isDetailsLoading || (isEnrolled && isContentLoading)) {
     return (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
-        <div className="lg:col-span-4 space-y-4">
+        <div className="lg:col-span-8 space-y-4">
+          <Skeleton className="h-44 w-full rounded-2xl" />
           <Skeleton className="h-64 w-full rounded-2xl" />
         </div>
-        <div className="lg:col-span-8 space-y-4">
-          <Skeleton className="h-10 w-48 rounded-xl" />
+        <div className="lg:col-span-4 space-y-4">
           <Skeleton className="aspect-video w-full rounded-2xl" />
-          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-48 w-full rounded-2xl" />
         </div>
       </div>
     );
   }
 
-  if (!currentCourse) {
+  // If backend found the course and student is NOT enrolled → render preview
+  if (backendCourse && !backendCourse.is_enrolled) {
+    return (
+      <StudentCoursePreviewView
+        course={backendCourse}
+        onEnroll={handleEnroll}
+        isEnrolling={enrollMutation.isPending}
+      />
+    );
+  }
+
+  // Fallback for not found or error
+  if (!backendCourse && detailsError) {
     return (
       <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border border-dashed border-border/80 space-y-4 my-8">
         <h2 className="text-xl font-bold text-foreground">
@@ -289,26 +184,15 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // CASE 1: STUDENT IS NOT ENROLLED IN THE COURSE (Preview & Purchase Landing)
-  // ═══════════════════════════════════════════════════════════════════════════
-  if (!isEnrolled) {
-    return (
-      <StudentCoursePreviewView
-        course={currentCourse}
-        matchedTeacher={matchedTeacher}
-        onEnroll={handleEnroll}
-        isEnrolling={isEnrolling}
-      />
-    );
-  }
-
-  // ═══════════════════════════════════════════════════════════════════════════
   // CASE 2: STUDENT IS ENROLLED IN THE COURSE (Active Learning Dashboard View)
   // ═══════════════════════════════════════════════════════════════════════════
+  if (!backendCourse) {
+    return null;
+  }
+
   return (
     <div className="w-full space-y-6">
       {/* 2-Column Responsive Workspace Grid */}
-      {/* On desktop: Sidebar on start (left in LTR, right in RTL), Main view on end */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Sidebar: Course Content Navigation */}
         <aside
@@ -317,42 +201,53 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
             isSidebarCollapsed ? "lg:col-span-1" : "lg:col-span-5 xl:col-span-4",
           )}
         >
-          <StudentCourseContentSidebar
-            course={currentCourse}
-            selectedLessonId={selectedLessonId}
-            onSelectLesson={handleSelectLesson}
-            completedLessons={completedLessons}
-            passedExamIds={passedExamIds}
-            onToggleLessonCompletion={handleToggleCompletion}
-            onAttemptLockedLesson={handleAttemptLockedLesson}
-            progressPercentage={progressPercentage}
-            isCollapsed={isSidebarCollapsed}
-            onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
-          />
+          {backendContent && (
+            <StudentCourseContentSidebar
+              content={backendContent}
+              selectedLessonId={selectedLessonId}
+              onSelectLesson={handleSelectLesson}
+              onToggleLessonCompletion={handleToggleCompletion}
+              onAttemptLockedLesson={handleAttemptLockedLesson}
+              isCollapsed={isSidebarCollapsed}
+              onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
+            />
+          )}
         </aside>
 
-        {/* Main Content Workspace: Overview or Active Lesson */}
+        {/* Main Content Workspace: Course Details OR Active Lesson */}
         <main
           className={cn(
             "order-1 lg:order-2 space-y-6 transition-all duration-300",
             isSidebarCollapsed ? "lg:col-span-11" : "lg:col-span-7 xl:col-span-8",
           )}
         >
-          <StudentCourseMainView
-            course={currentCourse}
-            selectedLesson={selectedLesson}
-            completedLessons={completedLessons}
-            passedExamIds={passedExamIds}
-            onToggleLessonCompletion={handleToggleCompletion}
-            onSelectLesson={handleSelectLesson}
-            onNextLesson={handleNextLesson}
-            onPreviousLesson={handlePreviousLesson}
-            hasNextLesson={hasNextLesson}
-            hasPreviousLesson={hasPreviousLesson}
-            isNextLessonLocked={isNextLessonLocked}
-            teacherImage={matchedTeacher?.image}
-            accessEndDate="2026-12-31"
-          />
+          {selectedLessonId && isLessonLoading ? (
+            <div className="space-y-4">
+              <Skeleton className="h-20 w-full rounded-2xl" />
+              <Skeleton className="aspect-video w-full rounded-2xl" />
+              <Skeleton className="h-64 w-full rounded-2xl" />
+            </div>
+          ) : selectedLessonId && activeLesson && backendContent ? (
+            <StudentCourseLessonView
+              lesson={activeLesson}
+              content={backendContent}
+              isCompleted={isCurrentLessonCompleted}
+              onToggleCompletion={handleToggleCompletion}
+              isTogglingCompletion={toggleCompletionMutation.isPending}
+              onSelectLesson={handleSelectLesson}
+              onNextLesson={handleNextLesson}
+              onPreviousLesson={handlePreviousLesson}
+              hasNextLesson={hasNextLesson}
+              hasPreviousLesson={hasPreviousLesson}
+              isNextLessonLocked={isNextLessonLocked}
+            />
+          ) : (
+            <StudentCourseMainView
+              course={backendCourse}
+              content={backendContent}
+              onSelectLesson={handleSelectLesson}
+            />
+          )}
         </main>
       </div>
 
@@ -361,7 +256,7 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
         open={lockedModalOpen}
         onOpenChange={setLockedModalOpen}
         lockedSection={lockedSectionData.section}
-        requiredExamId={lockedSectionData.requiredExamId}
+        requiredExam={lockedSectionData.requiredExam}
       />
     </div>
   );

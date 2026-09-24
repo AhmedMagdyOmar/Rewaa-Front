@@ -7,6 +7,7 @@
     "noNotifications": "No new notifications",
     "search": "Search...",
     "loading": "Loading...",
+    "refresh": "Refresh",
     "reset": "Reset",
     "submitting": "Submitting...",
     "genericError": "An unexpected error occurred. Please try again.",
@@ -184,8 +185,13 @@
     "roles": {
       "user": "User",
       "admin": "Admin",
+      "superadmin": "Super Admin",
       "teacher": "Teacher",
-      "student": "Student"
+      "assistant": "Assistant",
+      "student": "Student",
+      "provider": "Provider",
+      "center": "Educational Center",
+      "group": "Educational Group"
     }
   },
   "dashboard": {
@@ -919,6 +925,7 @@
       "published": "Published",
       "draft": "Draft",
       "scheduled": "Scheduled",
+      "pendingReview": "Pending Review",
       "scheduleTime": "Schedule Time",
       "createdAt": "Created At"
     },
@@ -928,7 +935,8 @@
       "viewComplaints": "View Complaints",
       "edit": "Edit",
       "publish": "Publish",
-      "delete": "Delete"
+      "delete": "Delete",
+      "resume": "Resume Exam"
     },
     "deleteDialog": {
       "title": "Delete Exam",
@@ -1312,6 +1320,99 @@
         "student": "Student: {studentName} ({phoneNumber})",
         "description": "Description: {complaintDescription}"
       }
+    },
+    "submissions": {
+      "title": "Exam Submissions & Reviews",
+      "subtitle": "Grade essay questions and review student responses and results.",
+      "examSubmissionsTitle": "Submissions for: {title}",
+      "backToExams": "Back to Exams",
+      "backToStats": "Back to Exam Stats",
+      "tabs": {
+        "all": "All Submissions",
+        "pendingReview": "Pending Review",
+        "graded": "Graded",
+        "inProgress": "In Progress"
+      },
+      "stats": {
+        "total": "Total Submissions",
+        "pendingReview": "Pending Review",
+        "graded": "Graded",
+        "passRate": "Pass Rate"
+      },
+      "columns": {
+        "student": "Student",
+        "exam": "Exam",
+        "attempt": "Attempt",
+        "status": "Status",
+        "score": "Score",
+        "submittedAt": "Submitted At",
+        "actions": "Actions"
+      },
+      "status": {
+        "inProgress": "In Progress",
+        "pendingReview": "Pending Review",
+        "graded": "Graded"
+      },
+      "actions": {
+        "grade": "Grade Submission",
+        "review": "Review Answers",
+        "viewDetails": "View Details"
+      },
+      "emptyTitle": "No submissions found",
+      "emptyDescription": "No exam attempts or submissions found matching your search criteria."
+    },
+    "grading": {
+      "pageTitle": "Grade & Review Submission",
+      "pageSubtitle": "Evaluate student essay answers and record final score.",
+      "backToSubmissions": "Back to Submissions",
+      "studentInfo": "Student Information",
+      "attemptInfo": "Attempt Details",
+      "attemptNumber": "Attempt #{number}",
+      "submittedAt": "Submitted at",
+      "timeSpent": "Time spent",
+      "duration": {
+        "minutes": "{count, plural, =0 {0 min} one {1 min} other {{count} mins}}",
+        "seconds": "{count, plural, =0 {0 sec} one {1 sec} other {{count} secs}}",
+        "minutesAndSeconds": "{minutes}m {seconds}s"
+      },
+      "passingScore": "Passing Requirement",
+      "objectiveScore": "Objective Score",
+      "essayScore": "Essay Score",
+      "totalScore": "Total Score",
+      "liveScoreCalculation": "Live Score Breakdown",
+      "sections": {
+        "overview": "Submission Overview",
+        "questions": "Exam Questions & Answers",
+        "essayGrading": "Essay Questions Grading",
+        "objectiveReview": "Objective Questions (Auto-Graded)"
+      },
+      "question": {
+        "questionNumber": "Question {number}",
+        "essayBadge": "Essay Question",
+        "mcqBadge": "Multiple Choice",
+        "tfBadge": "True / False",
+        "maxScore": "Max Score: {score}",
+        "studentAnswer": "Student Answer:",
+        "noAnswerSubmitted": "Student did not submit an answer.",
+        "modelAnswer": "Model Answer / Rubric:",
+        "awardScore": "Award Score:",
+        "scorePlaceholder": "Enter score (0 to {max})",
+        "scoreExceedsMax": "Awarded score cannot exceed question max score ({max})",
+        "scoreNegative": "Score cannot be negative",
+        "scoreRequired": "Please award a score for this question",
+        "presets": {
+          "zero": "0%",
+          "half": "50%",
+          "full": "100%"
+        },
+        "correctAnswer": "Correct Answer:",
+        "explanation": "Explanation / Notes:"
+      },
+      "submitGrades": "Submit & Finalize Grades",
+      "submitting": "Submitting grades...",
+      "alreadyGradedNotice": "This submission has already been graded. You can adjust the scores and re-save if needed.",
+      "successToast": "Grades submitted successfully and attempt marked as graded",
+      "errorToast": "Failed to submit grades. Please make sure all essay questions have valid awarded scores."
     }
   },
   "questionsPage": {
@@ -2614,6 +2715,7 @@
     "lessonsPage": {
       "title": "Independent Lessons",
       "subtitle": "Explore general lectures and standalone lessons available across the platform",
+      "description": "Browse and study standalone lessons and educational resources.",
       "searchPlaceholder": "Search by lesson title, subject, or teacher...",
       "clearFilters": "Clear Filters",
       "totalAvailable": "{count, plural, =0 {No lessons available} one {1 lesson available} other {{count} lessons available}}",
@@ -2621,7 +2723,19 @@
       "videoLessons": "Video Lessons",
       "textLessons": "Text Lessons",
       "allSubjects": "All Subjects",
+      "tabs": {
+        "all": "All Lessons",
+        "completed": "Completed",
+        "incomplete": "In Progress"
+      },
+      "filters": {
+        "searchPlaceholder": "Search lessons...",
+        "allTypes": "All Types",
+        "allSubjects": "All Subjects",
+        "clear": "Clear Filters"
+      },
       "sort": {
+        "label": "Sort By",
         "newest": "Newest First",
         "oldest": "Oldest First",
         "titleAsc": "Title: A to Z",
@@ -2631,14 +2745,39 @@
         "viewLesson": "View Lesson",
         "startLesson": "Start Lesson",
         "independent": "Standalone Lesson",
+        "enrolled": "Enrolled",
+        "locked": "Locked",
+        "completed": "Completed",
         "textOnly": "Text Only",
         "videoText": "Video & Text",
         "examLinked": "Linked Exam",
         "pdfsCount": "{count, plural, =0 {No files} one {1 file} other {{count} files}}"
       },
+      "error": {
+        "loadFailed": "Failed to load lessons from server.",
+        "retry": "Retry"
+      },
       "empty": {
         "title": "No standalone lessons available yet",
-        "description": "No independent lessons have been published yet. Check back soon for new content."
+        "description": "No independent lessons have been published yet. Check back soon for new content.",
+        "filtersDescription": "Try adjusting your filters or search query to find lessons."
+      },
+      "viewDetails": {
+        "backToLessons": "Back to Lessons",
+        "markAsCompleted": "Mark as complete",
+        "videoStreamLink": "External Video Source",
+        "openVideoInNewTab": "Open video in new tab",
+        "noDescription": "No text content provided for this lesson.",
+        "download": "Download",
+        "viewFullImage": "View full image",
+        "takeExam": "Take Exam",
+        "examRequirementText": "Passing score requirement: {percent}%",
+        "tabs": {
+          "overview": "Lesson Content",
+          "resources": "Attachments",
+          "images": "Images",
+          "exam": "Lesson Exam"
+        }
       },
       "pagination": {
         "showing": "Showing {start} to {end} of {total, plural, =0 {no lessons} one {1 lesson} other {{total} lessons}}"
@@ -2670,10 +2809,17 @@
       "title": "General & Independent Exams",
       "subtitle": "Explore and take open general exams available to all students",
       "backToExams": "Back to Exams",
-      "totalAvailable": "{count, plural, =0 {No general exams} one {1 general exam} other {{count} general exams}}",
+      "totalAvailable": "{count, plural, =0 {No available exams} one {1 available exam} other {{count} available exams}}",
+      "totalCompleted": "{count, plural, =0 {No completed exams} one {1 completed exam} other {{count} completed exams}}",
+      "tabs": {
+        "available": "Available Exams",
+        "completed": "Completed Exams"
+      },
       "empty": {
         "title": "No general exams available yet",
-        "description": "No independent general exams have been published yet. Check back soon."
+        "description": "No independent general exams have been published yet. Check back soon.",
+        "completedTitle": "No completed exams yet",
+        "completedDescription": "You haven't completed any general exams yet. Take available exams to view your results here."
       }
     },
     "examsPage": {
@@ -2719,6 +2865,7 @@
         "triesCount": "Attempt {current} of {max}",
         "statusPassed": "Passed",
         "statusFailed": "Needs Retake",
+        "statusPendingReview": "Pending Review",
         "actions": {
           "takeExam": "Take Exam",
           "retakeExam": "Retake Exam",
@@ -2741,15 +2888,18 @@
       "backToExams": "Back to Completed Exams",
       "statusPassed": "Passed Successfully",
       "statusFailed": "Needs Retake",
+      "statusPendingReview": "Pending Instructor Review",
       "scoreBadge": "Score: {score} / {totalScore}",
       "percentage": "{percent}%",
       "attemptInfo": "Attempt {current} of {max}",
       "completedOn": "Completed on {date}",
       "hero": {
         "passedTitle": "Congratulations! You passed the exam",
-        "passedSubtitle": "Great job! You achieved the required passing score. Review your questions and model answers below.",
+        "passedSubtitle": "Great job! You achieved the required passing score. Review your questions below.",
         "failedTitle": "Exam attempt completed",
-        "failedSubtitle": "You scored below the passing percentage. Review the correct answers and explanations below, then try again."
+        "failedSubtitle": "You scored below the passing percentage. Review your answers below, then try again.",
+        "pendingTitle": "Exam Submitted (Pending Instructor Review)",
+        "pendingSubtitle": "Your attempt includes essay questions awaiting review and grading by the instructor. Final score will be updated upon completion."
       },
       "kpi": {
         "totalScore": "Final Score",
@@ -2881,12 +3031,18 @@
       "totalAvailable": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
       "searchPlaceholder": "Search by course, subject, grade, or teacher...",
       "clearFilters": "Clear Filters",
+      "enrollButton": "Enroll Now",
+      "lessonCount": "{count, plural, =0 {No lessons} one {1 lesson} other {{count} lessons}}",
+      "duration": {
+        "days": "{count, plural, one {1 day} other {{count} days}} access",
+        "months": "{count, plural, one {1 month} other {{count} months}} access"
+      },
       "sort": {
         "newest": "Date: Newest First",
         "oldest": "Date: Oldest First",
         "titleAsc": "Title: A to Z",
         "titleDesc": "Title: Z to A",
-        "studentsDesc": "Most Popular",
+        "mostPopular": "Most Popular",
         "priceAsc": "Price: Low to High",
         "priceDesc": "Price: High to Low"
       },

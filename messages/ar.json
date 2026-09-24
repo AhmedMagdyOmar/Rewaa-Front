@@ -7,6 +7,7 @@
     "noNotifications": "لا توجد إشعارات جديدة",
     "search": "بحث في الدورات المتاحة...",
     "loading": "جاري التحميل...",
+    "refresh": "تحديث",
     "reset": "إعادة ضبط",
     "submitting": "جاري الإرسال...",
     "genericError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
@@ -184,8 +185,13 @@
     "roles": {
       "user": "مستخدم",
       "admin": "مدير النظام",
+      "superadmin": "المدير العام",
       "teacher": "معلم",
-      "student": "طالب"
+      "assistant": "مساعد",
+      "student": "طالب",
+      "provider": "مقدم الخدمة",
+      "center": "مركز تعليمي",
+      "group": "مجموعة تعليمية"
     }
   },
   "dashboard": {
@@ -919,6 +925,7 @@
       "published": "منشور",
       "draft": "مسودة",
       "scheduled": "مجدول",
+      "pendingReview": "قيد المراجعة",
       "scheduleTime": "وقت الجدولة",
       "createdAt": "تاريخ الإنشاء"
     },
@@ -928,7 +935,8 @@
       "viewComplaints": "عرض الشكاوى",
       "edit": "تعديل",
       "publish": "نشر",
-      "delete": "حذف"
+      "delete": "حذف",
+      "resume": "استئناف الامتحان"
     },
     "deleteDialog": {
       "title": "حذف الامتحان",
@@ -1312,6 +1320,99 @@
         "student": "الطالب: {studentName} ({phoneNumber})",
         "description": "تفاصيل الشكوى: {complaintDescription}"
       }
+    },
+    "submissions": {
+      "title": "تسليمات ومراجعة الامتحانات",
+      "subtitle": "تصحيح الأسئلة المقالية ومراجعة إجابات ونتائج الطلاب.",
+      "examSubmissionsTitle": "تسليمات امتحان: {title}",
+      "backToExams": "العودة للامتحانات",
+      "backToStats": "العودة لإحصائيات الامتحان",
+      "tabs": {
+        "all": "جميع التسليمات",
+        "pendingReview": "بانتظار التصحيح",
+        "graded": "تم التصحيح",
+        "inProgress": "جارية حالياً"
+      },
+      "stats": {
+        "total": "إجمالي التسليمات",
+        "pendingReview": "بانتظار التصحيح",
+        "graded": "تم تصحيحها",
+        "passRate": "نسبة النجاح"
+      },
+      "columns": {
+        "student": "الطالب",
+        "exam": "الامتحان",
+        "attempt": "المحاولة",
+        "status": "الحالة",
+        "score": "الدرجة",
+        "submittedAt": "تاريخ التسليم",
+        "actions": "الإجراءات"
+      },
+      "status": {
+        "inProgress": "جارية",
+        "pendingReview": "بانتظار التصحيح",
+        "graded": "مكتملة ومصححة"
+      },
+      "actions": {
+        "grade": "تصحيح الامتحان",
+        "review": "مراجعة الإجابات",
+        "viewDetails": "عرض التفاصيل"
+      },
+      "emptyTitle": "لا توجد تسليمات",
+      "emptyDescription": "لم يتم العثور على أي محاولات أو تسليمات مطابقة لمعايير البحث الحالية."
+    },
+    "grading": {
+      "pageTitle": "تصحيح ومراجعة تسليم الطالب",
+      "pageSubtitle": "تقييم إجابات الأسئلة المقالية وتحديد الدرجة النهائية.",
+      "backToSubmissions": "العودة لقائمة التسليمات",
+      "studentInfo": "بيانات الطالب",
+      "attemptInfo": "معلومات المحاولة",
+      "attemptNumber": "المحاولة رقم {number}",
+      "submittedAt": "تم التسليم في",
+      "timeSpent": "الوقت المستغرق",
+      "duration": {
+        "minutes": "{count, plural, =0 {0 دقيقة} one {دقيقة واحدة} two {دقيقتان} few {{count} دقائق} many {{count} دقيقة} other {{count} دقيقة}}",
+        "seconds": "{count, plural, =0 {0 ثانية} one {ثانية واحدة} two {ثانيتان} few {{count} ثوانٍ} many {{count} ثانية} other {{count} ثانية}}",
+        "minutesAndSeconds": "{minutes, plural, =0 {} one {دقيقة واحدة و } two {دقيقتان و } few {{minutes} دقائق و } many {{minutes} دقيقة و } other {{minutes} دقيقة و }}{seconds, plural, =0 {0 ثانية} one {ثانية واحدة} two {ثانيتان} few {{seconds} ثوانٍ} many {{seconds} ثانية} other {{seconds} ثانية}}"
+      },
+      "passingScore": "درجة النجاح المطلوبة",
+      "objectiveScore": "درجة الأسئلة الموضوعية",
+      "essayScore": "درجة الأسئلة المقالية",
+      "totalScore": "الدرجة الإجمالية",
+      "liveScoreCalculation": "حساب الدرجة المباشر",
+      "sections": {
+        "overview": "نظرة عامة على التسليم",
+        "questions": "أسئلة وإجابات الامتحان",
+        "essayGrading": "تصحيح الأسئلة المقالية",
+        "objectiveReview": "الأسئلة الموضوعية (تصحيح آلي)"
+      },
+      "question": {
+        "questionNumber": "سؤال {number}",
+        "essayBadge": "سؤال مقالي",
+        "mcqBadge": "اختيار من متعدد",
+        "tfBadge": "صح أو خطأ",
+        "maxScore": "الدرجة القصوى: {score}",
+        "studentAnswer": "إجابة الطالب:",
+        "noAnswerSubmitted": "لم يقم الطالب بكتابة أي إجابة.",
+        "modelAnswer": "الإجابة النموذجية / دليل التصحيح:",
+        "awardScore": "الدرجة المستحقة:",
+        "scorePlaceholder": "أدخل الدرجة (من 0 إلى {max})",
+        "scoreExceedsMax": "لا يمكن أن تتجاوز الدرجة المعطاة الدرجة القصوى ({max})",
+        "scoreNegative": "لا يمكن أن تكون الدرجة سالبة",
+        "scoreRequired": "يرجى رصد درجة لهذا السؤال",
+        "presets": {
+          "zero": "0%",
+          "half": "50%",
+          "full": "100%"
+        },
+        "correctAnswer": "الإجابة الصحيحة:",
+        "explanation": "الشرح / التوضيح:"
+      },
+      "submitGrades": "اعتماد وحفظ الدرجات",
+      "submitting": "جاري حفظ التصحيح...",
+      "alreadyGradedNotice": "تم تصحيح هذا التسليم مسبقاً. يمكنك تعديل الدرجات وإعادة الحفظ عند الحاجة.",
+      "successToast": "تم اعتماد درجات الامتحان وتحديث حالة التسليم بنجاح",
+      "errorToast": "حدث خطأ أثناء حفظ درجات الامتحان، يرجى التأكد من رصد درجات لجميع الأسئلة المقالية."
     }
   },
   "questionsPage": {
@@ -2620,6 +2721,7 @@
     "lessonsPage": {
       "title": "الدروس العامة",
       "subtitle": "استعرض واشرح الدروس العامة والمحاضرات العامة المتاحة لك على المنصة",
+      "description": "استعرض وتعلّم من الدروس المستقلة والمصادر التعليمية العامة.",
       "searchPlaceholder": "بحث باسم الدرس أو المادة أو المعلم...",
       "clearFilters": "مسح الفلاتر",
       "totalAvailable": "{count, plural, =0 {لا دروس متاحة} zero {لا دروس متاحة} one {درس واحد متاح} two {درسين متاحين} few {{count} دروس متاحة} many {{count} درساً متاحاً} other {{count} درس متاح}}",
@@ -2627,7 +2729,19 @@
       "videoLessons": "دروس فيديو",
       "textLessons": "دروس مقروءة",
       "allSubjects": "كافة المواد",
+      "tabs": {
+        "all": "كافة الدروس",
+        "completed": "المكتملة",
+        "incomplete": "قيد التقدم"
+      },
+      "filters": {
+        "searchPlaceholder": "بحث باسم الدرس أو المادة أو المعلم...",
+        "allTypes": "كافة أنواع الدروس",
+        "allSubjects": "كافة المواد",
+        "clear": "مسح الفلاتر"
+      },
       "sort": {
+        "label": "الترتيب",
         "newest": "الأحدث أولاً",
         "oldest": "الأقدم أولاً",
         "titleAsc": "العنوان: أ إلى ي",
@@ -2637,14 +2751,39 @@
         "viewLesson": "مشاهدة الدرس",
         "startLesson": "بدء الدرس",
         "independent": "درس مستقل",
+        "enrolled": "مسجل بالدورة",
+        "locked": "مغلق",
+        "completed": "مكتمل",
         "textOnly": "درس نصي",
         "videoText": "فيديو وشرح",
         "examLinked": "امتحان مرفق",
         "pdfsCount": "{count, plural, =0 {لا ملفات} zero {لا ملفات} one {ملف واحد} two {ملفين} few {{count} ملفات} many {{count} ملفاً} other {{count} ملف}}"
       },
+      "error": {
+        "loadFailed": "فشل تحميل الدروس من الخادم.",
+        "retry": "إعادة المحاولة"
+      },
       "empty": {
         "title": "لا توجد دروس عامة متاحة حالياً",
-        "description": "لم يتم إضافة أي دروس عامة حتى الآن، تابع معنا للإطلاع على الدروس الجديدة."
+        "description": "لم يتم إضافة أي دروس عامة حتى الآن، تابع معنا للإطلاع على الدروس الجديدة.",
+        "filtersDescription": "جرّب تعديل نتائج البحث أو خيارات التصفية للعثور على الدروس المطلوبة."
+      },
+      "viewDetails": {
+        "backToLessons": "العودة لقائمة الدروس",
+        "markAsCompleted": "تحديد كمكتمل",
+        "videoStreamLink": "مصدر الفيديو الخارجي",
+        "openVideoInNewTab": "فتح الفيديو في نافذة جديدة",
+        "noDescription": "لا يوجد محتوى نصي مكتوب لهذا الدرس.",
+        "download": "تحميل",
+        "viewFullImage": "عرض الصورة كاملة",
+        "takeExam": "بدء الاختبار",
+        "examRequirementText": "نسبة النجاح المطلوبة: {percent}%",
+        "tabs": {
+          "overview": "محتوى الدرس",
+          "resources": "المرفقات",
+          "images": "الصور التوضيحية",
+          "exam": "اختبار الدرس"
+        }
       },
       "pagination": {
         "showing": "عرض {start} إلى {end} من إجمالي {total, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{total} دروس} many {{total} درساً} other {{total} درس}}"
@@ -2676,10 +2815,17 @@
       "title": "الامتحانات العامة",
       "subtitle": "استعرض وأدِّ الامتحانات والاختبارات الشاملة المتاحة للجميع على المنصة",
       "backToExams": "العودة إلى الامتحانات",
-      "totalAvailable": "{count, plural, =0 {لا امتحانات عامة} zero {لا امتحانات عامة} one {امتحان عام واحد} two {امتحانين عامين} few {{count} امتحانات عامة} many {{count} امتحاناً عاماً} other {{count} امتحان عام}}",
+      "totalAvailable": "{count, plural, =0 {لا امتحانات متاحة} zero {لا امتحانات متاحة} one {امتحان عام واحد متاح} two {امتحانين عامين متاحين} few {{count} امتحانات عامة متاحة} many {{count} امتحاناً عاماً متاحاً} other {{count} امتحان عام متاح}}",
+      "totalCompleted": "{count, plural, =0 {لا امتحانات مكتملة} zero {لا امتحانات مكتملة} one {امتحان عام واحد مكتمل} two {امتحانين عامين مكتملين} few {{count} امتحانات عامة مكتملة} many {{count} امتحاناً عاماً مكتملاً} other {{count} امتحان عام مكتمل}}",
+      "tabs": {
+        "available": "الامتحانات المتاحة",
+        "completed": "الامتحانات المكتملة"
+      },
       "empty": {
         "title": "لا توجد امتحانات عامة متاحة حالياً",
-        "description": "لم يتم نشر أي امتحانات عامة مستقلة في الوقت الحالي. تفقد الصفحة لاحقاً."
+        "description": "لم يتم نشر أي امتحانات عامة مستقلة في الوقت الحالي. تفقد الصفحة لاحقاً.",
+        "completedTitle": "لم تقم بأداء أي امتحانات عامة بعد",
+        "completedDescription": "لم تؤدِّ أي امتحانات عامة حتى الآن. ابدأ بأداء الامتحانات المتاحة لتظهر نتائجها هنا."
       }
     },
     "examsPage": {
@@ -2725,6 +2871,7 @@
         "triesCount": "المحاولة {current} من {max}",
         "statusPassed": "ناجح",
         "statusFailed": "يحتاج إعادة",
+        "statusPendingReview": "قيد المراجعة",
         "actions": {
           "takeExam": "بدء الامتحان",
           "retakeExam": "إعادة الامتحان",
@@ -2747,15 +2894,18 @@
       "backToExams": "العودة إلى الامتحانات المكتملة",
       "statusPassed": "تم الاجتياز بنجاح",
       "statusFailed": "يحتاج إعادة المحاولة",
+      "statusPendingReview": "قيد التصحيح والمراجعة",
       "scoreBadge": "النتيجة: {score} / {totalScore}",
       "percentage": "{percent}٪",
       "attemptInfo": "المحاولة {current} من {max}",
       "completedOn": "تم الإنجاز بتاريخ {date}",
       "hero": {
         "passedTitle": "تهانينا! لقد اجتزت الامتحان بنجاح",
-        "passedSubtitle": "أحسنت صنعاً! لقد حققت درجة النجاح المطلوبة. يمكنك مراجعة الأسئلة والإجابات النموذجية بالأسفل.",
+        "passedSubtitle": "أحسنت صنعاً! لقد حققت درجة النجاح المطلوبة. يمكنك مراجعة الأسئلة والإجابات بالأسفل.",
         "failedTitle": "تم إنهاء محاولة الامتحان",
-        "failedSubtitle": "لم تصل إلى نسبة النجاح المطلوبة. راجع الإجابات النموذجية والشروحات التوضيحية أدناه ثم أعد المحاولة."
+        "failedSubtitle": "لم تصل إلى نسبة النجاح المطلوبة. راجع إجاباتك أدناه ثم أعد المحاولة.",
+        "pendingTitle": "تم تسليم الامتحان بنجاح (بانتظار تصحيح المعلم)",
+        "pendingSubtitle": "يتضمن الامتحان أسئلة مقالية تتطلب مراجعة وتصحيح المعلم. سيتم اعتماد النتيجة النهائية فور انتهاء التصحيح."
       },
       "kpi": {
         "totalScore": "الدرجة النهائية",
@@ -2887,12 +3037,18 @@
       "totalAvailable": "{count, plural, =0 {لا دورات} zero {لا دورات} one {دورة واحدة} two {دورتين} few {{count} دورات} many {{count} دورة} other {{count} دورة}}",
       "searchPlaceholder": "بحث عن دورة أو مادة أو صف أو معلم...",
       "clearFilters": "مسح الفلاتر",
+      "enrollButton": "اشترك الآن",
+      "lessonCount": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسان} few {{count} دروس} many {{count} درساً} other {{count} درس}}",
+      "duration": {
+        "days": "وصول لمدة {count, plural, zero {0 يوم} one {يوم} two {يومين} few {{count} أيام} many {{count} يوماً} other {{count} يوم}}",
+        "months": "وصول لمدة {count, plural, zero {0 شهر} one {شهر} two {شهرين} few {{count} أشهر} many {{count} شهراً} other {{count} شهر}}"
+      },
       "sort": {
         "newest": "التاريخ: الأحدث أولاً",
         "oldest": "التاريخ: الأقدم أولاً",
         "titleAsc": "العنوان: أ إلى ي",
         "titleDesc": "العنوان: ي إلى أ",
-        "studentsDesc": "الأكثر تسجيلاً",
+        "mostPopular": "الأكثر تسجيلاً",
         "priceAsc": "السعر: من الأقل للأعلى",
         "priceDesc": "السعر: من الأعلى للأقل"
       },

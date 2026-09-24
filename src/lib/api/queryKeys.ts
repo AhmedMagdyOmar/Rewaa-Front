@@ -51,6 +51,8 @@ export const queryKeys = {
           "attempts",
           typeof filters === "object" ? (filters ?? {}) : { examId: filters },
         ] as const,
+      attemptDetail: (attemptId: number | string) =>
+        [...queryKeys.provider.exams.all(), "attempts", "detail", attemptId] as const,
       complaints: (examId?: number | string, filters?: Record<string, unknown>) =>
         [...queryKeys.provider.exams.detail(examId || ""), "complaints", filters ?? {}] as const,
     },
@@ -110,20 +112,31 @@ export const queryKeys = {
     options: () => [...queryKeys.student.all, "options"] as const,
     myCourses: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.all, "myCourses", filters ?? {}] as const,
+    myCoursesOptions: () => [...queryKeys.student.all, "myCourses", "options"] as const,
+    exploreCourses: (filters?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "exploreCourses", filters ?? {}] as const,
+
     courseDetail: (courseId: number | string) =>
       [...queryKeys.student.all, "course", courseId] as const,
     courseContent: (courseId: number | string) =>
       [...queryKeys.student.courseDetail(courseId), "content"] as const,
     lesson: (courseId: number | string, lessonId: number | string) =>
       [...queryKeys.student.courseDetail(courseId), "lesson", lessonId] as const,
-    examAttempts: (courseId: number | string, examId: number | string) =>
-      [...queryKeys.student.courseDetail(courseId), "exam", examId, "attempts"] as const,
-    examAttemptDetail: (
-      courseId: number | string,
-      examId: number | string,
-      attemptId: number | string,
-    ) =>
-      [...queryKeys.student.courseDetail(courseId), "exam", examId, "attempt", attemptId] as const,
+    standaloneLessons: (filters?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "standaloneLessons", filters ?? {}] as const,
+    standaloneLesson: (lessonId: number | string) =>
+      [...queryKeys.student.all, "standaloneLesson", lessonId] as const,
+    // Exams & Attempts
+    exams: (filters?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "exams", filters ?? {}] as const,
+    generalExams: (filters?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "generalExams", filters ?? {}] as const,
+    examDetail: (examId: number | string) => [...queryKeys.student.all, "exam", examId] as const,
+    examResult: (examId: number | string) =>
+      [...queryKeys.student.examDetail(examId), "result"] as const,
+    attemptDetail: (attemptId: number | string) =>
+      [...queryKeys.student.all, "attempt", attemptId] as const,
+
     wallet: () => [...queryKeys.student.all, "wallet"] as const,
     walletTransactions: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.wallet(), "transactions", filters ?? {}] as const,

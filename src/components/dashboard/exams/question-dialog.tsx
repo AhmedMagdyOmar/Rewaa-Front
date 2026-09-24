@@ -74,9 +74,10 @@ export function QuestionDialog({
   const [filterType, setFilterType] = React.useState<string>("all");
   const [selectedQuestionIds, setSelectedQuestionIds] = React.useState<string[]>([]);
 
-  // Fetch Questions from Question Bank
+  // Fetch Questions from Question Bank (only standalone master questions)
   const { data: questionsData, isLoading: isLoadingQuestions } = useProviderQuestions({
     per_page: 100,
+    is_standalone: true,
     educational_stage_id: examGrade || undefined,
     subject_id: examSubject || undefined,
     difficulty: filterDifficulty !== "all" ? filterDifficulty : undefined,

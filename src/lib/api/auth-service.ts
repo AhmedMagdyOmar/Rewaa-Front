@@ -166,9 +166,15 @@ export const authService = {
    * Student Profile
    */
   async getStudentProfile(): Promise<StudentLoginResponse["student"]> {
-    return api<StudentLoginResponse["student"]>({
+    const res = await api<
+      StudentLoginResponse["student"] | { student?: StudentLoginResponse["student"] }
+    >({
       url: "/api/website/profile",
       method: "GET",
     });
+    return (
+      (res as { student?: StudentLoginResponse["student"] })?.student ??
+      (res as StudentLoginResponse["student"])
+    );
   },
 };

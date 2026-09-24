@@ -12,7 +12,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { Exam, Question } from "@/types/exam";
+import { useSaveExamAnswer } from "@/hooks/use-student-exams";
+import type {
+  BackendStudentAttemptQuestion,
+  BackendStudentExamAttempt,
+} from "@/types/api-contracts";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -21,6 +25,7 @@ import {
   Flag,
   Lightbulb,
   ListFilter,
+  Loader2,
   Send,
   SkipForward,
   Timer,
@@ -29,66 +34,95 @@ import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 import { DashboardCard } from "../overview/dashboard-card";
 
-interface FlattenedQuestion {
-  question: Question;
-  globalIndex: number;
-  sectionTitle: string;
-  sectionId: string;
-}
-
 interface StudentExamTakingViewProps {
-  exam: Exam;
-  onSubmitExam: (answers: Record<string, string>) => void;
+  attempt: BackendStudentExamAttempt;
+  onSubmitExam: (answers: Array<{ question_id: number; answer?: unknown }>) => void;
+  isSubmitting?: boolean;
 }
 
-export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingViewProps) {
+export function StudentExamTakingView({
+  attempt,
+  onSubmitExam,
+  isSubmitting = false,
+}: StudentExamTakingViewProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
 
   const t = useTranslations("studentDashboard.examTakingPage");
-  const tDetails = useTranslations("exams.details");
 
-  // Flatten all questions from sections
-  const flatQuestions: FlattenedQuestion[] = React.useMemo(() => {
-    if (!exam.examSections || exam.examSections.length === 0) return [];
-    const res: FlattenedQuestion[] = [];
-    let idx = 0;
-    exam.examSections.forEach((sec) => {
-      sec.questions.forEach((q) => {
-        res.push({
-          question: q,
-          globalIndex: idx,
-          sectionTitle: sec.title,
-          sectionId: sec.id,
-        });
-        idx++;
-      });
-    });
-    return res;
-  }, [exam.examSections]);
+  const questions = React.useMemo(() => attempt.questions || [], [attempt.questions]);
+  const totalQuestionsCount = questions.length;
 
-  const totalQuestionsCount = flatQuestions.length;
+  const saveAnswerMutation = useSaveExamAnswer();
 
   // Active state
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [answers, setAnswers] = React.useState<Record<string, string>>({});
-  const [flaggedIds, setFlaggedIds] = React.useState<string[]>([]);
+  const [answers, setAnswers] = React.useState<Record<number, unknown>>(() => {
+    const init: Record<number, unknown> = {};
+    questions.forEach((q) => {
+      if (q.submitted_answer !== undefined && q.submitted_answer !== null) {
+        init[q.id] = q.submitted_answer;
+      }
+    });
+    return init;
+  });
+
+  const [flaggedIds, setFlaggedIds] = React.useState<number[]>(() => {
+    return questions.filter((q) => q.is_flagged).map((q) => q.id);
+  });
+
   const [showHint, setShowHint] = React.useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = React.useState(false);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Timer: Duration in minutes converted to seconds
-  const initialSeconds = React.useMemo(() => {
-    return Math.max(60, (exam.durationMinutes || 30) * 60);
-  }, [exam.durationMinutes]);
+  // Timer: Duration from server expires_at or duration_minutes
+  const getInitialSecondsRemaining = React.useCallback(() => {
+    if (attempt.expires_at) {
+      // Ensure UTC/ISO string parsing works consistently across browsers
+      const expiresAtStr =
+        attempt.expires_at.includes("T") || attempt.expires_at.endsWith("Z")
+          ? attempt.expires_at
+          : attempt.expires_at.replace(" ", "T") + "Z";
+      const parsedTime = new Date(expiresAtStr).getTime();
+      if (!isNaN(parsedTime)) {
+        const diffSec = Math.floor((parsedTime - Date.now()) / 1000);
+        // Only return 0 if the diff is actually expired on a resumed attempt
+        return Math.max(0, diffSec);
+      }
+    }
+    return Math.max(60, (attempt.duration_minutes || 30) * 60);
+  }, [attempt.expires_at, attempt.duration_minutes]);
 
-  const [secondsRemaining, setSecondsRemaining] = React.useState(initialSeconds);
+  const [secondsRemaining, setSecondsRemaining] = React.useState<number>(
+    getInitialSecondsRemaining,
+  );
+
+  // Helper to construct submit payload ensuring every question is included
+  const buildSubmitPayload = React.useCallback(
+    (currentAnswers: Record<number, unknown>) => {
+      return questions.map((q) => ({
+        question_id: q.id,
+        answer: currentAnswers[q.id] !== undefined ? currentAnswers[q.id] : null,
+      }));
+    },
+    [questions],
+  );
+
+  const hasAutoSubmittedRef = React.useRef(false);
+  const answersRef = React.useRef(answers);
+  React.useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  const triggerAutoSubmit = React.useCallback(() => {
+    if (hasAutoSubmittedRef.current || isSubmitting) return;
+    hasAutoSubmittedRef.current = true;
+    onSubmitExam(buildSubmitPayload(answersRef.current));
+  }, [buildSubmitPayload, onSubmitExam, isSubmitting]);
 
   // Countdown timer effect
   React.useEffect(() => {
     if (secondsRemaining <= 0) {
-      // Auto-submit when time reaches 0
-      onSubmitExam(answers);
+      triggerAutoSubmit();
       return;
     }
 
@@ -96,7 +130,7 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          onSubmitExam(answers);
+          triggerAutoSubmit();
           return 0;
         }
         return prev - 1;
@@ -104,30 +138,57 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [secondsRemaining, answers, onSubmitExam]);
+  }, [secondsRemaining, triggerAutoSubmit]);
 
   // Current Question
-  const currentItem = flatQuestions[currentIndex] || flatQuestions[0];
-  const currentQ = currentItem?.question;
+  const currentQ: BackendStudentAttemptQuestion | undefined =
+    questions[currentIndex] || questions[0];
 
   // Reset hint state when navigating questions
   React.useEffect(() => {
     setShowHint(false);
   }, [currentIndex]);
 
+  const getLocalizedString = (field?: Record<string, string> | null) => {
+    if (!field) return "";
+    return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
+  };
+
   // Handlers
-  const handleSelectAnswer = (ans: string) => {
+  const handleSelectAnswer = (ans: unknown) => {
     if (!currentQ) return;
     setAnswers((prev) => ({
       ...prev,
       [currentQ.id]: ans,
     }));
+
+    // Autosave to backend
+    saveAnswerMutation.mutate({
+      attemptId: attempt.id,
+      questionId: currentQ.id,
+      payload: {
+        answer: ans,
+        is_flagged: flaggedIds.includes(currentQ.id),
+      },
+    });
   };
 
-  const handleToggleFlag = (qId: string) => {
-    setFlaggedIds((prev) =>
-      prev.includes(qId) ? prev.filter((id) => id !== qId) : [...prev, qId],
-    );
+  const handleToggleFlag = (qId: number) => {
+    const nextFlagged = flaggedIds.includes(qId)
+      ? flaggedIds.filter((id) => id !== qId)
+      : [...flaggedIds, qId];
+
+    setFlaggedIds(nextFlagged);
+
+    // Autosave flag state
+    saveAnswerMutation.mutate({
+      attemptId: attempt.id,
+      questionId: qId,
+      payload: {
+        answer: answers[qId] ?? null,
+        is_flagged: nextFlagged.includes(qId),
+      },
+    });
   };
 
   const handleNext = () => {
@@ -159,12 +220,8 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
   };
 
   const handleConfirmSubmit = () => {
-    setIsSubmitting(true);
-    setTimeout(() => {
-      onSubmitExam(answers);
-      setIsSubmitting(false);
-      setIsSubmitModalOpen(false);
-    }, 400);
+    onSubmitExam(buildSubmitPayload(answers));
+    setIsSubmitModalOpen(false);
   };
 
   // Timer format (HH:MM:SS or MM:SS)
@@ -177,14 +234,33 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
 
   const isLowTime = secondsRemaining <= 120; // less than 2 minutes
   const answeredQuestionsCount = Object.keys(answers).filter(
-    (k) => answers[k]?.trim() !== "",
+    (k) =>
+      answers[Number(k)] !== undefined && answers[Number(k)] !== null && answers[Number(k)] !== "",
   ).length;
   const unansweredCount = totalQuestionsCount - answeredQuestionsCount;
 
   if (!currentQ) return null;
 
-  const currentAnswer = answers[currentQ.id] || "";
+  const currentAnswer = answers[currentQ.id];
   const isFlagged = flaggedIds.includes(currentQ.id);
+  const examTitle = getLocalizedString(attempt.exam?.title);
+  const questionBody = getLocalizedString(currentQ.body) || getLocalizedString(currentQ.title);
+
+  const getQuestionTypeLabel = (type: string) => {
+    switch (type) {
+      case "multiple_choice":
+      case "mcq":
+        return isAr ? "اختيار من متعدد" : "Multiple Choice";
+      case "true_false":
+      case "true/false":
+        return isAr ? "صح أم خطأ" : "True / False";
+      case "essay":
+      case "text":
+        return isAr ? "سؤال مقالي" : "Essay / Text";
+      default:
+        return type;
+    }
+  };
 
   return (
     <div className="space-y-6 pb-12 w-full">
@@ -197,7 +273,7 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
               {currentIndex + 1} / {totalQuestionsCount}
             </div>
             <div>
-              <h2 className="text-sm font-bold text-foreground line-clamp-1">{exam.title}</h2>
+              <h2 className="text-sm font-bold text-foreground line-clamp-1">{examTitle}</h2>
               <p className="text-xs text-muted-foreground">
                 {t("timerBar.answeredCount", {
                   answered: answeredQuestionsCount,
@@ -223,10 +299,15 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
 
             <Button
               onClick={() => setIsSubmitModalOpen(true)}
+              disabled={isSubmitting}
               size="sm"
               className="rounded-xl text-xs font-bold gap-1.5 h-9 bg-primary hover:bg-primary/90 text-white shadow-xs cursor-pointer"
             >
-              <Send className="size-3.5 rtl:rotate-180" />
+              {isSubmitting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5 rtl:rotate-180" />
+              )}
               <span>{t("timerBar.submitExam")}</span>
             </Button>
           </div>
@@ -258,14 +339,8 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
                   })}
                 </span>
 
-                {currentItem.sectionTitle && (
-                  <span className="text-xs font-medium text-muted-foreground">
-                    • {currentItem.sectionTitle}
-                  </span>
-                )}
-
                 <Badge variant="secondary" className="text-[10px]">
-                  {tDetails(`questions.type.${currentQ.type}` as Parameters<typeof tDetails>[0])}
+                  {getQuestionTypeLabel(currentQ.type)}
                 </Badge>
               </div>
 
@@ -275,7 +350,7 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
                   variant="outline"
                   className="text-xs font-bold text-primary border-primary/30"
                 >
-                  {t("question.points", { points: currentQ.grade || 5 })}
+                  {t("question.points", { points: currentQ.score || 5 })}
                 </Badge>
 
                 <Button
@@ -298,79 +373,83 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
             {/* Question Body / Statement (Supports Markdown and Math) */}
             <div className="space-y-3">
               <div className="text-sm sm:text-base text-foreground font-medium leading-relaxed">
-                <MarkdownViewer content={currentQ.questionContent} isRtl={isAr} />
+                <MarkdownViewer content={questionBody} isRtl={isAr} />
               </div>
             </div>
 
             {/* ── Option Selectors ─────────────────────────────────────────── */}
             {/* 1. Multiple Choice (MCQ) Options */}
-            {currentQ.type === "mcq" && currentQ.options && currentQ.options.length > 0 && (
-              <div className="space-y-3 pt-2">
-                <p className="text-xs font-semibold text-muted-foreground">
-                  {t("question.typeMcqPrompt")}
-                </p>
-                <div className="grid grid-cols-1 gap-2.5">
-                  {currentQ.options.map((opt, optIdx) => {
-                    const isSelected = currentAnswer === opt.id;
-                    const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
+            {currentQ.type === "multiple_choice" &&
+              currentQ.options &&
+              currentQ.options.length > 0 && (
+                <div className="space-y-3 pt-2">
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    {t("question.typeMcqPrompt")}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2.5">
+                    {currentQ.options.map((opt, optIdx) => {
+                      const isSelected =
+                        currentAnswer === opt.id || Number(currentAnswer) === opt.id;
+                      const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
+                      const optText = getLocalizedString(opt.text);
 
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        onClick={() => handleSelectAnswer(opt.id)}
-                        className={`w-full p-3.5 rounded-xl border text-start flex items-center justify-between gap-3 transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-primary/10 border-primary shadow-xs text-foreground font-bold ring-2 ring-primary/20"
-                            : "bg-muted/30 border-border/60 hover:bg-muted/60 text-foreground/90"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span
-                            className={`size-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
-                              isSelected
-                                ? "bg-primary text-white"
-                                : "bg-muted border border-border text-muted-foreground"
-                            }`}
-                          >
-                            {letter}
-                          </span>
-                          <span className="text-xs sm:text-sm">{opt.text}</span>
-                        </div>
-
-                        <div className="shrink-0">
-                          <div
-                            className={`size-4 rounded-full border flex items-center justify-center transition-colors ${
-                              isSelected
-                                ? "border-primary bg-primary text-white"
-                                : "border-muted-foreground/30"
-                            }`}
-                          >
-                            {isSelected && <div className="size-1.5 rounded-full bg-white" />}
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => handleSelectAnswer(opt.id)}
+                          className={`w-full p-3.5 rounded-xl border text-start flex items-center justify-between gap-3 transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-primary/10 border-primary shadow-xs text-foreground font-bold ring-2 ring-primary/20"
+                              : "bg-muted/30 border-border/60 hover:bg-muted/60 text-foreground/90"
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <span
+                              className={`size-6 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 transition-colors ${
+                                isSelected
+                                  ? "bg-primary text-white"
+                                  : "bg-muted border border-border text-muted-foreground"
+                              }`}
+                            >
+                              {letter}
+                            </span>
+                            <span className="text-xs sm:text-sm">{optText}</span>
                           </div>
-                        </div>
-                      </button>
-                    );
-                  })}
+
+                          <div className="shrink-0">
+                            <div
+                              className={`size-4 rounded-full border flex items-center justify-center transition-colors ${
+                                isSelected
+                                  ? "border-primary bg-primary text-white"
+                                  : "border-muted-foreground/30"
+                              }`}
+                            >
+                              {isSelected && <div className="size-1.5 rounded-full bg-white" />}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* 2. True / False Options */}
-            {currentQ.type === "true/false" && (
+            {currentQ.type === "true_false" && (
               <div className="space-y-3 pt-2">
                 <p className="text-xs font-semibold text-muted-foreground">
                   {t("question.typeTrueFalsePrompt")}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {[
-                    { val: "true", label: t("question.trueOption") },
-                    { val: "false", label: t("question.falseOption") },
+                    { val: true, label: t("question.trueOption") },
+                    { val: false, label: t("question.falseOption") },
                   ].map(({ val, label }) => {
-                    const isSelected = currentAnswer === val;
+                    const isSelected = currentAnswer === val || currentAnswer === String(val);
                     return (
                       <button
-                        key={val}
+                        key={String(val)}
                         type="button"
                         onClick={() => handleSelectAnswer(val)}
                         className={`p-4 rounded-xl border text-center flex items-center justify-center gap-2 transition-all cursor-pointer ${
@@ -396,14 +475,14 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
               </div>
             )}
 
-            {/* 3. Text Input Answer */}
-            {currentQ.type === "text" && (
+            {/* 3. Text Input Answer (Essay) */}
+            {currentQ.type === "essay" && (
               <div className="space-y-2 pt-2">
                 <p className="text-xs font-semibold text-muted-foreground">
                   {t("question.typeTextPrompt")}
                 </p>
                 <textarea
-                  value={currentAnswer}
+                  value={typeof currentAnswer === "string" ? currentAnswer : ""}
                   onChange={(e) => handleSelectAnswer(e.target.value)}
                   placeholder={t("question.textPlaceholder")}
                   rows={4}
@@ -412,8 +491,8 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
               </div>
             )}
 
-            {/* Teacher Hint Toggle (if available) */}
-            {currentQ.hint && (
+            {/* Explanation / Hint Toggle if present */}
+            {currentQ.explanation && (
               <div className="pt-2">
                 {showHint ? (
                   <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-foreground space-y-1">
@@ -430,7 +509,9 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
                         {t("question.hideHint")}
                       </button>
                     </div>
-                    <p className="text-muted-foreground ps-5">{currentQ.hint}</p>
+                    <p className="text-muted-foreground ps-5">
+                      {getLocalizedString(currentQ.explanation)}
+                    </p>
                   </div>
                 ) : (
                   <Button
@@ -509,10 +590,11 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
 
             {/* Questions Grid Navigator */}
             <div className="grid grid-cols-5 sm:grid-cols-6 gap-2">
-              {flatQuestions.map((item, idx) => {
-                const qId = item.question.id;
+              {questions.map((q, idx) => {
+                const qId = q.id;
                 const isCurrent = idx === currentIndex;
-                const isAnswered = Boolean(answers[qId] && answers[qId].trim() !== "");
+                const isAnswered =
+                  answers[qId] !== undefined && answers[qId] !== null && answers[qId] !== "";
                 const isFlaggedQ = flaggedIds.includes(qId);
 
                 let badgeStyle =
@@ -623,7 +705,11 @@ export function StudentExamTakingView({ exam, onSubmitExam }: StudentExamTakingV
               disabled={isSubmitting}
               className="rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-white gap-1.5 shadow-xs"
             >
-              <Send className="size-3.5 rtl:rotate-180" />
+              {isSubmitting ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <Send className="size-3.5 rtl:rotate-180" />
+              )}
               <span>
                 {isSubmitting ? t("submitDialog.submitting") : t("submitDialog.confirmSubmit")}
               </span>

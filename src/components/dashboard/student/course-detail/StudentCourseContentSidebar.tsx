@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -13,50 +12,47 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
-import { getStoredExams } from "@/lib/exams-storage";
 import { cn } from "@/lib/utils";
-import { Course, CourseSection, Lesson } from "@/types/course";
-import { Exam } from "@/types/exam";
+import {
+  BackendCourseContent,
+  BackendCourseContentSection,
+  BackendCourseContentSectionLesson,
+  BackendCourseContentSectionLessonExam,
+} from "@/types/api-contracts";
 import {
   BookOpen,
   CheckCircle2,
   ChevronRight,
-  Download,
-  FileCheck,
   FileSpreadsheet,
   FileText,
   Lock,
   PanelLeftClose,
   PanelLeftOpen,
-  Paperclip,
   Video,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import React from "react";
 
 interface StudentCourseContentSidebarProps {
-  course: Course;
-  selectedLessonId: string | null;
-  onSelectLesson: (lessonId: string) => void;
-  completedLessons: string[];
-  passedExamIds: string[];
-  onToggleLessonCompletion: (lessonId: string) => void;
-  onAttemptLockedLesson?: (section: CourseSection, requiredExamId?: string) => void;
-  progressPercentage: number;
+  content: BackendCourseContent;
+  selectedLessonId: number | null;
+  onSelectLesson: (lessonId: number) => void;
+  onToggleLessonCompletion: (lessonId: number) => void;
+  onAttemptLockedLesson?: (
+    section: BackendCourseContentSection,
+    requiredExam?: BackendCourseContentSectionLessonExam | null,
+  ) => void;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   className?: string;
 }
 
 export function StudentCourseContentSidebar({
-  course,
+  content,
   selectedLessonId,
   onSelectLesson,
-  completedLessons,
-  passedExamIds,
   onToggleLessonCompletion,
   onAttemptLockedLesson,
-  progressPercentage,
   isCollapsed = false,
   onToggleCollapse,
   className,
@@ -64,50 +60,25 @@ export function StudentCourseContentSidebar({
   const locale = useLocale();
   const t = useTranslations("studentDashboard.courseDetails");
 
-  const [exams, setExams] = React.useState<Exam[]>([]);
-
-  React.useEffect(() => {
-    setExams(getStoredExams(locale));
-    const handleExamsUpdate = () => setExams(getStoredExams(locale));
-    window.addEventListener("rewaa_exams_updated", handleExamsUpdate);
-    return () => window.removeEventListener("rewaa_exams_updated", handleExamsUpdate);
-  }, [locale]);
-
-  // Sanitize course to ensure draft sections and draft lessons are excluded
-  const sanitizedSections = React.useMemo(() => {
-    return (course.sections || [])
-      .filter((s) => !s.isDraft && s.status !== "draft")
-      .map((s) => ({
-        ...s,
-        lessons: (s.lessons || []).filter((l) => l.publishStatus !== "draft"),
-      }));
-  }, [course.sections]);
-
-  const totalSections = sanitizedSections.length;
-  const totalLessons = sanitizedSections.reduce((acc, s) => acc + s.lessons.length, 0);
-
-  // Helper to check if linked exam exists
-  const isExamPublished = (examId?: string) => {
-    if (!examId) return false;
-    const found = exams.find((e) => e.id === examId);
-    return Boolean(found);
-  };
-
-  // Helper to resolve exam name
-  const getExamTitle = (examId?: string, fallbackTitle?: string) => {
-    if (!examId) return fallbackTitle || t("lesson.linkedExam");
-    const found = exams.find((e) => e.id === examId);
-    return found?.title || fallbackTitle || t("lesson.linkedExam");
-  };
+  const sections = React.useMemo(() => content.sections || [], [content.sections]);
+  const totalSections = sections.length;
+  const totalLessons = sections.reduce((acc, s) => acc + (s.lessons?.length || 0), 0);
+  const progressPercentage = Math.round(content.progress?.percentage || 0);
 
   // Auto-expand section containing the selected lesson
   const defaultSectionValue = React.useMemo(() => {
     if (!selectedLessonId) return "section-0";
-    const foundIndex = sanitizedSections.findIndex((sec) =>
-      sec.lessons.some((l) => l.id === selectedLessonId),
+    const foundIndex = sections.findIndex((sec) =>
+      sec.lessons?.some((l) => l.id === selectedLessonId),
     );
     return foundIndex !== -1 ? `section-${foundIndex}` : "section-0";
-  }, [sanitizedSections, selectedLessonId]);
+  }, [sections, selectedLessonId]);
+
+  // Helper to resolve localized text safely
+  const getLocalized = (val?: Record<string, string> | null, fallback = "") => {
+    if (!val) return fallback;
+    return val[locale] || val.ar || val.en || Object.values(val)[0] || fallback;
+  };
 
   // Collapsed Sidebar View (Desktop mini-rail)
   if (isCollapsed) {
@@ -233,7 +204,7 @@ export function StudentCourseContentSidebar({
 
         {/* Sections & Items Collapsible List */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
-          {sanitizedSections.length === 0 ? (
+          {sections.length === 0 ? (
             <div className="py-8 px-4 text-center text-sm text-muted-foreground border border-dashed rounded-xl">
               {t("empty.noSections")}
             </div>
@@ -243,42 +214,20 @@ export function StudentCourseContentSidebar({
               defaultValue={[defaultSectionValue]}
               className="w-full space-y-3"
             >
-              {sanitizedSections.map((section: CourseSection, sIdx: number) => {
-                const sectionLessonsCount = section.lessons.length;
-                const sectionCompletedCount = section.lessons.filter((l) =>
-                  completedLessons.includes(l.id),
-                ).length;
+              {sections.map((section: BackendCourseContentSection, sIdx: number) => {
+                const sectionLessons = section.lessons || [];
+                const sectionLessonsCount = sectionLessons.length;
+                const sectionCompletedCount = sectionLessons.filter((l) => l.is_completed).length;
                 const isSectionCompleted =
                   sectionLessonsCount > 0 && sectionCompletedCount === sectionLessonsCount;
+                const isSectionLocked = section.is_locked;
+                const sectionTitle = getLocalized(section.title, `Section ${sIdx + 1}`);
 
-                // Check lock status for this section based on prior sections' required exams
-                let isSectionLocked = false;
-                let requiredExamIdForUnlock: string | undefined;
-
-                for (let prevIdx = 0; prevIdx < sIdx; prevIdx++) {
-                  const prevSec = sanitizedSections[prevIdx];
-                  if (
-                    prevSec &&
-                    prevSec.isLinkedToExam &&
-                    prevSec.isRequiredPassExamForNextSection &&
-                    prevSec.linkedExamId &&
-                    isExamPublished(prevSec.linkedExamId)
-                  ) {
-                    if (!passedExamIds.includes(prevSec.linkedExamId)) {
-                      isSectionLocked = true;
-                      requiredExamIdForUnlock = prevSec.linkedExamId;
-                      break;
-                    }
-                  }
-                }
-
-                // Check if current section has a published exam and if it is passed
-                const hasExam =
-                  section.isLinkedToExam &&
-                  !!section.linkedExamId &&
-                  isExamPublished(section.linkedExamId);
-                const isCurrentExamPassed =
-                  hasExam && passedExamIds.includes(section.linkedExamId!);
+                // Section exam check
+                const sectionExam = section.exam;
+                const hasExam = Boolean(sectionExam);
+                const isCurrentExamPassed = sectionExam?.is_passed ?? false;
+                const sectionExamTitle = getLocalized(sectionExam?.title, t("lesson.linkedExam"));
 
                 return (
                   <AccordionItem
@@ -306,7 +255,7 @@ export function StudentCourseContentSidebar({
                             </span>
                           )}
                           <h3 className="text-sm sm:text-base font-bold text-foreground min-w-0 flex-1 leading-snug">
-                            {section.title}
+                            {sectionTitle}
                           </h3>
 
                           {isSectionLocked && (
@@ -324,11 +273,6 @@ export function StudentCourseContentSidebar({
                             {sectionCompletedCount}/{sectionLessonsCount}{" "}
                             {t("lessonsCount", { count: sectionLessonsCount })}
                           </span>
-                          {section.isRequiredPassExamForNextSection && (
-                            <span className="text-xs text-amber-600 font-semibold">
-                              • {t("locked.mustPassExam")}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </AccordionTrigger>
@@ -347,34 +291,34 @@ export function StudentCourseContentSidebar({
                       )}
 
                       {/* List of Lessons inside section */}
-                      {section.lessons.map((lesson: Lesson) => {
-                        const isCompleted = completedLessons.includes(lesson.id);
+                      {sectionLessons.map((lesson: BackendCourseContentSectionLesson) => {
+                        const isCompleted = lesson.is_completed;
                         const isSelected = selectedLessonId === lesson.id;
-                        const hasVideo = lesson.type !== "text" && !!lesson.lectureVideoLink;
-                        const pdfCount =
-                          (lesson.pdfFiles || []).length || (lesson.hasPdfAttachments ? 1 : 0);
-                        const hasLessonExam = Boolean(
-                          lesson.isLinkedToExam &&
-                          lesson.linkedExamId &&
-                          isExamPublished(lesson.linkedExamId),
+                        const isLessonLocked = lesson.is_locked || isSectionLocked;
+                        const lessonTitle = getLocalized(lesson.title, `Lesson ${lesson.position}`);
+                        const isVideo = lesson.type?.includes("video");
+                        const lessonExam = lesson.exam;
+                        const hasLessonExam = Boolean(lessonExam);
+                        const isLessonExamPassed = lessonExam?.is_passed ?? false;
+                        const lessonExamTitle = getLocalized(
+                          lessonExam?.title,
+                          t("lesson.linkedExam"),
                         );
-                        const isLessonExamPassed =
-                          hasLessonExam && passedExamIds.includes(lesson.linkedExamId!);
 
                         return (
                           <div
                             key={lesson.id}
                             className={cn(
                               "group/item relative flex items-start justify-between gap-2.5 p-3 rounded-xl border text-xs sm:text-sm transition-all",
-                              isSectionLocked
+                              isLessonLocked
                                 ? "bg-muted/40 border-border/40 text-muted-foreground cursor-not-allowed opacity-75"
                                 : isSelected
                                   ? "bg-primary/10 border-primary/40 text-primary shadow-xs font-semibold cursor-pointer"
                                   : "bg-background hover:bg-muted/60 border-border/60 text-foreground cursor-pointer",
                             )}
                             onClick={() => {
-                              if (isSectionLocked) {
-                                onAttemptLockedLesson?.(section, requiredExamIdForUnlock);
+                              if (isLessonLocked) {
+                                onAttemptLockedLesson?.(section, lessonExam || sectionExam);
                               } else {
                                 onSelectLesson(lesson.id);
                               }
@@ -387,9 +331,9 @@ export function StudentCourseContentSidebar({
                             >
                               <Checkbox
                                 checked={isCompleted}
-                                disabled={isSectionLocked}
+                                disabled={isLessonLocked}
                                 onCheckedChange={() => {
-                                  if (!isSectionLocked) {
+                                  if (!isLessonLocked) {
                                     onToggleLessonCompletion(lesson.id);
                                   }
                                 }}
@@ -401,22 +345,22 @@ export function StudentCourseContentSidebar({
                                 <TooltipTrigger asChild>
                                   <button
                                     type="button"
-                                    disabled={isSectionLocked}
+                                    disabled={isLessonLocked}
                                     onClick={() => {
-                                      if (isSectionLocked) {
-                                        onAttemptLockedLesson?.(section, requiredExamIdForUnlock);
+                                      if (isLessonLocked) {
+                                        onAttemptLockedLesson?.(section, lessonExam || sectionExam);
                                       } else {
                                         onSelectLesson(lesson.id);
                                       }
                                     }}
                                     className={cn(
                                       "flex items-start gap-2.5 text-start min-w-0 flex-1 text-xs sm:text-sm font-medium",
-                                      isSectionLocked ? "cursor-not-allowed" : "hover:underline",
+                                      isLessonLocked ? "cursor-not-allowed" : "hover:underline",
                                     )}
                                   >
-                                    {isSectionLocked ? (
+                                    {isLessonLocked ? (
                                       <Lock className="size-4 shrink-0 text-muted-foreground/60 mt-0.5" />
-                                    ) : hasVideo ? (
+                                    ) : isVideo ? (
                                       <Video className="size-4 shrink-0 text-primary mt-0.5" />
                                     ) : (
                                       <FileText className="size-4 shrink-0 text-blue-500 mt-0.5" />
@@ -429,12 +373,12 @@ export function StudentCourseContentSidebar({
                                           "line-through text-muted-foreground opacity-80",
                                       )}
                                     >
-                                      {lesson.title}
+                                      {lessonTitle}
                                     </span>
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs text-xs">
-                                  {isSectionLocked ? t("locked.tooltip") : lesson.title}
+                                  {isLessonLocked ? t("locked.tooltip") : lessonTitle}
                                 </TooltipContent>
                               </Tooltip>
                             </div>
@@ -457,7 +401,7 @@ export function StudentCourseContentSidebar({
                                     </span>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" className="text-xs">
-                                    {getExamTitle(lesson.linkedExamId, lesson.linkedExamTitle)}
+                                    {lessonExamTitle}
                                     {isLessonExamPassed
                                       ? ` (${t("locked.examPassed")})`
                                       : ` (${t("lesson.linkedExam")})`}
@@ -465,21 +409,7 @@ export function StudentCourseContentSidebar({
                                 </Tooltip>
                               )}
 
-                              {pdfCount > 0 && (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <span className="px-1.5 py-0.5 rounded-md bg-blue-500/10 text-blue-600 text-[11px] font-bold flex items-center gap-1">
-                                      <Paperclip className="size-3" />
-                                      <span>{pdfCount}</span>
-                                    </span>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="text-xs">
-                                    {t("lesson.attachedFiles")}: {pdfCount}
-                                  </TooltipContent>
-                                </Tooltip>
-                              )}
-
-                              {isSectionLocked ? (
+                              {isLessonLocked ? (
                                 <Lock className="size-3.5 text-muted-foreground/60" />
                               ) : (
                                 <ChevronRight
@@ -495,97 +425,51 @@ export function StudentCourseContentSidebar({
                         );
                       })}
 
-                      {/* Attached files directly under section if any */}
-                      {!isSectionLocked &&
-                        section.lessons.flatMap((l) => l.pdfFiles || []).length > 0 && (
-                          <div className="pt-1.5 space-y-1.5">
-                            {section.lessons
-                              .flatMap((l) => l.pdfFiles || [])
-                              .slice(0, 2)
-                              .map((file, fIdx) => (
-                                <Tooltip key={file.id || `file-${fIdx}`}>
-                                  <TooltipTrigger asChild>
-                                    <a
-                                      href={file.fileUrl || "#"}
-                                      download
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-start justify-between p-2.5 rounded-xl bg-muted/40 hover:bg-muted border border-border/50 text-xs text-muted-foreground hover:text-foreground transition-colors min-w-0 gap-2"
+                      {/* Linked Exam in Section */}
+                      {hasExam && sectionExam && (
+                        <div className="pt-1.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link
+                                href={`/student-dashboard/exams/${sectionExam.id}`}
+                                className={cn(
+                                  "flex items-start justify-between p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-colors min-w-0 gap-2",
+                                  isCurrentExamPassed
+                                    ? "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-800"
+                                    : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800",
+                                )}
+                              >
+                                <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                                  <FileSpreadsheet
+                                    className={cn(
+                                      "size-4.5 shrink-0 mt-0.5",
+                                      isCurrentExamPassed ? "text-emerald-600" : "text-amber-600",
+                                    )}
+                                  />
+                                  <span className="leading-snug">{sectionExamTitle}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0 ms-1 mt-0.5">
+                                  {isCurrentExamPassed ? (
+                                    <Badge className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 h-auto">
+                                      {t("locked.examPassed")}
+                                    </Badge>
+                                  ) : (
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[11px] bg-amber-500/15 border-amber-500/30 text-amber-700 px-2 py-0.5 h-auto font-bold"
                                     >
-                                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                                        <Paperclip className="size-3.5 text-primary shrink-0 mt-0.5" />
-                                        <span className="leading-snug">{file.title}</span>
-                                      </div>
-                                      <Download className="size-3.5 text-muted-foreground shrink-0 ms-1 mt-0.5" />
-                                    </a>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs text-xs">
-                                    {file.title}
-                                  </TooltipContent>
-                                </Tooltip>
-                              ))}
-                          </div>
-                        )}
-
-                      {/* Linked Exam in Section - shows exam title & required badge */}
-                      {section.isLinkedToExam &&
-                        section.linkedExamId &&
-                        isExamPublished(section.linkedExamId) && (
-                          <div className="pt-1.5">
-                            {(() => {
-                              const examTitle = getExamTitle(
-                                section.linkedExamId,
-                                section.linkedExamTitle,
-                              );
-                              return (
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Link
-                                      href={`/student-dashboard/exams/${section.linkedExamId}`}
-                                      className={cn(
-                                        "flex items-start justify-between p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-colors min-w-0 gap-2",
-                                        isCurrentExamPassed
-                                          ? "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-800"
-                                          : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800",
-                                      )}
-                                    >
-                                      <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                                        <FileSpreadsheet
-                                          className={cn(
-                                            "size-4.5 shrink-0 mt-0.5",
-                                            isCurrentExamPassed
-                                              ? "text-emerald-600"
-                                              : "text-amber-600",
-                                          )}
-                                        />
-                                        <span className="leading-snug">{examTitle}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5 shrink-0 ms-1 mt-0.5">
-                                        {isCurrentExamPassed ? (
-                                          <Badge className="bg-emerald-600 text-white text-[11px] px-2 py-0.5 h-auto">
-                                            {t("locked.examPassed")}
-                                          </Badge>
-                                        ) : section.isRequiredPassExamForNextSection ? (
-                                          <Badge
-                                            variant="outline"
-                                            className="text-[11px] bg-amber-500/15 border-amber-500/30 text-amber-700 px-2 py-0.5 h-auto font-bold"
-                                          >
-                                            {t("locked.examRequired")}
-                                          </Badge>
-                                        ) : (
-                                          <FileCheck className="size-4 shrink-0 opacity-80" />
-                                        )}
-                                      </div>
-                                    </Link>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs text-xs">
-                                    {examTitle}
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            })()}
-                          </div>
-                        )}
+                                      {t("locked.examRequired")}
+                                    </Badge>
+                                  )}
+                                </div>
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-xs text-xs">
+                              {sectionExamTitle}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
                     </AccordionContent>
                   </AccordionItem>
                 );

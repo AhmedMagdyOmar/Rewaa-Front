@@ -1,6 +1,8 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMyCourses } from "@/hooks/use-my-courses";
 import { Link } from "@/i18n/routing";
 import { getStoredCourses } from "@/lib/courses-storage";
 import { getStoredTeachers } from "@/lib/settings-storage";
@@ -26,6 +28,15 @@ export function StudentEnrolledCourses({ courses: customCourses }: StudentEnroll
   const locale = useLocale();
   const t = useTranslations("studentDashboard.enrolledCourses");
 
+  // 1. Fetch live enrolled courses from API
+  const { data: apiData, isLoading: isApiLoading } = useMyCourses({
+    per_page: 4,
+    sort: "latest",
+  });
+
+  const apiCourses = apiData?.courses;
+
+  // 2. Legacy fallback state for local mock data
   const [storedCourses, setStoredCourses] = useState<Course[]>([]);
   const [teachers, setTeachers] = useState(getStoredTeachers());
   const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
@@ -50,8 +61,8 @@ export function StudentEnrolledCourses({ courses: customCourses }: StudentEnroll
     };
   }, [locale]);
 
-  // Build enrolled courses list
-  const enrolledCourses: EnrolledCourseItem[] = useMemo(() => {
+  // Build legacy enrolled courses list
+  const fallbackEnrolledCourses: EnrolledCourseItem[] = useMemo(() => {
     if (customCourses && customCourses.length > 0) {
       return customCourses;
     }
@@ -80,6 +91,9 @@ export function StudentEnrolledCourses({ courses: customCourses }: StudentEnroll
     });
   }, [customCourses, storedCourses, teachers, enrolledCourseIds]);
 
+  const hasApiCourses = Boolean(apiCourses && apiCourses.length > 0);
+  const showEmpty = !isApiLoading && !hasApiCourses && fallbackEnrolledCourses.length === 0;
+
   return (
     <section className="space-y-4 w-full">
       {/* Section Header with Title and "View All" */}
@@ -102,21 +116,51 @@ export function StudentEnrolledCourses({ courses: customCourses }: StudentEnroll
       </div>
 
       {/* Courses List */}
-      {enrolledCourses.length === 0 ? (
+      {isApiLoading ? (
+        <div className="grid grid-cols-1 gap-4">
+          {Array.from({ length: 2 }).map((_, idx) => (
+            <div
+              key={idx}
+              className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 p-4 sm:p-5 rounded-2xl bg-card border border-border/60"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
+                <Skeleton className="aspect-video sm:aspect-4/3 w-full sm:w-36 md:w-44 h-auto sm:h-28 rounded-xl" />
+                <div className="space-y-3 flex-1 w-full">
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-1/3" />
+                  <Skeleton className="h-3 w-full max-w-md" />
+                </div>
+              </div>
+              <Skeleton className="h-10 w-28 rounded-xl self-end md:self-center" />
+            </div>
+          ))}
+        </div>
+      ) : hasApiCourses ? (
+        <div className="grid grid-cols-1 gap-4">
+          {apiCourses!.map((course, idx) => (
+            <StudentEnrolledCourseCard
+              key={course.course_id ?? course.enrollment_id ?? course.id ?? `course-${idx}`}
+              course={course}
+            />
+          ))}
+        </div>
+      ) : showEmpty ? (
         <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground bg-card/50">
           {t("empty")}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {enrolledCourses.map(({ course, teacherImage, accessEndDate, progressPercentage }) => (
-            <StudentEnrolledCourseCard
-              key={course.id}
-              course={course}
-              teacherImage={teacherImage}
-              accessEndDate={accessEndDate}
-              progressPercentage={progressPercentage}
-            />
-          ))}
+          {fallbackEnrolledCourses.map(
+            ({ course, teacherImage, accessEndDate, progressPercentage }) => (
+              <StudentEnrolledCourseCard
+                key={course.id}
+                course={course}
+                teacherImage={teacherImage}
+                accessEndDate={accessEndDate}
+                progressPercentage={progressPercentage}
+              />
+            ),
+          )}
         </div>
       )}
     </section>

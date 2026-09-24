@@ -12,11 +12,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStudentExams } from "@/hooks/use-student-exams";
 import { Link } from "@/i18n/routing";
-import { getStoredExams } from "@/lib/exams-storage";
-import { getPassedExams } from "@/lib/student-course-progress";
-import { getEnrolledCourseIds } from "@/lib/student-enrollment-storage";
-import { Exam } from "@/types/exam";
+import type { BackendStudentExam } from "@/types/api-contracts";
 import {
   ArrowRight,
   ArrowUpDown,
@@ -27,7 +25,6 @@ import {
   FileQuestion,
   Globe,
   Globe2,
-  HelpCircle,
   House,
   Search,
   Timer,
@@ -40,26 +37,17 @@ import * as React from "react";
 
 export type StudentExamTab = "required" | "completed";
 export type StudentExamSortOption =
-  | "date-newest"
-  | "date-oldest"
-  | "title-asc"
-  | "title-desc"
-  | "duration-desc"
-  | "duration-asc"
-  | "score-desc"
-  | "score-asc";
+  | "latest"
+  | "oldest"
+  | "title_asc"
+  | "title_desc"
+  | "duration_desc"
+  | "duration_asc"
+  | "score_desc"
+  | "score_asc";
 
-export interface StudentCompletedExamRecord {
-  exam: Exam;
-  score: number;
-  totalScore: number;
-  percentage: number;
-  passed: boolean;
-  attemptNumber: number;
-  completedAt: string;
-}
-
-function formatDate(iso: string, locale: string) {
+function formatDate(iso?: string | null, locale?: string) {
+  if (!iso) return "-";
   try {
     return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
       year: "numeric",
@@ -76,8 +64,6 @@ export function StudentExamsClient() {
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.examsPage");
   const tCourses = useTranslations("courses");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
   const tExams = useTranslations("exams");
 
   const router = useRouter();
@@ -87,9 +73,9 @@ export function StudentExamsClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as StudentExamTab) || "required";
-  const sortBy = (searchParams.get("sort") as StudentExamSortOption) || "date-newest";
+  const sortBy = (searchParams.get("sort") as StudentExamSortOption) || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const updateUrlParams = React.useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -99,7 +85,7 @@ export function StudentExamsClient() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "required") ||
-          (key === "sort" && value === "date-newest") ||
+          (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -113,56 +99,44 @@ export function StudentExamsClient() {
     [searchParams, pathname, router],
   );
 
-  // Stored state
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [enrolledCourseIds, setEnrolledCourseIds] = React.useState<string[]>([]);
-  const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  const loadData = React.useCallback(() => {
-    setExams(getStoredExams(locale));
-    setEnrolledCourseIds(getEnrolledCourseIds());
-    setPassedExamIds(getPassedExams());
-    setIsLoading(false);
-  }, [locale]);
+  // Debounced search state
+  const [searchTerm, setSearchTerm] = React.useState(searchQuery);
+  React.useEffect(() => {
+    setSearchTerm(searchQuery);
+  }, [searchQuery]);
 
   React.useEffect(() => {
-    loadData();
-    window.addEventListener("rewaa_exams_updated", loadData);
-    window.addEventListener("rewaa_courses_updated", loadData);
-    window.addEventListener("rewaa_student_enrollment_updated", loadData);
-    window.addEventListener("rewaa_student_passed_exams_updated", loadData);
-    window.addEventListener("storage", loadData);
-    return () => {
-      window.removeEventListener("rewaa_exams_updated", loadData);
-      window.removeEventListener("rewaa_courses_updated", loadData);
-      window.removeEventListener("rewaa_student_enrollment_updated", loadData);
-      window.removeEventListener("rewaa_student_passed_exams_updated", loadData);
-      window.removeEventListener("storage", loadData);
-    };
-  }, [loadData]);
+    const handler = setTimeout(() => {
+      if (searchTerm !== searchQuery) {
+        updateUrlParams({ search: searchTerm.trim() ? searchTerm : null, page: 1 });
+      }
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm, searchQuery, updateUrlParams]);
+
+  // Fetch student exams from backend via React Query
+  const { data, isLoading } = useStudentExams({
+    search: searchQuery.trim() || undefined,
+    tab: activeTab,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
+
+  const exams = data?.exams || [];
+  const tabCounts = data?.tab_counts || { required: 0, completed: 0 };
+  const pagination = data?.pagination || {
+    current_page: 1,
+    last_page: 1,
+    per_page: itemsPerPage,
+    total: 0,
+  };
+
+  const totalPages = pagination.last_page || 1;
+  const totalItems = pagination.total || 0;
+  const startIndex = (pagination.current_page - 1) * pagination.per_page;
 
   // Format helpers
-  const formatGrade = (g?: string) => {
-    if (!g) return "";
-    return tGrades.has(g as Parameters<typeof tGrades.has>[0])
-      ? tGrades(g as Parameters<typeof tGrades>[0])
-      : g;
-  };
-
-  const formatSubject = (s?: string) => {
-    if (!s) return "";
-    return tSubjects.has(s as Parameters<typeof tSubjects.has>[0])
-      ? tSubjects(s as Parameters<typeof tSubjects>[0])
-      : s;
-  };
-
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
-  };
-
   const formatCategory = (cat: string) => {
     const key = cat as Parameters<typeof tExams.has>[0];
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
@@ -170,198 +144,66 @@ export function StudentExamsClient() {
       : cat;
   };
 
-  // Compute available exams for the student
-  const relevantExams = React.useMemo(() => {
-    const enrolledSet = new Set(enrolledCourseIds);
-    return exams.filter((exam) => {
-      // Either independent (available to all students) or belongs to an enrolled course
-      if (exam.examType === "independent") return true;
-      if (exam.courseId && enrolledSet.has(exam.courseId)) return true;
-      return false;
-    });
-  }, [exams, enrolledCourseIds]);
-
-  // Compute total exam points from sections or default
-  const getExamMaxScore = (exam: Exam): number => {
-    let sum = 0;
-    if (exam.examSections && exam.examSections.length > 0) {
-      exam.examSections.forEach((sec) => {
-        sec.questions.forEach((q) => {
-          sum += q.grade || 5;
-        });
-      });
-    }
-    return sum > 0 ? sum : Math.max(20, exam.numberOfQuestions * 2);
+  const formatVenue = (v?: string) => {
+    if (v === "online") return tCourses("venue.online");
+    if (v === "onsite" || v === "center") return tCourses("venue.center");
+    return tCourses("venue.all");
   };
 
-  // Build required exams list (published exams not yet completed/passed)
-  const requiredExams = React.useMemo(() => {
-    const passedSet = new Set(passedExamIds);
-    return relevantExams.filter((exam) => !passedSet.has(exam.id));
-  }, [relevantExams, passedExamIds]);
-
-  // Build completed exams list with deterministic scores/dates
-  const completedExamsList: StudentCompletedExamRecord[] = React.useMemo(() => {
-    const passedSet = new Set(passedExamIds);
-    // Include all passed exams from relevant exams
-    const completed = relevantExams.filter((exam) => passedSet.has(exam.id));
-
-    return completed.map((exam, index) => {
-      const maxScore = getExamMaxScore(exam);
-      // Generate realistic score percentage based on passing percentage and deterministic index
-      const basePercentage = Math.min(
-        100,
-        Math.max(exam.passingPercentage, 75 + ((index * 7) % 25)),
-      );
-      const score = Math.round((basePercentage / 100) * maxScore);
-      const percentage = Math.round((score / maxScore) * 100);
-      const passed = percentage >= exam.passingPercentage;
-      const completedAt = exam.createdAt || "2026-08-10T12:00:00Z";
-
-      return {
-        exam,
-        score,
-        totalScore: maxScore,
-        percentage,
-        passed,
-        attemptNumber: 1,
-        completedAt,
-      };
-    });
-  }, [relevantExams, passedExamIds]);
-
-  // Filter required exams
-  const filteredRequiredExams = React.useMemo(() => {
-    if (!searchQuery.trim()) return requiredExams;
-    const q = searchQuery.toLowerCase().trim();
-    return requiredExams.filter((exam) => {
-      return (
-        exam.title.toLowerCase().includes(q) ||
-        (exam.subject || "").toLowerCase().includes(q) ||
-        (exam.teacherName || "").toLowerCase().includes(q) ||
-        (exam.courseTitle || "").toLowerCase().includes(q) ||
-        (exam.grade || "").toLowerCase().includes(q)
-      );
-    });
-  }, [requiredExams, searchQuery]);
-
-  // Filter completed exams
-  const filteredCompletedExams = React.useMemo(() => {
-    if (!searchQuery.trim()) return completedExamsList;
-    const q = searchQuery.toLowerCase().trim();
-    return completedExamsList.filter(({ exam }) => {
-      return (
-        exam.title.toLowerCase().includes(q) ||
-        (exam.subject || "").toLowerCase().includes(q) ||
-        (exam.teacherName || "").toLowerCase().includes(q) ||
-        (exam.courseTitle || "").toLowerCase().includes(q) ||
-        (exam.grade || "").toLowerCase().includes(q)
-      );
-    });
-  }, [completedExamsList, searchQuery]);
-
-  // Sort required exams
-  const sortedRequiredExams = React.useMemo(() => {
-    return [...filteredRequiredExams].sort((a, b) => {
-      switch (sortBy) {
-        case "title-asc":
-          return a.title.localeCompare(b.title, locale);
-        case "title-desc":
-          return b.title.localeCompare(a.title, locale);
-        case "duration-desc":
-          return b.durationMinutes - a.durationMinutes;
-        case "duration-asc":
-          return a.durationMinutes - b.durationMinutes;
-        case "date-oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "date-newest":
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
-  }, [filteredRequiredExams, sortBy, locale]);
-
-  // Sort completed exams
-  const sortedCompletedExams = React.useMemo(() => {
-    return [...filteredCompletedExams].sort((a, b) => {
-      switch (sortBy) {
-        case "title-asc":
-          return a.exam.title.localeCompare(b.exam.title, locale);
-        case "title-desc":
-          return b.exam.title.localeCompare(a.exam.title, locale);
-        case "score-desc":
-          return b.percentage - a.percentage;
-        case "score-asc":
-          return a.percentage - b.percentage;
-        case "duration-desc":
-          return b.exam.durationMinutes - a.exam.durationMinutes;
-        case "duration-asc":
-          return a.exam.durationMinutes - b.exam.durationMinutes;
-        case "date-oldest":
-          return new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime();
-        case "date-newest":
-        default:
-          return new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime();
-      }
-    });
-  }, [filteredCompletedExams, sortBy, locale]);
-
-  // Active dataset & pagination calculation
-  const isRequiredTab = activeTab === "required";
-  const totalItems = isRequiredTab ? sortedRequiredExams.length : sortedCompletedExams.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * itemsPerPage;
-
-  const paginatedRequiredExams = sortedRequiredExams.slice(startIndex, startIndex + itemsPerPage);
-  const paginatedCompletedExams = sortedCompletedExams.slice(startIndex, startIndex + itemsPerPage);
+  const getLocalizedString = (field?: Record<string, string> | null) => {
+    if (!field) return "";
+    return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
+  };
 
   // Handlers
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) =>
-    updateUrlParams({ search: e.target.value, page: 1 });
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+  };
 
   const handleTabChange = (tab: StudentExamTab) => updateUrlParams({ tab, page: 1 });
-
   const handleSortChange = (sort: StudentExamSortOption) => updateUrlParams({ sort, page: 1 });
-
   const handlePageChange = (page: number) => updateUrlParams({ page });
-
-  const handleResetFilters = () => updateUrlParams({ search: null, sort: null, page: 1 });
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    updateUrlParams({ search: null, sort: null, page: 1 });
+  };
 
   // Venue icon helper
   function VenueIcon({ venue }: { venue?: string }) {
     if (venue === "online") return <Globe className="size-3.5 shrink-0" />;
-    if (venue === "center") return <House className="size-3.5 shrink-0" />;
+    if (venue === "onsite" || venue === "center") return <House className="size-3.5 shrink-0" />;
     return <Globe2 className="size-3.5 shrink-0" />;
   }
+
+  const isRequiredTab = activeTab === "required";
 
   // Sort dropdown options
   const sortOptions: { value: StudentExamSortOption; label: string }[] = isRequiredTab
     ? [
-        { value: "date-newest", label: t("sort.newest") },
-        { value: "date-oldest", label: t("sort.oldest") },
-        { value: "title-asc", label: t("sort.titleAsc") },
-        { value: "title-desc", label: t("sort.titleDesc") },
-        { value: "duration-desc", label: t("sort.durationDesc") },
-        { value: "duration-asc", label: t("sort.durationAsc") },
+        { value: "latest", label: t("sort.newest") },
+        { value: "oldest", label: t("sort.oldest") },
+        { value: "title_asc", label: t("sort.titleAsc") },
+        { value: "title_desc", label: t("sort.titleDesc") },
+        { value: "duration_desc", label: t("sort.durationDesc") },
+        { value: "duration_asc", label: t("sort.durationAsc") },
       ]
     : [
-        { value: "date-newest", label: t("sort.newest") },
-        { value: "date-oldest", label: t("sort.oldest") },
-        { value: "score-desc", label: t("sort.scoreDesc") },
-        { value: "score-asc", label: t("sort.scoreAsc") },
-        { value: "title-asc", label: t("sort.titleAsc") },
-        { value: "title-desc", label: t("sort.titleDesc") },
-        { value: "duration-desc", label: t("sort.durationDesc") },
-        { value: "duration-asc", label: t("sort.durationAsc") },
+        { value: "latest", label: t("sort.newest") },
+        { value: "oldest", label: t("sort.oldest") },
+        { value: "score_desc", label: t("sort.scoreDesc") },
+        { value: "score_asc", label: t("sort.scoreAsc") },
+        { value: "title_asc", label: t("sort.titleAsc") },
+        { value: "title_desc", label: t("sort.titleDesc") },
+        { value: "duration_desc", label: t("sort.durationDesc") },
+        { value: "duration_asc", label: t("sort.durationAsc") },
       ];
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
-  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "date-newest";
+  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "latest";
 
   const showingText = t("pagination.showing", {
     start: totalItems > 0 ? startIndex + 1 : 0,
-    end: Math.min(startIndex + itemsPerPage, totalItems),
+    end: Math.min(startIndex + pagination.per_page, totalItems),
     total: totalItems,
   });
 
@@ -376,8 +218,8 @@ export function StudentExamsClient() {
             </h1>
             <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
               {isRequiredTab
-                ? t("totalRequired", { count: requiredExams.length })
-                : t("totalCompleted", { count: completedExamsList.length })}
+                ? t("totalRequired", { count: tabCounts.required })
+                : t("totalCompleted", { count: tabCounts.completed })}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
@@ -405,7 +247,7 @@ export function StudentExamsClient() {
             <Input
               type="text"
               placeholder={t("searchPlaceholder")}
-              value={searchQuery}
+              value={searchTerm}
               onChange={handleSearchChange}
               className="ps-9 bg-background"
             />
@@ -424,7 +266,7 @@ export function StudentExamsClient() {
             >
               <FileQuestion className="size-3.5 shrink-0" />
               <span>{t("tabs.required")}</span>
-              <span className="opacity-80">({requiredExams.length})</span>
+              <span className="opacity-80">({tabCounts.required})</span>
             </button>
             <button
               type="button"
@@ -437,7 +279,7 @@ export function StudentExamsClient() {
             >
               <CheckCircle2 className="size-3.5 shrink-0" />
               <span>{t("tabs.completed")}</span>
-              <span className="opacity-80">({completedExamsList.length})</span>
+              <span className="opacity-80">({tabCounts.completed})</span>
             </button>
           </div>
         </div>
@@ -526,7 +368,7 @@ export function StudentExamsClient() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedRequiredExams.length === 0 ? (
+                {exams.length === 0 ? (
                   <tr>
                     <td colSpan={7}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
@@ -543,10 +385,13 @@ export function StudentExamsClient() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedRequiredExams.map((exam, idx) => {
+                  exams.map((exam: BackendStudentExam, idx: number) => {
                     const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
-                    const subjectStr = formatSubject(exam.subject);
-                    const gradeStr = formatGrade(exam.grade);
+                    const titleStr = getLocalizedString(exam.title);
+                    const subjectStr = getLocalizedString(exam.subject?.name);
+                    const stageStr = getLocalizedString(exam.educational_stage?.name);
+                    const courseTitleStr = getLocalizedString(exam.course?.title);
+                    const instructorName = exam.instructor?.full_name;
 
                     return (
                       <tr
@@ -557,10 +402,10 @@ export function StudentExamsClient() {
                         <td className="px-4 py-3.5 min-w-56 max-w-80">
                           <div className="space-y-0.5">
                             <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-snug line-clamp-2">
-                              {exam.title}
+                              {titleStr}
                             </p>
-                            {exam.teacherName && (
-                              <p className="text-xs text-muted-foreground">{exam.teacherName}</p>
+                            {instructorName && (
+                              <p className="text-xs text-muted-foreground">{instructorName}</p>
                             )}
                           </div>
                         </td>
@@ -569,29 +414,29 @@ export function StudentExamsClient() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex flex-col">
                             <span className="text-xs font-semibold text-foreground">
-                              {subjectStr}
+                              {subjectStr || "-"}
                             </span>
-                            <span className="text-xs text-muted-foreground">{gradeStr}</span>
+                            <span className="text-xs text-muted-foreground">{stageStr || "-"}</span>
                           </div>
                         </td>
 
                         {/* Source Course */}
                         <td className="px-4 py-3.5 min-w-44">
-                          {exam.examType === "course-dependent" && exam.courseId ? (
+                          {exam.scope === "course" && exam.course ? (
                             <Link
-                              href={`/student-dashboard/courses/${exam.courseId}`}
+                              href={`/student-dashboard/courses/${exam.course.id}`}
                               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1 group"
                             >
                               <BookOpen className="size-3.5 shrink-0" />
-                              <span className="truncate">{exam.courseTitle || exam.courseId}</span>
+                              <span className="truncate">{courseTitleStr || exam.course.id}</span>
                             </Link>
                           ) : (
                             <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                              <VenueIcon venue={exam.venue} />
+                              <VenueIcon venue={exam.delivery_mode} />
                               <span>{t("table.independent")}</span>
-                              {exam.venue && (
+                              {exam.delivery_mode && (
                                 <span className="text-muted-foreground/80">
-                                  ({formatVenue(exam.venue)})
+                                  ({formatVenue(exam.delivery_mode)})
                                 </span>
                               )}
                             </div>
@@ -601,7 +446,7 @@ export function StudentExamsClient() {
                         {/* Category */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
-                            {formatCategory(exam.category)}
+                            {formatCategory(exam.classification)}
                           </span>
                         </td>
 
@@ -609,12 +454,12 @@ export function StudentExamsClient() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex flex-col gap-0.5 text-xs">
                             <span className="flex items-center gap-1.5 font-medium text-foreground">
-                              <HelpCircle className="size-3.5 shrink-0 text-muted-foreground" />
-                              {t("table.questionsCount", { count: exam.numberOfQuestions })}
+                              <FileQuestion className="size-3.5 shrink-0 text-muted-foreground" />
+                              {t("table.questionsCount", { count: exam.questions_count })}
                             </span>
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                               <Timer className="size-3.5 shrink-0" />
-                              {t("table.durationMinutes", { count: exam.durationMinutes })}
+                              {t("table.durationMinutes", { count: exam.duration_minutes })}
                             </span>
                           </div>
                         </td>
@@ -623,7 +468,7 @@ export function StudentExamsClient() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-amber-600">
-                              {t("table.passingPercent", { percent: exam.passingPercentage })}
+                              {t("table.passingPercent", { percent: exam.passing_percentage })}
                             </span>
                           </div>
                         </td>
@@ -636,7 +481,11 @@ export function StudentExamsClient() {
                             className="rounded-lg text-xs font-bold gap-1.5 bg-primary hover:bg-primary/90 text-white shadow-xs"
                           >
                             <Link href={`/student-dashboard/exams/${exam.id}`}>
-                              <span>{t("table.actions.takeExam")}</span>
+                              <span>
+                                {exam.action === "resume"
+                                  ? tExams("actions.resume") || t("table.actions.takeExam")
+                                  : t("table.actions.takeExam")}
+                              </span>
                               <ArrowRight className="size-3.5 rtl:rotate-180" />
                             </Link>
                           </Button>
@@ -678,7 +527,7 @@ export function StudentExamsClient() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedCompletedExams.length === 0 ? (
+                {exams.length === 0 ? (
                   <tr>
                     <td colSpan={7}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
@@ -697,127 +546,147 @@ export function StudentExamsClient() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedCompletedExams.map(
-                    ({ exam, score, totalScore, percentage, passed, completedAt }, idx) => {
-                      const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
-                      const subjectStr = formatSubject(exam.subject);
-                      const gradeStr = formatGrade(exam.grade);
+                  exams.map((exam: BackendStudentExam, idx: number) => {
+                    const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
+                    const titleStr = getLocalizedString(exam.title);
+                    const subjectStr = getLocalizedString(exam.subject?.name);
+                    const stageStr = getLocalizedString(exam.educational_stage?.name);
+                    const courseTitleStr = getLocalizedString(exam.course?.title);
+                    const instructorName = exam.instructor?.full_name;
 
-                      return (
-                        <tr
-                          key={exam.id}
-                          className={`border-b border-border/40 hover:bg-accent/40 transition-colors ${rowBg}`}
-                        >
-                          {/* Title & Teacher */}
-                          <td className="px-4 py-3.5 min-w-56 max-w-80">
-                            <div className="space-y-0.5">
-                              <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
-                                {exam.title}
-                              </p>
-                              {exam.teacherName && (
-                                <p className="text-xs text-muted-foreground">{exam.teacherName}</p>
+                    const adoptedResult = exam.adopted_result;
+                    const score = adoptedResult?.score ?? 0;
+                    const maxScore = adoptedResult?.max_score ?? 0;
+                    const percentage = adoptedResult?.percentage ?? 0;
+                    const passed = adoptedResult?.is_passed ?? exam.result_status === "passed";
+                    const isPendingReview = exam.result_status === "pending_review";
+                    const completedAt = adoptedResult?.completed_at;
+
+                    return (
+                      <tr
+                        key={exam.id}
+                        className={`border-b border-border/40 hover:bg-accent/40 transition-colors ${rowBg}`}
+                      >
+                        {/* Title & Teacher */}
+                        <td className="px-4 py-3.5 min-w-56 max-w-80">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                              {titleStr}
+                            </p>
+                            {instructorName && (
+                              <p className="text-xs text-muted-foreground">{instructorName}</p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Subject & Grade */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-foreground">
+                              {subjectStr || "-"}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{stageStr || "-"}</span>
+                          </div>
+                        </td>
+
+                        {/* Source Course */}
+                        <td className="px-4 py-3.5 min-w-44">
+                          {exam.scope === "course" && exam.course ? (
+                            <Link
+                              href={`/student-dashboard/courses/${exam.course.id}`}
+                              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
+                            >
+                              <BookOpen className="size-3.5 shrink-0" />
+                              <span className="truncate">{courseTitleStr || exam.course.id}</span>
+                            </Link>
+                          ) : (
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                              <VenueIcon venue={exam.delivery_mode} />
+                              <span>{t("table.independent")}</span>
+                              {exam.delivery_mode && (
+                                <span className="text-muted-foreground/80">
+                                  ({formatVenue(exam.delivery_mode)})
+                                </span>
                               )}
                             </div>
-                          </td>
+                          )}
+                        </td>
 
-                          {/* Subject & Grade */}
-                          <td className="px-4 py-3.5 whitespace-nowrap">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-semibold text-foreground">
-                                {subjectStr}
+                        {/* Score */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5">
+                            {isPendingReview ? (
+                              <span className="text-xs font-semibold text-amber-600">
+                                {tExams("status.pendingReview") || "قيد التصحيح"}
                               </span>
-                              <span className="text-xs text-muted-foreground">{gradeStr}</span>
-                            </div>
-                          </td>
-
-                          {/* Source Course */}
-                          <td className="px-4 py-3.5 min-w-44">
-                            {exam.examType === "course-dependent" && exam.courseId ? (
-                              <Link
-                                href={`/student-dashboard/courses/${exam.courseId}`}
-                                className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
-                              >
-                                <BookOpen className="size-3.5 shrink-0" />
-                                <span className="truncate">
-                                  {exam.courseTitle || exam.courseId}
+                            ) : (
+                              <>
+                                <span
+                                  className={`text-sm font-bold ${
+                                    passed ? "text-emerald-600" : "text-rose-600"
+                                  }`}
+                                >
+                                  {t("table.scoreDisplay", {
+                                    score,
+                                    totalScore: maxScore,
+                                    percent: percentage,
+                                  })}
                                 </span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {t("table.columns.passingGrade")}: {exam.passing_percentage}%
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status Badge */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {isPendingReview ? (
+                            <Badge className="bg-amber-500/15 border border-amber-500/30 text-amber-700 text-xs font-semibold gap-1">
+                              <Clock className="size-3" />
+                              <span>{tExams("status.pendingReview") || "قيد المراجعة"}</span>
+                            </Badge>
+                          ) : passed ? (
+                            <Badge className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold gap-1">
+                              <CheckCircle2 className="size-3" />
+                              <span>{t("table.statusPassed")}</span>
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs font-semibold gap-1">
+                              <XCircle className="size-3" />
+                              <span>{t("table.statusFailed")}</span>
+                            </Badge>
+                          )}
+                        </td>
+
+                        {/* Completed Date */}
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="size-3.5 text-muted-foreground/70" />
+                            <span>{formatDate(completedAt, locale)}</span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3.5 text-end whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              asChild
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg text-xs font-semibold gap-1.5 h-8"
+                            >
+                              <Link href={`/student-dashboard/exams/${exam.id}`}>
+                                <FileCheck2 className="size-3.5" />
+                                <span>{t("table.actions.viewResult")}</span>
                               </Link>
-                            ) : (
-                              <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                                <VenueIcon venue={exam.venue} />
-                                <span>{t("table.independent")}</span>
-                                {exam.venue && (
-                                  <span className="text-muted-foreground/80">
-                                    ({formatVenue(exam.venue)})
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Score */}
-                          <td className="px-4 py-3.5 whitespace-nowrap">
-                            <div className="flex flex-col gap-0.5">
-                              <span
-                                className={`text-sm font-bold ${
-                                  passed ? "text-emerald-600" : "text-rose-600"
-                                }`}
-                              >
-                                {t("table.scoreDisplay", {
-                                  score,
-                                  totalScore,
-                                  percent: percentage,
-                                })}
-                              </span>
-                              <span className="text-[11px] text-muted-foreground">
-                                {t("table.columns.passingGrade")}: {exam.passingPercentage}%
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Status Badge */}
-                          <td className="px-4 py-3.5 whitespace-nowrap">
-                            {passed ? (
-                              <Badge className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold gap-1">
-                                <CheckCircle2 className="size-3" />
-                                <span>{t("table.statusPassed")}</span>
-                              </Badge>
-                            ) : (
-                              <Badge className="bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs font-semibold gap-1">
-                                <XCircle className="size-3" />
-                                <span>{t("table.statusFailed")}</span>
-                              </Badge>
-                            )}
-                          </td>
-
-                          {/* Completed Date */}
-                          <td className="px-4 py-3.5 whitespace-nowrap text-xs text-muted-foreground">
-                            <div className="flex items-center gap-1.5">
-                              <Clock className="size-3.5 text-muted-foreground/70" />
-                              <span>{formatDate(completedAt, locale)}</span>
-                            </div>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="px-4 py-3.5 text-end whitespace-nowrap">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                asChild
-                                variant="outline"
-                                size="sm"
-                                className="rounded-lg text-xs font-semibold gap-1.5 h-8"
-                              >
-                                <Link href={`/student-dashboard/exams/${exam.id}`}>
-                                  <FileCheck2 className="size-3.5" />
-                                  <span>{t("table.actions.viewResult")}</span>
-                                </Link>
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    },
-                  )
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -827,11 +696,11 @@ export function StudentExamsClient() {
         {/* ── Table Footer & Pagination ─────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/60 bg-muted/20">
           <ContentPagination
-            currentPage={safePage}
+            currentPage={pagination.current_page}
             totalPages={totalPages}
             totalItems={totalItems}
             startIndex={startIndex}
-            itemsPerPage={itemsPerPage}
+            itemsPerPage={pagination.per_page}
             showingText={showingText}
             onPageChange={handlePageChange}
           />

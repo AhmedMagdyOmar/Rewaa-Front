@@ -1,6 +1,7 @@
 import { api } from "@/lib/apiClient";
 import type {
   BackendExam,
+  BackendExamAttempt,
   BackendExamComplaint,
   BackendExamOptions,
   BackendExamSection,
@@ -9,6 +10,7 @@ import type {
   ExamComplaintsListResponse,
   ExamFilterParams,
   ExamListResponse,
+  GradeExamAttemptPayload,
   StoreExamData,
   StoreExamSectionData,
   UpdateExamData,
@@ -191,7 +193,7 @@ export const examsService = {
   /**
    * Student Attempts: Get attempts for an exam
    */
-  async getExamAttempts(filters: {
+  async getExamAttempts(filters?: {
     exam_id?: number | string;
     student_id?: number | string;
     status?: string;
@@ -203,6 +205,32 @@ export const examsService = {
       method: "GET",
       params: filters,
     });
+  },
+
+  /**
+   * Student Attempts: Get single attempt details for review & grading
+   */
+  async getExamAttempt(attemptId: number | string): Promise<BackendExamAttempt> {
+    const response = await api<{ attempt: BackendExamAttempt }>({
+      url: `/api/dashboard/provider/exam-attempts/${attemptId}`,
+      method: "GET",
+    });
+    return response.attempt;
+  },
+
+  /**
+   * Student Attempts: Submit grades for essay questions
+   */
+  async gradeExamAttempt(
+    attemptId: number | string,
+    payload: GradeExamAttemptPayload,
+  ): Promise<BackendExamAttempt> {
+    const response = await api<{ attempt: BackendExamAttempt }>({
+      url: `/api/dashboard/provider/exam-attempts/${attemptId}/grade`,
+      method: "PATCH",
+      data: payload,
+    });
+    return response.attempt;
   },
 
   /**

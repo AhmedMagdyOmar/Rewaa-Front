@@ -3,20 +3,16 @@
 import { ContentPagination } from "@/components/dashboard/common/content-pagination";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useMyCourses } from "@/hooks/use-my-courses";
 import { Link } from "@/i18n/routing";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { getStoredTeachers } from "@/lib/settings-storage";
-import { getEnrolledCourseIds } from "@/lib/student-enrollment-storage";
-import { Course } from "@/types/course";
 import { BookOpen, Compass } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
-import { StudentCourseFilters, StudentCourseSortOption } from "./StudentCourseFilters";
-import { EnrolledCourseItem, StudentEnrolledCourseCard } from "./StudentEnrolledCourseCard";
+import { StudentCourseFilters, SortOptionItem } from "./StudentCourseFilters";
+import { StudentEnrolledCourseCard } from "./StudentEnrolledCourseCard";
 
 export function StudentCoursesClient() {
-  const locale = useLocale();
   const t = useTranslations("studentDashboard.coursesPage");
   const tEnrolled = useTranslations("studentDashboard.enrolledCourses");
 
@@ -24,9 +20,24 @@ export function StudentCoursesClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Supported sort options from backend IndexCourseRequest / StudentCourseService
+  const sortOptions: SortOptionItem[] = React.useMemo(
+    () => [
+      { value: "latest", label: t("sort.newest") },
+      { value: "oldest", label: t("sort.oldest") },
+      { value: "title_asc", label: t("sort.titleAsc") },
+      { value: "title_desc", label: t("sort.titleDesc") },
+      { value: "progress_desc", label: t("sort.progressHigh") },
+      { value: "progress_asc", label: t("sort.progressLow") },
+    ],
+    [t],
+  );
+
+  const defaultSort = "latest";
+
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
-  const sortBy = (searchParams.get("sort") as StudentCourseSortOption) || "date-newest";
+  const sortBy = searchParams.get("sort") || defaultSort;
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 4;
 
@@ -37,7 +48,7 @@ export function StudentCoursesClient() {
         if (
           value === null ||
           value === "" ||
-          (key === "sort" && value === "date-newest") ||
+          (key === "sort" && value === defaultSort) ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -51,108 +62,27 @@ export function StudentCoursesClient() {
     [searchParams, pathname, router],
   );
 
-  // Load courses, teachers & enrolled IDs
-  const [storedCourses, setStoredCourses] = React.useState<Course[]>([]);
-  const [teachers, setTeachers] = React.useState(getStoredTeachers());
-  const [enrolledCourseIds, setEnrolledCourseIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // Fetch data using TanStack Query
+  const { data, isLoading } = useMyCourses({
+    search: searchQuery || undefined,
+    sort: sortBy || undefined,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
 
-  React.useEffect(() => {
-    const loadData = () => {
-      setStoredCourses(getStoredCourses(locale));
-      setTeachers(getStoredTeachers());
-      setEnrolledCourseIds(getEnrolledCourseIds());
-      setIsLoading(false);
-    };
-
-    loadData();
-    window.addEventListener("rewaa_courses_updated", loadData);
-    window.addEventListener("rewaa_settings_updated", loadData);
-    window.addEventListener("rewaa_student_enrollment_updated", loadData);
-    window.addEventListener("storage", loadData);
-    return () => {
-      window.removeEventListener("rewaa_courses_updated", loadData);
-      window.removeEventListener("rewaa_settings_updated", loadData);
-      window.removeEventListener("rewaa_student_enrollment_updated", loadData);
-      window.removeEventListener("storage", loadData);
-    };
-  }, [locale]);
-
-  // Build full list of student's enrolled courses
-  const allEnrolledCourses: EnrolledCourseItem[] = React.useMemo(() => {
-    // Deterministic progress and end date mappings for mock enrolled courses
-    const defaultProgress = [65, 40, 20, 0];
-    const defaultEndDates = ["2026-12-31", "2026-11-15", "2026-10-30", "2026-12-01"];
-
-    const enrolledSet = new Set(enrolledCourseIds);
-    const available = storedCourses.filter((c) => !c.isDraft && enrolledSet.has(c.id));
-
-    return available.map((course, idx) => {
-      const matchedTeacher = teachers.find(
-        (tch) =>
-          tch.name.trim().toLowerCase() === course.teacherName?.trim().toLowerCase() ||
-          (course.teacherName && tch.name.includes(course.teacherName)) ||
-          (course.teacherName && course.teacherName.includes(tch.name)),
-      );
-
-      return {
-        course,
-        teacherImage: matchedTeacher?.image || "",
-        accessEndDate: defaultEndDates[idx % defaultEndDates.length],
-        progressPercentage: defaultProgress[idx % defaultProgress.length],
-      };
-    });
-  }, [storedCourses, teachers, enrolledCourseIds]);
-
-  // Filter Logic (Search by course title, subject, grade, teacher name)
-  const filteredCourses = React.useMemo(() => {
-    if (!searchQuery.trim()) return allEnrolledCourses;
-    const query = searchQuery.toLowerCase().trim();
-
-    return allEnrolledCourses.filter(({ course }) => {
-      const matchesTitle = course.title.toLowerCase().includes(query);
-      const matchesSubject = course.subject?.toLowerCase().includes(query);
-      const matchesGrade = course.grade?.toLowerCase().includes(query);
-      const matchesTeacher = course.teacherName?.toLowerCase().includes(query);
-      return matchesTitle || matchesSubject || matchesGrade || matchesTeacher;
-    });
-  }, [allEnrolledCourses, searchQuery]);
-
-  // Sort Logic
-  const sortedCourses = React.useMemo(() => {
-    return [...filteredCourses].sort((a, b) => {
-      switch (sortBy) {
-        case "title-asc":
-          return a.course.title.localeCompare(b.course.title, locale);
-        case "title-desc":
-          return b.course.title.localeCompare(a.course.title, locale);
-        case "date-newest":
-          return new Date(b.course.date).getTime() - new Date(a.course.date).getTime();
-        case "date-oldest":
-          return new Date(a.course.date).getTime() - new Date(b.course.date).getTime();
-        case "progress-desc":
-          return b.progressPercentage - a.progressPercentage;
-        case "progress-asc":
-          return a.progressPercentage - b.progressPercentage;
-        default:
-          return 0;
-      }
-    });
-  }, [filteredCourses, sortBy, locale]);
-
-  // Pagination Logic (4 items per page)
-  const totalItems = sortedCourses.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const courses = data?.courses || [];
+  const pagination = data?.pagination;
+  const totalItems = pagination?.total ?? courses.length;
+  const totalPages = pagination?.last_page ?? (Math.ceil(totalItems / itemsPerPage) || 1);
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * itemsPerPage;
-  const paginatedCourses = sortedCourses.slice(startIndex, startIndex + itemsPerPage);
 
   // Handlers
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateUrlParams({ search: e.target.value, page: 1 });
+  const handleSearchChange = (search: string) => {
+    updateUrlParams({ search, page: 1 });
   };
 
-  const handleSortChange = (sort: StudentCourseSortOption) => {
+  const handleSortChange = (sort: string) => {
     updateUrlParams({ sort, page: 1 });
   };
 
@@ -165,10 +95,13 @@ export function StudentCoursesClient() {
   };
 
   const showingText = t("pagination.showing", {
-    start: totalItems > 0 ? startIndex + 1 : 0,
-    end: Math.min(startIndex + itemsPerPage, totalItems),
+    start: totalItems > 0 ? (pagination?.from ?? startIndex + 1) : 0,
+    end: pagination?.to ?? Math.min(startIndex + itemsPerPage, totalItems),
     total: totalItems,
   });
+
+  const isInitialEmpty = !isLoading && !searchQuery && courses.length === 0;
+  const isSearchEmpty = !isLoading && Boolean(searchQuery) && courses.length === 0;
 
   return (
     <div className="space-y-6 w-full">
@@ -180,7 +113,7 @@ export function StudentCoursesClient() {
               {t("title")}
             </h1>
             <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {t("totalEnrolled", { count: allEnrolledCourses.length })}
+              {t("totalEnrolled", { count: totalItems })}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
@@ -200,6 +133,8 @@ export function StudentCoursesClient() {
       <StudentCourseFilters
         searchQuery={searchQuery}
         sortBy={sortBy}
+        sortOptions={sortOptions}
+        defaultSort={defaultSort}
         onSearchChange={handleSearchChange}
         onSortChange={handleSortChange}
         onResetFilters={handleResetFilters}
@@ -225,13 +160,13 @@ export function StudentCoursesClient() {
             </div>
           ))}
         </div>
-      ) : allEnrolledCourses.length === 0 ? (
+      ) : isInitialEmpty ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-xl border border-dashed border-border/80">
           <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-3" />
           <h3 className="text-lg font-semibold text-foreground">{tEnrolled("title")}</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md">{tEnrolled("empty")}</p>
         </div>
-      ) : paginatedCourses.length === 0 ? (
+      ) : isSearchEmpty ? (
         <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-xl border border-dashed border-border/80">
           <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-3" />
           <h3 className="text-lg font-semibold text-foreground">{t("empty.title")}</h3>
@@ -239,13 +174,10 @@ export function StudentCoursesClient() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-          {paginatedCourses.map(({ course, teacherImage, accessEndDate, progressPercentage }) => (
+          {courses.map((course, idx) => (
             <StudentEnrolledCourseCard
-              key={course.id}
+              key={course.course_id ?? course.enrollment_id ?? course.id ?? `course-${idx}`}
               course={course}
-              teacherImage={teacherImage}
-              accessEndDate={accessEndDate}
-              progressPercentage={progressPercentage}
             />
           ))}
         </div>

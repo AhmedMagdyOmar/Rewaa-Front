@@ -344,22 +344,27 @@ Deprecate `student-enrollment-storage.ts` and `student-course-progress.ts`. Enab
 
 ### Deliverables & Action Items
 
-1. **Student Dashboard & Enrolled Courses**:
+1. **Student Dashboard & Enrolled Courses** [x]:
    - `GET /api/website/my-courses` (Enrolled courses with server-calculated progress percentage)
    - `GET /api/website/my-courses/{course}` (Course dashboard & announcements)
    - `GET /api/website/my-courses/{course}/content` (Curriculum tree of sections, lessons, exams)
 
-2. **Interactive Video & Lesson Player**:
+2. **Interactive Video & Lesson Player** [x]:
    - `GET /api/website/my-courses/{course}/lessons/{lesson}` (Lesson content, video player, attachments)
    - `POST /api/website/my-courses/{course}/lessons/{lesson}/completion` (Mark complete)
    - `DELETE /api/website/my-courses/{course}/lessons/{lesson}/completion` (Mark uncomplete)
    - `GET /api/website/my-courses/{course}/lessons/{lesson}/media/{media}` (Protected stream/download)
 
-3. **Student Timed Exam Engine**:
-   - `GET /api/website/my-courses/{course}/exams/{exam}/attempts` (Prior attempts and grades)
-   - `POST /api/website/my-courses/{course}/exams/{exam}/attempts` (Start attempt, server timer initialized)
-   - `GET /api/website/my-courses/{course}/exams/{exam}/attempts/{attempt}` (Active attempt question feed)
-   - `POST /api/website/my-courses/{course}/exams/{exam}/attempts/{attempt}/submit` (Submit responses -> server-side grading)
+3. **Student Timed Exam Engine** [x]:
+   - `GET /api/website/exams` (Required & Completed exams with server tabs/counts)
+   - `GET /api/website/general-exams` (Platform-wide standalone exams)
+   - `GET /api/website/exams/{exam}` (Exam details & student accessibility checks)
+   - `POST /api/website/exams/{exam}/attempts` & `POST /api/website/my-courses/{course}/exams/{exam}/attempts` (Start/Resume attempt, server timer synchronized)
+   - `GET /api/website/exam-attempts/{attempt}` (Active attempt question feed & live flag states)
+   - `PATCH /api/website/exam-attempts/{attempt}/answers/{question}` (Real-time student answer autosave)
+   - `POST /api/website/exam-attempts/{attempt}/submit` & `POST /api/website/my-courses/{course}/exams/{exam}/attempts/{attempt}/submit` (Submit responses -> server-side grading)
+   - `GET /api/website/exams/{exam}/result` (Best / latest evaluated exam result, section performance, and explanations)
+   - `POST /api/website/exams/{exam}/complaints` (Student exam objection / complaint submission dialog)
 
 ---
 

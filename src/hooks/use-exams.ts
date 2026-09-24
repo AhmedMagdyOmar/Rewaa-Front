@@ -164,9 +164,9 @@ export function useExamSectionMutations(examId: number | string) {
 }
 
 /**
- * Hook to fetch exam attempts for stats / review
+ * Hook to fetch exam attempts for stats / review / submissions queue
  */
-export function useProviderExamAttempts(filters: {
+export function useProviderExamAttempts(filters?: {
   exam_id?: number | string;
   student_id?: number | string;
   status?: string;
@@ -176,8 +176,36 @@ export function useProviderExamAttempts(filters: {
   return useQuery({
     queryKey: queryKeys.provider.exams.attempts(filters),
     queryFn: () => examsService.getExamAttempts(filters),
-    enabled: Boolean(filters.exam_id || filters.student_id),
     staleTime: 15 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch single attempt details for grading
+ */
+export function useProviderExamAttempt(attemptId?: number | string) {
+  return useQuery({
+    queryKey: queryKeys.provider.exams.attemptDetail(attemptId || ""),
+    queryFn: () => examsService.getExamAttempt(attemptId!),
+    enabled: Boolean(attemptId),
+  });
+}
+
+/**
+ * Hook to grade an exam attempt
+ */
+export function useGradeExamAttempt(attemptId: number | string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: import("@/types/api-contracts").GradeExamAttemptPayload) =>
+      examsService.gradeExamAttempt(attemptId, payload),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.exams.all(),
+      });
+      queryClient.setQueryData(queryKeys.provider.exams.attemptDetail(attemptId), data);
+    },
   });
 }
 

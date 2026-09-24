@@ -657,6 +657,7 @@ export interface QuestionFilterParams {
   instructor_id?: number | string;
   exam_id?: number | string;
   exam_section_id?: number | string;
+  is_standalone?: boolean | string;
   sort?: "latest" | "oldest" | string;
   page?: number;
   per_page?: number;
@@ -767,9 +768,11 @@ export interface BackendExamAttempt {
   graded_at?: string | null;
   duration_minutes: number;
   ends_at?: string | null;
+  elapsed_seconds?: number | null;
   score?: number | null;
   max_score: number;
   percentage?: number | null;
+  passing_percentage?: number | null;
   is_passed?: boolean | null;
   result_summary?: {
     questions_count: number;
@@ -780,6 +783,13 @@ export interface BackendExamAttempt {
   questions?: BackendExamAttemptQuestion[];
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+export interface GradeExamAttemptPayload {
+  answers: Array<{
+    question_id: number;
+    awarded_score: number;
+  }>;
 }
 
 export interface ExamAttemptsListResponse {
@@ -1324,4 +1334,474 @@ export interface BackendPlatformSettings {
   about?: Record<string, string> | null;
   terms?: Record<string, string> | null;
   supported_locales?: string[];
+}
+
+// ─── Student Enrolled Courses (Website / Portal) ────────────────────────────
+
+export interface BackendMyCourse {
+  id?: number;
+  course_id?: number;
+  enrollment_id?: number;
+  title: Record<string, string>;
+  description?: Record<string, string> | null;
+  cover_image?: string | null;
+  cover_image_url?: string | null;
+  educational_stage?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  subject?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  instructor?: {
+    id: number;
+    full_name: string;
+    avatar?: string | null;
+    avatar_url?: string | null;
+  } | null;
+  delivery_mode?: CourseDeliveryMode | string | null;
+  selected_delivery_mode?: string | null;
+  delivery_mode_label?: string;
+  status?: CourseStatus | string;
+  is_free?: boolean;
+  final_price?: number;
+  purchased_price?: number | string;
+  currency_code?: string | null;
+  lessons_count?: number;
+  sections_count?: number;
+  created_at?: string;
+  starts_at?: string | null;
+  expires_at?: string | null;
+  access_ends_at?: string | null;
+  progress_percentage?: number;
+  progress?: {
+    completed_lessons: number;
+    total_lessons: number;
+    percentage: number;
+  } | null;
+}
+
+export interface MyCoursesListResponse {
+  courses: BackendMyCourse[];
+  pagination: ApiPaginationMeta;
+}
+
+export interface MyCoursesFilterParams {
+  search?: string;
+  sort?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface MyCoursesOptions {
+  sort_options: Record<string, string | Record<string, string>>;
+}
+
+// ─── Student Explore / Available Courses (Website / Portal) ─────────────────
+
+/** Matches AvailableCourseResource from GET /api/website/courses */
+export interface AvailableCourse {
+  id: number;
+  delivery_mode: string; // "online" | "onsite" | "hybrid"
+  delivery_options: string[];
+  is_enrolled: boolean; // always false — backend filters enrolled courses out
+  title: Record<string, string>; // { ar: "...", en: "..." }
+  description: Record<string, string>;
+  cover_image: string | null;
+  educational_stage: { id: number; name: Record<string, string> } | null;
+  subject: { id: number; name: Record<string, string> } | null;
+  instructor: { id: number; full_name: string } | null;
+  is_free: boolean;
+  base_price: number;
+  currency_code: string;
+  has_discount: boolean;
+  is_discount_active: boolean;
+  discount_percentage: number;
+  discount_starts_at: string | null;
+  discount_ends_at: string | null;
+  discount_amount: number;
+  final_price: number;
+  has_limited_access: boolean;
+  access_duration_days: number | null;
+  sections_count: number;
+  lessons_count: number;
+  published_at: string | null;
+}
+
+export interface ExploreCoursesFilterParams {
+  search?: string;
+  sort?: string;
+  educational_stage_id?: number;
+  subject_id?: number;
+  instructor_id?: number;
+  page?: number;
+  per_page?: number;
+}
+
+export interface ExploreCoursesListResponse {
+  courses: AvailableCourse[];
+  pagination: {
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from?: number | null;
+    to?: number | null;
+  };
+}
+
+// ─── Student Course Details & Orders (Website / Portal) ──────────────────────
+
+/** Matches CourseDetailsResource from GET /api/website/courses/{course} and GET /api/website/my-courses/{course} */
+export interface BackendStudentCourseDetails {
+  id: number;
+  title: Record<string, string>;
+  description: Record<string, string>;
+  cover_image: string | null;
+  delivery_mode: string | null; // "online" | "onsite" | "hybrid"
+  educational_stage: { id: number; name: Record<string, string> } | null;
+  subject: { id: number; name: Record<string, string> } | null;
+  instructor: { id: number; full_name: string } | null;
+  sections_count: number;
+  lessons_count: number;
+  is_enrolled: boolean;
+  is_free: boolean;
+  base_price: number;
+  final_price: number;
+  currency_code: string;
+  has_limited_access: boolean;
+  access_duration_days: number | null;
+  enrollment?: {
+    id: number;
+    starts_at: string | null;
+    expires_at: string | null;
+    selected_delivery_mode: string | null;
+  } | null;
+  progress?: {
+    completed_lessons: number;
+    total_lessons: number;
+    percentage: number;
+  } | null;
+}
+
+export interface StudentCourseDetailsResponse {
+  course: BackendStudentCourseDetails;
+}
+
+export interface StoreStudentOrderPayload {
+  course_ids: number[];
+  delivery_modes?: Record<string | number, string>;
+}
+
+export interface StoreStudentOrderResponse {
+  order: BackendOrder;
+}
+
+// ─── Student Course Curriculum & Content (GET /api/website/my-courses/{id}/content) ──
+
+export interface BackendCourseContentSectionLessonExam {
+  id: number;
+  title: Record<string, string>;
+  passing_percentage: number;
+  is_passed: boolean;
+  adopted_result?: {
+    attempt_id: number;
+    attempt_number: number;
+    score: number;
+    max_score: number;
+    percentage: number;
+    is_passed: boolean;
+  } | null;
+}
+
+export interface BackendCourseContentSectionLesson {
+  id: number;
+  title: Record<string, string>;
+  type: string;
+  position: number;
+  is_locked: boolean;
+  is_completed: boolean;
+  exam: BackendCourseContentSectionLessonExam | null;
+}
+
+export interface BackendCourseContentSection {
+  id: number;
+  title: Record<string, string>;
+  position: number;
+  is_locked: boolean;
+  exam: BackendCourseContentSectionLessonExam | null;
+  lessons: BackendCourseContentSectionLesson[];
+}
+
+export interface BackendCourseContent {
+  course_id: number;
+  title: Record<string, string>;
+  progress: {
+    completed_lessons: number;
+    total_lessons: number;
+    percentage: number;
+  };
+  next_lesson: BackendCourseContentSectionLesson | null;
+  sections: BackendCourseContentSection[];
+}
+
+export interface CourseContentResponse {
+  content: BackendCourseContent;
+}
+
+// ─── Student Lesson Details (GET /api/website/my-courses/{course}/lessons/{lesson}) ─
+
+export interface BackendStudentLessonMediaItem {
+  id: number;
+  source: "upload" | "asset" | string;
+  name: string;
+  file_name?: string;
+  mime_type: string | null;
+  size: number;
+  url: string;
+}
+
+export interface BackendStudentLessonDetail {
+  id: number;
+  course_id?: number | null;
+  section_id?: number | null;
+  classification?: string;
+  title: Record<string, string>;
+  description: Record<string, string>;
+  type: string; // "video_and_text" | "text_only"
+  video_url: string | null;
+  cover_image: string | null;
+  position?: number;
+  is_completed?: boolean;
+  instructor?: { id: number; full_name: string } | null;
+  educational_stage?: { id: number; name: Record<string, string> } | null;
+  subject?: { id: number; name: Record<string, string> } | null;
+  pdf_attachments: BackendStudentLessonMediaItem[];
+  explanatory_images: BackendStudentLessonMediaItem[];
+  exam?: {
+    id: number;
+    title: Record<string, string>;
+    passing_percentage: number;
+  } | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface StudentLessonDetailsResponse {
+  lesson: BackendStudentLessonDetail;
+}
+
+export interface StudentStandaloneLessonsFilterParams {
+  tab?: "all" | "completed" | "incomplete";
+  search?: string;
+  type?: string;
+  subject_id?: number | string;
+  instructor_id?: number | string;
+  sort?: "latest" | "oldest" | "title_asc" | "title_desc";
+  page?: number;
+  per_page?: number;
+}
+
+export interface StudentStandaloneLessonsListResponse {
+  lessons: BackendStudentLessonDetail[];
+  tab_counts: {
+    all: number;
+    completed: number;
+    incomplete: number;
+  };
+  pagination: ApiPaginationMeta;
+}
+
+export interface LessonCompletionResponse {
+  lesson_id: number;
+  completed_at?: string;
+  is_completed?: boolean;
+}
+
+// ─── Student Exams & Exam Attempts (Website / Student Portal) ───────────────
+
+export interface BackendStudentExamAdoptedResult {
+  attempt_id: number;
+  attempt_number: number;
+  score: number;
+  max_score: number;
+  percentage: number;
+  is_passed: boolean;
+  completed_at?: string | null;
+}
+
+export interface BackendStudentExam {
+  id: number;
+  title: Record<string, string>;
+  description?: Record<string, string> | null;
+  scope: "course" | "general" | string;
+  classification: string;
+  classification_label?: string;
+  educational_stage?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  subject?: {
+    id: number;
+    name: Record<string, string>;
+  } | null;
+  instructor?: {
+    id: number;
+    full_name: string;
+  } | null;
+  course?: {
+    id: number;
+    title: Record<string, string>;
+  } | null;
+  questions_count: number;
+  duration_minutes: number;
+  delivery_mode: string;
+  passing_percentage: number;
+  max_attempts: number;
+  attempts_used: number;
+  remaining_attempts: number;
+  can_start: boolean;
+  start_block_reason?: "exam_ended" | "no_questions" | "maximum_attempts_reached" | string | null;
+  current_attempt_id?: number | null;
+  result_status: "not_started" | "in_progress" | "pending_review" | "passed" | "failed";
+  action: "start" | "resume" | "retry" | "view_result";
+  adopted_result?: BackendStudentExamAdoptedResult | null;
+  ends_at?: string | null;
+}
+
+export interface StudentExamsFilterParams {
+  search?: string;
+  tab?: "required" | "completed";
+  sort?:
+    | "latest"
+    | "oldest"
+    | "title_asc"
+    | "title_desc"
+    | "duration_asc"
+    | "duration_desc"
+    | "score_asc"
+    | "score_desc"
+    | string;
+  page?: number;
+  per_page?: number;
+}
+
+export interface StudentExamsListResponse {
+  exams: BackendStudentExam[];
+  tab_counts: {
+    required: number;
+    completed: number;
+  };
+  pagination: ApiPaginationMeta;
+}
+
+export interface StudentExamDetailResponse {
+  exam: BackendStudentExam;
+}
+
+export interface BackendStudentAttemptQuestionOption {
+  id: number;
+  position: number;
+  text: Record<string, string>;
+  is_correct?: boolean | null;
+}
+
+export interface BackendStudentAttemptQuestion {
+  id: number;
+  type: QuestionTypeBackend;
+  difficulty: QuestionDifficultyBackend;
+  score: number;
+  title: Record<string, string>;
+  body: Record<string, string>;
+  options: BackendStudentAttemptQuestionOption[];
+  submitted_answer?: unknown;
+  is_answered: boolean;
+  is_flagged: boolean;
+  answered_at?: string | null;
+  is_correct?: boolean | null;
+  awarded_score?: number | null;
+  correct_answer?: boolean | string | null;
+  explanation?: Record<string, string> | null;
+  model_answer?: Record<string, string> | null;
+}
+
+export interface BackendStudentAttemptSectionPerformance {
+  exam_section_id: number | null;
+  title?: Record<string, string> | null;
+  questions_count: number;
+  correct_answers_count: number;
+  score: number;
+  max_score: number;
+  percentage: number;
+}
+
+export interface BackendStudentExamAttempt {
+  id: number;
+  exam_id: number;
+  exam: {
+    id: number;
+    title: Record<string, string>;
+    passing_percentage: number;
+  };
+  course?: {
+    id: number;
+    title: Record<string, string>;
+  } | null;
+  student?: {
+    id: number;
+    full_name: string;
+    email: string;
+    phone?: string | null;
+    phone_code?: string | null;
+    avatar?: string | null;
+  } | null;
+  attempt_number: number;
+  status: "in_progress" | "pending_review" | "graded" | string;
+  started_at?: string | null;
+  expires_at?: string | null;
+  ends_at?: string | null;
+  submitted_at?: string | null;
+  submitted_reason?: "manual" | "timeout" | string | null;
+  graded_at?: string | null;
+  duration_minutes: number;
+  passing_percentage: number;
+  attempts_used: number;
+  remaining_attempts: number;
+  can_retry: boolean;
+  elapsed_seconds?: number | null;
+  score: number | null;
+  max_score: number;
+  percentage: number | null;
+  is_passed?: boolean | null;
+  is_best_attempt?: boolean;
+  adopted_result?: BackendStudentExamAdoptedResult | null;
+  result_summary?: {
+    questions_count: number;
+    correct_answers_count: number;
+    incorrect_answers_count: number;
+    pending_review_count: number;
+  } | null;
+  section_performance: BackendStudentAttemptSectionPerformance[];
+  questions: BackendStudentAttemptQuestion[];
+}
+
+export interface StudentExamAttemptResponse {
+  attempt: BackendStudentExamAttempt;
+}
+
+export interface StudentExamAttemptsListResponse {
+  attempts: BackendStudentExamAttempt[];
+}
+
+export interface SaveExamAnswerPayload {
+  answer?: unknown;
+  is_flagged?: boolean;
+}
+
+export interface SubmitExamAttemptPayload {
+  answers: Array<{
+    question_id: number;
+    answer?: unknown;
+  }>;
 }

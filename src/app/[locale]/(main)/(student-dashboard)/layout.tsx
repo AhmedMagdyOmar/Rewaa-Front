@@ -51,6 +51,10 @@ export default async function StudentDashboardLayout({
     redirect(`/${locale}/auth/login`);
   }
 
+  if (profileData && !profileData.role) {
+    profileData.role = "student";
+  }
+
   // Guard student dashboard — if this is a provider token, send them to /dashboard
   const role = profileData?.role;
   if (role && role !== "student") {

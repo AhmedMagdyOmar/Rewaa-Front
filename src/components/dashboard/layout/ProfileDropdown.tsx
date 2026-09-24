@@ -15,6 +15,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
 import { getStoredStudents } from "@/lib/students-storage";
+import { useAuthStore } from "@/lib/stores/auth-store";
 
 interface ProfileDropdownProps {
   user: UserProfile;
@@ -39,10 +40,19 @@ export function ProfileDropdown({
   const isAr = locale === "ar";
   const firstName = isAr && user.firstNameAr ? user.firstNameAr : user.firstName || "";
   const lastName = isAr && user.lastNameAr ? user.lastNameAr : user.lastName || "";
-  const fullName = user.full_name || user.email;
+  const fullName =
+    user.full_name ||
+    (firstName && lastName ? `${firstName} ${lastName}`.trim() : "") ||
+    user.email ||
+    user.phone ||
+    "";
+
+  // Contact info (email or phone)
+  const contactInfo = user.email || user.phone || "";
 
   // Localized role
-  const rawRole = (user.role || "user").toLowerCase();
+  const storeRole = useAuthStore((s) => s.role);
+  const rawRole = (user.role || (storeRole === "student" ? "student" : "") || "user").toLowerCase();
   const localizedRole =
     isAr && user.roleAr
       ? user.roleAr
@@ -103,7 +113,7 @@ export function ProfileDropdown({
                 isLight ? "text-muted-foreground" : "text-white/70",
               )}
             >
-              {showRole ? localizedRole : user.email}
+              {showRole ? localizedRole : contactInfo}
             </p>
           </div>
           <div
@@ -137,7 +147,9 @@ export function ProfileDropdown({
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">{fullName}</p>
-            <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+            {contactInfo && (
+              <p className="text-xs leading-none text-muted-foreground">{contactInfo}</p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

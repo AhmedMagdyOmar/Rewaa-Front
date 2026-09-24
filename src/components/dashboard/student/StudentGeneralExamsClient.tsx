@@ -12,36 +12,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useStudentGeneralExams } from "@/hooks/use-student-exams";
 import { Link } from "@/i18n/routing";
-import { getStoredExams } from "@/lib/exams-storage";
-import { getPassedExams } from "@/lib/student-course-progress";
-import { Exam } from "@/types/exam";
+import type { BackendStudentExam } from "@/types/api-contracts";
 import {
   ArrowLeft,
   ArrowRight,
   ArrowUpDown,
   CheckCircle2,
+  Clock,
+  FileCheck2,
   FileQuestion,
   Globe,
   Globe2,
-  HelpCircle,
   House,
   RotateCcw,
   Search,
   Timer,
   X,
+  XCircle,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
+export type StudentGeneralExamTab = "required" | "completed";
 export type GeneralExamSortOption =
-  | "date-newest"
-  | "date-oldest"
-  | "title-asc"
-  | "title-desc"
-  | "duration-asc"
-  | "duration-desc";
+  | "latest"
+  | "oldest"
+  | "title_asc"
+  | "title_desc"
+  | "duration_asc"
+  | "duration_desc"
+  | "score_desc"
+  | "score_asc";
+
+function formatDate(iso?: string | null, locale?: string) {
+  if (!iso) return "-";
+  try {
+    return new Date(iso).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-GB", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 export function StudentGeneralExamsClient() {
   const locale = useLocale();
@@ -49,8 +66,6 @@ export function StudentGeneralExamsClient() {
   const t = useTranslations("studentDashboard.generalExamsPage");
   const tExams = useTranslations("studentDashboard.examsPage");
   const tCourses = useTranslations("courses");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
   const tGeneralExamTypes = useTranslations("exams");
 
   const router = useRouter();
@@ -59,9 +74,10 @@ export function StudentGeneralExamsClient() {
 
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
-  const sortBy = (searchParams.get("sort") as GeneralExamSortOption) || "date-newest";
+  const activeTab = (searchParams.get("tab") as StudentGeneralExamTab) || "required";
+  const sortBy = (searchParams.get("sort") as GeneralExamSortOption) || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 8;
+  const itemsPerPage = 10;
 
   const updateUrlParams = React.useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -70,7 +86,8 @@ export function StudentGeneralExamsClient() {
         if (
           value === null ||
           value === "" ||
-          (key === "sort" && value === "date-newest") ||
+          (key === "tab" && value === "required") ||
+          (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -84,48 +101,52 @@ export function StudentGeneralExamsClient() {
     [searchParams, pathname, router],
   );
 
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  const loadData = React.useCallback(() => {
-    const stored = getStoredExams(locale);
-    // Filter to ONLY independent exams
-    const independentExams = stored.filter((e) => e.examType === "independent");
-    setExams(independentExams);
-    setPassedExamIds(getPassedExams());
-    setIsLoading(false);
-  }, [locale]);
+  // Debounced search state
+  const [searchTerm, setSearchTerm] = React.useState(searchQuery);
+  React.useEffect(() => {
+    setSearchTerm(searchQuery);
+  }, [searchQuery]);
 
   React.useEffect(() => {
-    loadData();
-    window.addEventListener("rewaa_exams_updated", loadData);
-    window.addEventListener("rewaa_student_passed_exams_updated", loadData);
-    window.addEventListener("storage", loadData);
-    return () => {
-      window.removeEventListener("rewaa_exams_updated", loadData);
-      window.removeEventListener("rewaa_student_passed_exams_updated", loadData);
-      window.removeEventListener("storage", loadData);
-    };
-  }, [loadData]);
+    const handler = setTimeout(() => {
+      if (searchTerm !== searchQuery) {
+        updateUrlParams({ search: searchTerm.trim() ? searchTerm : null, page: 1 });
+      }
+    }, 400);
+    return () => clearTimeout(handler);
+  }, [searchTerm, searchQuery, updateUrlParams]);
 
-  const formatGrade = (g?: string) => {
-    if (!g) return "";
-    return tGrades.has(g as Parameters<typeof tGrades.has>[0])
-      ? tGrades(g as Parameters<typeof tGrades>[0])
-      : g;
+  // Fetch general exams from backend via React Query
+  const { data, isLoading } = useStudentGeneralExams({
+    search: searchQuery.trim() || undefined,
+    tab: activeTab,
+    sort: sortBy,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
+
+  const exams = data?.exams || [];
+  const tabCounts = data?.tab_counts || { required: 0, completed: 0 };
+  const pagination = data?.pagination || {
+    current_page: 1,
+    last_page: 1,
+    per_page: itemsPerPage,
+    total: 0,
   };
 
-  const formatSubject = (s?: string) => {
-    if (!s) return "";
-    return tSubjects.has(s as Parameters<typeof tSubjects.has>[0])
-      ? tSubjects(s as Parameters<typeof tSubjects>[0])
-      : s;
+  const isRequiredTab = activeTab === "required";
+  const totalPages = pagination.last_page || 1;
+  const totalItems = pagination.total || 0;
+  const startIndex = (pagination.current_page - 1) * pagination.per_page;
+
+  const getLocalizedString = (field?: Record<string, string> | null) => {
+    if (!field) return "";
+    return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
   };
 
   const formatVenue = (v?: string) => {
     if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
+    if (v === "onsite" || v === "center") return tCourses("venue.center");
     return tCourses("venue.all");
   };
 
@@ -138,55 +159,16 @@ export function StudentGeneralExamsClient() {
 
   function VenueIcon({ venue }: { venue?: string }) {
     if (venue === "online") return <Globe className="size-3.5 shrink-0" />;
-    if (venue === "center") return <House className="size-3.5 shrink-0" />;
+    if (venue === "onsite" || venue === "center") return <House className="size-3.5 shrink-0" />;
     return <Globe2 className="size-3.5 shrink-0" />;
   }
 
-  // Filtering
-  const filteredExams = React.useMemo(() => {
-    return exams.filter((exam) => {
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase().trim();
-        const matchesTitle = exam.title?.toLowerCase().includes(q);
-        const matchesTeacher = exam.teacherName?.toLowerCase().includes(q);
-        const matchesSubject = exam.subject?.toLowerCase().includes(q);
-        const matchesGrade = exam.grade?.toLowerCase().includes(q);
-        if (!matchesTitle && !matchesTeacher && !matchesSubject && !matchesGrade) return false;
-      }
-      return true;
-    });
-  }, [exams, searchQuery]);
-
-  // Sorting
-  const sortedExams = React.useMemo(() => {
-    return [...filteredExams].sort((a, b) => {
-      switch (sortBy) {
-        case "title-asc":
-          return a.title.localeCompare(b.title, locale);
-        case "title-desc":
-          return b.title.localeCompare(a.title, locale);
-        case "duration-asc":
-          return a.durationMinutes - b.durationMinutes;
-        case "duration-desc":
-          return b.durationMinutes - a.durationMinutes;
-        case "date-oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "date-newest":
-        default:
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-      }
-    });
-  }, [filteredExams, sortBy, locale]);
-
-  // Pagination
-  const totalItems = sortedExams.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
-  const safePage = Math.min(currentPage, totalPages);
-  const startIndex = (safePage - 1) * itemsPerPage;
-  const paginatedExams = sortedExams.slice(startIndex, startIndex + itemsPerPage);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    updateUrlParams({ search: e.target.value, page: 1 });
+    setSearchTerm(e.target.value);
+  };
+
+  const handleTabChange = (tab: StudentGeneralExamTab) => {
+    updateUrlParams({ tab, page: 1 });
   };
 
   const handleSortChange = (sort: GeneralExamSortOption) => {
@@ -198,25 +180,37 @@ export function StudentGeneralExamsClient() {
   };
 
   const handleResetFilters = () => {
+    setSearchTerm("");
     updateUrlParams({ search: null, sort: null, page: 1 });
   };
 
-  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "date-newest";
+  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "latest";
 
-  const sortOptions: { value: GeneralExamSortOption; label: string }[] = [
-    { value: "date-newest", label: tExams("sort.newest") },
-    { value: "date-oldest", label: tExams("sort.oldest") },
-    { value: "title-asc", label: tExams("sort.titleAsc") },
-    { value: "title-desc", label: tExams("sort.titleDesc") },
-    { value: "duration-desc", label: tExams("sort.durationDesc") },
-    { value: "duration-asc", label: tExams("sort.durationAsc") },
-  ];
+  const sortOptions: { value: GeneralExamSortOption; label: string }[] = isRequiredTab
+    ? [
+        { value: "latest", label: tExams("sort.newest") },
+        { value: "oldest", label: tExams("sort.oldest") },
+        { value: "title_asc", label: tExams("sort.titleAsc") },
+        { value: "title_desc", label: tExams("sort.titleDesc") },
+        { value: "duration_desc", label: tExams("sort.durationDesc") },
+        { value: "duration_asc", label: tExams("sort.durationAsc") },
+      ]
+    : [
+        { value: "latest", label: tExams("sort.newest") },
+        { value: "oldest", label: tExams("sort.oldest") },
+        { value: "score_desc", label: tExams("sort.scoreDesc") },
+        { value: "score_asc", label: tExams("sort.scoreAsc") },
+        { value: "title_asc", label: tExams("sort.titleAsc") },
+        { value: "title_desc", label: tExams("sort.titleDesc") },
+        { value: "duration_desc", label: tExams("sort.durationDesc") },
+        { value: "duration_asc", label: tExams("sort.durationAsc") },
+      ];
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
 
   const showingText = tExams("pagination.showing", {
     start: totalItems > 0 ? startIndex + 1 : 0,
-    end: Math.min(startIndex + itemsPerPage, totalItems),
+    end: Math.min(startIndex + pagination.per_page, totalItems),
     total: totalItems,
   });
 
@@ -235,29 +229,64 @@ export function StudentGeneralExamsClient() {
               {t("title")}
             </h1>
             <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-semibold text-primary">
-              {t("totalAvailable", { count: exams.length })}
+              {isRequiredTab
+                ? t("totalAvailable", { count: tabCounts.required })
+                : t("totalCompleted", { count: tabCounts.completed })}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
       </div>
 
-      {/* ── Filter Bar ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-        {/* Search */}
-        <div className="relative flex-1 min-w-55">
-          <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder={tExams("searchPlaceholder")}
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="ps-9 bg-background"
-          />
+      {/* ── Filter Bar & Tabs ────────────────────────────────────────────────── */}
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
+        {/* Search Box & Tab Selector */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+          {/* Search */}
+          <div className="relative flex-1 min-w-55">
+            <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={tExams("searchPlaceholder")}
+              value={searchTerm}
+              onChange={handleSearchChange}
+              className="ps-9 bg-background"
+            />
+          </div>
+
+          {/* Tab Selector: Available vs Completed */}
+          <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">
+            <button
+              type="button"
+              onClick={() => handleTabChange("required")}
+              className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                isRequiredTab
+                  ? "bg-primary text-white shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <FileQuestion className="size-3.5 shrink-0" />
+              <span>{t("tabs.available")}</span>
+              <span className="opacity-80">({tabCounts.required})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange("completed")}
+              className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
+                !isRequiredTab
+                  ? "bg-primary text-white shadow-xs font-semibold"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CheckCircle2 className="size-3.5 shrink-0" />
+              <span>{t("tabs.completed")}</span>
+              <span className="opacity-80">({tabCounts.completed})</span>
+            </button>
+          </div>
         </div>
 
         {/* Sort & Reset Actions */}
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
           {isFilterActive && (
             <Button
               variant="ghost"
@@ -313,7 +342,10 @@ export function StudentGeneralExamsClient() {
                 </div>
               ))}
             </div>
-          ) : (
+          ) : isRequiredTab ? (
+            /* ─────────────────────────────────────────────────────────────────
+               AVAILABLE / REQUIRED GENERAL EXAMS TABLE
+               ───────────────────────────────────────────────────────────────── */
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border/60 bg-muted/40">
@@ -344,7 +376,7 @@ export function StudentGeneralExamsClient() {
                 </tr>
               </thead>
               <tbody>
-                {paginatedExams.length === 0 ? (
+                {exams.length === 0 ? (
                   <tr>
                     <td colSpan={8}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
@@ -371,15 +403,14 @@ export function StudentGeneralExamsClient() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedExams.map((exam, idx) => {
+                  exams.map((exam: BackendStudentExam, idx: number) => {
                     const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
-                    const isPassed = passedExamIds.includes(exam.id);
-                    const subjectStr = formatSubject(exam.subject);
-                    const gradeStr = formatGrade(exam.grade);
-                    const totalQuestions =
-                      exam.examSections && exam.examSections.length > 0
-                        ? exam.examSections.reduce((acc, es) => acc + es.questions.length, 0)
-                        : exam.numberOfQuestions;
+                    const titleStr = getLocalizedString(exam.title);
+                    const subjectStr = getLocalizedString(exam.subject?.name);
+                    const stageStr = getLocalizedString(exam.educational_stage?.name);
+                    const instructorName = exam.instructor?.full_name;
+                    const isPassed = exam.result_status === "passed";
+                    const isPendingReview = exam.result_status === "pending_review";
 
                     return (
                       <tr
@@ -390,10 +421,10 @@ export function StudentGeneralExamsClient() {
                         <td className="px-4 py-3.5 min-w-56 max-w-80">
                           <div className="space-y-0.5">
                             <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-snug line-clamp-2">
-                              {exam.title}
+                              {titleStr}
                             </p>
-                            {exam.teacherName && (
-                              <p className="text-xs text-muted-foreground">{exam.teacherName}</p>
+                            {instructorName && (
+                              <p className="text-xs text-muted-foreground">{instructorName}</p>
                             )}
                           </div>
                         </td>
@@ -404,8 +435,8 @@ export function StudentGeneralExamsClient() {
                             <span className="text-xs font-semibold text-foreground">
                               {subjectStr || "—"}
                             </span>
-                            {gradeStr && (
-                              <span className="text-xs text-muted-foreground">{gradeStr}</span>
+                            {stageStr && (
+                              <span className="text-xs text-muted-foreground">{stageStr}</span>
                             )}
                           </div>
                         </td>
@@ -413,11 +444,11 @@ export function StudentGeneralExamsClient() {
                         {/* Source / Scope */}
                         <td className="px-4 py-3.5 min-w-44">
                           <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <VenueIcon venue={exam.venue} />
+                            <VenueIcon venue={exam.delivery_mode} />
                             <span>{tExams("table.independent")}</span>
-                            {exam.venue && (
+                            {exam.delivery_mode && (
                               <span className="text-muted-foreground/80">
-                                ({formatVenue(exam.venue)})
+                                ({formatVenue(exam.delivery_mode)})
                               </span>
                             )}
                           </div>
@@ -426,7 +457,7 @@ export function StudentGeneralExamsClient() {
                         {/* Category */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
-                            {formatCategory(exam.category)}
+                            {formatCategory(exam.classification)}
                           </span>
                         </td>
 
@@ -434,12 +465,12 @@ export function StudentGeneralExamsClient() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex flex-col gap-0.5 text-xs">
                             <span className="flex items-center gap-1.5 font-medium text-foreground">
-                              <HelpCircle className="size-3.5 shrink-0 text-muted-foreground" />
-                              {tExams("table.questionsCount", { count: totalQuestions })}
+                              <FileQuestion className="size-3.5 shrink-0 text-muted-foreground" />
+                              {tExams("table.questionsCount", { count: exam.questions_count })}
                             </span>
                             <span className="flex items-center gap-1.5 text-muted-foreground">
                               <Timer className="size-3.5 shrink-0" />
-                              {tExams("table.durationMinutes", { count: exam.durationMinutes })}
+                              {tExams("table.durationMinutes", { count: exam.duration_minutes })}
                             </span>
                           </div>
                         </td>
@@ -448,17 +479,26 @@ export function StudentGeneralExamsClient() {
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
                             <span className="text-xs font-bold text-amber-600">
-                              {tExams("table.passingPercent", { percent: exam.passingPercentage })}
+                              {tExams("table.passingPercent", { percent: exam.passing_percentage })}
                             </span>
                           </div>
                         </td>
 
                         {/* Status */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
-                          {isPassed ? (
+                          {isPendingReview ? (
+                            <Badge className="bg-amber-500/15 border border-amber-500/30 text-amber-700 text-xs font-semibold gap-1">
+                              <CheckCircle2 className="size-3" />
+                              <span>{tExams("table.statusPendingReview")}</span>
+                            </Badge>
+                          ) : isPassed ? (
                             <Badge className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold gap-1">
                               <CheckCircle2 className="size-3" />
                               <span>{tExams("table.statusPassed")}</span>
+                            </Badge>
+                          ) : exam.result_status === "failed" ? (
+                            <Badge className="bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs font-semibold gap-1">
+                              <span>{tExams("table.statusFailed")}</span>
                             </Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground font-medium">—</span>
@@ -469,15 +509,24 @@ export function StudentGeneralExamsClient() {
                         <td className="px-4 py-3.5 text-end whitespace-nowrap">
                           <Button
                             asChild
-                            variant={isPassed ? "outline" : "default"}
+                            variant={isPassed || exam.action === "retry" ? "outline" : "default"}
                             size="sm"
                             className="rounded-lg text-xs font-bold gap-1.5 shadow-xs"
                           >
                             <Link href={`/student-dashboard/exams/${exam.id}`}>
-                              {isPassed ? (
+                              {exam.action === "retry" ? (
                                 <>
                                   <RotateCcw className="size-3.5" />
                                   <span>{tExams("table.actions.retakeExam")}</span>
+                                </>
+                              ) : exam.action === "view_result" ? (
+                                <>
+                                  <span>{tExams("table.actions.viewResult")}</span>
+                                </>
+                              ) : exam.action === "resume" ? (
+                                <>
+                                  <span>{tExams("table.actions.takeExam")}</span>
+                                  <ArrowRight className="size-3.5 rtl:rotate-180" />
                                 </>
                               ) : (
                                 <>
@@ -494,17 +543,225 @@ export function StudentGeneralExamsClient() {
                 )}
               </tbody>
             </table>
+          ) : (
+            /* ─────────────────────────────────────────────────────────────────
+               COMPLETED GENERAL EXAMS TABLE
+               ───────────────────────────────────────────────────────────────── */
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/60 bg-muted/40">
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.title")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.subjectGrade")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.sourceCourse")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.score")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.status")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.completedDate")}
+                  </th>
+                  <th className="px-4 py-3.5 text-end text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.actions")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {exams.length === 0 ? (
+                  <tr>
+                    <td colSpan={7}>
+                      <div className="flex flex-col items-center justify-center py-16 text-center px-4">
+                        <CheckCircle2 className="size-12 text-muted-foreground/40 mb-3" />
+                        <h3 className="text-base font-semibold text-foreground">
+                          {searchQuery.trim()
+                            ? tExams("empty.filteredTitle")
+                            : t("empty.completedTitle")}
+                        </h3>
+                        <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                          {searchQuery.trim()
+                            ? tExams("empty.filteredDescription")
+                            : t("empty.completedDescription")}
+                        </p>
+                        {isFilterActive && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleResetFilters}
+                            className="mt-4 text-xs"
+                          >
+                            {tExams("clearFilters")}
+                          </Button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  exams.map((exam: BackendStudentExam, idx: number) => {
+                    const rowBg = idx % 2 === 0 ? "" : "bg-muted/20";
+                    const titleStr = getLocalizedString(exam.title);
+                    const subjectStr = getLocalizedString(exam.subject?.name);
+                    const stageStr = getLocalizedString(exam.educational_stage?.name);
+                    const instructorName = exam.instructor?.full_name;
+
+                    const adoptedResult = exam.adopted_result;
+                    const score = adoptedResult?.score ?? 0;
+                    const maxScore = adoptedResult?.max_score ?? 0;
+                    const percentage = adoptedResult?.percentage ?? 0;
+                    const passed = adoptedResult?.is_passed ?? exam.result_status === "passed";
+                    const isPendingReview = exam.result_status === "pending_review";
+                    const completedAt = adoptedResult?.completed_at;
+
+                    return (
+                      <tr
+                        key={exam.id}
+                        className={`border-b border-border/40 hover:bg-accent/40 transition-colors ${rowBg}`}
+                      >
+                        {/* Title & Teacher */}
+                        <td className="px-4 py-3.5 min-w-56 max-w-80">
+                          <div className="space-y-0.5">
+                            <p className="text-sm font-bold text-foreground leading-snug line-clamp-2">
+                              {titleStr}
+                            </p>
+                            {instructorName && (
+                              <p className="text-xs text-muted-foreground">{instructorName}</p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Subject & Grade */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-foreground">
+                              {subjectStr || "—"}
+                            </span>
+                            {stageStr && (
+                              <span className="text-xs text-muted-foreground">{stageStr}</span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Source Scope */}
+                        <td className="px-4 py-3.5 min-w-44">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+                            <VenueIcon venue={exam.delivery_mode} />
+                            <span>{tExams("table.independent")}</span>
+                            {exam.delivery_mode && (
+                              <span className="text-muted-foreground/80">
+                                ({formatVenue(exam.delivery_mode)})
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Score */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col gap-0.5">
+                            {isPendingReview ? (
+                              <span className="text-xs font-semibold text-amber-600">
+                                {tExams("table.statusPendingReview")}
+                              </span>
+                            ) : (
+                              <>
+                                <span
+                                  className={`text-sm font-bold ${
+                                    passed ? "text-emerald-600" : "text-rose-600"
+                                  }`}
+                                >
+                                  {tExams("table.scoreDisplay", {
+                                    score,
+                                    totalScore: maxScore,
+                                    percent: percentage,
+                                  })}
+                                </span>
+                                <span className="text-[11px] text-muted-foreground">
+                                  {tExams("table.columns.passingGrade")}: {exam.passing_percentage}%
+                                </span>
+                              </>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Status Badge */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {isPendingReview ? (
+                            <Badge className="bg-amber-500/15 border border-amber-500/30 text-amber-700 text-xs font-semibold gap-1">
+                              <Clock className="size-3" />
+                              <span>{tExams("table.statusPendingReview")}</span>
+                            </Badge>
+                          ) : passed ? (
+                            <Badge className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 text-xs font-semibold gap-1">
+                              <CheckCircle2 className="size-3" />
+                              <span>{tExams("table.statusPassed")}</span>
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-rose-500/15 border border-rose-500/30 text-rose-700 text-xs font-semibold gap-1">
+                              <XCircle className="size-3" />
+                              <span>{tExams("table.statusFailed")}</span>
+                            </Badge>
+                          )}
+                        </td>
+
+                        {/* Completed Date */}
+                        <td className="px-4 py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="size-3.5 text-muted-foreground/70" />
+                            <span>{formatDate(completedAt, locale)}</span>
+                          </div>
+                        </td>
+
+                        {/* Actions */}
+                        <td className="px-4 py-3.5 text-end whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {exam.action === "retry" && (
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg text-xs font-semibold gap-1.5 h-8"
+                              >
+                                <Link href={`/student-dashboard/exams/${exam.id}`}>
+                                  <RotateCcw className="size-3.5" />
+                                  <span>{tExams("table.actions.retakeExam")}</span>
+                                </Link>
+                              </Button>
+                            )}
+                            <Button
+                              asChild
+                              variant={exam.action === "retry" ? "ghost" : "outline"}
+                              size="sm"
+                              className="rounded-lg text-xs font-semibold gap-1.5 h-8"
+                            >
+                              <Link href={`/student-dashboard/exams/${exam.id}`}>
+                                <FileCheck2 className="size-3.5" />
+                                <span>{tExams("table.actions.viewResult")}</span>
+                              </Link>
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
           )}
         </div>
 
         {/* ── Table Footer & Pagination ─────────────────────────────────────── */}
         <div className="px-4 py-3 border-t border-border/60 bg-muted/20">
           <ContentPagination
-            currentPage={safePage}
+            currentPage={pagination.current_page}
             totalPages={totalPages}
             totalItems={totalItems}
             startIndex={startIndex}
-            itemsPerPage={itemsPerPage}
+            itemsPerPage={pagination.per_page}
             showingText={showingText}
             onPageChange={handlePageChange}
           />

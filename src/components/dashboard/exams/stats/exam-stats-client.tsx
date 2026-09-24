@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -110,6 +111,11 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [lastUpdatedTime, setLastUpdatedTime] = React.useState<Date>(new Date());
   const [timeAgoText, setTimeAgoText] = React.useState<string>("");
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // Filters & Search for Student Results
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -316,6 +322,18 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
             </Button>
           </div>
 
+          <Button
+            asChild
+            size="sm"
+            variant="default"
+            className="gap-1.5 font-bold shadow-2xs bg-primary hover:bg-primary/90"
+          >
+            <Link href={`/${locale}/dashboard/exams/${exam.id}/submissions`}>
+              <Award className="h-3.5 w-3.5" />
+              <span>{isAr ? "تصحيح وتسليمات الطلاب" : "Submissions & Grading"}</span>
+            </Link>
+          </Button>
+
           <Button asChild size="sm" variant="outline" className="gap-1.5 font-semibold shadow-2xs">
             <Link href={`/${locale}/dashboard/exams/${exam.id}/edit`}>
               <Pencil className="h-3.5 w-3.5" />
@@ -450,89 +468,95 @@ export function ExamStatsClient({ examId }: ExamStatsClientProps) {
 
           {/* Recharts Horizontal Bar Chart */}
           <div className="h-64 w-full pt-2" dir="ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsBarChart
-                data={stats.scoreDistribution}
-                layout="vertical"
-                margin={{
-                  top: 5,
-                  right: 40,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid
-                  strokeDasharray="3 3"
-                  horizontal={false}
-                  className="stroke-border/50"
-                />
-                <XAxis
-                  type="number"
-                  reversed={isAr}
-                  tickLine={false}
-                  axisLine={false}
-                  className="text-xs fill-muted-foreground"
-                />
-                <YAxis
-                  type="category"
-                  dataKey="range"
-                  orientation={isAr ? "right" : "left"}
-                  tickLine={false}
-                  axisLine={false}
-                  width={90}
-                  className="text-xs font-semibold fill-foreground"
-                />
-                <Tooltip
-                  cursor={{ fill: "var(--color-border)", opacity: 0.15 }}
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload as ScoreDistributionBand;
-                      return (
-                        <div
-                          className="rounded-lg border border-border bg-popover p-3 shadow-md text-xs space-y-1"
-                          dir={isAr ? "rtl" : "ltr"}
-                        >
-                          <div className="font-bold text-popover-foreground">{data.range}</div>
-                          <div className="flex items-center justify-between gap-4 text-muted-foreground">
-                            <span>{tCharts("studentsCount")}:</span>
-                            <span className="font-bold text-foreground">{data.count}</span>
-                          </div>
-                          <Badge
-                            variant="outline"
-                            className={`text-[10px] ${
-                              data.isPassing
-                                ? "bg-primary/10 text-primary border-primary/30"
-                                : "bg-rose-500/10 text-rose-600 border-rose-500/30"
-                            }`}
-                          >
-                            {data.isPassing ? tCharts("passingRange") : tCharts("failingRange")}
-                          </Badge>
-                        </div>
-                      );
-                    }
-                    return null;
+            {isMounted ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsBarChart
+                  data={stats.scoreDistribution}
+                  layout="vertical"
+                  margin={{
+                    top: 5,
+                    right: 40,
+                    left: 20,
+                    bottom: 5,
                   }}
-                />
-                <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={22}>
-                  {stats.scoreDistribution.map((entry, index) => (
-                    <Cell
-                      key={`cell-${index}`}
-                      fill={
-                        entry.isPassing
-                          ? "var(--color-primary, #2563eb)"
-                          : "var(--color-error, #e11d48)"
-                      }
-                    />
-                  ))}
-                  <LabelList
-                    dataKey="count"
-                    position="right"
-                    className="fill-foreground text-xs font-bold"
-                    formatter={(val: unknown) => `${val ?? ""}`}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    horizontal={false}
+                    className="stroke-border/50"
                   />
-                </Bar>
-              </RechartsBarChart>
-            </ResponsiveContainer>
+                  <XAxis
+                    type="number"
+                    reversed={isAr}
+                    tickLine={false}
+                    axisLine={false}
+                    className="text-xs fill-muted-foreground"
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="range"
+                    orientation={isAr ? "right" : "left"}
+                    tickLine={false}
+                    axisLine={false}
+                    width={90}
+                    className="text-xs font-semibold fill-foreground"
+                  />
+                  <Tooltip
+                    cursor={{ fill: "var(--color-border)", opacity: 0.15 }}
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload as ScoreDistributionBand;
+                        return (
+                          <div
+                            className="rounded-lg border border-border bg-popover p-3 shadow-md text-xs space-y-1"
+                            dir={isAr ? "rtl" : "ltr"}
+                          >
+                            <div className="font-bold text-popover-foreground">{data.range}</div>
+                            <div className="flex items-center justify-between gap-4 text-muted-foreground">
+                              <span>{tCharts("studentsCount")}:</span>
+                              <span className="font-bold text-foreground">{data.count}</span>
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] ${
+                                data.isPassing
+                                  ? "bg-primary/10 text-primary border-primary/30"
+                                  : "bg-rose-500/10 text-rose-600 border-rose-500/30"
+                              }`}
+                            >
+                              {data.isPassing ? tCharts("passingRange") : tCharts("failingRange")}
+                            </Badge>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={22}>
+                    {stats.scoreDistribution.map((entry, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={
+                          entry.isPassing
+                            ? "var(--color-primary, #2563eb)"
+                            : "var(--color-error, #e11d48)"
+                        }
+                      />
+                    ))}
+                    <LabelList
+                      dataKey="count"
+                      position="right"
+                      className="fill-foreground text-xs font-bold"
+                      formatter={(val: unknown) => `${val ?? ""}`}
+                    />
+                  </Bar>
+                </RechartsBarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full w-full flex items-center justify-center">
+                <Skeleton className="h-full w-full rounded-xl" />
+              </div>
+            )}
           </div>
         </DashboardCard>
 

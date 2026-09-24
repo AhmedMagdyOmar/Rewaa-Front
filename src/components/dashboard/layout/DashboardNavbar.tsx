@@ -67,15 +67,21 @@ export function DashboardNavbar({
 
   // Zustand store supplements data before first query resolves
   const storeUser = useAuthStore((s) => s.user);
-  const queryUser = profileQuery.data;
-  const resolvedFullName =
-    ((queryUser as Record<string, unknown>)?.full_name as string | undefined) ??
-    storeUser?.full_name ??
-    "";
+  const rawQueryUser = profileQuery.data;
+  const queryUser =
+    (rawQueryUser as { student?: UserProfile; user?: UserProfile; data?: UserProfile })?.student ??
+    (rawQueryUser as { student?: UserProfile; user?: UserProfile; data?: UserProfile })?.user ??
+    (rawQueryUser as { student?: UserProfile; user?: UserProfile; data?: UserProfile })?.data ??
+    (rawQueryUser as UserProfile | undefined);
+
+  const resolvedFullName = queryUser?.full_name ?? storeUser?.full_name ?? "";
 
   const user: UserProfile | null =
     queryUser != null
-      ? (queryUser as unknown as UserProfile)
+      ? {
+          ...queryUser,
+          role: queryUser.role ?? (isStudent ? "student" : "assistant"),
+        }
       : storeUser
         ? {
             id: storeUser.id,
@@ -86,7 +92,12 @@ export function DashboardNavbar({
             role: storeUser.role === "student" ? "student" : "assistant",
             isVerified: true,
           }
-        : (initialProfileData ?? null);
+        : initialProfileData
+          ? {
+              ...initialProfileData,
+              role: initialProfileData.role ?? (isStudent ? "student" : "assistant"),
+            }
+          : null;
 
   const handleLogout = () => {
     if (isStudent) {

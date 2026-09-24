@@ -1,38 +1,39 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  useStudentStandaloneLessonDetail,
+  useToggleStandaloneLessonCompletion,
+} from "@/hooks/use-student-lesson";
 import { Link } from "@/i18n/routing";
-import { getStoredExams } from "@/lib/exams-storage";
-import { getStoredLessons } from "@/lib/lessons-storage";
-import { getPassedExams } from "@/lib/student-course-progress";
 import { cn } from "@/lib/utils";
-import { Lesson } from "@/types/course";
-import { Exam } from "@/types/exam";
 import {
   ArrowLeft,
   ArrowRight,
-  BookOpen,
+  CheckCircle2,
   Download,
-  FileCheck,
   FileSpreadsheet,
   FileText,
+  GraduationCap,
+  ImageIcon,
   Paperclip,
+  User,
   Video,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import * as React from "react";
+import Image from "next/image";
 
 interface StudentLessonDetailsClientProps {
   lessonId: string;
 }
 
-function getEmbedUrl(url?: string): string | null {
+function getEmbedUrl(url?: string | null): string | null {
   if (!url) return null;
   const trimmed = url.trim();
   if (trimmed.includes("youtube.com/embed/")) return trimmed;
@@ -53,440 +54,374 @@ function getEmbedUrl(url?: string): string | null {
   return null;
 }
 
-function formatFileSize(bytes?: number): string {
-  if (!bytes || bytes <= 0) return "PDF";
-  const kb = bytes / 1024;
-  if (kb < 1024) return `${kb.toFixed(0)} KB`;
-  const mb = kb / 1024;
-  return `${mb.toFixed(1)} MB`;
+function formatFileSize(bytes: number): string {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
 }
 
 export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsClientProps) {
   const locale = useLocale();
-  const isRtl = locale === "ar";
-  const t = useTranslations("studentDashboard.lessonDetailsPage");
-  const tLessons = useTranslations("studentDashboard.lessonsPage");
-  const tCourses = useTranslations("courses");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
+  const isAr = locale === "ar";
+  const t = useTranslations("studentDashboard.lessonsPage");
 
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
+  // Query Backend for Standalone Lesson Details
+  const { data: lesson, isLoading, isError, refetch } = useStudentStandaloneLessonDetail(lessonId);
+
+  // Mutation for completion toggle
+  const toggleMutation = useToggleStandaloneLessonCompletion(lessonId);
+
+  const getLocalized = (val?: Record<string, string> | null, fallback = "") => {
+    if (!val) return fallback;
+    return val[locale] || val.ar || val.en || Object.values(val)[0] || fallback;
   };
 
-  const formatGrade = (g?: string) => {
-    if (!g) return "";
-    return tGrades.has(g as Parameters<typeof tGrades.has>[0])
-      ? tGrades(g as Parameters<typeof tGrades>[0])
-      : g;
-  };
+  const title = getLocalized(lesson?.title, `Lesson ${lesson?.position || lessonId}`);
+  const description = getLocalized(lesson?.description, "");
+  const subjectName = getLocalized(lesson?.subject?.name);
+  const stageName = getLocalized(lesson?.educational_stage?.name);
+  const subjectAndStageText = [subjectName, stageName].filter(Boolean).join(" • ");
 
-  const formatSubject = (s?: string) => {
-    if (!s) return "";
-    return tSubjects.has(s as Parameters<typeof tSubjects.has>[0])
-      ? tSubjects(s as Parameters<typeof tSubjects>[0])
-      : s;
-  };
+  const isVideoLesson = lesson?.type === "video_and_text" || lesson?.type === "video";
+  const embedUrl = lesson?.video_url ? getEmbedUrl(lesson.video_url) : null;
+  const isDirectVideo =
+    lesson?.video_url && !embedUrl && /\.(mp4|webm|ogg)$/i.test(lesson.video_url);
 
-  const [lesson, setLesson] = React.useState<Lesson | null>(null);
-  const [exams, setExams] = React.useState<Exam[]>([]);
-  const [passedExamIds, setPassedExamIds] = React.useState<string[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    const lessons = getStoredLessons(locale);
-    // Find lesson that is independent and published
-    const found = lessons.find((l) => {
-      if (l.id !== lessonId) return false;
-      const isIndependent = !l.courseId && l.lessonCategory !== "course-dependent";
-      const isPublished = l.publishStatus === "published" || (!l.publishStatus && !!l.title);
-      return isIndependent && isPublished;
+  const handleToggleCompletion = () => {
+    if (!lesson) return;
+    toggleMutation.mutate({
+      id: lesson.id,
+      isCompleted: !lesson.is_completed,
     });
-
-    setLesson(found || null);
-    setExams(getStoredExams(locale));
-    setPassedExamIds(getPassedExams());
-    setIsLoading(false);
-
-    const handleExamsUpdate = () => setExams(getStoredExams(locale));
-    const handlePassedExamsUpdate = () => setPassedExamIds(getPassedExams());
-
-    window.addEventListener("rewaa_exams_updated", handleExamsUpdate);
-    window.addEventListener("rewaa_student_passed_exams_updated", handlePassedExamsUpdate);
-
-    return () => {
-      window.removeEventListener("rewaa_exams_updated", handleExamsUpdate);
-      window.removeEventListener("rewaa_student_passed_exams_updated", handlePassedExamsUpdate);
-    };
-  }, [lessonId, locale]);
-
-  const isExamPublished = (examId?: string) => {
-    if (!examId) return false;
-    const found = exams.find((e) => e.id === examId);
-    return Boolean(found);
-  };
-
-  const getExamTitle = (examId?: string, fallbackTitle?: string) => {
-    if (!examId) return fallbackTitle || t("linkedExam");
-    const found = exams.find((e) => e.id === examId);
-    return found?.title || fallbackTitle || t("linkedExam");
   };
 
   if (isLoading) {
     return (
-      <div className="p-12 text-center text-muted-foreground animate-pulse">Loading lesson...</div>
-    );
-  }
-
-  if (!lesson) {
-    return (
-      <div className="py-16 text-center space-y-4 bg-card rounded-2xl border border-dashed border-border/70 p-8 max-w-xl mx-auto my-8">
-        <BookOpen className="size-12 mx-auto text-muted-foreground/40 mb-2" />
-        <h2 className="text-xl font-bold text-foreground">{t("lessonNotFoundTitle")}</h2>
-        <p className="text-sm text-muted-foreground">{t("lessonNotFoundDesc")}</p>
-        <div className="pt-2">
-          <Button asChild variant="outline" className="gap-2">
-            <Link href="/student-dashboard/lessons">
-              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-              <span>{t("backToLessons")}</span>
-            </Link>
-          </Button>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <Skeleton className="h-8 w-48 rounded-lg" />
+          <Skeleton className="h-9 w-32 rounded-xl" />
+        </div>
+        <div className="space-y-4">
+          <Skeleton className="w-full aspect-video rounded-2xl" />
+          <Skeleton className="h-6 w-1/3 rounded-md" />
+          <Skeleton className="h-20 w-full rounded-xl" />
         </div>
       </div>
     );
   }
 
-  const allAttachments = lesson.pdfFiles || [];
-  const hasLinkedExam = Boolean(
-    lesson.isLinkedToExam && lesson.linkedExamId && isExamPublished(lesson.linkedExamId),
-  );
-  const isExamPassed =
-    hasLinkedExam && lesson.linkedExamId ? passedExamIds.includes(lesson.linkedExamId) : false;
-  const linkedExamTitle = hasLinkedExam
-    ? getExamTitle(lesson.linkedExamId, lesson.linkedExamTitle)
-    : "";
-
-  return (
-    <TooltipProvider delayDuration={150}>
-      <div className="space-y-6 pb-12 w-full">
-        {/* Top Header Row with Standard Back Button */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Button asChild variant="outline" size="icon" className="h-9 w-9 rounded-full shrink-0">
+  if (isError || !lesson) {
+    return (
+      <div className="py-16 text-center space-y-4 max-w-md mx-auto">
+        <div className="p-8 bg-destructive/5 border border-destructive/20 rounded-2xl space-y-3">
+          <p className="text-sm text-destructive font-medium">
+            {t("error.loadFailed") || "Failed to load lesson details."}
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="rounded-xl text-xs"
+            >
+              {t("error.retry") || "Retry"}
+            </Button>
+            <Button asChild size="sm" className="rounded-xl text-xs">
               <Link href="/student-dashboard/lessons">
-                <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+                {isAr ? (
+                  <ArrowRight className="size-3.5 me-1" />
+                ) : (
+                  <ArrowLeft className="size-3.5 me-1" />
+                )}
+                <span>{t("viewDetails.backToLessons") || "Back to Lessons"}</span>
               </Link>
             </Button>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">
-                  {lesson.type === "text" ? (
-                    <>
-                      <FileText className="h-3 w-3" />
-                      {tLessons("card.textOnly")}
-                    </>
-                  ) : (
-                    <>
-                      <Video className="h-3 w-3" />
-                      {tLessons("card.videoText")}
-                    </>
-                  )}
-                </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary text-primary-foreground">
-                  {tLessons("card.independent")}
-                </span>
+  const pdfAttachments = lesson.pdf_attachments || [];
+  const explanatoryImages = lesson.explanatory_images || [];
+  const linkedExam = lesson.exam;
 
-                {hasLinkedExam && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-700 border border-amber-500/30">
-                    <FileSpreadsheet className="h-3 w-3" />
-                    {tLessons("card.examLinked")}
-                  </span>
+  return (
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Top Navigation Bar */}
+        <div className="flex items-center justify-between gap-4 flex-wrap pb-4 border-b border-border/60">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs font-semibold rounded-xl text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/student-dashboard/lessons">
+              {isAr ? <ArrowRight className="size-4" /> : <ArrowLeft className="size-4" />}
+              <span>{t("viewDetails.backToLessons") || "Back to Lessons"}</span>
+            </Link>
+          </Button>
+
+          {/* Completion Button */}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              disabled={toggleMutation.isPending}
+              onClick={handleToggleCompletion}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-colors shadow-2xs select-none disabled:opacity-60 disabled:cursor-not-allowed",
+                lesson.is_completed
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+                  : "bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted/70",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
+                  lesson.is_completed
+                    ? "bg-emerald-600 border-emerald-600 text-white"
+                    : "border-muted-foreground/40 bg-background",
                 )}
+              >
+                {lesson.is_completed && <CheckCircle2 className="size-3.5" />}
               </div>
-              <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                {lesson.title}
-              </h1>
-            </div>
+              <span>
+                {lesson.is_completed
+                  ? t("card.completed") || "Completed"
+                  : t("viewDetails.markAsCompleted") || "Mark as complete"}
+              </span>
+            </button>
           </div>
         </div>
 
-        {/* Main Grid: Details Content + Sidebar Panel */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left / Main Content (2 Columns) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Video Player if videoAndText */}
-            {lesson.type !== "text" &&
-              lesson.lectureVideoLink &&
-              (() => {
-                const embedUrl = getEmbedUrl(lesson.lectureVideoLink);
-                return (
-                  <div className="bg-card rounded-2xl sm:rounded-3xl border border-border/80 p-3 sm:p-4 shadow-xs">
-                    <div className="relative aspect-video w-full rounded-xl sm:rounded-2xl overflow-hidden bg-black/90 flex items-center justify-center border border-border/40">
-                      {embedUrl ? (
-                        <iframe
-                          src={embedUrl}
-                          title={lesson.title}
-                          className="w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      ) : (
-                        <div className="text-center p-6 space-y-3 text-white">
-                          <Video className="size-12 mx-auto text-primary animate-pulse" />
-                          <p className="text-sm font-medium">{lesson.title}</p>
-                          <a
-                            href={lesson.lectureVideoLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
-                          >
-                            <span>{t("openExternal")}</span>
-                            <ArrowRight className="size-3.5 rtl:rotate-180" />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })()}
+        {/* Lesson Header */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <Badge variant="outline" className="rounded-lg font-medium">
+              {isVideoLesson ? (
+                <Video className="size-3 me-1 text-primary" />
+              ) : (
+                <FileText className="size-3 me-1 text-primary" />
+              )}
+              {isVideoLesson ? t("card.videoText") : t("card.textOnly")}
+            </Badge>
 
-            {/* Tabbed Content Container (Matching StudentCourseMainView Tabs) */}
-            <div className="bg-card rounded-2xl sm:rounded-3xl border border-border/80 shadow-xs overflow-hidden">
-              <Tabs defaultValue="description" className="w-full">
-                {/* Tabs Header List */}
-                <div className="p-3 sm:p-4 border-b border-border/80 bg-muted/20">
-                  <TabsList className="w-full justify-start overflow-x-auto p-1 bg-muted/80 gap-1 h-auto scrollbar-none">
-                    <TabsTrigger
-                      value="description"
-                      className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <FileText className="size-4" />
-                      <span>{t("writtenNotes")}</span>
-                    </TabsTrigger>
+            {lesson.is_completed && (
+              <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white rounded-lg">
+                <CheckCircle2 className="size-3 me-1" />
+                {t("card.completed") || "Completed"}
+              </Badge>
+            )}
 
-                    <TabsTrigger
-                      value="attachments"
-                      className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                    >
-                      <Paperclip className="size-4" />
-                      <span>{t("attachments")}</span>
-                      {allAttachments.length > 0 && (
-                        <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
-                          {allAttachments.length}
-                        </span>
-                      )}
-                    </TabsTrigger>
+            {subjectAndStageText && (
+              <span className="text-muted-foreground flex items-center gap-1">
+                <GraduationCap className="size-3.5" />
+                {subjectAndStageText}
+              </span>
+            )}
+          </div>
 
-                    {hasLinkedExam && (
-                      <TabsTrigger
-                        value="exams"
-                        className="gap-2 px-3.5 py-2 text-xs sm:text-sm font-bold rounded-lg shrink-0 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-                      >
-                        <FileSpreadsheet className="size-4" />
-                        <span>{t("linkedExam")}</span>
-                        <span className="inline-flex items-center justify-center px-1.5 py-0.2 rounded-full text-[10px] bg-primary/20 text-primary font-bold">
-                          1
-                        </span>
-                      </TabsTrigger>
-                    )}
-                  </TabsList>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">{title}</h1>
+
+          {lesson.instructor?.full_name && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5 pt-0.5">
+              <User className="size-3.5 text-primary/70" />
+              <span>{lesson.instructor.full_name}</span>
+            </p>
+          )}
+        </div>
+
+        {/* Video Player (If video exists) */}
+        {isVideoLesson && lesson.video_url && (
+          <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-md border border-border/40">
+            {embedUrl ? (
+              <iframe
+                src={embedUrl}
+                title={title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
+            ) : isDirectVideo ? (
+              <video
+                src={lesson.video_url}
+                controls
+                className="w-full h-full"
+                poster={lesson.cover_image || undefined}
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white/80 space-y-3">
+                <Video className="size-12 text-white/50" />
+                <p className="text-sm font-medium">
+                  {t("viewDetails.videoStreamLink") || "External Video Source"}
+                </p>
+                <Button asChild variant="outline" size="sm" className="rounded-xl text-white">
+                  <a href={lesson.video_url} target="_blank" rel="noopener noreferrer">
+                    {t("viewDetails.openVideoInNewTab") || "Open video in new tab"}
+                  </a>
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Lesson Description and Attachments Tabs */}
+        <DashboardCard className="p-6 rounded-2xl">
+          <Tabs defaultValue="content" className="space-y-4">
+            <TabsList className="bg-muted/60 p-1 rounded-xl">
+              <TabsTrigger value="content" className="rounded-lg text-xs gap-1.5 font-semibold">
+                <FileText className="size-3.5" />
+                <span>{t("viewDetails.tabs.overview") || "Lesson Content"}</span>
+              </TabsTrigger>
+
+              {pdfAttachments.length > 0 && (
+                <TabsTrigger
+                  value="attachments"
+                  className="rounded-lg text-xs gap-1.5 font-semibold"
+                >
+                  <Paperclip className="size-3.5" />
+                  <span>{t("viewDetails.tabs.resources") || "Attachments"}</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-primary/10 text-primary">
+                    {pdfAttachments.length}
+                  </span>
+                </TabsTrigger>
+              )}
+
+              {explanatoryImages.length > 0 && (
+                <TabsTrigger value="images" className="rounded-lg text-xs gap-1.5 font-semibold">
+                  <ImageIcon className="size-3.5" />
+                  <span>{t("viewDetails.tabs.images") || "Images"}</span>
+                  <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-primary/10 text-primary">
+                    {explanatoryImages.length}
+                  </span>
+                </TabsTrigger>
+              )}
+
+              {linkedExam && (
+                <TabsTrigger value="exam" className="rounded-lg text-xs gap-1.5 font-semibold">
+                  <FileSpreadsheet className="size-3.5 text-amber-600" />
+                  <span>{t("viewDetails.tabs.exam") || "Lesson Exam"}</span>
+                </TabsTrigger>
+              )}
+            </TabsList>
+
+            {/* Content Tab */}
+            <TabsContent value="content" className="space-y-4 pt-2">
+              {description ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <MarkdownViewer content={description} />
                 </div>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  {t("viewDetails.noDescription") || "No text content provided for this lesson."}
+                </p>
+              )}
+            </TabsContent>
 
-                {/* Tab Contents */}
-                <div className="p-6 sm:p-8">
-                  {/* TAB 1: Description / Notes */}
-                  <TabsContent
-                    value="description"
-                    className="space-y-4 mt-0 focus-visible:outline-hidden"
-                  >
-                    {lesson.description || lesson.writtenText ? (
-                      <div className="prose prose-sm sm:prose-base max-w-none">
-                        <MarkdownViewer
-                          content={lesson.description || lesson.writtenText || ""}
-                          isRtl={isRtl}
-                        />
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-muted-foreground italic py-6 text-center border border-dashed rounded-xl">
-                        {t("noMediaOrNotes")}
-                      </p>
-                    )}
-                  </TabsContent>
-
-                  {/* TAB 2: Attached Files */}
-                  <TabsContent
-                    value="attachments"
-                    className="space-y-4 mt-0 focus-visible:outline-hidden"
-                  >
-                    {allAttachments.length > 0 ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {allAttachments.map((file, idx) => (
-                          <div
-                            key={file.id || `file-${idx}`}
-                            className="flex items-start justify-between p-3.5 rounded-xl border border-border/70 bg-muted/20 hover:bg-muted/40 transition-colors gap-3"
-                          >
-                            <div className="flex items-start gap-3 min-w-0 flex-1">
-                              <div className="p-2.5 rounded-lg bg-blue-500/10 text-blue-600 shrink-0 mt-0.5">
-                                <FileText className="size-5" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="text-xs sm:text-sm font-bold text-foreground wrap-break-word leading-snug">
-                                  {file.title}
-                                </div>
-                                <div className="text-[11px] text-muted-foreground mt-1">
-                                  {t("fileSize", {
-                                    size: formatFileSize(file.sizeInBytes),
-                                  })}
-                                </div>
-                              </div>
-                            </div>
-
-                            <Button
-                              asChild
-                              variant="outline"
-                              size="sm"
-                              className="gap-1.5 text-xs font-semibold shrink-0 mt-0.5"
-                            >
-                              <a
-                                href={file.fileUrl}
-                                download
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                <Download className="size-3.5" />
-                                <span>{t("downloadPdf")}</span>
-                              </a>
-                            </Button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs sm:text-sm text-muted-foreground italic py-6 text-center border border-dashed rounded-xl">
-                        {t("noAttachments")}
-                      </p>
-                    )}
-                  </TabsContent>
-
-                  {/* TAB 3: Linked Exam */}
-                  {hasLinkedExam && lesson.linkedExamId && (
-                    <TabsContent
-                      value="exams"
-                      className="space-y-4 mt-0 focus-visible:outline-hidden"
+            {/* Attachments Tab */}
+            {pdfAttachments.length > 0 && (
+              <TabsContent value="attachments" className="space-y-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {pdfAttachments.map((file) => (
+                    <div
+                      key={file.id}
+                      className="flex items-center justify-between p-3.5 rounded-xl border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors"
                     >
-                      <div
-                        className={cn(
-                          "flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl border text-foreground transition-all",
-                          isExamPassed
-                            ? "bg-emerald-500/10 border-emerald-500/30"
-                            : "bg-amber-500/10 border-amber-500/30",
-                        )}
-                      >
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                          <div
-                            className={cn(
-                              "p-3 rounded-xl shrink-0",
-                              isExamPassed
-                                ? "bg-emerald-500/20 text-emerald-700"
-                                : "bg-amber-500/20 text-amber-700",
-                            )}
-                          >
-                            <FileSpreadsheet className="size-6" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span
-                                className={cn(
-                                  "text-xs font-semibold",
-                                  isExamPassed ? "text-emerald-700" : "text-amber-700",
-                                )}
-                              >
-                                {t("linkedExam")}
-                              </span>
-                              {isExamPassed && (
-                                <Badge className="bg-emerald-600 text-white text-[10px] px-1.5 py-0">
-                                  {t("examPassed")}
-                                </Badge>
-                              )}
-                            </div>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div className="text-sm sm:text-base font-bold text-foreground mt-1 truncate cursor-default">
-                                  {linkedExamTitle}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-md text-xs">
-                                {linkedExamTitle}
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="size-9 rounded-lg bg-red-500/10 text-red-600 flex items-center justify-center shrink-0">
+                          <FileText className="size-4" />
                         </div>
-
-                        <Button
-                          asChild
-                          className={cn(
-                            "font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center",
-                            isExamPassed
-                              ? "bg-emerald-600 hover:bg-emerald-700 text-white"
-                              : "bg-amber-600 hover:bg-amber-700 text-white",
-                          )}
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {file.name || file.file_name || "PDF Document"}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {formatFileSize(file.size)}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        asChild
+                        variant="outline"
+                        size="sm"
+                        className="h-8 rounded-lg text-xs"
+                      >
+                        <a
+                          href={file.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          download={file.file_name || file.name}
                         >
-                          <Link href={`/student-dashboard/exams/${lesson.linkedExamId}`}>
-                            <span>{t("takeLinkedExam")}</span>
-                            <FileCheck className="size-4 rtl:rotate-180" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </TabsContent>
-                  )}
+                          <Download className="size-3.5 me-1" />
+                          <span>{t("viewDetails.download") || "Download"}</span>
+                        </a>
+                      </Button>
+                    </div>
+                  ))}
                 </div>
-              </Tabs>
-            </div>
-          </div>
+              </TabsContent>
+            )}
 
-          {/* Right / Sidebar Information Card (1 Column) */}
-          <div className="space-y-6">
-            <DashboardCard className="p-6 space-y-4 rounded-2xl">
-              <h2 className="text-base font-bold text-foreground border-b border-border/60 pb-3">
-                {t("metadata")}
-              </h2>
-
-              <div className="space-y-3 text-xs">
-                <div className="flex justify-between py-1 border-b border-border/40">
-                  <span className="text-muted-foreground">{t("category")}</span>
-                  <span className="font-semibold text-foreground">
-                    {tLessons("card.independent")}
-                  </span>
+            {/* Images Tab */}
+            {explanatoryImages.length > 0 && (
+              <TabsContent value="images" className="space-y-4 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {explanatoryImages.map((img) => (
+                    <div
+                      key={img.id}
+                      className="group relative rounded-xl border border-border/60 overflow-hidden bg-muted/20 aspect-4/3 flex items-center justify-center"
+                    >
+                      <Image
+                        src={img.url}
+                        alt={img.name || "Explanatory image"}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                      />
+                      <a
+                        href={img.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium gap-1"
+                      >
+                        <Download className="size-4" />
+                        <span>{t("viewDetails.viewFullImage") || "View full image"}</span>
+                      </a>
+                    </div>
+                  ))}
                 </div>
+              </TabsContent>
+            )}
 
-                {lesson.teacherName && (
-                  <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">{t("teacher")}</span>
-                    <span className="font-semibold text-foreground">{lesson.teacherName}</span>
+            {/* Exam Tab */}
+            {linkedExam && (
+              <TabsContent value="exam" className="space-y-4 pt-2">
+                <div className="p-5 rounded-2xl border border-amber-500/20 bg-amber-500/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h4 className="text-sm font-bold text-foreground">
+                      {getLocalized(linkedExam.title, "Lesson Exam")}
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      {t("viewDetails.examRequirementText", {
+                        percent: linkedExam.passing_percentage,
+                      }) || `Passing score requirement: ${linkedExam.passing_percentage}%`}
+                    </p>
                   </div>
-                )}
-
-                {(lesson.subject || lesson.grade) && (
-                  <div className="flex justify-between py-1 border-b border-border/40">
-                    <span className="text-muted-foreground">{t("subjectAndGrade")}</span>
-                    <span className="font-semibold text-foreground">
-                      {[formatSubject(lesson.subject), formatGrade(lesson.grade)]
-                        .filter(Boolean)
-                        .join(" • ")}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex justify-between py-1 border-b border-border/40">
-                  <span className="text-muted-foreground">{t("venue")}</span>
-                  <span className="font-semibold text-foreground">{formatVenue(lesson.venue)}</span>
+                  <Button asChild size="sm" className="rounded-xl text-xs gap-1.5 font-semibold">
+                    <Link href={`/student-dashboard/exams/${linkedExam.id}`}>
+                      <FileSpreadsheet className="size-3.5" />
+                      <span>{t("viewDetails.takeExam") || "Take Exam"}</span>
+                    </Link>
+                  </Button>
                 </div>
-              </div>
-            </DashboardCard>
-          </div>
-        </div>
+              </TabsContent>
+            )}
+          </Tabs>
+        </DashboardCard>
       </div>
     </TooltipProvider>
   );

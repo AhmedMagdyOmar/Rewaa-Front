@@ -49,6 +49,13 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { SelectWithAdd } from "@/components/ui/select-with-add";
 import {
   useCreateExam,
@@ -57,6 +64,7 @@ import {
   useProviderExamOptions,
   useProviderExams,
   usePublishExam,
+  useScheduleExam,
   useUpdateExam,
 } from "@/hooks/use-exams";
 import { useCreateQuestion, useDeleteQuestion, useUpdateQuestion } from "@/hooks/use-questions";
@@ -107,6 +115,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
   const createExamMutation = useCreateExam();
   const updateExamMutation = useUpdateExam();
   const publishExamMutation = usePublishExam();
+  const scheduleExamMutation = useScheduleExam();
   const createQuestionMutation = useCreateQuestion();
   const updateQuestionMutation = useUpdateQuestion();
   const deleteQuestionMutation = useDeleteQuestion();
@@ -141,6 +150,10 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
   const [venue, setVenue] = React.useState<ExamVenue>("online");
   const [coursesCount, setCoursesCount] = React.useState<number>(0);
   const [performedCount, setPerformedCount] = React.useState<number>(0);
+  const [examPublishStatus, setExamPublishStatus] = React.useState<
+    "draft" | "published" | "scheduled"
+  >("draft");
+  const [examScheduledPublishDate, setExamScheduledPublishDate] = React.useState("");
 
   // Form State - Step 2 (Exam Sections & Questions)
   const [examSections, setExamSections] = React.useState<ExamSection[]>([
@@ -177,6 +190,18 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
       if (mapped.venue) setVenue(mapped.venue);
       setCoursesCount(mapped.coursesCount ?? 0);
       setPerformedCount(mapped.numberOfStudents ?? 0);
+
+      const status = fetchedBackendExam.status;
+      if (status === "published" || status === "scheduled" || status === "draft") {
+        setExamPublishStatus(status);
+      }
+      if (fetchedBackendExam.scheduled_publish_at) {
+        setExamScheduledPublishDate(
+          fetchedBackendExam.scheduled_publish_at.split("T")[0] ||
+            fetchedBackendExam.scheduled_publish_at.split(" ")[0] ||
+            "",
+        );
+      }
 
       if (mapped.examSections && mapped.examSections.length > 0) {
         setExamSections(mapped.examSections);
@@ -359,7 +384,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
     }
   };
 
-  // Final Submit Handler: Publishes or Finalizes Exam
+  // Final Submit Handler: Publishes, Schedules, or Saves Exam as Draft based on examPublishStatus
   const handleSave = async () => {
     if (!title.trim()) return;
 
@@ -370,19 +395,36 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
         const payload = buildExamPayload();
         await updateExamMutation.mutateAsync({ id: activeExamId, data: payload });
 
-        // Only publish when completing initial creation flow
-        if (mode === "create" && fetchedBackendExam?.status !== "published") {
+        if (examPublishStatus === "published") {
           await publishExamMutation.mutateAsync(activeExamId);
+        } else if (examPublishStatus === "scheduled") {
+          if (!examScheduledPublishDate) {
+            toast.error(
+              locale === "ar"
+                ? "يرجى تحديد تاريخ النشر المجدول"
+                : "Please select a scheduled publish date",
+            );
+            setIsSubmitting(false);
+            return;
+          }
+          await scheduleExamMutation.mutateAsync({
+            id: activeExamId,
+            scheduledAt: examScheduledPublishDate,
+          });
         }
       }
       toast.success(
-        mode === "create"
+        examPublishStatus === "published"
           ? locale === "ar"
-            ? "تم إنشاء ونشر الامتحان بنجاح"
-            : "Exam created and published successfully"
-          : locale === "ar"
-            ? "تم حفظ التعديلات بنجاح"
-            : "Changes saved successfully",
+            ? "تم نشر الامتحان بنجاح"
+            : "Exam published successfully"
+          : examPublishStatus === "scheduled"
+            ? locale === "ar"
+              ? "تم جدولة نشر الامتحان بنجاح"
+              : "Exam scheduled successfully"
+            : locale === "ar"
+              ? "تم حفظ مسودة الامتحان بنجاح"
+              : "Exam saved as draft successfully",
       );
       router.push(`/${locale}/dashboard/exams`);
     } catch (err: unknown) {
@@ -762,21 +804,69 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-28">
-      {/* ── Page Header with Standard Round Back Button ──────────────────── */}
-      <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="icon" className="h-9 w-9 rounded-full shrink-0">
-          <Link href={`/${locale}/dashboard/exams`}>
-            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-            {mode === "create" ? tForm("createTitle") : tForm("editTitle")}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {currentStep === 1 ? tForm("createSubtitle") : tStep2("subtitle")}
-          </p>
+      {/* ── Page Header with Standard Round Back Button & Step 2 Publish Status ──────── */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Button asChild variant="outline" size="icon" className="h-9 w-9 rounded-full shrink-0">
+            <Link href={`/${locale}/dashboard/exams`}>
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
+            </Link>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {currentStep === 2 && title.trim()
+                ? title
+                : mode === "create"
+                  ? tForm("createTitle")
+                  : tForm("editTitle")}
+            </h1>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              {currentStep === 1 ? tForm("createSubtitle") : tStep2("subtitle")}
+            </p>
+          </div>
         </div>
+
+        {/* Step 2 Header: Exam Publish Status Select & Schedule Dates */}
+        {currentStep === 2 && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <Select
+              value={examPublishStatus}
+              onValueChange={(val: "draft" | "published" | "scheduled") =>
+                setExamPublishStatus(val)
+              }
+            >
+              <SelectTrigger className="w-36 h-9 font-medium">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="draft">{locale === "ar" ? "مسودة" : "Draft"}</SelectItem>
+                <SelectItem value="published">{locale === "ar" ? "منشور" : "Published"}</SelectItem>
+                <SelectItem value="scheduled">{locale === "ar" ? "مجدول" : "Scheduled"}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Scheduled Date Input with Label */}
+            {examPublishStatus === "scheduled" && (
+              <div className="flex flex-wrap items-center gap-3 animate-in fade-in slide-in-from-top-1">
+                <div className="flex items-center gap-1.5">
+                  <label
+                    htmlFor="exam-scheduled-publish-date"
+                    className="text-xs font-medium text-muted-foreground whitespace-nowrap"
+                  >
+                    {locale === "ar" ? "تاريخ النشر:" : "Publish Date:"}
+                  </label>
+                  <Input
+                    id="exam-scheduled-publish-date"
+                    type="date"
+                    value={examScheduledPublishDate}
+                    onChange={(e) => setExamScheduledPublishDate(e.target.value)}
+                    className="h-9 w-36 text-xs"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Main layout: Timeline Sidebar (4 cols) + Form Content (8 cols) */}

@@ -99,13 +99,14 @@ export function ManageQuestionsClient() {
     [searchParams, pathname, router],
   );
 
-  // Live Query from backend
+  // Live Query from backend (Question Bank shows standalone master questions)
   const {
     data: questionsResponse,
     isLoading,
     isFetching,
     refetch,
   } = useProviderQuestions({
+    is_standalone: true,
     search: searchQuery || undefined,
     type: selectedType !== "all" ? selectedType : undefined,
     educational_stage_id: selectedGrade !== "all" ? selectedGrade : undefined,

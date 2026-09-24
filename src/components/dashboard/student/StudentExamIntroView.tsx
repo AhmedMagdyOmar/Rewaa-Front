@@ -3,7 +3,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
-import { Exam } from "@/types/exam";
+import type { BackendStudentExam } from "@/types/api-contracts";
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,38 +13,57 @@ import {
   Clock,
   FileCheck2,
   FileQuestion,
+  Loader2,
   Play,
   RotateCcw,
   Sparkles,
   Timer,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { DashboardCard } from "../overview/dashboard-card";
 
 interface StudentExamIntroViewProps {
-  exam: Exam;
+  exam: BackendStudentExam;
   onStartExam: () => void;
-  formatSubject: (s?: string) => string;
-  formatGrade: (g?: string) => string;
-  formatCategory: (c: string) => string;
-  formatVenue: (v?: string) => string;
+  isStarting?: boolean;
 }
 
 export function StudentExamIntroView({
   exam,
   onStartExam,
-  formatSubject,
-  formatGrade,
-  formatCategory,
-  formatVenue,
+  isStarting = false,
 }: StudentExamIntroViewProps) {
+  const locale = useLocale();
   const t = useTranslations("studentDashboard.examTakingPage.intro");
   const tGlobal = useTranslations("studentDashboard.examResultPage");
+  const tCourses = useTranslations("courses");
+  const tExams = useTranslations("exams");
 
-  const totalQuestions =
-    exam.examSections && exam.examSections.length > 0
-      ? exam.examSections.reduce((acc, s) => acc + s.questions.length, 0)
-      : exam.numberOfQuestions || 10;
+  const getLocalizedString = (field?: Record<string, string> | null) => {
+    if (!field) return "";
+    return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
+  };
+
+  const titleStr = getLocalizedString(exam.title);
+  const stageStr = getLocalizedString(exam.educational_stage?.name);
+  const subjectStr = getLocalizedString(exam.subject?.name);
+  const courseTitleStr = getLocalizedString(exam.course?.title);
+  const teacherName = exam.instructor?.full_name;
+
+  const formatCategory = (cat: string) => {
+    const key = cat as Parameters<typeof tExams.has>[0];
+    return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
+      ? tExams(`category.${key}` as Parameters<typeof tExams>[0])
+      : cat;
+  };
+
+  const formatVenue = (v?: string) => {
+    if (v === "online") return tCourses("venue.online");
+    if (v === "onsite" || v === "center") return tCourses("venue.center");
+    return tCourses("venue.all");
+  };
+
+  const canStart = exam.can_start !== false;
 
   return (
     <div className="space-y-6 pb-12 w-full max-w-5xl mx-auto">
@@ -60,18 +79,20 @@ export function StudentExamIntroView({
           <div className="space-y-0.5">
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                {exam.title}
+                {titleStr}
               </h1>
               <Badge variant="secondary" className="text-xs font-semibold">
-                {formatCategory(exam.category)}
+                {formatCategory(exam.classification)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
-              <span>
-                {[formatSubject(exam.subject), formatGrade(exam.grade)].filter(Boolean).join(" • ")}
-              </span>
-              <span>•</span>
-              <span className="font-medium text-foreground">{exam.teacherName}</span>
+              <span>{[subjectStr, stageStr].filter(Boolean).join(" • ")}</span>
+              {teacherName && (
+                <>
+                  <span>•</span>
+                  <span className="font-medium text-foreground">{teacherName}</span>
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -91,11 +112,20 @@ export function StudentExamIntroView({
 
           <Button
             onClick={onStartExam}
+            disabled={!canStart || isStarting}
             size="lg"
-            className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto cursor-pointer"
+            className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto cursor-pointer disabled:opacity-50"
           >
-            <Play className="size-4 fill-current rtl:rotate-180" />
-            <span>{t("startExamButton")}</span>
+            {isStarting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Play className="size-4 fill-current rtl:rotate-180" />
+            )}
+            <span>
+              {exam.action === "resume"
+                ? tExams("actions.resume") || t("startExamButton")
+                : t("startExamButton")}
+            </span>
           </Button>
         </div>
       </div>
@@ -149,7 +179,7 @@ export function StudentExamIntroView({
                   {t("totalQuestions")}
                 </span>
                 <span className="font-bold text-foreground">
-                  {t("questionsCount", { count: totalQuestions })}
+                  {t("questionsCount", { count: exam.questions_count })}
                 </span>
               </div>
 
@@ -159,7 +189,7 @@ export function StudentExamIntroView({
                   {t("duration")}
                 </span>
                 <span className="font-bold text-foreground">
-                  {t("durationMinutes", { count: exam.durationMinutes })}
+                  {t("durationMinutes", { count: exam.duration_minutes })}
                 </span>
               </div>
 
@@ -169,7 +199,7 @@ export function StudentExamIntroView({
                   {t("passingScore")}
                 </span>
                 <span className="font-bold text-amber-600">
-                  {t("passingPercentage", { percent: exam.passingPercentage })}
+                  {t("passingPercentage", { percent: exam.passing_percentage })}
                 </span>
               </div>
 
@@ -179,26 +209,28 @@ export function StudentExamIntroView({
                   {t("triesAllowed")}
                 </span>
                 <span className="font-semibold text-foreground">
-                  {t("triesCount", { count: exam.triesAllowed || 1 })}
+                  {t("triesCount", { count: exam.max_attempts || 1 })}
                 </span>
               </div>
 
-              {exam.courseTitle && (
+              {courseTitleStr && (
                 <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                   <span className="text-muted-foreground flex items-center gap-1.5">
                     <BookOpen className="size-3.5 text-primary" />
                     {tGlobal("sidebar.sourceCourse")}
                   </span>
                   <span className="font-semibold text-foreground truncate max-w-40">
-                    {exam.courseTitle}
+                    {courseTitleStr}
                   </span>
                 </div>
               )}
 
-              {exam.venue && (
+              {exam.delivery_mode && (
                 <div className="flex justify-between items-center py-1.5">
                   <span className="text-muted-foreground">{t("venue")}</span>
-                  <span className="font-semibold text-foreground">{formatVenue(exam.venue)}</span>
+                  <span className="font-semibold text-foreground">
+                    {formatVenue(exam.delivery_mode)}
+                  </span>
                 </div>
               )}
             </div>
@@ -206,10 +238,19 @@ export function StudentExamIntroView({
             <div className="pt-2">
               <Button
                 onClick={onStartExam}
-                className="w-full rounded-xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs cursor-pointer"
+                disabled={!canStart || isStarting}
+                className="w-full rounded-xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs cursor-pointer disabled:opacity-50"
               >
-                <Play className="size-3.5 fill-current rtl:rotate-180" />
-                <span>{t("startExamButton")}</span>
+                {isStarting ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Play className="size-3.5 fill-current rtl:rotate-180" />
+                )}
+                <span>
+                  {exam.action === "resume"
+                    ? tExams("actions.resume") || t("startExamButton")
+                    : t("startExamButton")}
+                </span>
               </Button>
             </div>
           </DashboardCard>

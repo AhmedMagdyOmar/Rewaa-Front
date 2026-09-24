@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -12,9 +11,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Link } from "@/i18n/routing";
-import { getStoredExams } from "@/lib/exams-storage";
-import { CourseSection } from "@/types/course";
-import { Exam } from "@/types/exam";
+import {
+  BackendCourseContentSection,
+  BackendCourseContentSectionLessonExam,
+} from "@/types/api-contracts";
 import { FileCheck, FileSpreadsheet, Lock } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
@@ -22,31 +22,23 @@ import * as React from "react";
 interface StudentLockedSectionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  lockedSection: CourseSection | null;
-  requiredExamId?: string;
+  lockedSection: BackendCourseContentSection | null;
+  requiredExam?: BackendCourseContentSectionLessonExam | null;
 }
 
 export function StudentLockedSectionDialog({
   open,
   onOpenChange,
   lockedSection,
-  requiredExamId,
+  requiredExam,
 }: StudentLockedSectionDialogProps) {
   const locale = useLocale();
   const t = useTranslations("studentDashboard.courseDetails.locked");
-  const [exams, setExams] = React.useState<Exam[]>([]);
 
-  React.useEffect(() => {
-    setExams(getStoredExams(locale));
-    const handleExamsUpdate = () => setExams(getStoredExams(locale));
-    window.addEventListener("rewaa_exams_updated", handleExamsUpdate);
-    return () => window.removeEventListener("rewaa_exams_updated", handleExamsUpdate);
-  }, [locale]);
-
-  const requiredExam = React.useMemo(() => {
-    if (!requiredExamId) return null;
-    return exams.find((e) => e.id === requiredExamId) || null;
-  }, [exams, requiredExamId]);
+  const sectionTitle =
+    lockedSection?.title?.[locale] || lockedSection?.title?.ar || lockedSection?.title?.en || "";
+  const examTitle =
+    requiredExam?.title?.[locale] || requiredExam?.title?.ar || requiredExam?.title?.en || "";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -70,21 +62,17 @@ export function StudentLockedSectionDialog({
           {lockedSection && (
             <div className="flex items-center justify-between gap-2 border-b border-border/50 pb-2">
               <span className="text-muted-foreground">{t("badge")}:</span>
-              <span className="font-bold text-foreground truncate max-w-55">
-                {lockedSection.title}
-              </span>
+              <span className="font-bold text-foreground truncate max-w-55">{sectionTitle}</span>
             </div>
           )}
 
-          {requiredExamId && (
+          {requiredExam && (
             <div className="space-y-1.5 pt-1">
               <div className="text-muted-foreground font-medium">{t("prerequisiteExam")}</div>
               <div className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-background border border-amber-500/30 text-amber-800">
                 <div className="flex items-center gap-2 truncate min-w-0 flex-1">
                   <FileSpreadsheet className="size-4 shrink-0 text-amber-600" />
-                  <span className="font-bold truncate text-xs">
-                    {requiredExam?.title || requiredExamId}
-                  </span>
+                  <span className="font-bold truncate text-xs">{examTitle}</span>
                 </div>
                 <Badge
                   variant="outline"
@@ -107,13 +95,13 @@ export function StudentLockedSectionDialog({
             {t("close")}
           </Button>
 
-          {requiredExamId && (
+          {requiredExam && (
             <Button
               asChild
               className="flex-1 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-700 text-white gap-1.5 shadow-xs"
             >
               <Link
-                href={`/student-dashboard/exams/${requiredExamId}`}
+                href={`/student-dashboard/exams/${requiredExam.id}`}
                 onClick={() => onOpenChange(false)}
               >
                 <span>{t("takeExamCta")}</span>
