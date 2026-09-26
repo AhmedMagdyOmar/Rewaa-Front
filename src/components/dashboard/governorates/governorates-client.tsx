@@ -179,8 +179,8 @@ export function GovernoratesClient() {
             : `custom-${bg.name?.ar || bg.name?.en || "unknown"}`;
         govMap.set(key, {
           id: bg.id ?? key,
-          nameAr: bg.name?.ar || bg.name?.en || (locale === "ar" ? "غير محدد" : "Unspecified"),
-          nameEn: bg.name?.en || bg.name?.ar || (locale === "ar" ? "غير محدد" : "Unspecified"),
+          nameAr: bg.name?.ar || bg.name?.en || t("unspecified"),
+          nameEn: bg.name?.en || bg.name?.ar || t("unspecified"),
           countryId: 5, // Egypt default
           countryNameAr: "مصر",
           countryNameEn: "Egypt",
@@ -222,14 +222,8 @@ export function GovernoratesClient() {
 
       if (!existing) {
         const govId = rawGovId ?? "unspecified";
-        const govNameAr =
-          st.governorate?.name?.ar ||
-          st.governorate?.name?.en ||
-          (locale === "ar" ? "غير محدد" : "Unspecified");
-        const govNameEn =
-          st.governorate?.name?.en ||
-          st.governorate?.name?.ar ||
-          (locale === "ar" ? "غير محدد" : "Unspecified");
+        const govNameAr = st.governorate?.name?.ar || st.governorate?.name?.en || t("unspecified");
+        const govNameEn = st.governorate?.name?.en || st.governorate?.name?.ar || t("unspecified");
         const countryNameAr = st.country?.name?.ar || st.country?.name?.en || "مصر";
         const countryNameEn = st.country?.name?.en || st.country?.name?.ar || "Egypt";
 
@@ -326,6 +320,7 @@ export function GovernoratesClient() {
     studentOptions?.governorates,
     studentOptions?.countries,
     locale,
+    t,
   ]);
 
   // Overall Statistics Calculations
@@ -697,9 +692,7 @@ export function GovernoratesClient() {
                   <TableCell colSpan={7} className="h-48 text-center">
                     <div className="flex items-center justify-center gap-2 text-muted-foreground">
                       <Loader2 className="size-4 animate-spin text-primary" />
-                      <span className="text-xs">
-                        {locale === "ar" ? "جارٍ تحميل البيانات..." : "Loading data..."}
-                      </span>
+                      <span className="text-xs">{t("loadingData")}</span>
                     </div>
                   </TableCell>
                 </TableRow>

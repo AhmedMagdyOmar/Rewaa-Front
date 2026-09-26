@@ -12,6 +12,13 @@
     "submitting": "Submitting...",
     "genericError": "An unexpected error occurred. Please try again.",
     "brandName": "Rewaa",
+    "sar": "SAR",
+    "egp": "EGP",
+    "noResults": "No results found.",
+    "enrolledCourses": "My Enrolled Courses",
+    "availableCourses": "Available Courses",
+    "previousPage": "Previous page",
+    "nextPage": "Next page",
     "quickAdd": {
       "addOption": "Add New Option",
       "addOptionTitle": "Add New Option",
@@ -171,6 +178,7 @@
     "generallessons": "General Lessons",
     "students": "Students",
     "billing": "Billing & Invoices",
+    "wallet": "Wallet",
     "userSettings": "User Settings",
     "expandSidebar": "Expand sidebar",
     "landing": {
@@ -1147,6 +1155,24 @@
         "saveAndAddAnother": "Save & Add Another",
         "saveQuestion": "Save Question",
         "saveChanges": "Save Changes"
+      },
+      "tabs": {
+        "create": "Create New Question",
+        "bank": "Choose from Question Bank"
+      },
+      "bank": {
+        "searchPlaceholder": "Search question bank...",
+        "difficultyPlaceholder": "Difficulty",
+        "allDifficulties": "All Difficulties",
+        "typePlaceholder": "Question Type",
+        "allTypes": "All Types",
+        "availableQuestions": "Available questions:",
+        "selectAll": "Select All",
+        "deselectAll": "Deselect All",
+        "noQuestions": "No questions available",
+        "noQuestionsDesc": "No questions found matching the selected filters in the question bank.",
+        "points": "marks",
+        "addSelected": "Add Selected Questions ({count})"
       }
     },
     "details": {
@@ -1325,6 +1351,8 @@
       "title": "Exam Submissions & Reviews",
       "subtitle": "Grade essay questions and review student responses and results.",
       "examSubmissionsTitle": "Submissions for: {title}",
+      "searchPlaceholder": "Search by student name, email or exam...",
+      "defaultStudent": "Student",
       "backToExams": "Back to Exams",
       "backToStats": "Back to Exam Stats",
       "tabs": {
@@ -1412,7 +1440,13 @@
       "submitting": "Submitting grades...",
       "alreadyGradedNotice": "This submission has already been graded. You can adjust the scores and re-save if needed.",
       "successToast": "Grades submitted successfully and attempt marked as graded",
-      "errorToast": "Failed to submit grades. Please make sure all essay questions have valid awarded scores."
+      "errorToast": "Failed to submit grades. Please make sure all essay questions have valid awarded scores.",
+      "failedLoad": "Failed to load submission",
+      "tryAgain": "Try Again",
+      "defaultStudent": "Student",
+      "passed": "Passed",
+      "failed": "Failed",
+      "cancelReturn": "Cancel & Return"
     }
   },
   "questionsPage": {
@@ -1489,7 +1523,8 @@
       "saveChanges": "Save Changes",
       "cancel": "Cancel",
       "messages": {
-        "savedSuccessfully": "Question saved successfully"
+        "savedSuccessfully": "Question saved successfully",
+        "saveFailed": "Failed to save question"
       }
     },
     "newPage": {
@@ -1508,7 +1543,8 @@
       "teacherName": "Teacher / Instructor Name",
       "teacherNamePlaceholder": "e.g., Mr. Mohamed Ahmed",
       "messages": {
-        "createdSuccessfully": "Question created successfully"
+        "createdSuccessfully": "Question created successfully",
+        "createFailed": "Failed to create question"
       }
     }
   },
@@ -1558,7 +1594,10 @@
       "coursesPopupTitle": "Courses Including This Lesson",
       "multipleCourses": "Multiple Courses",
       "generalLesson": "General Lesson",
-      "courseDependentLesson": "Course-Linked Lesson"
+      "courseDependentLesson": "Course-Linked Lesson",
+      "inactive": "Inactive",
+      "defaultExam": "Exam",
+      "linkedExamPrefix": "Linked Exam:"
     },
     "deleteDialog": {
       "title": "Delete Lesson",
@@ -1955,6 +1994,16 @@
       "pending": "Pending",
       "accepted": "Accepted",
       "rejected": "Rejected"
+    },
+    "approveSuccess": "Payment approved successfully",
+    "rejectSuccess": "Payment rejected successfully",
+    "methods": {
+      "other": "Other",
+      "instapay": "InstaPay",
+      "vodafone_cash": "Vodafone Cash",
+      "credit_card": "Credit Card",
+      "fawry": "Fawry",
+      "manual": "Manual Transfer"
     },
     "modal": {
       "title": "Request Details",
@@ -3208,6 +3257,80 @@
       "passwordMismatch": "Passwords do not match",
       "requiredFieldsError": "Please fill in all required fields",
       "whatsappTooltip": "Direct WhatsApp chat"
+    },
+    "wallet": {
+      "pageTitle": "Student Wallet | Rewaa",
+      "title": "My Wallet",
+      "subtitle": "Track your available balance, deposit credits, and view full transaction history",
+      "availableBalance": "Available Balance",
+      "statusActive": "Active Account",
+      "statusInactive": "Inactive Account",
+      "totalCredits": "Total Deposits / Credits",
+      "totalDebits": "Total Spent / Deductions",
+      "totalTransactions": "Total Operations",
+      "quickActions": "Quick Actions",
+      "refresh": "Refresh",
+      "refreshing": "Refreshing...",
+      "browseCourses": "Explore Courses",
+      "viewOrders": "View My Orders",
+      "transactionsTitle": "Transaction Ledger",
+      "transactionsSubtitle": "Complete history of your wallet operations, course purchases, and refunds",
+      "filters": {
+        "all": "All Transactions",
+        "credit": "Deposits & Refunds (Credits)",
+        "debit": "Course Payments & Deductions (Debits)"
+      },
+      "table": {
+        "id": "Operation #",
+        "type": "Type",
+        "reason": "Description / Purpose",
+        "amount": "Amount",
+        "balanceAfter": "Balance After",
+        "date": "Date & Time",
+        "orderNumber": "Order #{number}"
+      },
+      "directions": {
+        "credit": "Credit (+)",
+        "debit": "Debit (-)"
+      },
+      "reasons": {
+        "admin_top_up": "Admin Balance Deposit",
+        "course_purchase": "Course Purchase",
+        "refund": "Refund",
+        "wallet_refund": "Refund",
+        "adjustment": "Account Adjustment",
+        "admin_adjustment": "Account Adjustment",
+        "manual_credit": "Manual Balance Deposit",
+        "manual_debit": "Manual Balance Deduction",
+        "activation_code": "Code Redemption",
+        "unknown": "Wallet Transaction"
+      },
+      "empty": {
+        "title": "No transactions found",
+        "description": "Your wallet history is clear. When you purchase courses or add funds, records will appear here."
+      },
+      "pagination": {
+        "showing": "Showing {start} to {end} of {total, plural, =0 {no transactions} one {1 transaction} other {{total} transactions}}",
+        "previous": "Previous",
+        "next": "Next"
+      }
+    },
+    "activationCodeRedemption": {
+      "button": "Redeem Code",
+      "dialogTitle": "Redeem Course Activation Code",
+      "dialogDescription": "Enter your scratch card or activation code to instantly enroll into the course.",
+      "inputLabel": "Activation Code",
+      "inputPlaceholder": "e.g. RW-MATH-1234-XYZ",
+      "hint": "Codes are case-insensitive and generated by your course provider.",
+      "submit": "Redeem & Enroll",
+      "submitting": "Verifying Code...",
+      "successTitle": "Code Redeemed Successfully!",
+      "successDescription": "You have been enrolled into {courseTitle}. You can now start learning right away.",
+      "goToCourse": "Start Learning",
+      "close": "Close",
+      "genericError": "Failed to redeem activation code. Please verify the code and try again.",
+      "haveCodePrompt": "Have an activation code for this course?",
+      "redeemHere": "Redeem it here"
     }
   },
   "publicStudentReport": {
@@ -3278,6 +3401,136 @@
     "pagination": {
       "showing": "Showing {start} to {end} of {total} governorates and regions"
     },
-    "studentsCount": "{count, plural, =0 {No students} one {1 student} other {{count} students}}"
+    "studentsCount": "{count, plural, =0 {No students} one {1 student} other {{count} students}}",
+    "unspecified": "Unspecified",
+    "loadingData": "Aggregating and analyzing geographic data..."
+  },
+  "studentOrders": {
+    "list": {
+      "title": "My Orders",
+      "subtitle": "Track your course enrollment orders and payment statuses",
+      "searchPlaceholder": "Search by order # or course...",
+      "filterStatus": "Filter by status",
+      "allStatuses": "All Statuses",
+      "itemsCount": "Items:",
+      "total": "Total:",
+      "remaining": "Remaining:",
+      "completePayment": "Complete Payment",
+      "viewDetails": "View Details",
+      "courseFallback": "Course",
+      "emptyTitle": "No orders found",
+      "emptyDesc": "When you enroll in courses, your order details and payment statuses will appear here.",
+      "exploreCourses": "Explore Courses",
+      "errorTitle": "Failed to load orders",
+      "errorDesc": "An error occurred while fetching your orders"
+    },
+    "detail": {
+      "backToOrders": "Back to Orders",
+      "title": "Order Details",
+      "orderItems": "Order Items",
+      "deliveryMode": "Delivery Mode:",
+      "courseFallback": "Course",
+      "paymentMethod": "Payment Method",
+      "paymentMethodSubtitle": "Select your preferred payment method to complete enrollment",
+      "underReviewTitle": "Payment Under Review",
+      "underReviewDesc": "We have received your payment receipt and our team is currently verifying it. Access to your courses will be granted as soon as it is approved.",
+      "rejectedTitle": "Previous Payment Receipt Rejected",
+      "rejectedDesc": "Your previously submitted payment receipt was reviewed and rejected for the reason specified below. You can try again by submitting a new receipt or paying with your wallet.",
+      "rejectionReasonTitle": "Rejection Reason:",
+      "rejectionReasonBadge": "Rejected Receipt",
+      "paidTitle": "Order Fully Paid",
+      "paidDesc": "You can now begin learning and watching your course lessons.",
+      "goToCourse": "Go to Course",
+      "viewMyCourses": "View My Courses",
+      "viewInvoice": "View / Print Invoice",
+      "printInvoice": "Print Invoice",
+      "paymentHistory": "Payments & Receipts History",
+      "viewReceipt": "View Receipt",
+      "summaryTitle": "Order Summary",
+      "subtotal": "Subtotal:",
+      "discount": "Discount:",
+      "totalAmount": "Total Amount:",
+      "paidAmount": "Paid Amount:",
+      "remainingBalance": "Remaining Balance:",
+      "createdAt": "Created at:",
+      "orderStatus": "Order Status:",
+      "notFoundTitle": "Order Not Found",
+      "notFoundDesc": "The requested order does not exist or you do not have permission to view it."
+    },
+    "status": {
+      "paid": "Paid",
+      "awaiting_payment": "Pending Payment",
+      "under_review": "Under Review",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "paymentMethods": {
+      "wallet": "Rewaa Wallet",
+      "walletSubtitle": "Instant payment directly deducted from your available balance.",
+      "manual": "Bank Transfer / Manual",
+      "manualSubtitle": "Transfer to our bank accounts and submit your receipt for review.",
+      "bank": "Bank Transfer",
+      "instapay": "Instapay",
+      "vodafone_cash": "Vodafone Cash",
+      "fawry": "Fawry",
+      "manual_transfer": "Bank Transfer / Manual",
+      "student_wallet": "Student Wallet"
+    },
+    "walletPay": {
+      "title": "Instant Rewaa Wallet Payment",
+      "subtitle": "The remaining balance will be deducted immediately from your available wallet",
+      "currentBalance": "Current Available Balance:",
+      "amountToDeduct": "Amount to Deduct:",
+      "balanceAfter": "Remaining Balance After Payment:",
+      "insufficientTitle": "Insufficient Balance",
+      "insufficientDesc": "You need an additional {needed} {currency}. You can pay via bank transfer instead.",
+      "confirmButton": "Confirm Payment ({amount} {currency})",
+      "processing": "Processing Payment...",
+      "successToast": "Payment successful! Your course is now active.",
+      "errorToast": "Failed to pay with wallet",
+      "insufficientToast": "Insufficient wallet balance to complete payment."
+    },
+    "manualPay": {
+      "title": "Bank Transfer & Receipt Submission",
+      "subtitle": "Transfer to one of our accounts, fill in the details, and upload your receipt",
+      "noAccounts": "No active payment accounts available at the moment.",
+      "selectAccount": "Select Bank Account *",
+      "selectAccountPlaceholder": "Select Account",
+      "accountNumber": "Account Number / IBAN:",
+      "iban": "IBAN:",
+      "amount": "Transferred Amount *",
+      "senderPhone": "Sender Phone (Optional)",
+      "senderPhonePlaceholder": "e.g. 05xxxxxxxx",
+      "reference": "Transaction Reference / Note (Optional)",
+      "referencePlaceholder": "Bank transaction ref",
+      "receipt": "Transfer Receipt / Screenshot *",
+      "uploadPrompt": "Click to upload or drag receipt image",
+      "uploadHint": "JPG, PNG, WEBP (Max 4MB)",
+      "changeImage": "Click to change file",
+      "submitButton": "Submit Receipt for Review",
+      "submitting": "Submitting Receipt...",
+      "copiedToast": "Copied to clipboard",
+      "fileSizeError": "File size must not exceed 4MB",
+      "fileTypeError": "Please upload an image in JPG, PNG, or WEBP format",
+      "accountRequiredError": "Please select a bank account",
+      "amountInvalidError": "Please enter a valid amount > 0",
+      "receiptRequiredError": "Please upload your transfer receipt",
+      "successToast": "Payment receipt submitted successfully! It will be reviewed shortly.",
+      "errorToast": "Failed to submit receipt"
+    },
+    "paymentSuccess": {
+      "pageTitle": "Payment Successful | Rewaa",
+      "badge": "Payment Confirmed",
+      "title": "You're All Set! 🎉",
+      "subtitle": "Your payment has been processed successfully. Get ready to start your learning journey!",
+      "nextSteps": "What's next?",
+      "goToCourses": "Go to My Courses",
+      "goToHome": "Back to Home",
+      "viewOrdersPrefix": "You can also check your order history in",
+      "viewOrdersLink": "My Orders"
+    }
   }
 }

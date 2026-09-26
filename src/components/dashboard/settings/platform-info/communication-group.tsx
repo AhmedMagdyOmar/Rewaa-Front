@@ -157,10 +157,7 @@ export function CommunicationGroup({ data, onSaveCustom }: CommunicationGroupPro
           ) : (
             <div className="h-9 px-3 py-1.5 rounded-md text-sm font-semibold flex items-center font-mono">
               {formState.supportPhone ? (
-                <PhoneLink
-                  phone={formState.supportPhone}
-                  className="hover:text-primary dark:hover:text-primary"
-                >
+                <PhoneLink phone={formState.supportPhone} className="hover:text-primary">
                   <span dir="ltr" className="rtl:text-start">
                     {formState.supportPhone}
                   </span>

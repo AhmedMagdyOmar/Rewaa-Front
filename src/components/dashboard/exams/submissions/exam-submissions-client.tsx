@@ -124,11 +124,7 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
           <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             type="text"
-            placeholder={
-              isAr
-                ? "ابحث باسم الطالب أو البريد أو الامتحان..."
-                : "Search by student name, email or exam..."
-            }
+            placeholder={t("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -237,7 +233,7 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
                 filteredAttempts.map((attempt: BackendExamAttempt, idx: number) => {
                   const isNeedsReview = attempt.status === "pending_review";
                   const isGraded = attempt.status === "graded";
-                  const studentName = attempt.student?.full_name || (isAr ? "طالب" : "Student");
+                  const studentName = attempt.student?.full_name || t("defaultStudent");
                   const examAttemptTitle = isAr
                     ? attempt.exam.title.ar || attempt.exam.title.en
                     : attempt.exam.title.en || attempt.exam.title.ar;
@@ -296,7 +292,7 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
                         {isNeedsReview && (
                           <Badge
                             variant="outline"
-                            className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-bold"
+                            className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-xs font-bold"
                           >
                             <Sparkles className="size-3 me-1 text-amber-600 animate-pulse" />
                             {t("status.pendingReview")}

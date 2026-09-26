@@ -81,10 +81,7 @@ export function NewQuestionClient() {
         router.push(`/${locale}/dashboard/questions`);
       }
     } catch (err) {
-      toast.error(
-        getErrorMessage(err) ||
-          (locale === "ar" ? "فشل في إنشاء السؤال" : "Failed to create question"),
-      );
+      toast.error(getErrorMessage(err) || t("messages.createFailed"));
     }
   };
 

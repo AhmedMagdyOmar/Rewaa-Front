@@ -1054,7 +1054,15 @@ export interface ActivationCodesListResponse {
 // Billing, Orders & Finance Contracts (Provider Dashboard)
 // -------------------------------------------------------------
 
-export type BackendOrderStatus = "pending" | "paid" | "partially_paid" | "cancelled" | "refunded";
+export type BackendOrderStatus =
+  | "awaiting_payment"
+  | "pending"
+  | "under_review"
+  | "paid"
+  | "partially_paid"
+  | "cancelled"
+  | "refunded"
+  | string;
 export type BackendPaymentStatus = "pending" | "approved" | "rejected";
 export type BackendPaymentMethod =
   | "instapay"
@@ -1804,4 +1812,56 @@ export interface SubmitExamAttemptPayload {
     question_id: number;
     answer?: unknown;
   }>;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: Checkout & Orders
+// ---------------------------------------------------------------------------
+
+export interface SubmitManualPaymentPayload {
+  payment_account_id: number;
+  amount: number;
+  proof: File;
+  submitted_phone?: string;
+  transaction_reference?: string;
+  idempotency_key: string;
+}
+
+export interface SubmitManualPaymentResponse {
+  payment: BackendPayment;
+}
+
+export interface PayWithWalletPayload {
+  idempotency_key: string;
+}
+
+export interface PayWithWalletResponse {
+  order: BackendOrder;
+}
+
+export interface StudentPaymentAccountsResponse {
+  payment_accounts: BackendPaymentAccount[];
+}
+
+export interface StudentOrderFilterParams {
+  search?: string;
+  status?: BackendOrderStatus;
+  sort?: string;
+  page?: number;
+  per_page?: number;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 8: Activation Code Redemption
+// ---------------------------------------------------------------------------
+
+export interface RedeemActivationCodePayload {
+  code: string;
+}
+
+export interface RedeemActivationCodeResponse {
+  course_id: number;
+  course_title: Record<string, string | null>;
+  enrollment_id: number;
+  redeemed_at: string;
 }

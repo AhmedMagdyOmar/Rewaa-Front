@@ -6,6 +6,7 @@ import { useMyCourses } from "@/hooks/use-my-courses";
 import { useStudentExams, useStudentGeneralExams } from "@/hooks/use-student-exams";
 import { useStudentWebsiteWallet } from "@/hooks/use-student-wallet";
 import { BookOpen, FileCheck2, HelpCircle, TrendingUp, Wallet } from "lucide-react";
+import Link from "next/link";
 import { useLocale, useTranslations } from "next-intl";
 
 interface StudentGeneralOverviewProps {
@@ -163,26 +164,30 @@ export function StudentGeneralOverview({
         </DashboardCard>
 
         {/* Card 3: Wallet Balance */}
-        <DashboardCard className="p-5 flex flex-col justify-between gap-3 bg-linear-to-br from-emerald-500/10 via-card to-card border-emerald-500/20 hover:border-emerald-500/40 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">{t("walletBalance")}</span>
-            <div className="size-9 rounded-xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
-              <Wallet className="size-4.5" />
-            </div>
-          </div>
-          <div className="space-y-0.5">
-            {isLoadingWallet ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black text-foreground">
-                  {displayedWalletBalance.toLocaleString("en-US")}
-                </span>
-                <span className="text-xs font-semibold text-emerald-600">{currency}</span>
+        <Link href="/student-dashboard/wallet" className="block">
+          <DashboardCard className="p-5 h-full flex flex-col justify-between gap-3 bg-linear-to-br from-emerald-500/10 via-card to-card border-emerald-500/20 hover:border-emerald-500/50 hover:shadow-md transition-all cursor-pointer">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-muted-foreground">
+                {t("walletBalance")}
+              </span>
+              <div className="size-9 rounded-xl bg-emerald-500/20 text-emerald-600 flex items-center justify-center shrink-0">
+                <Wallet className="size-4.5" />
               </div>
-            )}
-          </div>
-        </DashboardCard>
+            </div>
+            <div className="space-y-0.5">
+              {isLoadingWallet ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-2xl sm:text-3xl font-black text-foreground">
+                    {displayedWalletBalance.toLocaleString("en-US")}
+                  </span>
+                  <span className="text-xs font-semibold text-emerald-600">{currency}</span>
+                </div>
+              )}
+            </div>
+          </DashboardCard>
+        </Link>
 
         {/* Card 4: Number of Exams Solved */}
         <DashboardCard className="p-5 flex flex-col justify-between gap-3 bg-card hover:border-purple-500/40 transition-colors">

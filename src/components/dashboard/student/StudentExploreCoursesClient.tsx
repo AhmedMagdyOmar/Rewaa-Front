@@ -10,10 +10,11 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useExploreCourses } from "@/hooks/use-explore-courses";
 import { Link } from "@/i18n/routing";
-import { ArrowLeft, BookOpen } from "lucide-react";
+import { ArrowLeft, BookOpen, KeyRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
+import { StudentRedeemCodeDialog } from "./courses/StudentRedeemCodeDialog";
 
 export function StudentExploreCoursesClient() {
   const t = useTranslations("studentDashboard.exploreCoursesPage");
@@ -107,6 +108,9 @@ export function StudentExploreCoursesClient() {
   const isSearchEmpty = !isLoading && Boolean(searchQuery) && courses.length === 0;
   const isInitialEmpty = !isLoading && !searchQuery && courses.length === 0;
 
+  const tRedeem = useTranslations("studentDashboard.activationCodeRedemption");
+  const [redeemDialogOpen, setRedeemDialogOpen] = React.useState(false);
+
   return (
     <div className="space-y-6 w-full">
       {/* ──────────────────────────────────────────────────────────────────────────────
@@ -132,7 +136,17 @@ export function StudentExploreCoursesClient() {
           <p className="text-sm text-muted-foreground mt-1 ps-12">{t("subtitle")}</p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setRedeemDialogOpen(true)}
+            className="gap-2 border-border/80 font-semibold"
+          >
+            <KeyRound className="size-4 text-primary" />
+            <span>{tRedeem("button")}</span>
+          </Button>
+
           <Button
             asChild
             variant="outline"
@@ -146,6 +160,8 @@ export function StudentExploreCoursesClient() {
           </Button>
         </div>
       </div>
+
+      <StudentRedeemCodeDialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen} />
 
       {/* ──────────────────────────────────────────────────────────────────────────────
           2. FILTER & SEARCH TOOLBAR

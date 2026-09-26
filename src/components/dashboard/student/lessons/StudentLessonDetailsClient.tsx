@@ -175,7 +175,7 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
               className={cn(
                 "flex items-center gap-2 px-3.5 py-1.5 rounded-xl border text-xs font-medium cursor-pointer transition-colors shadow-2xs select-none disabled:opacity-60 disabled:cursor-not-allowed",
                 lesson.is_completed
-                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
+                  ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 hover:bg-emerald-500/20"
                   : "bg-muted/40 border-border/60 text-muted-foreground hover:bg-muted/70",
               )}
             >
@@ -312,7 +312,7 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
             {/* Content Tab */}
             <TabsContent value="content" className="space-y-4 pt-2">
               {description ? (
-                <div className="prose prose-sm dark:prose-invert max-w-none">
+                <div className="prose prose-sm max-w-none">
                   <MarkdownViewer content={description} />
                 </div>
               ) : (

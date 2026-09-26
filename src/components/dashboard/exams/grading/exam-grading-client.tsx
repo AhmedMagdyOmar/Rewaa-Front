@@ -193,10 +193,8 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
         <AlertCircle className="size-12 text-destructive" />
-        <h2 className="text-lg font-bold">
-          {isAr ? "تعذر تحميل بيانات التسليم" : "Failed to load submission"}
-        </h2>
-        <Button onClick={() => refetch()}>{isAr ? "إعادة المحاولة" : "Try Again"}</Button>
+        <h2 className="text-lg font-bold">{t("failedLoad")}</h2>
+        <Button onClick={() => refetch()}>{t("tryAgain")}</Button>
       </div>
     );
   }
@@ -205,7 +203,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
     ? attempt.exam.title.ar || attempt.exam.title.en
     : attempt.exam.title.en || attempt.exam.title.ar;
 
-  const studentName = attempt.student?.full_name || (isAr ? "طالب" : "Student");
+  const studentName = attempt.student?.full_name || t("defaultStudent");
   const isAlreadyGraded = attempt.status === "graded";
 
   return (
@@ -229,7 +227,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
               <span>{t("pageTitle")}</span>
             </h1>
             {attempt.status === "pending_review" ? (
-              <Badge className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30 text-xs font-bold">
+              <Badge className="bg-amber-500/10 text-amber-700 border-amber-500/30 text-xs font-bold">
                 <Sparkles className="size-3 me-1 text-amber-600 animate-pulse" />
                 {tSubmissions("status.pendingReview")}
               </Badge>
@@ -356,7 +354,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                   : "bg-rose-500/10 text-rose-600 border-rose-500/30"
               }`}
             >
-              {isPassing ? (isAr ? "ناجح" : "Passed") : isAr ? "راسب" : "Failed"}
+              {isPassing ? t("passed") : t("failed")}
             </Badge>
           </div>
           <div className="flex items-baseline justify-between mt-1">
@@ -464,7 +462,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                       {/* Model Answer / Rubric (if exists) */}
                       {modelAnswer && (
                         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 space-y-1.5">
-                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
                             <BookOpen className="size-3.5" />
                             {t("question.modelAnswer")}
                           </span>
@@ -621,7 +619,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                                 <span>{optText}</span>
                                 {isSelected && (
                                   <Badge variant="secondary" className="text-[10px]">
-                                    {isAr ? "إجابة الطالب" : "Student Answer"}
+                                    {t("question.studentAnswer").replace(":", "")}
                                   </Badge>
                                 )}
                               </div>
@@ -655,7 +653,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
           <div className="flex items-center gap-3">
             <Link href={`/${locale}/dashboard/exams/${examId}/submissions`}>
               <Button type="button" variant="outline" size="sm" className="cursor-pointer">
-                {isAr ? "إلغاء والعودة" : "Cancel & Return"}
+                {t("cancelReturn")}
               </Button>
             </Link>
             <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground">

@@ -381,18 +381,29 @@ Replace client-side checkout mocks with server-side order lifecycle, manual paym
 
 ### Deliverables & Action Items
 
-1. **Course Checkout & Order Creation**:
+1. **Course Checkout & Order Creation** [x]:
    - `POST /api/website/orders` (Initiate order for course/package)
-   - `GET /api/website/payment-accounts` (Display provider Instapay/Vodafone Cash/Bank accounts)
-   - `POST /api/website/orders/{order}/payments` (Upload transfer receipt screenshot)
-   - `POST /api/website/orders/{order}/pay-with-wallet` (Instant deduction from student wallet)
+   - `GET /api/website/orders` & `GET /api/website/orders/{order}` (Full order list and individual order checkout / detail pages)
+   - `GET /api/website/payment-accounts` (Display active payment accounts: bank, instapay, vodafone cash, etc.)
+   - `POST /api/website/orders/{order}/payments` (Upload transfer receipt screenshot with idempotency)
+   - `POST /api/website/orders/{order}/pay-with-wallet` (Instant deduction from student wallet with idempotency)
+   - Added student orders list page (`/student-dashboard/orders`) and checkout/order detail page (`/student-dashboard/orders/[orderId]`)
+   - Integrated `StudentCourseDetailClient` to automatically redirect pending orders to the checkout page upon clicking "Enroll"
 
-2. **Student Wallet Portal**:
-   - `GET /api/website/wallet` (Active balance)
-   - `GET /api/website/wallet/transactions` (Detailed ledger of purchases, refunds, and adjustments)
+2. **Student Wallet Portal** [x]:
+   - `GET /api/website/wallet` (Active balance and currency)
+   - `GET /api/website/wallet/transactions` (Detailed ledger of purchases, refunds, and adjustments with direction filters)
+   - Created dedicated wallet client and pages (`/student-dashboard/wallet` and alias `/student-dashboard/billing`)
+   - Added `StudentWalletBalanceCard`, `StudentWalletFilterBar`, and `StudentWalletTransactionsTable`
+   - Linked overview wallet balance card directly to the wallet portal
 
-3. **Activation Code Redemption**:
-   - Integration with activation code redemption endpoint to unlock courses instantly without checkout.
+3. **Activation Code Redemption** [x]:
+   - `POST /api/website/activation-codes/redeem` (Instant student course unlock & zero-amount paid order audit trail creation)
+   - Created `StudentRedeemCodeDialog` with validation, uppercase auto-formatting, and post-redemption navigation
+   - Added `useRedeemActivationCode` TanStack Query hook with automated cache invalidation
+   - Integrated redemption triggers into My Courses roster (`StudentCoursesClient`), Explore Courses (`StudentExploreCoursesClient`), and Course Preview (`StudentCoursePreviewView`)
+   - Added bilingual translations in `en.json` and `ar.json`
+   - Added automated Pest feature test suite `ActivationCodeRedemptionTest.php`
 
 ---
 

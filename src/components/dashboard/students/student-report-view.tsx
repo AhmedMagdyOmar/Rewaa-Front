@@ -137,7 +137,7 @@ export function StudentReportView({
 
   return (
     <div className="space-y-6">
-      <div className="student-report-print p-6 sm:p-8 space-y-6 bg-white dark:bg-card text-slate-900 dark:text-card-foreground rounded-2xl border border-border shadow-xs">
+      <div className="student-report-print p-6 sm:p-8 space-y-6 bg-white text-slate-900 rounded-2xl border border-border shadow-xs">
         {/* Top Logo & App Name Header */}
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-3">

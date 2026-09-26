@@ -995,7 +995,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                 />
 
                 {availableExams.length === 0 && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                  <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                     {locale === "ar"
                       ? isGeneralLesson
                         ? "لا توجد امتحانات مستقلة متاحة تطابق المرحلة والمادة والمعلم المحدد. يمكنك إنشاء امتحان مستقل أولاً من قسم إدارة الامتحانات."

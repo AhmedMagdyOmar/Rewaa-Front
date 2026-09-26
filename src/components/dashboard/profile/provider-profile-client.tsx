@@ -144,7 +144,7 @@ export function ProviderProfileClient() {
                 {profile.is_active && (
                   <Badge
                     variant="outline"
-                    className="border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 text-xs"
+                    className="border-emerald-500/30 text-emerald-600 bg-emerald-500/10 text-xs"
                   >
                     {isAr ? "نشط" : "Active"}
                   </Badge>

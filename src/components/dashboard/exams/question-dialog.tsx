@@ -179,13 +179,13 @@ export function QuestionDialog({
     switch (type) {
       case "mcq":
       case "multiple_choice":
-        return isAr ? "اختيار من متعدد" : "Multiple Choice";
+        return t("types.mcq");
       case "true/false":
       case "true_false":
-        return isAr ? "صح أم خطأ" : "True / False";
+        return t("types.trueFalse");
       case "text":
       case "essay":
-        return isAr ? "مقالي / نصي" : "Essay";
+        return t("types.text");
       default:
         return type;
     }
@@ -208,12 +208,8 @@ export function QuestionDialog({
               className="w-full mt-3"
             >
               <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="create">
-                  {isAr ? "إنشاء سؤال جديد" : "Create New Question"}
-                </TabsTrigger>
-                <TabsTrigger value="bank">
-                  {isAr ? "اختيار من بنك الأسئلة" : "Choose from Question Bank"}
-                </TabsTrigger>
+                <TabsTrigger value="create">{t("tabs.create")}</TabsTrigger>
+                <TabsTrigger value="bank">{t("tabs.bank")}</TabsTrigger>
               </TabsList>
             </Tabs>
           )}
@@ -238,12 +234,11 @@ export function QuestionDialog({
             {/* 1. Target Section Selector */}
             <div className="flex flex-col gap-2 p-4 rounded-xl border bg-muted/20">
               <label htmlFor="bank-target-sec" className="text-sm font-semibold text-foreground">
-                {isAr ? "القسم المستهدف" : "Target Section"}{" "}
-                <span className="text-destructive">*</span>
+                {t("targetSection")} <span className="text-destructive">*</span>
               </label>
               <Select value={bankSectionId} onValueChange={setBankSectionId}>
                 <SelectTrigger id="bank-target-sec" className="w-full bg-background">
-                  <SelectValue placeholder={isAr ? "اختر القسم..." : "Select section..."} />
+                  <SelectValue placeholder={t("selectSectionPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>
                   {sections.map((s) => (
@@ -261,7 +256,7 @@ export function QuestionDialog({
               <div className="relative flex-1">
                 <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={isAr ? "بحث في بنك الأسئلة..." : "Search question bank..."}
+                  placeholder={t("bank.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="ps-9 bg-background"
@@ -272,10 +267,10 @@ export function QuestionDialog({
               <div className="w-full sm:w-36 shrink-0">
                 <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
                   <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder={isAr ? "الصعوبة" : "Difficulty"} />
+                    <SelectValue placeholder={t("bank.difficultyPlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{isAr ? "كل الصعوبات" : "All Difficulties"}</SelectItem>
+                    <SelectItem value="all">{t("bank.allDifficulties")}</SelectItem>
                     <SelectItem value="easy">{tDiff("easy")}</SelectItem>
                     <SelectItem value="medium">{tDiff("medium")}</SelectItem>
                     <SelectItem value="hard">{tDiff("hard")}</SelectItem>
@@ -287,17 +282,13 @@ export function QuestionDialog({
               <div className="w-full sm:w-40 shrink-0">
                 <Select value={filterType} onValueChange={setFilterType}>
                   <SelectTrigger className="w-full bg-background">
-                    <SelectValue placeholder={isAr ? "نوع السؤال" : "Question Type"} />
+                    <SelectValue placeholder={t("bank.typePlaceholder")} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{isAr ? "كل الأنواع" : "All Types"}</SelectItem>
-                    <SelectItem value="multiple_choice">
-                      {isAr ? "اختيار من متعدد" : "Multiple Choice"}
-                    </SelectItem>
-                    <SelectItem value="true_false">
-                      {isAr ? "صح أم خطأ" : "True / False"}
-                    </SelectItem>
-                    <SelectItem value="essay">{isAr ? "مقالي" : "Essay"}</SelectItem>
+                    <SelectItem value="all">{t("bank.allTypes")}</SelectItem>
+                    <SelectItem value="multiple_choice">{t("types.mcq")}</SelectItem>
+                    <SelectItem value="true_false">{t("types.trueFalse")}</SelectItem>
+                    <SelectItem value="essay">{t("types.text")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -306,7 +297,7 @@ export function QuestionDialog({
             {/* 3. Selection Summary Header */}
             <div className="flex items-center justify-between px-1 text-xs">
               <span className="text-muted-foreground font-medium">
-                {isAr ? "الأسئلة المتاحة:" : "Available questions:"}{" "}
+                {t("bank.availableQuestions")}{" "}
                 <span className="font-bold text-foreground">{availableBankQuestions.length}</span>
               </span>
 
@@ -321,12 +312,12 @@ export function QuestionDialog({
                   {selectedQuestionIds.length === availableBankQuestions.length ? (
                     <>
                       <Square className="size-3.5" />
-                      <span>{isAr ? "إلغاء تحديد الكل" : "Deselect All"}</span>
+                      <span>{t("bank.deselectAll")}</span>
                     </>
                   ) : (
                     <>
                       <CheckSquare className="size-3.5" />
-                      <span>{isAr ? "تحديد الكل" : "Select All"}</span>
+                      <span>{t("bank.selectAll")}</span>
                     </>
                   )}
                 </Button>
@@ -344,13 +335,9 @@ export function QuestionDialog({
               ) : availableBankQuestions.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-border bg-muted/10">
                   <HelpCircle className="size-10 text-muted-foreground/40 mb-2" />
-                  <h3 className="text-sm font-semibold text-foreground">
-                    {isAr ? "لا توجد أسئلة متاحة" : "No questions available"}
-                  </h3>
+                  <h3 className="text-sm font-semibold text-foreground">{t("bank.noQuestions")}</h3>
                   <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                    {isAr
-                      ? "لم يتم العثور على أسئلة في بنك الأسئلة تطابق معايير البحث الحالية."
-                      : "No questions found matching the selected filters in the question bank."}
+                    {t("bank.noQuestionsDesc")}
                   </p>
                 </div>
               ) : (
@@ -413,7 +400,7 @@ export function QuestionDialog({
                               variant="outline"
                               className="text-[10px] font-bold bg-primary/10 text-primary border-primary/20"
                             >
-                              {bq.score} {isAr ? "درجة" : "marks"}
+                              {bq.score} {t("bank.points")}
                             </Badge>
                           </div>
                         </div>
@@ -433,7 +420,7 @@ export function QuestionDialog({
             {/* 5. Dialog Footer */}
             <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                {isAr ? "إلغاء" : "Cancel"}
+                {t("actions.cancel")}
               </Button>
               <Button
                 type="button"
@@ -442,11 +429,7 @@ export function QuestionDialog({
                 className="gap-2 font-semibold"
               >
                 <Plus className="size-4" />
-                <span>
-                  {isAr
-                    ? `إضافة الأسئلة المختارة (${selectedQuestionIds.length})`
-                    : `Add Selected Questions (${selectedQuestionIds.length})`}
-                </span>
+                <span>{t("bank.addSelected", { count: selectedQuestionIds.length })}</span>
               </Button>
             </DialogFooter>
           </div>

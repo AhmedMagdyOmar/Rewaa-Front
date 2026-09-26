@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyCourses } from "@/hooks/use-my-courses";
 import { Link } from "@/i18n/routing";
-import { BookOpen, Compass } from "lucide-react";
+import { BookOpen, Compass, KeyRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { StudentCourseFilters, SortOptionItem } from "./StudentCourseFilters";
 import { StudentEnrolledCourseCard } from "./StudentEnrolledCourseCard";
+import { StudentRedeemCodeDialog } from "./courses/StudentRedeemCodeDialog";
 
 export function StudentCoursesClient() {
   const t = useTranslations("studentDashboard.coursesPage");
@@ -103,6 +104,9 @@ export function StudentCoursesClient() {
   const isInitialEmpty = !isLoading && !searchQuery && courses.length === 0;
   const isSearchEmpty = !isLoading && Boolean(searchQuery) && courses.length === 0;
 
+  const tRedeem = useTranslations("studentDashboard.activationCodeRedemption");
+  const [redeemDialogOpen, setRedeemDialogOpen] = React.useState(false);
+
   return (
     <div className="space-y-6 w-full">
       {/* Header Row */}
@@ -119,7 +123,17 @@ export function StudentCoursesClient() {
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
+          <Button
+            variant="outline"
+            size="default"
+            onClick={() => setRedeemDialogOpen(true)}
+            className="gap-2 border-border/80 font-semibold"
+          >
+            <KeyRound className="size-4 text-primary" />
+            <span>{tRedeem("button")}</span>
+          </Button>
+
           <Button asChild size="default" className="gap-2 shadow-xs font-semibold">
             <Link href="/student-dashboard/courses/explore">
               <Compass className="size-4" />
@@ -128,6 +142,8 @@ export function StudentCoursesClient() {
           </Button>
         </div>
       </div>
+
+      <StudentRedeemCodeDialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen} />
 
       {/* Filters (Search & Sort) */}
       <StudentCourseFilters

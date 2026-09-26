@@ -32,9 +32,22 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
     }
   }
 
-  // 2. Check apiMessage from Laravel ApiResponse
+  // 1b. Check direct error.response.data for Laravel validation errors
+  const resData = (axiosErr?.response?.data || {}) as Record<string, unknown>;
+  if (resData.errors && typeof resData.errors === "object") {
+    const errorsObj = resData.errors as Record<string, string[]>;
+    const firstKey = Object.keys(errorsObj)[0];
+    if (firstKey && Array.isArray(errorsObj[firstKey]) && errorsObj[firstKey].length > 0) {
+      return errorsObj[firstKey][0];
+    }
+  }
+
+  // 2. Check apiMessage from Laravel ApiResponse or response.data.message
   if (axiosErr?.apiMessage) {
     return axiosErr.apiMessage;
+  }
+  if (typeof resData.message === "string" && resData.message) {
+    return resData.message;
   }
 
   // 3. Check generic API error payload
@@ -46,12 +59,7 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
     return dtoErr.message;
   }
 
-  // 4. Standard Error object
-  if (error instanceof Error && error.message) {
-    return error.message;
-  }
-
-  // 5. Fallback data object - check if it contains an application-level error (4xx/5xx)
+  // 4. Fallback data object - check if it contains an application-level error (4xx/5xx)
   const data = dataObj as DataType & { statusCode?: number };
   const status = data?.status || data?.statusCode;
   if (status && status >= 400 && data.data) {
@@ -61,10 +69,17 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
     return data.data.message || "An error occurred";
   }
 
+  // 5. Standard Error object (ignore generic Axios error messages like "Request failed with status code 422")
+  if (error instanceof Error && error.message) {
+    if (!error.message.includes("Request failed with status code")) {
+      return error.message;
+    }
+  }
+
   // If there is no error and data is successful (e.g. 200/201), there is no error!
   if (!error) {
     return null;
   }
 
-  return "An unexpected error occurred. Please try again.";
+  return null;
 }

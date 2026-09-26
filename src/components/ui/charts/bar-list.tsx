@@ -77,7 +77,7 @@ function BarListInner<T>(
                 ? [
                     "m-0! cursor-pointer",
                     // hover
-                    "hover:bg-gray-50 dark:hover:bg-gray-900",
+                    "hover:bg-gray-50",
                   ]
                 : "",
             )}

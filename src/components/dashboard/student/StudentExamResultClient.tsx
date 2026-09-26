@@ -327,18 +327,18 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 variant="outline"
                 className={`text-xs font-bold gap-1 px-2.5 py-0.5 ${
                   isPendingReview
-                    ? "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400"
+                    ? "bg-amber-500/10 text-amber-700 border-amber-500/30"
                     : isPassed
-                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400"
-                      : "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-400"
+                      ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
+                      : "bg-rose-500/10 text-rose-700 border-rose-500/30"
                 }`}
               >
                 {isPendingReview ? (
-                  <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                  <Clock className="size-3.5 text-amber-600" />
                 ) : isPassed ? (
-                  <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="size-3.5 text-emerald-600" />
                 ) : (
-                  <XCircle className="size-3.5 text-rose-600 dark:text-rose-400" />
+                  <XCircle className="size-3.5 text-rose-600" />
                 )}
                 <span>
                   {isPendingReview
@@ -525,18 +525,12 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
             <div className="flex items-baseline gap-1 text-3xl sm:text-4xl font-black text-foreground">
               {isPendingReview ? (
-                <span className="text-amber-600 dark:text-amber-400 text-2xl font-bold">
+                <span className="text-amber-600 text-2xl font-bold">
                   {t("statusPendingReview")}
                 </span>
               ) : (
                 <>
-                  <span
-                    className={
-                      isPassed
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-rose-600 dark:text-rose-400"
-                    }
-                  >
+                  <span className={isPassed ? "text-emerald-600" : "text-rose-600"}>
                     {earnedScore ?? 0}
                   </span>
                   <span className="text-xl text-muted-foreground font-semibold">
@@ -617,7 +611,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
           </div>
           <div>
-            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+            <p className="text-2xl font-black text-emerald-600">
               {correctCount}{" "}
               <span className="text-sm font-semibold text-muted-foreground">
                 / {reviewQuestions.length}
@@ -640,7 +634,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
           </div>
           <div>
-            <p className="text-2xl font-black text-rose-600 dark:text-rose-400">
+            <p className="text-2xl font-black text-rose-600">
               {wrongCount}{" "}
               <span className="text-sm font-semibold text-muted-foreground">
                 / {reviewQuestions.length}
@@ -750,10 +744,10 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                         <div
                           className={`size-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                             isCorrect
-                              ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400"
+                              ? "bg-emerald-500/15 text-emerald-700"
                               : isIncorrect
-                                ? "bg-rose-500/15 text-rose-700 dark:text-rose-400"
-                                : "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                ? "bg-rose-500/15 text-rose-700"
+                                : "bg-amber-500/15 text-amber-700"
                           }`}
                         >
                           {isCorrect ? (
@@ -790,10 +784,10 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                           variant="outline"
                           className={`text-xs font-bold ${
                             isCorrect
-                              ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400"
+                              ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
                               : isIncorrect
-                                ? "bg-rose-500/10 text-rose-700 border-rose-500/30 dark:text-rose-400"
-                                : "bg-amber-500/10 text-amber-700 border-amber-500/30 dark:text-amber-400"
+                                ? "bg-rose-500/10 text-rose-700 border-rose-500/30"
+                                : "bg-amber-500/10 text-amber-700 border-amber-500/30"
                           }`}
                         >
                           {isQuestionPending
@@ -827,18 +821,18 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                             if (isStudentSelection) {
                               if (hasRevealedAnswers) {
                                 optionStyle = isCorrectOpt
-                                  ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-semibold"
-                                  : "bg-rose-500/15 border-rose-500/50 text-rose-800 dark:text-rose-300 font-semibold";
+                                  ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 font-semibold"
+                                  : "bg-rose-500/15 border-rose-500/50 text-rose-800 font-semibold";
                               } else {
                                 optionStyle = isCorrect
-                                  ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-semibold"
+                                  ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 font-semibold"
                                   : isIncorrect
-                                    ? "bg-rose-500/15 border-rose-500/50 text-rose-800 dark:text-rose-300 font-semibold"
+                                    ? "bg-rose-500/15 border-rose-500/50 text-rose-800 font-semibold"
                                     : "bg-primary/10 border-primary/40 text-primary font-semibold";
                               }
                             } else if (hasRevealedAnswers && isCorrectOpt) {
                               optionStyle =
-                                "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-medium";
+                                "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 font-medium";
                             }
 
                             return (
@@ -849,14 +843,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                                 <div className="flex items-center gap-2 min-w-0">
                                   {isStudentSelection ? (
                                     isCorrect ? (
-                                      <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                      <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                     ) : isIncorrect ? (
-                                      <XCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                      <XCircle className="size-4 text-rose-600 shrink-0" />
                                     ) : (
                                       <span className="size-4 rounded-full bg-primary/20 border border-primary shrink-0" />
                                     )
                                   ) : hasRevealedAnswers && isCorrectOpt ? (
-                                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                   ) : (
                                     <span className="size-4 rounded-full border border-muted-foreground/30 shrink-0" />
                                   )}
@@ -911,18 +905,18 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                           if (isStudentSelection) {
                             if (hasRevealedAnswers) {
                               cardStyle = isCorrectVal
-                                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-semibold"
-                                : "bg-rose-500/15 border-rose-500/50 text-rose-800 dark:text-rose-300 font-semibold";
+                                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 font-semibold"
+                                : "bg-rose-500/15 border-rose-500/50 text-rose-800 font-semibold";
                             } else {
                               cardStyle = isCorrect
-                                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 dark:text-emerald-300 font-semibold"
+                                ? "bg-emerald-500/15 border-emerald-500/50 text-emerald-800 font-semibold"
                                 : isIncorrect
-                                  ? "bg-rose-500/15 border-rose-500/50 text-rose-800 dark:text-rose-300 font-semibold"
+                                  ? "bg-rose-500/15 border-rose-500/50 text-rose-800 font-semibold"
                                   : "bg-primary/10 border-primary/40 text-primary font-semibold";
                             }
                           } else if (hasRevealedAnswers && isCorrectVal) {
                             cardStyle =
-                              "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400 font-medium";
+                              "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 font-medium";
                           }
 
                           return (
@@ -933,14 +927,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                               <div className="flex items-center gap-2">
                                 {isStudentSelection ? (
                                   isCorrect ? (
-                                    <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                    <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                   ) : isIncorrect ? (
-                                    <XCircle className="size-4 text-rose-600 dark:text-rose-400 shrink-0" />
+                                    <XCircle className="size-4 text-rose-600 shrink-0" />
                                   ) : (
                                     <span className="size-4 rounded-full bg-primary/20 border border-primary shrink-0" />
                                   )
                                 ) : hasRevealedAnswers && isCorrectVal ? (
-                                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                                  <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                 ) : (
                                   <span className="size-4 rounded-full border border-muted-foreground/30 shrink-0" />
                                 )}
@@ -980,20 +974,20 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                         <div
                           className={`p-3 rounded-xl border space-y-1 ${
                             isCorrect
-                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-900 dark:text-emerald-300"
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-900"
                               : isIncorrect
-                                ? "bg-rose-500/10 border-rose-500/30 text-rose-900 dark:text-rose-300"
-                                : "bg-amber-500/10 border-amber-500/30 text-amber-900 dark:text-amber-300"
+                                ? "bg-rose-500/10 border-rose-500/30 text-rose-900"
+                                : "bg-amber-500/10 border-amber-500/30 text-amber-900"
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold flex items-center gap-1.5">
                               {isCorrect ? (
-                                <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                                <CheckCircle2 className="size-3.5 text-emerald-600" />
                               ) : isIncorrect ? (
-                                <XCircle className="size-3.5 text-rose-600 dark:text-rose-400" />
+                                <XCircle className="size-3.5 text-rose-600" />
                               ) : (
-                                <Clock className="size-3.5 text-amber-600 dark:text-amber-400" />
+                                <Clock className="size-3.5 text-amber-600" />
                               )}
                               <span>{t("questions.yourAnswer")}</span>
                             </span>
@@ -1012,8 +1006,8 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
                         {/* Model Answer if provided by backend */}
                         {modelAnswer && (
-                          <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-900 dark:text-emerald-300 space-y-1">
-                            <span className="font-bold flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
+                          <div className="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 text-emerald-900 space-y-1">
+                            <span className="font-bold flex items-center gap-1.5 text-emerald-700">
                               <CheckCircle2 className="size-3.5" />
                               <span>{t("questions.modelAnswer")}</span>
                             </span>

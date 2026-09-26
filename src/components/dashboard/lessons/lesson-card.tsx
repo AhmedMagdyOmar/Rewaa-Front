@@ -120,7 +120,7 @@ export function LessonCard({
           <div className="flex items-center gap-1.5">
             {lesson.isActive === false && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-destructive/90 text-white backdrop-blur-md shadow-xs">
-                {isAr ? "غير نشط" : "Inactive"}
+                {t("card.inactive")}
               </span>
             )}
           </div>
@@ -267,19 +267,17 @@ export function LessonCard({
             {lesson.isLinkedToExam && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-1 rounded-md text-xs font-medium cursor-default">
+                  <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-1 rounded-md text-xs font-medium cursor-default">
                     <FileCheck className="h-3 w-3" />
                     <span className="truncate max-w-[120px]">
-                      {lesson.linkedExamTitle || (isAr ? "اختبار" : "Exam")}
+                      {lesson.linkedExamTitle || t("card.defaultExam")}
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="top">
                   {lesson.linkedExamTitle
-                    ? `${isAr ? "اختبار مرتبط:" : "Linked Exam:"} ${lesson.linkedExamTitle}`
-                    : isAr
-                      ? "مرتبط باختبار"
-                      : "Linked to an exam"}
+                    ? `${t("card.linkedExamPrefix")} ${lesson.linkedExamTitle}`
+                    : t("card.examLinked")}
                 </TooltipContent>
               </Tooltip>
             )}

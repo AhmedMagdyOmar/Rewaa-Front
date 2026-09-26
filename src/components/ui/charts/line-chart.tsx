@@ -67,7 +67,7 @@ const LegendItem = ({ name, color, onClick, activeLegend }: LegendItemProps) => 
         className={cn(
           // base
           "truncate text-xs whitespace-nowrap",
-          hasOnValueChange && "group-hover:text-gray-900 dark:group-hover:text-gray-50",
+          hasOnValueChange && "group-hover:text-gray-900",
           activeLegend && activeLegend !== name ? "opacity-40" : "opacity-100",
         )}
       >
@@ -113,7 +113,7 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
         // base
         "group inline-flex size-5 items-center truncate rounded-sm transition",
         disabled
-          ? "cursor-not-allowed text-gray-400 dark:text-gray-600"
+          ? "cursor-not-allowed text-gray-400"
           : "cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
       disabled={disabled}
@@ -741,7 +741,7 @@ const LineChart = React.forwardRef<HTMLDivElement, LineChartProps>((props, ref) 
                   return (
                     <Dot
                       className={cn(
-                        "stroke-white dark:stroke-gray-950",
+                        "stroke-white",
                         onValueChange ? "cursor-pointer" : "",
                         getColorClassName(
                           categoryColors.get(dataKey) as AvailableChartColorsKeys,
@@ -789,7 +789,7 @@ const LineChart = React.forwardRef<HTMLDivElement, LineChartProps>((props, ref) 
                         strokeLinejoin={strokeLinejoin}
                         strokeWidth={strokeWidth}
                         className={cn(
-                          "stroke-white dark:stroke-gray-950",
+                          "stroke-white",
                           onValueChange ? "cursor-pointer" : "",
                           getColorClassName(
                             categoryColors.get(dataKey) as AvailableChartColorsKeys,

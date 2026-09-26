@@ -976,7 +976,7 @@ export function LessonDialog({
                       />
 
                       {availableExams.length === 0 ? (
-                        <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                        <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                           {locale === "ar"
                             ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان وربطه بهذه الدورة من قسم إدارة الامتحانات."
                             : "No exams found for this course yet. You can create an exam linked to this course from the Exams section."}
@@ -1140,7 +1140,7 @@ export function LessonDialog({
               />
 
               {availableExams.length === 0 ? (
-                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
+                <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                   {locale === "ar"
                     ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان للدورة من قسم الامتحانات."
                     : "No exams found for this course yet. You can create an exam from the Exams section."}

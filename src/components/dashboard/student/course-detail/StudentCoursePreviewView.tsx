@@ -16,7 +16,7 @@ import {
   Globe,
   Globe2,
   House,
-  Lock,
+  KeyRound,
   Sparkles,
   Tag,
   User,
@@ -24,10 +24,11 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
+import { StudentRedeemCodeDialog } from "../courses/StudentRedeemCodeDialog";
 
 interface StudentCoursePreviewViewProps {
   course: BackendStudentCourseDetails;
-  onEnroll: (courseId: number) => void;
+  onEnroll: (courseId: number, deliveryMode?: string) => void;
   isEnrolling?: boolean;
 }
 
@@ -40,7 +41,12 @@ export function StudentCoursePreviewView({
   const isRtl = locale === "ar";
   const t = useTranslations("studentDashboard.coursePreview");
   const tCourses = useTranslations("courses");
+  const tRedeem = useTranslations("studentDashboard.activationCodeRedemption");
+  const [redeemDialogOpen, setRedeemDialogOpen] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+  const [selectedDeliveryMode, setSelectedDeliveryMode] = React.useState<string>(
+    course.delivery_mode === "hybrid" ? "online" : course.delivery_mode || "online",
+  );
 
   // Helper to extract bilingual record
   const resolveText = (field: Record<string, string> | string | null | undefined): string => {
@@ -190,11 +196,6 @@ export function StudentCoursePreviewView({
                     value="sections"
                     className="space-y-4 mt-0 focus-visible:outline-hidden"
                   >
-                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex items-start gap-3 text-xs sm:text-sm text-foreground">
-                      <Lock className="size-4 text-primary mt-0.5 shrink-0" />
-                      <p className="leading-relaxed">{t("sectionsTab.previewNotice")}</p>
-                    </div>
-
                     <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-xl space-y-2">
                       <div className="font-semibold text-foreground">
                         {course.sections_count > 0 || course.lessons_count > 0 ? (
@@ -292,17 +293,70 @@ export function StudentCoursePreviewView({
                 </div>
               </div>
 
+              {/* Attendance Mode Selector for Hybrid Courses */}
+              {course.delivery_mode === "hybrid" && (
+                <div className="space-y-2 pt-2 border-t border-border/60">
+                  <div className="flex items-center justify-between text-xs font-semibold text-foreground">
+                    <span>{isRtl ? "طريقة الحضور المفضلة:" : "Preferred Attendance Mode:"}</span>
+                    <span className="text-[11px] text-muted-foreground">
+                      {isRtl ? "مطلوب" : "Required"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDeliveryMode("online")}
+                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        selectedDeliveryMode === "online"
+                          ? "border-primary bg-primary/10 text-primary shadow-xs"
+                          : "border-border/70 hover:border-border text-muted-foreground hover:text-foreground bg-muted/20"
+                      }`}
+                    >
+                      <Globe className="size-3.5" />
+                      <span>{tCourses("venue.online")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedDeliveryMode("onsite")}
+                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
+                        selectedDeliveryMode === "onsite"
+                          ? "border-primary bg-primary/10 text-primary shadow-xs"
+                          : "border-border/70 hover:border-border text-muted-foreground hover:text-foreground bg-muted/20"
+                      }`}
+                    >
+                      <House className="size-3.5" />
+                      <span>{tCourses("venue.onsite")}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 3. CTA Button: Full Width "Enroll in Course" */}
               <Button
                 type="button"
                 size="lg"
-                onClick={() => onEnroll(course.id)}
+                onClick={() => onEnroll(course.id, selectedDeliveryMode)}
                 disabled={isEnrolling}
                 className="w-full font-bold text-base py-6 rounded-xl shadow-md cursor-pointer gap-2"
               >
                 <Sparkles className="size-4.5 fill-current" />
                 <span>{isEnrolling ? t("enrolling") : t("enrollInCourse")}</span>
               </Button>
+
+              {/* Activation Code Prompt */}
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => setRedeemDialogOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                >
+                  <KeyRound className="size-3.5" />
+                  <span>{tRedeem("haveCodePrompt")}</span>
+                  <span className="text-primary underline font-bold">{tRedeem("redeemHere")}</span>
+                </button>
+              </div>
+
+              <StudentRedeemCodeDialog open={redeemDialogOpen} onOpenChange={setRedeemDialogOpen} />
 
               {/* 4. "Course Contents" Feature List */}
               <div className="space-y-3 pt-3 border-t border-border/60">

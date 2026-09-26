@@ -59,6 +59,7 @@ export function BillingRequestsClient() {
   );
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage");
+  const tCourses = useTranslations("courses");
 
   const router = useRouter();
   const pathname = usePathname();
@@ -156,23 +157,24 @@ export function BillingRequestsClient() {
 
   // Format delivery mode / venue helper
   const formatVenue = (mode?: string | null) => {
-    if (mode === "center" || mode === "onsite") return locale === "ar" ? "سنتر" : "Center";
-    if (mode === "online") return locale === "ar" ? "أونلاين" : "Online";
-    if (mode === "hybrid") return locale === "ar" ? "مدمج" : "Hybrid";
-    return locale === "ar" ? "أونلاين" : "Online";
+    if (!mode) return "";
+    if (tCourses.has(`venue.${mode}`)) {
+      return tCourses(`venue.${mode}`);
+    }
+    return mode;
   };
 
   // Format payment method helper
   const formatPaymentMethod = (method?: string) => {
-    if (!method) return locale === "ar" ? "أخرى" : "Other";
+    if (!method) return t("methods.other");
     const m = method.toLowerCase();
-    if (m.includes("insta")) return locale === "ar" ? "إنستاباي" : "InstaPay";
+    if (m.includes("insta")) return t("methods.instapay");
     if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
-      return locale === "ar" ? "فودافون كاش" : "Vodafone Cash";
+      return t("methods.vodafone_cash");
     if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
-      return locale === "ar" ? "بطاقة ائتمان" : "Credit Card";
-    if (m.includes("fawry")) return locale === "ar" ? "فوري" : "Fawry";
-    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي" : "Manual Transfer";
+      return t("methods.credit_card");
+    if (m.includes("fawry")) return t("methods.fawry");
+    if (m.includes("manual")) return t("methods.manual");
     return method;
   };
 
@@ -190,7 +192,7 @@ export function BillingRequestsClient() {
 
     try {
       await approvePaymentMutation.mutateAsync(id);
-      toast.success(locale === "ar" ? "تم قبول طلب الدفع بنجاح" : "Payment approved successfully");
+      toast.success(t("approveSuccess"));
 
       const studentName =
         targetPayment.full_name ||
@@ -262,7 +264,7 @@ export function BillingRequestsClient() {
         paymentId: id,
         data: { rejection_reason: reason },
       });
-      toast.success(locale === "ar" ? "تم رفض الطلب بنجاح" : "Payment rejected successfully");
+      toast.success(t("rejectSuccess"));
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Failed to reject payment";
       toast.error(errorMsg);

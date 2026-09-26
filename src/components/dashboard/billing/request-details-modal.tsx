@@ -47,6 +47,8 @@ export function RequestDetailsModal({
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage.modal");
   const tStatus = useTranslations("billingRequestsPage.status");
+  const tMethods = useTranslations("billingRequestsPage.methods");
+  const tCourses = useTranslations("courses");
   const tDetails = useTranslations("studentsPage.details");
 
   const [isRejecting, setIsRejecting] = React.useState(false);
@@ -111,24 +113,24 @@ export function RequestDetailsModal({
     primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
 
   const formatDeliveryMode = (mode: string) => {
-    if (mode === "center" || mode === "onsite") return locale === "ar" ? "سنتر" : "Center / Onsite";
-    if (mode === "online") return locale === "ar" ? "أونلاين" : "Online";
-    if (mode === "hybrid") return locale === "ar" ? "مدمج" : "Hybrid";
+    if (tCourses.has(`venue.${mode}`)) {
+      return tCourses(`venue.${mode}`);
+    }
     return mode;
   };
 
   const proofUrl = payment.proof?.url || (payment.proof_endpoint ? payment.proof_endpoint : null);
 
   const formatPaymentMethod = (method?: string) => {
-    if (!method) return locale === "ar" ? "أخرى" : "Other";
+    if (!method) return tMethods("other");
     const m = method.toLowerCase();
-    if (m.includes("insta")) return locale === "ar" ? "إنستاباي / InstaPay" : "InstaPay";
+    if (m.includes("insta")) return tMethods("instapay");
     if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
-      return locale === "ar" ? "فودافون كاش / Vodafone Cash" : "Vodafone Cash";
+      return tMethods("vodafone_cash");
     if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
-      return locale === "ar" ? "بطاقة ائتمان / Credit Card" : "Credit Card";
-    if (m.includes("fawry")) return locale === "ar" ? "فوري / Fawry" : "Fawry";
-    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي / Manual" : "Manual Transfer";
+      return tMethods("credit_card");
+    if (m.includes("fawry")) return tMethods("fawry");
+    if (m.includes("manual")) return tMethods("manual");
     return method;
   };
 

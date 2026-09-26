@@ -140,6 +140,12 @@ export const queryKeys = {
     wallet: () => [...queryKeys.student.all, "wallet"] as const,
     walletTransactions: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.wallet(), "transactions", filters ?? {}] as const,
+
+    orders: (filters?: Record<string, unknown>) =>
+      [...queryKeys.student.all, "orders", filters ?? {}] as const,
+    orderDetail: (orderId: number | string) =>
+      [...queryKeys.student.all, "order", orderId] as const,
+    paymentAccounts: () => [...queryKeys.student.all, "paymentAccounts"] as const,
   },
 
   // Public / Shared Website Keys

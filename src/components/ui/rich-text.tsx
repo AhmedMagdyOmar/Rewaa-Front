@@ -53,7 +53,7 @@ export const RichText: React.FC<RichTextProps> = ({ content, className }) => {
   if (typeof content === "string") {
     return (
       <div
-        className={cn("prose dark:prose-invert max-w-none", className)}
+        className={cn("prose max-w-none", className)}
         dangerouslySetInnerHTML={{ __html: content }}
       />
     );
@@ -165,7 +165,7 @@ export const RichText: React.FC<RichTextProps> = ({ content, className }) => {
   return (
     <div
       className={cn(
-        "prose dark:prose-invert max-w-none prose-headings:font-bold prose-a:text-primary hover:prose-a:underline",
+        "prose max-w-none prose-headings:font-bold prose-a:text-primary hover:prose-a:underline",
         className,
       )}
     >

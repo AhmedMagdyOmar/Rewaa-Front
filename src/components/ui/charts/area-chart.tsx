@@ -58,7 +58,7 @@ const LegendItem = ({ name, color, onClick, activeLegend }: LegendItemProps) => 
     >
       <span
         className={cn(
-          "h-[3px] w-3.5 shrink-0 rounded-full",
+          "h-0.75 w-3.5 shrink-0 rounded-full",
           getColorClassName(color, "bg"),
           activeLegend && activeLegend !== name ? "opacity-40" : "opacity-100",
         )}
@@ -68,7 +68,7 @@ const LegendItem = ({ name, color, onClick, activeLegend }: LegendItemProps) => 
         className={cn(
           // base
           "truncate text-xs whitespace-nowrap",
-          hasOnValueChange && "group-hover:text-gray-900 dark:group-hover:text-gray-50",
+          hasOnValueChange && "group-hover:text-gray-900",
           activeLegend && activeLegend !== name ? "opacity-40" : "opacity-100",
         )}
       >
@@ -114,7 +114,7 @@ const ScrollButton = ({ icon, onClick, disabled }: ScrollButtonProps) => {
         // base
         "group inline-flex size-5 items-center truncate rounded-sm transition",
         disabled
-          ? "cursor-not-allowed text-gray-400 dark:text-gray-600"
+          ? "cursor-not-allowed text-gray-400"
           : "cursor-pointer text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
       disabled={disabled}
@@ -814,7 +814,7 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>((props, ref) 
                       return (
                         <Dot
                           className={cn(
-                            "stroke-white dark:stroke-gray-950",
+                            "stroke-white",
                             onValueChange ? "cursor-pointer" : "",
                             getColorClassName(
                               categoryColors.get(dataKey) as AvailableChartColorsKeys,
@@ -862,7 +862,7 @@ const AreaChart = React.forwardRef<HTMLDivElement, AreaChartProps>((props, ref) 
                             strokeLinejoin={strokeLinejoin}
                             strokeWidth={strokeWidth}
                             className={cn(
-                              "stroke-white dark:stroke-gray-950",
+                              "stroke-white",
                               onValueChange ? "cursor-pointer" : "",
                               getColorClassName(
                                 categoryColors.get(dataKey) as AvailableChartColorsKeys,

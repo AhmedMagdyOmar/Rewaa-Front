@@ -80,10 +80,10 @@ export function CourseSearchInput({ className }: { className?: string }) {
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder={tCommon("search")} />
         <CommandList>
-          <CommandEmpty>{locale === "ar" ? "لا توجد نتائج" : "No courses found."}</CommandEmpty>
+          <CommandEmpty>{tCommon("noResults")}</CommandEmpty>
 
           {enrolledCourses.length > 0 && (
-            <CommandGroup heading={locale === "ar" ? "دوراتي المشترك بها" : "My Enrolled Courses"}>
+            <CommandGroup heading={tCommon("enrolledCourses")}>
               {enrolledCourses.map((c) => {
                 const id = c.course_id ?? c.id;
                 const title = resolveText(c.title);
@@ -113,7 +113,7 @@ export function CourseSearchInput({ className }: { className?: string }) {
           )}
 
           {exploreCourses.length > 0 && (
-            <CommandGroup heading={locale === "ar" ? "الدورات المتاحة" : "Available Courses"}>
+            <CommandGroup heading={tCommon("availableCourses")}>
               {exploreCourses.map((course) => {
                 const title = resolveText(course.title);
                 const teacherName = course.instructor?.full_name || "";

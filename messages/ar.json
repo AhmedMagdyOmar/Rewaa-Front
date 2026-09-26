@@ -12,6 +12,13 @@
     "submitting": "جاري الإرسال...",
     "genericError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى.",
     "brandName": "رواء",
+    "sar": "ر.س",
+    "egp": "ج.م",
+    "noResults": "لا توجد نتائج",
+    "enrolledCourses": "دوراتي المشترك بها",
+    "availableCourses": "الدورات المتاحة",
+    "previousPage": "الصفحة السابقة",
+    "nextPage": "الصفحة التالية",
     "quickAdd": {
       "addOption": "إضافة خيار جديد",
       "addOptionTitle": "إضافة خيار جديد",
@@ -171,6 +178,7 @@
     "lessons": "الدروس",
     "generallessons": "الدروس العامة",
     "billing": "المالية والاشتراكات",
+    "wallet": "المحفظة",
     "userSettings": "إعدادات المستخدم",
     "expandSidebar": "توسيع الشريط الجانبي",
     "landing": {
@@ -1147,6 +1155,24 @@
         "saveAndAddAnother": "حفظ وإضافة سؤال آخر",
         "saveQuestion": "حفظ السؤال",
         "saveChanges": "حفظ التغييرات"
+      },
+      "tabs": {
+        "create": "إنشاء سؤال جديد",
+        "bank": "اختيار من بنك الأسئلة"
+      },
+      "bank": {
+        "searchPlaceholder": "بحث في بنك الأسئلة...",
+        "difficultyPlaceholder": "الصعوبة",
+        "allDifficulties": "كل الصعوبات",
+        "typePlaceholder": "نوع السؤال",
+        "allTypes": "كل الأنواع",
+        "availableQuestions": "الأسئلة المتاحة:",
+        "selectAll": "تحديد الكل",
+        "deselectAll": "إلغاء تحديد الكل",
+        "noQuestions": "لا توجد أسئلة متاحة",
+        "noQuestionsDesc": "لم يتم العثور على أسئلة في بنك الأسئلة تطابق معايير البحث الحالية.",
+        "points": "درجة",
+        "addSelected": "إضافة الأسئلة المختارة ({count})"
       }
     },
     "details": {
@@ -1325,6 +1351,8 @@
       "title": "تسليمات ومراجعة الامتحانات",
       "subtitle": "تصحيح الأسئلة المقالية ومراجعة إجابات ونتائج الطلاب.",
       "examSubmissionsTitle": "تسليمات امتحان: {title}",
+      "searchPlaceholder": "ابحث باسم الطالب أو البريد أو الامتحان...",
+      "defaultStudent": "طالب",
       "backToExams": "العودة للامتحانات",
       "backToStats": "العودة لإحصائيات الامتحان",
       "tabs": {
@@ -1412,7 +1440,13 @@
       "submitting": "جاري حفظ التصحيح...",
       "alreadyGradedNotice": "تم تصحيح هذا التسليم مسبقاً. يمكنك تعديل الدرجات وإعادة الحفظ عند الحاجة.",
       "successToast": "تم اعتماد درجات الامتحان وتحديث حالة التسليم بنجاح",
-      "errorToast": "حدث خطأ أثناء حفظ درجات الامتحان، يرجى التأكد من رصد درجات لجميع الأسئلة المقالية."
+      "errorToast": "حدث خطأ أثناء حفظ درجات الامتحان، يرجى التأكد من رصد درجات لجميع الأسئلة المقالية.",
+      "failedLoad": "تعذر تحميل بيانات التسليم",
+      "tryAgain": "إعادة المحاولة",
+      "defaultStudent": "طالب",
+      "passed": "ناجح",
+      "failed": "راسب",
+      "cancelReturn": "إلغاء والعودة"
     }
   },
   "questionsPage": {
@@ -1489,7 +1523,8 @@
       "saveChanges": "حفظ التعديلات",
       "cancel": "إلغاء",
       "messages": {
-        "savedSuccessfully": "تم حفظ التعديلات بنجاح"
+        "savedSuccessfully": "تم حفظ التعديلات بنجاح",
+        "saveFailed": "فشل في حفظ التعديلات"
       }
     },
     "newPage": {
@@ -1508,7 +1543,8 @@
       "teacherName": "اسم المعلم / المحاضر",
       "teacherNamePlaceholder": "مثال: أ. محمد أحمد",
       "messages": {
-        "createdSuccessfully": "تم إنشاء السؤال بنجاح"
+        "createdSuccessfully": "تم إنشاء السؤال بنجاح",
+        "createFailed": "فشل في إنشاء السؤال"
       }
     }
   },
@@ -1563,7 +1599,10 @@
       "coursesPopupTitle": "الدورات التي تتضمن هذا الدرس",
       "multipleCourses": "دورات متعددة",
       "generalLesson": "درس عام",
-      "courseDependentLesson": "درس مرتبط بدورة"
+      "courseDependentLesson": "درس مرتبط بدورة",
+      "inactive": "غير نشط",
+      "defaultExam": "اختبار",
+      "linkedExamPrefix": "اختبار مرتبط:"
     },
     "deleteDialog": {
       "title": "حذف الدرس",
@@ -1960,6 +1999,16 @@
       "pending": "قيد الانتظار",
       "accepted": "مقبول",
       "rejected": "مرفوض"
+    },
+    "approveSuccess": "تم قبول طلب الدفع بنجاح",
+    "rejectSuccess": "تم رفض الطلب بنجاح",
+    "methods": {
+      "other": "أخرى",
+      "instapay": "إنستاباي",
+      "vodafone_cash": "فودافون كاش",
+      "credit_card": "بطاقة ائتمان",
+      "fawry": "فوري",
+      "manual": "تحويل يدوي"
     },
     "modal": {
       "title": "تفاصيل الطلب",
@@ -3214,6 +3263,80 @@
       "passwordMismatch": "كلمتا المرور غير متطابقتين",
       "requiredFieldsError": "يرجى ملء جميع الحقول الإلزامية المطلوبة",
       "whatsappTooltip": "محادثة مباشرة عبر واتساب"
+    },
+    "wallet": {
+      "pageTitle": "محفظة الطالب | رواء",
+      "title": "محفظتي",
+      "subtitle": "تابع رصيدك المتاح، عمليات الإيداع، وسجل المعاملات والمدفوعات بالكامل",
+      "availableBalance": "الرصيد المتاح",
+      "statusActive": "حساب نشط",
+      "statusInactive": "حساب غير نشط",
+      "totalCredits": "إجمالي الإيداعات / المبالغ المضافة",
+      "totalDebits": "إجمالي المدفوعات / المخصومات",
+      "totalTransactions": "إجمالي المعاملات",
+      "quickActions": "إجراءات سريعة",
+      "refresh": "تحديث",
+      "refreshing": "جاري التحديث...",
+      "browseCourses": "استكشاف الدورات",
+      "viewOrders": "سجل طلباتي",
+      "transactionsTitle": "سجل المعاملات والعمليات",
+      "transactionsSubtitle": "سجل مفصل لجميع العمليات المالية، المشتريات، والاستردادات في محفظتك",
+      "filters": {
+        "all": "جميع المعاملات",
+        "credit": "الإيداعات والاستردادات (+)",
+        "debit": "المدفوعات والمخصومات (-)"
+      },
+      "table": {
+        "id": "رقم العملية",
+        "type": "النوع",
+        "reason": "البيان / السبب",
+        "amount": "المبلغ",
+        "balanceAfter": "الرصيد بعد العملية",
+        "date": "التاريخ والوقت",
+        "orderNumber": "طلب #{number}"
+      },
+      "directions": {
+        "credit": "إيداع (+)",
+        "debit": "خصم (-)"
+      },
+      "reasons": {
+        "admin_top_up": "إيداع رصيد من الإدارة",
+        "course_purchase": "شراء دورة تعليمية",
+        "refund": "استرداد أموال",
+        "wallet_refund": "استرداد أموال",
+        "adjustment": "تسوية حساب",
+        "admin_adjustment": "تسوية حساب",
+        "manual_credit": "شحن / إضافة رصيد",
+        "manual_debit": "خصم رصيد يدوي",
+        "activation_code": "تفعيل كود",
+        "unknown": "معاملة محفظة"
+      },
+      "empty": {
+        "title": "لا توجد معاملات بعد",
+        "description": "سجل محفظتك خالٍ حالياً. عند شراء الدورات أو إضافة أرصدة ستظهر كافة التفاصيل هنا."
+      },
+      "pagination": {
+        "showing": "عرض {start} إلى {end} من أصل {total} معاملة",
+        "previous": "السابق",
+        "next": "التالي"
+      }
+    },
+    "activationCodeRedemption": {
+      "button": "تفعيل كود",
+      "dialogTitle": "تفعيل كود اشتراك دورة",
+      "dialogDescription": "أدخل كود التفعيل أو كارت الشحن للاشتراك فوراً في الدورة والبدء في المذاكرة دون انتظار.",
+      "inputLabel": "كود التفعيل",
+      "inputPlaceholder": "مثال: RW-MATH-1234-XYZ",
+      "hint": "الأكواد غير حساسة لحالة الأحرف ويتم إصدارها بواسطة المنصة.",
+      "submit": "تفعيل الكود والاشتراك",
+      "submitting": "جاري التحقق من الكود...",
+      "successTitle": "تم تفعيل الكود بنجاح!",
+      "successDescription": "تم اشتراكك بنجاح في {courseTitle}. يمكنك الآن البدء في دراسة المحاضرات والامتحانات فوراً.",
+      "goToCourse": "بدء المذاكرة الآن",
+      "close": "إغلاق",
+      "genericError": "تعذر تفعيل الكود. يرجى التأكد من صحة الكود والمحاولة مرة أخرى.",
+      "haveCodePrompt": "لديك كود تفعيل لهذه الدورة؟",
+      "redeemHere": "فعّله من هنا"
     }
   },
   "publicStudentReport": {
@@ -3284,6 +3407,136 @@
     "pagination": {
       "showing": "عرض {start} إلى {end} من أصل {total} محافظة ومنطقة"
     },
-    "studentsCount": "{count, plural, =0 {لا طلاب} zero {لا طلاب} one {طالب واحد} two {طالبين} few {{count} طلاب} many {{count} طالباً} other {{count} طالب}}"
+    "studentsCount": "{count, plural, =0 {لا طلاب} zero {لا طلاب} one {طالب واحد} two {طالبين} few {{count} طلاب} many {{count} طالباً} other {{count} طالب}}",
+    "unspecified": "غير محدد",
+    "loadingData": "جاري تجميع وتحليل البيانات الجغرافية..."
+  },
+  "studentOrders": {
+    "list": {
+      "title": "طلباتي",
+      "subtitle": "متابعة سجل طلبات الاشتراك بالدورات وحالة السداد",
+      "searchPlaceholder": "ابحث برقم الطلب أو اسم الدورة...",
+      "filterStatus": "تصفية بالحالة",
+      "allStatuses": "جميع الحالات",
+      "itemsCount": "عدد العناصر:",
+      "total": "المجموع:",
+      "remaining": "المتبقي:",
+      "completePayment": "متابعة الدفع",
+      "viewDetails": "عرض التفاصيل",
+      "courseFallback": "دورة تدريبية",
+      "emptyTitle": "لا توجد طلبات بعد",
+      "emptyDesc": "عندما تسجل في أي دورة تدريبية، ستظهر تفاصيل وحالة طلبك هنا.",
+      "exploreCourses": "استكشف الدورات المتاحة",
+      "errorTitle": "تعذر تحميل الطلبات",
+      "errorDesc": "حدث خطأ أثناء جلب قائمة الطلبات"
+    },
+    "detail": {
+      "backToOrders": "العودة لقائمة الطلبات",
+      "title": "تفاصيل الطلب",
+      "orderItems": "محتويات الطلب",
+      "deliveryMode": "طريقة الحضور:",
+      "courseFallback": "دورة تدريبية",
+      "paymentMethod": "طريقة الدفع",
+      "paymentMethodSubtitle": "اختر وسيلة الدفع المناسبة لك لإتمام عملية الاشتراك",
+      "underReviewTitle": "طلبك قيد مراجعة الدفع",
+      "underReviewDesc": "تم استلام إشعار التحويل البنكي الخاص بك بنجاح، ويقوم فريق الإدارة بمراجعته والتحقق منه. سيتم تفعيل وصولك للدورات فور اعتماد الإشعار.",
+      "rejectedTitle": "تم رفض إشعار الدفع الأخير",
+      "rejectedDesc": "تمت مراجعة إشعار التحويل السابق ورفضه للأسباب الموضحة أدناه. يمكنك إعادة المحاولة وسداد المبلغ عبر إرفاق إشعار تحويل جديد أو الدفع عبر المحفظة.",
+      "rejectionReasonTitle": "سبب رفض الإشعار:",
+      "rejectionReasonBadge": "إشعار مرفوض",
+      "paidTitle": "تم سداد الطلب بالكامل",
+      "paidDesc": "يمكنك الآن البدء في دراسة ومتابعة محتويات دورتك التدريبية مباشرة.",
+      "goToCourse": "الانتقال للدورة",
+      "viewMyCourses": "عرض جميع دوراتي",
+      "viewInvoice": "عرض / طباعة الفاتورة",
+      "printInvoice": "طباعة الفاتورة",
+      "paymentHistory": "سجل المدفوعات والإشعارات",
+      "viewReceipt": "عرض الإشعار",
+      "summaryTitle": "ملخص الحساب",
+      "subtotal": "المجموع الفرعي:",
+      "discount": "الخصم:",
+      "totalAmount": "المجموع الكلي:",
+      "paidAmount": "المبلغ المسدد:",
+      "remainingBalance": "المبلغ المتبقي:",
+      "createdAt": "تاريخ الإنشاء:",
+      "orderStatus": "حالة الطلب:",
+      "notFoundTitle": "تعذر العثور على الطلب",
+      "notFoundDesc": "الطلب المطلوب غير موجود أو ليس لديك صلاحية الوصول إليه."
+    },
+    "status": {
+      "paid": "مدفوع",
+      "awaiting_payment": "بانتظار الدفع",
+      "under_review": "قيد المراجعة",
+      "cancelled": "ملغي",
+      "refunded": "مسترد",
+      "pending": "معلق",
+      "approved": "معتمد",
+      "rejected": "مرفوض"
+    },
+    "paymentMethods": {
+      "wallet": "محفظة رواء",
+      "walletSubtitle": "دفع فوري وسلس من رصيدك المتاح دون أي إجراءات إضافية.",
+      "manual": "تحويل بنكي / إيداع يدوي",
+      "manualSubtitle": "التحويل لأحد حساباتنا البنكية ورفع إشعار التحويل للمراجعة والتفعيل.",
+      "bank": "تحويل بنكي",
+      "instapay": "إنستاباي",
+      "vodafone_cash": "فودافون كاش",
+      "fawry": "فوري",
+      "manual_transfer": "تحويل بنكي / إيداع يدوي",
+      "student_wallet": "محفظة الطالب"
+    },
+    "walletPay": {
+      "title": "الدفع الفوري بمحفظة رواء",
+      "subtitle": "سيتم خصم المبلغ المتبقي مباشرة من رصيدك المتاح",
+      "currentBalance": "رصيدك المتاح حالياً:",
+      "amountToDeduct": "المبلغ المطلوب سداده:",
+      "balanceAfter": "الرصيد المتبقي بعد العملية:",
+      "insufficientTitle": "رصيدك الحالي غير كافٍ",
+      "insufficientDesc": "أنت بحاجة إلى {needed} {currency} إضافية. يمكنك التحويل عبر الحساب البنكي أو شحن المحفظة.",
+      "confirmButton": "تأكيد الدفع ({amount} {currency})",
+      "processing": "جاري معالجة الدفع...",
+      "successToast": "تم الدفع بنجاح من المحفظة وتفعيل الدورة!",
+      "errorToast": "فشلت عملية الدفع بالمحفظة",
+      "insufficientToast": "رصيد المحفظة غير كافٍ لإتمام الدفع."
+    },
+    "manualPay": {
+      "title": "التحويل البنكي وإرفاق الإشعار",
+      "subtitle": "قم بالتحويل إلى أحد حساباتنا، ثم املأ البيانات وارفع صورة الإشعار للمراجعة",
+      "noAccounts": "لا توجد حسابات بنكية نشطة حالياً. يرجى التواصل مع الدعم.",
+      "selectAccount": "اختر الحساب البنكي للتحويل إليه *",
+      "selectAccountPlaceholder": "اختر الحساب",
+      "accountNumber": "رقم الحساب / المحفظة:",
+      "iban": "الآيبان (IBAN):",
+      "amount": "المبلغ المحول *",
+      "senderPhone": "رقم هاتف المحوّل (اختياري)",
+      "senderPhonePlaceholder": "مثال: 05xxxxxxxx",
+      "reference": "الرقم المرجعي للتحويل (اختياري)",
+      "referencePlaceholder": "الرقم المرجعي في إشعار البنك",
+      "receipt": "صورة إشعار التحويل *",
+      "uploadPrompt": "اضغط هنا لاختيار أو إسقاط صورة الإشعار",
+      "uploadHint": "صيغ مدعومة: JPG, PNG, WEBP (بحد أقصى 4MB)",
+      "changeImage": "اضغط لتغيير الصورة",
+      "submitButton": "إرسال إشعار الدفع للمراجعة",
+      "submitting": "جاري رفع وإرسال الإشعار...",
+      "copiedToast": "تم النسخ للحافظة",
+      "fileSizeError": "حجم الملف يجب ألا يتجاوز 4 ميجابايت",
+      "fileTypeError": "يرجى رفع صورة بصيغة JPG أو PNG أو WEBP",
+      "accountRequiredError": "يرجى اختيار الحساب البنكي المحول إليه",
+      "amountInvalidError": "يرجى إدخال مبلغ صحيح أكبر من 0",
+      "receiptRequiredError": "يرجى رفع إشعار التحويل البنكي",
+      "successToast": "تم إرسال إشعار الدفع بنجاح! سيتم مراجعته وتفعيل الدورة خلال وقت قصير.",
+      "errorToast": "حدث خطأ أثناء إرسال إشعار الدفع"
+    },
+    "paymentSuccess": {
+      "pageTitle": "تم الدفع بنجاح | رواء",
+      "badge": "تم تأكيد الدفع",
+      "title": "أنت الآن جاهز! 🎉",
+      "subtitle": "تمت معالجة دفعتك بنجاح. استعد لبدء رحلتك التعليمية!",
+      "nextSteps": "ماذا بعد؟",
+      "goToCourses": "انتقل إلى دوراتي",
+      "goToHome": "العودة إلى الرئيسية",
+      "viewOrdersPrefix": "يمكنك أيضاً الاطلاع على سجل طلباتك من",
+      "viewOrdersLink": "طلباتي"
+    }
   }
 }

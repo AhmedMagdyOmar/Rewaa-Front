@@ -12,6 +12,7 @@ import {
   BackendCourseContentSectionLessonExam,
 } from "@/types/api-contracts";
 import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 import * as React from "react";
 import { toast } from "sonner";
 import { StudentCourseContentSidebar } from "./StudentCourseContentSidebar";
@@ -86,16 +87,31 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     return Boolean(item?.is_completed);
   }, [flatLessons, selectedLessonId]);
 
+  const router = useRouter();
+
   // Handle Enrollment Action via backend order creation
-  const handleEnroll = (targetCourseId: number) => {
-    enrollMutation.mutate(
-      { course_ids: [targetCourseId] },
-      {
-        onSuccess: () => {
+  const handleEnroll = (targetCourseId: number, deliveryMode?: string) => {
+    const payload: { course_ids: number[]; delivery_modes?: Record<string | number, string> } = {
+      course_ids: [targetCourseId],
+    };
+
+    if (deliveryMode) {
+      payload.delivery_modes = {
+        [targetCourseId]: deliveryMode,
+      };
+    }
+
+    enrollMutation.mutate(payload, {
+      onSuccess: (data) => {
+        if (data?.order?.status === "paid") {
           toast.success(tPreview("enrollSuccess"));
-        },
+        } else if (data?.order?.id) {
+          router.push(`/student-dashboard/orders/${data.order.id}`);
+        } else {
+          toast.success(tPreview("enrollSuccess"));
+        }
       },
-    );
+    });
   };
 
   const handleSelectLesson = (lessonId: number | null) => {

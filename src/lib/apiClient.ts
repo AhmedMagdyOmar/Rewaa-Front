@@ -61,6 +61,11 @@ axiosInstance.interceptors.request.use(
       config.headers["Accept-Language"] = "ar";
     }
 
+    // 3. For FormData (multipart uploads), delete default Content-Type header so browser/axios sets multipart boundary
+    if (config.data instanceof FormData) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error),

@@ -125,7 +125,7 @@ export function ProfilePermissionsTab({ profile }: ProfilePermissionsTabProps) {
               <div className="flex items-center justify-between text-muted-foreground">
                 <span className="text-xs font-medium">{t("accountStatus")}</span>
                 {profile.is_active ? (
-                  <CheckCircle2 className="size-4 text-emerald-600 dark:text-emerald-400" />
+                  <CheckCircle2 className="size-4 text-emerald-600" />
                 ) : (
                   <ShieldAlert className="size-4 text-destructive" />
                 )}
@@ -135,7 +135,7 @@ export function ProfilePermissionsTab({ profile }: ProfilePermissionsTabProps) {
                   variant={profile.is_active ? "outline" : "destructive"}
                   className={
                     profile.is_active
-                      ? "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                      ? "border-emerald-500/30 text-emerald-600 bg-emerald-500/10"
                       : ""
                   }
                 >

@@ -144,10 +144,7 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
       toast.success(t("messages.savedSuccessfully") || "تم حفظ التعديلات بنجاح");
       router.push(`/${locale}/dashboard/questions`);
     } catch (err) {
-      toast.error(
-        getErrorMessage(err) ||
-          (locale === "ar" ? "فشل في حفظ التعديلات" : "Failed to save question"),
-      );
+      toast.error(getErrorMessage(err) || t("messages.saveFailed"));
     }
   };
 

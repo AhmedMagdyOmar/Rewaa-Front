@@ -1,6 +1,6 @@
 "use client";
 
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -48,6 +48,7 @@ export function ContentPagination({
 }: ContentPaginationProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
+  const tCommon = useTranslations("common");
 
   if (totalItems === 0) return null;
 
@@ -64,7 +65,7 @@ export function ContentPagination({
           onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
           disabled={currentPage === 1}
           className="h-8 gap-1 text-xs"
-          aria-label={isAr ? "الصفحة السابقة" : "Previous page"}
+          aria-label={tCommon("previousPage")}
         >
           {isAr ? (
             <ChevronRight className="h-3.5 w-3.5" />
@@ -108,7 +109,7 @@ export function ContentPagination({
           onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
           disabled={currentPage === totalPages}
           className="h-8 gap-1 text-xs"
-          aria-label={isAr ? "الصفحة التالية" : "Next page"}
+          aria-label={tCommon("nextPage")}
         >
           {isAr ? (
             <ChevronLeft className="h-3.5 w-3.5" />

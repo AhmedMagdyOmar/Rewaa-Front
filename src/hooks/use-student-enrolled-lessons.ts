@@ -40,7 +40,10 @@ export function useStudentEnrolledLessons() {
     staleTime: 60 * 1000,
   });
 
-  const courses: BackendMyCourse[] = myCoursesQuery.data?.courses || [];
+  const courses = React.useMemo<BackendMyCourse[]>(
+    () => myCoursesQuery.data?.courses || [],
+    [myCoursesQuery.data?.courses],
+  );
 
   // 2. Fetch content tree for each enrolled course in parallel
   const courseContentQueries = useQueries({

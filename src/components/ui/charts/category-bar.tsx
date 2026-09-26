@@ -203,7 +203,7 @@ const CategoryBar = React.forwardRef<HTMLDivElement, CategoryBarProps>(
                     aria-hidden="true"
                     className={cn(
                       "relative mx-auto h-4 w-1 rounded-full ring-2",
-                      "ring-white dark:ring-gray-950",
+                      "ring-white",
                       markerBgColor,
                     )}
                   >
@@ -215,11 +215,7 @@ const CategoryBar = React.forwardRef<HTMLDivElement, CategoryBarProps>(
                 </Tooltip>
               ) : (
                 <div
-                  className={cn(
-                    "mx-auto h-4 w-1 rounded-full ring-2",
-                    "ring-white dark:ring-gray-950",
-                    markerBgColor,
-                  )}
+                  className={cn("mx-auto h-4 w-1 rounded-full ring-2", "ring-white", markerBgColor)}
                 />
               )}
             </div>
