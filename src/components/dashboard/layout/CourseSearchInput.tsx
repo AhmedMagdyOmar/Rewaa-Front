@@ -14,8 +14,8 @@ import {
 } from "@/components/ui/command";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { mockCoursesData } from "@/lib/mockCoursesData";
+import { useMyCourses } from "@/hooks/use-my-courses";
+import { useExploreCourses } from "@/hooks/use-explore-courses";
 
 export function CourseSearchInput({ className }: { className?: string }) {
   const [open, setOpen] = React.useState(false);
@@ -39,23 +39,22 @@ export function CourseSearchInput({ className }: { className?: string }) {
     return () => document.removeEventListener("keydown", down);
   }, []);
 
-  const [courses, setCourses] = React.useState(() => {
-    const fallback = mockCoursesData[locale] || mockCoursesData.ar;
-    return fallback.filter((c) => !c.isDraft);
-  });
+  // Fetch student enrolled courses from live API
+  const { data: myCoursesData } = useMyCourses({ per_page: 20 });
+  // Fetch available courses from live API
+  const { data: exploreCoursesData } = useExploreCourses({ per_page: 20 });
 
-  React.useEffect(() => {
-    const loadCourses = () => {
-      const stored = getStoredCourses(locale);
-      const list = stored.length > 0 ? stored : mockCoursesData[locale] || mockCoursesData.ar;
-      setCourses(list.filter((c) => !c.isDraft));
-    };
-    loadCourses();
-    window.addEventListener("rewaa_courses_updated", loadCourses);
-    return () => window.removeEventListener("rewaa_courses_updated", loadCourses);
-  }, [locale]);
+  const resolveText = (val: Record<string, string> | string | undefined | null): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    return val[locale] || val.ar || val.en || Object.values(val)[0] || "";
+  };
 
-  const handleSelectCourse = (courseId: string) => {
+  const enrolledCourses = myCoursesData?.courses || [];
+  const exploreCourses = exploreCoursesData?.courses || [];
+
+  const handleSelectCourse = (courseId: number | string | undefined) => {
+    if (!courseId) return;
     setOpen(false);
     router.push(`/student-dashboard/courses/${courseId}`);
   };
@@ -82,26 +81,65 @@ export function CourseSearchInput({ className }: { className?: string }) {
         <CommandInput placeholder={tCommon("search")} />
         <CommandList>
           <CommandEmpty>{locale === "ar" ? "لا توجد نتائج" : "No courses found."}</CommandEmpty>
-          <CommandGroup heading={locale === "ar" ? "الدورات المتاحة" : "Available Courses"}>
-            {courses.map((course) => (
-              <CommandItem
-                key={course.id}
-                value={`${course.title} ${course.teacherName} ${course.description}`}
-                onSelect={() => handleSelectCourse(course.id)}
-                className="cursor-pointer flex items-center justify-between py-2.5"
-              >
-                <div className="flex items-center gap-2.5 overflow-hidden">
-                  <BookOpen className="h-4 w-4 text-primary shrink-0" />
-                  <div className="flex flex-col overflow-hidden">
-                    <span className="font-medium text-sm truncate">{course.title}</span>
-                    <span className="text-xs text-muted-foreground truncate">
-                      {course.teacherName}
-                    </span>
-                  </div>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+
+          {enrolledCourses.length > 0 && (
+            <CommandGroup heading={locale === "ar" ? "دوراتي المشترك بها" : "My Enrolled Courses"}>
+              {enrolledCourses.map((c) => {
+                const id = c.course_id ?? c.id;
+                const title = resolveText(c.title);
+                const teacherName = c.instructor?.full_name || "";
+                return (
+                  <CommandItem
+                    key={`enrolled-${id}`}
+                    value={`${title} ${teacherName}`}
+                    onSelect={() => handleSelectCourse(id)}
+                    className="cursor-pointer flex items-center justify-between py-2.5"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <BookOpen className="h-4 w-4 text-primary shrink-0" />
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="font-medium text-sm truncate">{title}</span>
+                        {teacherName && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            {teacherName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
+
+          {exploreCourses.length > 0 && (
+            <CommandGroup heading={locale === "ar" ? "الدورات المتاحة" : "Available Courses"}>
+              {exploreCourses.map((course) => {
+                const title = resolveText(course.title);
+                const teacherName = course.instructor?.full_name || "";
+                return (
+                  <CommandItem
+                    key={`available-${course.id}`}
+                    value={`${title} ${teacherName}`}
+                    onSelect={() => handleSelectCourse(course.id)}
+                    className="cursor-pointer flex items-center justify-between py-2.5"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <BookOpen className="h-4 w-4 text-primary/70 shrink-0" />
+                      <div className="flex flex-col overflow-hidden">
+                        <span className="font-medium text-sm truncate">{title}</span>
+                        {teacherName && (
+                          <span className="text-xs text-muted-foreground truncate">
+                            {teacherName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+          )}
         </CommandList>
       </CommandDialog>
     </>

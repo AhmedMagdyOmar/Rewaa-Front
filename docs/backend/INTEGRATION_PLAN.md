@@ -346,6 +346,11 @@ Deprecate `student-enrollment-storage.ts` and `student-course-progress.ts`. Enab
 
 1. **Student Dashboard & Enrolled Courses** [x]:
    - `GET /api/website/my-courses` (Enrolled courses with server-calculated progress percentage)
+   - `GET /api/website/courses` (Explore courses discovery catalog)
+   - `GET /api/website/wallet` (Student wallet balance and currency via `useStudentWebsiteWallet`)
+   - `GET /api/website/announcements` (Live website and platform announcements via `useWebsiteAnnouncements`)
+   - Completely eliminated `mockCoursesData.ts`, `settings-storage.ts`, `student-enrollment-storage.ts`, and `student-course-progress.ts` from all student dashboard components (`StudentGeneralOverview`, `StudentRecentAnnouncement`, `StudentEnrolledCourses`, `StudentLatestCourses`, `StudentHomeHero`, and `CourseSearchInput`).
+   - TanStack Query is now the sole source of truth for all caching, state, and metrics.
    - `GET /api/website/my-courses/{course}` (Course dashboard & announcements)
    - `GET /api/website/my-courses/{course}/content` (Curriculum tree of sections, lessons, exams)
 

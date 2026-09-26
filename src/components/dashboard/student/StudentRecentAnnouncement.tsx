@@ -3,59 +3,65 @@
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useWebsiteAnnouncements } from "@/hooks/use-website-announcements";
 import { Link } from "@/i18n/routing";
-import { getStoredAnnouncements } from "@/lib/settings-storage";
-import { AnnouncementItem } from "@/types/settings";
 import { ArrowRight, ExternalLink, Megaphone } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 export function StudentRecentAnnouncement() {
   const t = useTranslations("studentDashboard.announcement");
-  const [recentAnnouncement, setRecentAnnouncement] = useState<AnnouncementItem | null>(null);
+  const locale = useLocale();
 
-  useEffect(() => {
-    const loadLatestAnnouncement = () => {
-      const all = getStoredAnnouncements();
-      // Filter for active ones, sorted by createdAt descending (most recent first)
-      const active = all
-        .filter((a) => a.active)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const { data: announcements, isLoading } = useWebsiteAnnouncements();
 
-      if (active.length > 0) {
-        setRecentAnnouncement(active[0]);
-      } else if (all.length > 0) {
-        // Fallback to most recent even if inactive
-        const sortedAll = [...all].sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-        );
-        setRecentAnnouncement(sortedAll[0]);
-      } else {
-        setRecentAnnouncement(null);
-      }
-    };
+  if (isLoading) {
+    return (
+      <DashboardCard className="p-6 sm:p-8 bg-card border border-border/80 shadow-xs">
+        <div className="space-y-4 max-w-xl">
+          <Skeleton className="h-6 w-28 rounded-full" />
+          <Skeleton className="h-7 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-10 w-32 rounded-lg" />
+        </div>
+      </DashboardCard>
+    );
+  }
 
-    loadLatestAnnouncement();
-    window.addEventListener("rewaa_announcements_updated", loadLatestAnnouncement);
-    return () => window.removeEventListener("rewaa_announcements_updated", loadLatestAnnouncement);
-  }, []);
+  // Active published announcements from API
+  const activeAnnouncements = (announcements || []).filter(
+    (a) => a.is_active !== false && a.active !== false,
+  );
 
-  if (!recentAnnouncement) {
+  const recent = activeAnnouncements[0];
+
+  if (!recent) {
     return null;
   }
 
-  const hasLink = Boolean(recentAnnouncement.url && recentAnnouncement.url.trim().length > 0);
-  const isExternal = hasLink && /^https?:\/\//i.test(recentAnnouncement.url!);
+  const resolveText = (val: Record<string, string> | string | undefined | null): string => {
+    if (!val) return "";
+    if (typeof val === "string") return val;
+    return val[locale] || val.ar || val.en || Object.values(val)[0] || "";
+  };
+
+  const title = resolveText(recent.title);
+  const description = resolveText(recent.details || recent.description);
+  const imageUrl = recent.image;
+  const linkUrl = recent.link || recent.url;
+
+  const hasLink = Boolean(linkUrl && linkUrl.trim().length > 0);
+  const isExternal = hasLink && /^https?:\/\//i.test(linkUrl!);
 
   return (
     <DashboardCard className="relative overflow-hidden p-0 bg-card border border-border/80 shadow-xs">
       {/* End-aligned Image with fade effect from white/card background */}
-      {recentAnnouncement.coverImage && (
+      {imageUrl && (
         <div className="absolute inset-y-0 inset-e-0 w-full sm:w-1/2 md:w-5/12 pointer-events-none overflow-hidden select-none">
           <Image
-            src={recentAnnouncement.coverImage}
-            alt={recentAnnouncement.title || t("imageAlt")}
+            src={imageUrl}
+            alt={title || t("imageAlt")}
             fill
             className="object-cover object-center opacity-30 ltr:mask-[linear-gradient(to_right,transparent_0%,black_70%)] rtl:mask-[linear-gradient(to_left,transparent_0%,black_70%)]"
             unoptimized
@@ -78,27 +84,29 @@ export function StudentRecentAnnouncement() {
 
         {/* Title */}
         <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-snug">
-          {recentAnnouncement.title}
+          {title}
         </h3>
 
         {/* Description */}
-        <p className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-3">
-          {recentAnnouncement.description}
-        </p>
+        {description && (
+          <p className="text-sm sm:text-base text-muted-foreground leading-relaxed line-clamp-3">
+            {description}
+          </p>
+        )}
 
         {/* CTA Button */}
         <div className="pt-2">
           {hasLink ? (
             isExternal ? (
               <Button asChild size="default" className="gap-2 font-semibold shadow-xs">
-                <a href={recentAnnouncement.url!} target="_blank" rel="noopener noreferrer">
+                <a href={linkUrl!} target="_blank" rel="noopener noreferrer">
                   <span>{t("viewLink")}</span>
                   <ExternalLink className="size-4" />
                 </a>
               </Button>
             ) : (
               <Button asChild size="default" className="gap-2 font-semibold shadow-xs">
-                <Link href={recentAnnouncement.url!}>
+                <Link href={linkUrl!}>
                   <span>{t("viewLink")}</span>
                   <ArrowRight className="size-4 rtl:rotate-180" />
                 </Link>

@@ -4,12 +4,10 @@ import { Button } from "@/components/ui/button";
 import { getWhatsAppUrl } from "@/components/ui/phone-link";
 import { useStudentProfile } from "@/hooks/use-auth-queries";
 import { Link } from "@/i18n/routing";
-import { getStoredPlatformInfo } from "@/lib/settings-storage";
 import { useAuthStore } from "@/lib/stores/auth-store";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 
 interface StudentHomeHeroProps {
   studentName?: string;
@@ -18,26 +16,13 @@ interface StudentHomeHeroProps {
 export function StudentHomeHero({ studentName: initialStudentName }: StudentHomeHeroProps) {
   const t = useTranslations("studentDashboard.hero");
 
-  const [whatsappUrl, setWhatsappUrl] = useState<string>(() => {
-    return getWhatsAppUrl(getStoredPlatformInfo().communication.whatsappPhone);
-  });
-
-  useEffect(() => {
-    const handlePlatformInfoUpdate = () => {
-      const info = getStoredPlatformInfo();
-      setWhatsappUrl(getWhatsAppUrl(info.communication.whatsappPhone));
-    };
-
-    handlePlatformInfoUpdate();
-    window.addEventListener("rewaa_platform_info_updated", handlePlatformInfoUpdate);
-    return () =>
-      window.removeEventListener("rewaa_platform_info_updated", handlePlatformInfoUpdate);
-  }, []);
-
-  // Read from Zustand store (hydrated at login) + live query for refresh
+  // Read authenticated student details from store & query cache
   const storeUser = useAuthStore((s) => s.user);
   const { data: profileData } = useStudentProfile();
   const apiUser = profileData as Record<string, unknown> | undefined;
+
+  const whatsappPhone = "+201009876543";
+  const whatsappUrl = getWhatsAppUrl(whatsappPhone);
 
   const resolvedFullName =
     (apiUser?.full_name as string | undefined) ?? storeUser?.full_name ?? storeUser?.email ?? "";

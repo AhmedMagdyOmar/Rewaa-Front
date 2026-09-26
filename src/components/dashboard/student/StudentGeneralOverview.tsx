@@ -1,10 +1,12 @@
 "use client";
 
-import { BookOpen, FileCheck2, HelpCircle, TrendingUp, Wallet } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
-import { getEnrolledCourseIds } from "@/lib/student-enrollment-storage";
-import React from "react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMyCourses } from "@/hooks/use-my-courses";
+import { useStudentExams, useStudentGeneralExams } from "@/hooks/use-student-exams";
+import { useStudentWebsiteWallet } from "@/hooks/use-student-wallet";
+import { BookOpen, FileCheck2, HelpCircle, TrendingUp, Wallet } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 
 interface StudentGeneralOverviewProps {
   generalPerformance?: number;
@@ -18,42 +20,91 @@ interface StudentGeneralOverviewProps {
 export function StudentGeneralOverview({
   generalPerformance: propGeneralPerformance,
   coursesCount: propCoursesCount,
-  walletBalance = 350,
-  examsSolved = 12,
-  correctQuestions = 140,
-  wrongQuestions = 20,
+  walletBalance: propWalletBalance,
+  examsSolved: propExamsSolved,
+  correctQuestions: propCorrectQuestions,
+  wrongQuestions: propWrongQuestions,
 }: StudentGeneralOverviewProps) {
   const t = useTranslations("studentDashboard.overview");
+  const locale = useLocale();
+  const isAr = locale === "ar";
 
-  const [activeCoursesCount, setActiveCoursesCount] = React.useState(2);
-
-  React.useEffect(() => {
-    const updateCount = () => {
-      const ids = getEnrolledCourseIds();
-      setActiveCoursesCount(ids.length);
-    };
-    updateCount();
-    window.addEventListener("rewaa_student_enrollment_updated", updateCount);
-    window.addEventListener("storage", updateCount);
-    return () => {
-      window.removeEventListener("rewaa_student_enrollment_updated", updateCount);
-      window.removeEventListener("storage", updateCount);
-    };
-  }, []);
-
+  // 1. Fetch Enrolled Courses from live API
+  const { data: myCoursesData, isLoading: isLoadingCourses } = useMyCourses();
+  const liveCoursesCount = myCoursesData?.pagination?.total ?? myCoursesData?.courses?.length ?? 0;
   const displayedCoursesCount =
-    propCoursesCount !== undefined ? propCoursesCount : activeCoursesCount;
+    propCoursesCount !== undefined ? propCoursesCount : liveCoursesCount;
 
-  const totalQuestions = correctQuestions + wrongQuestions;
-  const correctPct = totalQuestions > 0 ? Math.round((correctQuestions / totalQuestions) * 100) : 0;
-  const wrongPct = 100 - correctPct;
+  // 2. Fetch Wallet Balance from live API
+  const { data: walletData, isLoading: isLoadingWallet } = useStudentWebsiteWallet();
+  const liveWalletBalance = walletData?.balance !== undefined ? Number(walletData.balance) : 0;
+  const displayedWalletBalance =
+    propWalletBalance !== undefined ? propWalletBalance : liveWalletBalance;
+  const currency = walletData?.currency_code || (isAr ? t("currency") : "EGP");
+
+  // 3. Fetch Completed Exams from live API (both course-specific and general platform exams)
+  const { data: courseExamsData, isLoading: isLoadingCourseExams } = useStudentExams({
+    tab: "completed",
+    per_page: 50,
+  });
+
+  const { data: generalExamsData, isLoading: isLoadingGeneralExams } = useStudentGeneralExams({
+    tab: "completed",
+    per_page: 50,
+  });
+
+  const isLoadingExams = isLoadingCourseExams || isLoadingGeneralExams;
+
+  const completedCourseExams = courseExamsData?.exams ?? [];
+  const completedGeneralExams = generalExamsData?.exams ?? [];
+  const completedExams = [...completedCourseExams, ...completedGeneralExams];
+
+  const courseExamsCount = courseExamsData?.tab_counts?.completed ?? completedCourseExams.length;
+  const generalExamsCount = generalExamsData?.tab_counts?.completed ?? completedGeneralExams.length;
+  const liveExamsCount = courseExamsCount + generalExamsCount;
+
+  const displayedExamsSolved = propExamsSolved !== undefined ? propExamsSolved : liveExamsCount;
+
+  // 4. Calculate Aggregate Questions Performance across completed exams
+  let aggregateTotalQuestions = 0;
+  let aggregateCorrectAnswers = 0;
+  let aggregateScoreSum = 0;
+  let examsWithScores = 0;
+
+  completedExams.forEach((exam) => {
+    if (exam.adopted_result) {
+      examsWithScores += 1;
+      aggregateScoreSum += Number(exam.adopted_result.percentage || 0);
+    }
+    // Estimate questions count from questions_count field
+    const qCount = Number(exam.questions_count || 0);
+    if (qCount > 0) {
+      aggregateTotalQuestions += qCount;
+      const passPct = Number(exam.adopted_result?.percentage || 0);
+      aggregateCorrectAnswers += Math.round((passPct / 100) * qCount);
+    }
+  });
+
+  const liveCorrectQuestions = aggregateCorrectAnswers;
+  const liveWrongQuestions = Math.max(0, aggregateTotalQuestions - aggregateCorrectAnswers);
+
+  const displayedCorrect =
+    propCorrectQuestions !== undefined ? propCorrectQuestions : liveCorrectQuestions;
+  const displayedWrong = propWrongQuestions !== undefined ? propWrongQuestions : liveWrongQuestions;
+
+  const totalQuestions = displayedCorrect + displayedWrong;
+  const correctPct = totalQuestions > 0 ? Math.round((displayedCorrect / totalQuestions) * 100) : 0;
+  const wrongPct = totalQuestions > 0 ? 100 - correctPct : 0;
+
+  const averagePerformancePct =
+    examsWithScores > 0 ? Math.round(aggregateScoreSum / examsWithScores) : 0;
 
   const performancePercentage =
     propGeneralPerformance !== undefined
       ? propGeneralPerformance
-      : correctPct > 0
-        ? correctPct
-        : 88;
+      : averagePerformancePct > 0
+        ? averagePerformancePct
+        : correctPct;
 
   return (
     <section className="space-y-4">
@@ -78,11 +129,15 @@ export function StudentGeneralOverview({
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-foreground">
-                {performancePercentage}%
-              </span>
-            </div>
+            {isLoadingExams ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-foreground">
+                  {performancePercentage}%
+                </span>
+              </div>
+            )}
           </div>
         </DashboardCard>
 
@@ -97,9 +152,13 @@ export function StudentGeneralOverview({
             </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-2xl sm:text-3xl font-black text-foreground">
-              {displayedCoursesCount}
-            </span>
+            {isLoadingCourses ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <span className="text-2xl sm:text-3xl font-black text-foreground">
+                {displayedCoursesCount}
+              </span>
+            )}
           </div>
         </DashboardCard>
 
@@ -112,12 +171,16 @@ export function StudentGeneralOverview({
             </div>
           </div>
           <div className="space-y-0.5">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-foreground">
-                {walletBalance.toLocaleString()}
-              </span>
-              <span className="text-xs font-semibold text-emerald-600">{t("currency")}</span>
-            </div>
+            {isLoadingWallet ? (
+              <Skeleton className="h-8 w-24" />
+            ) : (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-2xl sm:text-3xl font-black text-foreground">
+                  {displayedWalletBalance.toLocaleString("en-US")}
+                </span>
+                <span className="text-xs font-semibold text-emerald-600">{currency}</span>
+              </div>
+            )}
           </div>
         </DashboardCard>
 
@@ -130,7 +193,13 @@ export function StudentGeneralOverview({
             </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-2xl sm:text-3xl font-black text-foreground">{examsSolved}</span>
+            {isLoadingExams ? (
+              <Skeleton className="h-8 w-12" />
+            ) : (
+              <span className="text-2xl sm:text-3xl font-black text-foreground">
+                {displayedExamsSolved}
+              </span>
+            )}
           </div>
         </DashboardCard>
 
@@ -146,40 +215,46 @@ export function StudentGeneralOverview({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl sm:text-3xl font-black text-foreground">
-                {totalQuestions.toLocaleString()}
-              </span>
-              <span className="text-xs font-mono text-muted-foreground">{correctPct}%</span>
-            </div>
+            {isLoadingExams ? (
+              <Skeleton className="h-8 w-20" />
+            ) : (
+              <>
+                <div className="flex items-baseline justify-between">
+                  <span className="text-2xl sm:text-3xl font-black text-foreground">
+                    {totalQuestions.toLocaleString("en-US")}
+                  </span>
+                  <span className="text-xs font-mono text-muted-foreground">{correctPct}%</span>
+                </div>
 
-            {/* Dual Segment Progress Bar */}
-            <div className="h-2.5 w-full rounded-full bg-rose-500/20 overflow-hidden flex">
-              <div
-                className="h-full bg-emerald-500 transition-all duration-500"
-                style={{ width: `${correctPct}%` }}
-              />
-              <div
-                className="h-full bg-rose-500 transition-all duration-500"
-                style={{ width: `${wrongPct}%` }}
-              />
-            </div>
+                {/* Dual Segment Progress Bar */}
+                <div className="h-2.5 w-full rounded-full bg-rose-500/20 overflow-hidden flex">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500"
+                    style={{ width: `${correctPct}%` }}
+                  />
+                  <div
+                    className="h-full bg-rose-500 transition-all duration-500"
+                    style={{ width: `${wrongPct}%` }}
+                  />
+                </div>
 
-            {/* Breakdown labels */}
-            <div className="flex items-center justify-between text-[11px] pt-0.5 font-medium">
-              <span className="flex items-center gap-1 text-emerald-600">
-                <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
-                <span>
-                  {correctQuestions} {t("correctAnswers")}
-                </span>
-              </span>
-              <span className="flex items-center gap-1 text-rose-600">
-                <span className="size-1.5 rounded-full bg-rose-500 shrink-0" />
-                <span>
-                  {wrongQuestions} {t("wrongAnswers")}
-                </span>
-              </span>
-            </div>
+                {/* Breakdown labels */}
+                <div className="flex items-center justify-between text-[11px] pt-0.5 font-medium">
+                  <span className="flex items-center gap-1 text-emerald-600">
+                    <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />
+                    <span>
+                      {displayedCorrect} {t("correctAnswers")}
+                    </span>
+                  </span>
+                  <span className="flex items-center gap-1 text-rose-600">
+                    <span className="size-1.5 rounded-full bg-rose-500 shrink-0" />
+                    <span>
+                      {displayedWrong} {t("wrongAnswers")}
+                    </span>
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </DashboardCard>
       </div>
