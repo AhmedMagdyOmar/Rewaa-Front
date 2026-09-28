@@ -30,26 +30,7 @@ import {
  * Map frontend classification to backend classification enum
  */
 export function mapFrontendCategoryToBackend(cat: ExamCategory | string): string {
-  switch (cat) {
-    case "final":
-      return "final";
-    case "midterm":
-      return "midterm";
-    case "test":
-      return "test";
-    case "yearWork":
-      return "coursework";
-    case "comprehensive":
-      return "comprehensive";
-    case "unit":
-      return "unit";
-    case "quiz":
-      return "quiz";
-    case "placement":
-      return "placement";
-    default:
-      return "test";
-  }
+  return cat || "test";
 }
 
 /**
@@ -100,26 +81,7 @@ export function mapBackendKindToFrontend(backendClassification: string): Questio
  * Map backend classification to frontend ExamCategory
  */
 export function mapBackendCategoryToFrontend(backendClassification: string): ExamCategory {
-  switch (backendClassification) {
-    case "final":
-      return "final";
-    case "midterm":
-      return "midterm";
-    case "test":
-      return "test";
-    case "coursework":
-      return "yearWork";
-    case "comprehensive":
-      return "comprehensive";
-    case "unit":
-      return "unit";
-    case "quiz":
-      return "quiz";
-    case "placement":
-      return "placement";
-    default:
-      return "test";
-  }
+  return backendClassification || "test";
 }
 
 /**

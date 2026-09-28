@@ -15,6 +15,11 @@ export const queryKeys = {
       all: () => [...queryKeys.provider.all, "dashboard"] as const,
       statistics: () => [...queryKeys.provider.all, "dashboard", "statistics"] as const,
     },
+    notifications: {
+      all: () => [...queryKeys.provider.all, "notifications"] as const,
+      list: (filters?: Record<string, unknown>) =>
+        [...queryKeys.provider.notifications.all(), "list", filters ?? {}] as const,
+    },
 
     // Courses & Curriculum
     courses: {

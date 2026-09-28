@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import type { PlatformInfoGroupTerms } from "@/types/settings";
-import { savePlatformInfoTerms, resetPlatformInfoGroup } from "@/lib/settings-storage";
 
 interface TermsGroupProps {
   data: PlatformInfoGroupTerms;
@@ -28,15 +27,13 @@ export function TermsGroup({ data, onSaveCustom }: TermsGroupProps) {
   }, [data.content]);
 
   const handleReset = () => {
-    resetPlatformInfoGroup("terms");
+    setContent(data.content);
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     if (onSaveCustom) {
       await onSaveCustom(content);
-    } else {
-      savePlatformInfoTerms(content);
     }
     setIsEditing(false);
   };

@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getStoredCustomRegistrationTypes } from "@/lib/custom-categories-storage";
 import { Gender, RegistrationType, Student } from "@/types/student";
 
 export interface StudentFormData {
@@ -107,23 +106,6 @@ export function StudentForm({
       });
     }
   }, [initialData, locale]);
-
-  const [customRegTypes, setCustomRegTypes] = React.useState<Array<{ id: string; name: string }>>(
-    [],
-  );
-
-  React.useEffect(() => {
-    const load = () => {
-      setCustomRegTypes(getStoredCustomRegistrationTypes());
-    };
-    load();
-    window.addEventListener("rewaa_custom_categories_updated", load);
-    window.addEventListener("rewaa_registration_types_updated", load);
-    return () => {
-      window.removeEventListener("rewaa_custom_categories_updated", load);
-      window.removeEventListener("rewaa_registration_types_updated", load);
-    };
-  }, []);
 
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
@@ -409,17 +391,6 @@ export function StudentForm({
                 <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
                 <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
                 <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
-                {customRegTypes
-                  .filter(
-                    (c) =>
-                      !["center", "online", "hybrid", "external"].includes(c.id) &&
-                      !["center", "online", "hybrid", "external"].includes(c.name),
-                  )
-                  .map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
               </SelectContent>
             </Select>
           </div>

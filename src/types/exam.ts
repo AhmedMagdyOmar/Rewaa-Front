@@ -7,10 +7,14 @@ export type QuestionType = "mcq" | "text" | "true/false";
 export type QuestionKind =
   | "theoretical"
   | "practical"
+  | "practical_applied"
+  | "applied"
   | "application-based"
   | "analytical"
   | "oral"
-  | "skill-based";
+  | "skill-based"
+  | "skill_based"
+  | string;
 
 export type QuestionDifficulty = "easy" | "medium" | "hard";
 
@@ -50,11 +54,12 @@ export type ExamCategory =
   | "final"
   | "midterm"
   | "test"
-  | "yearWork"
+  | "coursework"
   | "comprehensive"
   | "unit"
   | "quiz"
-  | "placement";
+  | "placement"
+  | string;
 
 export type ExamType = "independent" | "course-dependent";
 export type ExamVenue = CourseVenue;

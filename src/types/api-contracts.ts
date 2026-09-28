@@ -893,6 +893,8 @@ export interface BackendStudent {
 
 export interface StudentFilterParams {
   search?: string;
+  course_id?: number | string;
+  gender?: "male" | "female";
   country_id?: number | string;
   governorate_id?: number | string;
   educational_stage_id?: number | string;
@@ -1864,4 +1866,33 @@ export interface RedeemActivationCodeResponse {
   course_title: Record<string, string | null>;
   enrollment_id: number;
   redeemed_at: string;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 9: Provider Notifications
+// ---------------------------------------------------------------------------
+
+export interface BackendProviderNotification {
+  id: string | number;
+  type: string;
+  data?: {
+    title?: string | Record<string, string>;
+    message?: string | Record<string, string>;
+    action_url?: string;
+    [key: string]: unknown;
+  };
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface NotificationFilterParams {
+  status?: "read" | "unread";
+  page?: number;
+  per_page?: number;
+}
+
+export interface NotificationsListResponse {
+  notifications: BackendProviderNotification[];
+  pagination?: ApiPaginationMeta;
 }

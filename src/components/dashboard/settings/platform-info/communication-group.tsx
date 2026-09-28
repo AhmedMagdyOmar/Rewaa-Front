@@ -20,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneLink } from "@/components/ui/phone-link";
-import { resetPlatformInfoGroup, savePlatformInfoCommunication } from "@/lib/settings-storage";
 import type { PlatformCustomLink, PlatformInfoGroupCommunication } from "@/types/settings";
 import { AddLinkDialog } from "./add-link-dialog";
 
@@ -40,15 +39,13 @@ export function CommunicationGroup({ data, onSaveCustom }: CommunicationGroupPro
   }, [data]);
 
   const handleReset = () => {
-    resetPlatformInfoGroup("communication");
+    setFormState(data);
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     if (onSaveCustom) {
       await onSaveCustom(formState);
-    } else {
-      savePlatformInfoCommunication(formState);
     }
     setIsEditing(false);
   };
@@ -67,12 +64,8 @@ export function CommunicationGroup({ data, onSaveCustom }: CommunicationGroupPro
     const updatedCustom = [...formState.customLinks, newLink];
     const updatedState = { ...formState, customLinks: updatedCustom };
     setFormState(updatedState);
-    if (!isEditing) {
-      if (onSaveCustom) {
-        onSaveCustom(updatedState);
-      } else {
-        savePlatformInfoCommunication(updatedState);
-      }
+    if (!isEditing && onSaveCustom) {
+      onSaveCustom(updatedState);
     }
   };
 
@@ -80,12 +73,8 @@ export function CommunicationGroup({ data, onSaveCustom }: CommunicationGroupPro
     const updatedCustom = formState.customLinks.filter((l) => l.id !== id);
     const updatedState = { ...formState, customLinks: updatedCustom };
     setFormState(updatedState);
-    if (!isEditing) {
-      if (onSaveCustom) {
-        onSaveCustom(updatedState);
-      } else {
-        savePlatformInfoCommunication(updatedState);
-      }
+    if (!isEditing && onSaveCustom) {
+      onSaveCustom(updatedState);
     }
   };
 

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock,
   Eye,
-  GraduationCap,
   Pencil,
   Search,
   Sparkles,
@@ -86,23 +85,29 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
     <div className="flex flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
+        <div className="flex items-center gap-3">
+          <Button
+            asChild
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 rounded-full shrink-0"
+            title={examId ? t("backToStats") : t("backToExams")}
+          >
             <Link
               href={examId ? `/${locale}/dashboard/exams/${examId}` : `/${locale}/dashboard/exams`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
             >
-              <ArrowLeft className={`size-3.5 ${isAr ? "rotate-180" : ""}`} />
-              <span>{examId ? t("backToStats") : t("backToExams")}</span>
+              <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             </Link>
+          </Button>
+
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+              <span>
+                {examId && examTitle ? t("examSubmissionsTitle", { title: examTitle }) : t("title")}
+              </span>
+            </h1>
+            <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
-            <GraduationCap className="size-7 text-primary" />
-            <span>
-              {examId && examTitle ? t("examSubmissionsTitle", { title: examTitle }) : t("title")}
-            </span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
 
         <div className="flex items-center gap-2.5">

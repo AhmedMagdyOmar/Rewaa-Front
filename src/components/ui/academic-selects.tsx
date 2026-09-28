@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { CheckIcon, ChevronDownIcon, User } from "lucide-react";
@@ -16,9 +15,8 @@ import {
 } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { getStoredCourses } from "@/lib/courses-storage";
+import { coursesService } from "@/lib/api/courses-service";
 import { lessonsService } from "@/lib/api/lessons-service";
-import { getStoredTeachers } from "@/lib/settings-storage";
 import { cn } from "@/lib/utils";
 import { Teacher } from "@/types/settings";
 
@@ -32,13 +30,6 @@ const triggerBaseStyles = cn(
 
 import { Plus } from "lucide-react";
 import { QuickAddDialog } from "@/components/ui/quick-add-dialog";
-import {
-  getStoredGrades,
-  getStoredSubjects,
-  saveGrade,
-  saveSubject,
-  saveTeacher,
-} from "@/lib/settings-storage";
 
 export interface ComboboxOption {
   value: string;
@@ -136,7 +127,7 @@ export function ComboboxSelect({
               variant="outline"
               role="combobox"
               aria-expanded={open}
-              disabled={disabled}
+              disabled={Boolean(disabled)}
               className={cn(
                 triggerBaseStyles,
                 !value && "text-muted-foreground",
@@ -260,20 +251,6 @@ export function GradeSelect({
   grades,
 }: GradeSelectProps) {
   const tGrades = useTranslations("courses.new.grades");
-  const [storedGradesList, setStoredGradesList] = React.useState<
-    Array<{ id: string; name: string }>
-  >([]);
-
-  React.useEffect(() => {
-    if (grades) return;
-    const load = () => {
-      const g = getStoredGrades();
-      setStoredGradesList(g.map((item) => ({ id: item.id, name: item.name })));
-    };
-    load();
-    window.addEventListener("rewaa_grades_updated", load);
-    return () => window.removeEventListener("rewaa_grades_updated", load);
-  }, [grades]);
 
   const defaultGrades = grades
     ? grades.map((g) => ({ value: String(g.id), label: g.name }))
@@ -284,21 +261,10 @@ export function GradeSelect({
         { value: "university", label: tGrades("university") },
       ];
 
-  const customGrades = grades
-    ? []
-    : storedGradesList
-        .filter((sg) => !defaultGrades.some((dg) => dg.value === sg.name || dg.label === sg.name))
-        .map((sg) => ({ value: sg.name, label: sg.name }));
-
   const options: ComboboxOption[] = [
     ...(showAllOption ? [{ value: "all", label: allOptionLabel || "كل المراحل" }] : []),
     ...defaultGrades,
-    ...customGrades,
   ];
-
-  const handleAddGrade = (name: string) => {
-    saveGrade({ name, year: 10 });
-  };
 
   return (
     <ComboboxSelect
@@ -314,10 +280,6 @@ export function GradeSelect({
       className={className}
       triggerClassName={triggerClassName}
       allowAdd={allowAdd}
-      onAddNewOption={handleAddGrade}
-      addDialogTitle="إضافة مرحلة دراسية جديدة"
-      addInputLabel="اسم المرحلة الدراسية"
-      addInputPlaceholder="مثال: الصف الرابع الابتدائي"
     />
   );
 }
@@ -355,20 +317,6 @@ export function SubjectSelect({
   subjects,
 }: SubjectSelectProps) {
   const tSubjects = useTranslations("courses.new.subjects");
-  const [storedSubjectsList, setStoredSubjectsList] = React.useState<
-    Array<{ id: string; name: string }>
-  >([]);
-
-  React.useEffect(() => {
-    if (subjects) return;
-    const load = () => {
-      const s = getStoredSubjects();
-      setStoredSubjectsList(s.map((item) => ({ id: item.id, name: item.name })));
-    };
-    load();
-    window.addEventListener("rewaa_subjects_updated", load);
-    return () => window.removeEventListener("rewaa_subjects_updated", load);
-  }, [subjects]);
 
   const defaultSubjects = subjects
     ? subjects.map((s) => ({ value: String(s.id), label: s.name }))
@@ -381,21 +329,10 @@ export function SubjectSelect({
         { value: "english", label: tSubjects("english") },
       ];
 
-  const customSubjects = subjects
-    ? []
-    : storedSubjectsList
-        .filter((sb) => !defaultSubjects.some((ds) => ds.value === sb.name || ds.label === sb.name))
-        .map((sb) => ({ value: sb.name, label: sb.name }));
-
   const options: ComboboxOption[] = [
     ...(showAllOption ? [{ value: "all", label: allOptionLabel || "كل المواد" }] : []),
     ...defaultSubjects,
-    ...customSubjects,
   ];
-
-  const handleAddSubject = (name: string) => {
-    saveSubject({ name });
-  };
 
   return (
     <ComboboxSelect
@@ -411,10 +348,6 @@ export function SubjectSelect({
       className={className}
       triggerClassName={triggerClassName}
       allowAdd={allowAdd}
-      onAddNewOption={handleAddSubject}
-      addDialogTitle="إضافة مادة دراسية جديدة"
-      addInputLabel="اسم المادة الدراسية"
-      addInputPlaceholder="مثال: الجيولوجيا وعلوم البيئة"
     />
   );
 }
@@ -449,17 +382,7 @@ export function TeacherSelect({
   teachers,
   allowAdd = false,
 }: TeacherSelectProps) {
-  const [internalTeachers, setInternalTeachers] = React.useState<Teacher[]>([]);
-
-  React.useEffect(() => {
-    if (teachers) return;
-    const loadTeachers = () => setInternalTeachers(getStoredTeachers());
-    loadTeachers();
-    window.addEventListener("rewaa_teachers_updated", loadTeachers);
-    return () => window.removeEventListener("rewaa_teachers_updated", loadTeachers);
-  }, [teachers]);
-
-  const activeTeachers = teachers || internalTeachers;
+  const activeTeachers = teachers || [];
   const options: ComboboxOption[] = activeTeachers.map((tch) => {
     const labelStr =
       "full_name" in tch && tch.full_name ? tch.full_name : tch.name || String(tch.id);
@@ -469,15 +392,6 @@ export function TeacherSelect({
       label: labelStr,
     };
   });
-
-  const handleAddTeacher = (name: string) => {
-    saveTeacher({
-      name,
-      phone: "01000000000",
-      subjects: [],
-      grades: [],
-    });
-  };
 
   return (
     <ComboboxSelect
@@ -495,10 +409,6 @@ export function TeacherSelect({
       triggerClassName={triggerClassName}
       showIcon={showIcon}
       allowAdd={allowAdd}
-      onAddNewOption={handleAddTeacher}
-      addDialogTitle="إضافة معلم جديد"
-      addInputLabel="اسم المعلم"
-      addInputPlaceholder="مثال: أ. محمد علي"
     />
   );
 }
@@ -643,8 +553,29 @@ export function CourseSelect({
 
   React.useEffect(() => {
     if (courses) return;
-    const loaded = getStoredCourses(locale);
-    setInternalCourses(loaded.map((c) => ({ id: c.id, title: c.title })));
+    let isMounted = true;
+    coursesService
+      .getCourses({ per_page: 100 })
+      .then((res) => {
+        if (!isMounted) return;
+        setInternalCourses(
+          (res.courses || []).map((c) => {
+            const titleStr =
+              typeof c.title === "string"
+                ? c.title
+                : locale === "ar"
+                  ? c.title?.ar || c.title?.en || ""
+                  : c.title?.en || c.title?.ar || "";
+            return { id: String(c.id), title: titleStr };
+          }),
+        );
+      })
+      .catch(() => {
+        // Silently handle if unauthenticated or network failure
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [courses, locale]);
 
   const activeCourses = courses || internalCourses;

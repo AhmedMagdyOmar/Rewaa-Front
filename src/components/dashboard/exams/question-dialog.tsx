@@ -368,6 +368,7 @@ export function QuestionDialog({
                         <Checkbox
                           checked={isSelected}
                           onCheckedChange={() => toggleQuestionSelection(idStr)}
+                          onClick={(e) => e.stopPropagation()}
                           className="data-checked:bg-primary data-checked:border-primary"
                         />
                       </div>

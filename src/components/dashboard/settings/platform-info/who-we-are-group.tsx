@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import type { PlatformInfoGroupWhoWeAre } from "@/types/settings";
-import { savePlatformInfoWhoWeAre, resetPlatformInfoGroup } from "@/lib/settings-storage";
 
 interface WhoWeAreGroupProps {
   data: PlatformInfoGroupWhoWeAre;
@@ -28,15 +27,13 @@ export function WhoWeAreGroup({ data, onSaveCustom }: WhoWeAreGroupProps) {
   }, [data.content]);
 
   const handleReset = () => {
-    resetPlatformInfoGroup("whoWeAre");
+    setContent(data.content);
     setIsEditing(false);
   };
 
   const handleSave = async () => {
     if (onSaveCustom) {
       await onSaveCustom(content);
-    } else {
-      savePlatformInfoWhoWeAre(content);
     }
     setIsEditing(false);
   };

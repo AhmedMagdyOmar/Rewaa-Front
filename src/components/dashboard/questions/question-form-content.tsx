@@ -1,22 +1,10 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import {
-  BookOpen,
-  Check,
-  CheckCircle2,
-  FileText,
-  GraduationCap,
-  HelpCircle,
-  ListOrdered,
-  Plus,
-  Trash2,
-  XCircle,
-} from "lucide-react";
-import { useTranslations } from "next-intl";
+import { BookOpen, CheckCircle2, FileText, HelpCircle, ListOrdered, XCircle } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import * as React from "react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { FormSectionCard } from "@/components/ui/form-section-card";
@@ -30,18 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
-import { SelectWithAdd } from "@/components/ui/select-with-add";
-import {
-  getStoredCustomQuestionKinds,
-  saveStoredCustomQuestionKind,
-  getStoredCustomSections,
-  saveStoredCustomSection,
-} from "@/lib/custom-categories-storage";
 import { cn } from "@/lib/utils";
-import { useLocale } from "next-intl";
 import { useProviderQuestionOptions } from "@/hooks/use-questions";
-import {
+import type {
   ExamSection,
   MCQOption,
   Question,
@@ -49,6 +28,8 @@ import {
   QuestionKind,
   QuestionType,
 } from "@/types/exam";
+import { QuestionMcqOptionsList } from "@/components/dashboard/questions/question-mcq-options-list";
+import { QuestionAcademicContextSection } from "@/components/dashboard/questions/question-academic-context-section";
 
 export interface QuestionFormContentProps {
   initialQuestion?: Question | null;
@@ -100,8 +81,6 @@ export function QuestionFormContent({
   const locale = useLocale();
   const t = useTranslations("exams.questionDialog");
   const tNew = useTranslations("questionsPage.newPage");
-  const tGrades = useTranslations("courses.new.grades");
-  const tSubjects = useTranslations("courses.new.subjects");
 
   const [sectionId, setSectionId] = React.useState<string>(
     initialSectionId || (sections && sections[0]?.id ? sections[0].id : ""),
@@ -192,41 +171,9 @@ export function QuestionFormContent({
   const [answerExplanation, setAnswerExplanation] = React.useState<string>(
     initialQuestion?.answerExplanation || "",
   );
-  // Custom question kinds state
-  const [customQuestionKinds, setCustomQuestionKinds] = React.useState<
-    Array<{ id: string; name: string }>
-  >([]);
-  const [customSectionsList, setCustomSectionsList] = React.useState<
-    Array<{ id: string; name: string }>
-  >([]);
-
-  React.useEffect(() => {
-    const loadCustomData = () => {
-      setCustomQuestionKinds(getStoredCustomQuestionKinds());
-      setCustomSectionsList(getStoredCustomSections());
-    };
-    loadCustomData();
-    window.addEventListener("rewaa_custom_categories_updated", loadCustomData);
-    window.addEventListener("rewaa_question_kinds_updated", loadCustomData);
-    window.addEventListener("rewaa_custom_sections_updated", loadCustomData);
-    return () => {
-      window.removeEventListener("rewaa_custom_categories_updated", loadCustomData);
-      window.removeEventListener("rewaa_question_kinds_updated", loadCustomData);
-      window.removeEventListener("rewaa_custom_sections_updated", loadCustomData);
-    };
-  }, []);
-
-  const handleAddQuestionKind = (name: string) => {
-    saveStoredCustomQuestionKind(name);
-  };
-
-  const handleAddSection = (name: string) => {
-    saveStoredCustomSection(name);
-  };
-
-  // Build combined question kinds options
+  // Build question kinds options directly from backend optionsData.classifications
   const classifications = optionsData?.classifications;
-  const defaultQuestionKindOptions = React.useMemo(() => {
+  const questionKindOptions = React.useMemo(() => {
     if (classifications && Object.keys(classifications).length > 0) {
       return Object.entries(classifications).map(([key, label]) => ({
         value: key,
@@ -243,22 +190,10 @@ export function QuestionFormContent({
     ];
   }, [classifications, t]);
 
-  const allQuestionKindOptions = [
-    ...defaultQuestionKindOptions,
-    ...customQuestionKinds
-      .filter(
-        (k) => !defaultQuestionKindOptions.some((d) => d.value === k.id || d.label === k.name),
-      )
-      .map((k) => ({ value: k.id, label: k.name })),
-  ];
-
-  // Build combined sections options
-  const combinedSections = [
-    ...(sections || []).map((s) => ({ value: s.id, label: s.title })),
-    ...customSectionsList
-      .filter((cs) => !(sections || []).some((s) => s.id === cs.id || s.title === cs.name))
-      .map((cs) => ({ value: cs.id, label: cs.name })),
-  ];
+  // Build sections options from provided sections prop
+  const sectionOptions = React.useMemo(() => {
+    return (sections || []).map((s) => ({ value: s.id, label: s.title }));
+  }, [sections]);
 
   // Requirements & Answers
   const [modelAnswer, setModelAnswer] = React.useState(initialQuestion?.modelAnswer || "");
@@ -427,20 +362,23 @@ export function QuestionFormContent({
       {/* 2. Basic Information Group */}
       <FormSectionCard title={t("basicInfoGroup")} icon={BookOpen} contentClassName="space-y-4">
         {/* Target Section Selection if sections provided */}
-        {(sections && sections.length > 0) || combinedSections.length > 0 ? (
+        {(sections && sections.length > 0) || sectionOptions.length > 0 ? (
           <div className="pb-2 border-b border-border/40">
-            <SelectWithAdd
-              value={sectionId}
-              onValueChange={setSectionId}
-              label={t("targetSection")}
-              placeholder={t("selectSectionPlaceholder")}
-              options={combinedSections}
-              allowAdd
-              onAddNewOption={handleAddSection}
-              addDialogTitle="إضافة قسم جديد"
-              addInputLabel="اسم القسم"
-              addInputPlaceholder="مثال: القسم الأول - الأسئلة التمهيدية"
-            />
+            <div className="flex flex-col gap-2">
+              <Label className="text-sm font-medium text-foreground">{t("targetSection")}</Label>
+              <Select value={sectionId} onValueChange={setSectionId}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("selectSectionPlaceholder")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {sectionOptions.map((sec) => (
+                    <SelectItem key={sec.value} value={sec.value}>
+                      {sec.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         ) : null}
 
@@ -471,18 +409,24 @@ export function QuestionFormContent({
 
         {/* Question Kind Classification & Difficulty Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <SelectWithAdd
-            value={questionType}
-            onValueChange={(v) => setQuestionType(v as QuestionKind)}
-            label={t("questionKind")}
-            required
-            options={allQuestionKindOptions}
-            allowAdd
-            onAddNewOption={handleAddQuestionKind}
-            addDialogTitle="إضافة تصنيف / نوع سؤال جديد"
-            addInputLabel="نوع / تصنيف السؤال"
-            addInputPlaceholder="مثال: تطبيقي متقدم"
-          />
+          <div className="flex flex-col gap-2">
+            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
+              <span>{t("questionKind")}</span>
+              <span className="text-destructive">*</span>
+            </Label>
+            <Select value={questionType} onValueChange={(v) => setQuestionType(v as QuestionKind)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {questionKindOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="flex flex-col gap-2">
             <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
@@ -527,79 +471,25 @@ export function QuestionFormContent({
       </FormSectionCard>
 
       {/* 3. Academic Context Info Group */}
-      {allowEditableAcademicProps && (
-        <FormSectionCard
-          title={allowEditableAcademicProps ? tNew("academicGroupTitle") : t("autoFilledHeader")}
-          icon={GraduationCap}
-        >
-          {allowEditableAcademicProps ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <GradeSelect
-                value={selectedStageId}
-                onValueChange={handleStageChange}
-                label={tNew("selectGrade")}
-                placeholder={tNew("selectGradePlaceholder")}
-                grades={mappedStages}
-                disabled={isLoadingOptions}
-                required
-              />
-              <SubjectSelect
-                value={selectedSubjId}
-                onValueChange={setSelectedSubjId}
-                label={tNew("selectSubject")}
-                placeholder={tNew("selectSubjectPlaceholder")}
-                subjects={mappedSubjects}
-                disabled={isLoadingOptions || !selectedStageId}
-                required
-              />
-              <TeacherSelect
-                value={selectedInstId}
-                onValueChange={setSelectedInstId}
-                label={tNew("teacherName")}
-                placeholder={tNew("teacherNamePlaceholder")}
-                teachers={mappedInstructors}
-                disabled={isLoadingOptions || optionsData?.requires_instructor_selection === false}
-                required={optionsData?.requires_instructor_selection !== false}
-              />
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground block">{t("grade")}</span>
-                <Badge variant="secondary" className="font-semibold">
-                  {(() => {
-                    if (!examGrade) return t("notSet");
-                    try {
-                      return tGrades(examGrade);
-                    } catch {
-                      return examGrade;
-                    }
-                  })()}
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground block">{t("subject")}</span>
-                <Badge variant="secondary" className="font-semibold">
-                  {(() => {
-                    if (!examSubject) return t("notSet");
-                    try {
-                      return tSubjects(examSubject);
-                    } catch {
-                      return examSubject;
-                    }
-                  })()}
-                </Badge>
-              </div>
-              <div className="space-y-1">
-                <span className="text-[11px] text-muted-foreground block">{t("teacher")}</span>
-                <Badge variant="secondary" className="font-semibold">
-                  {examTeacherName || t("notSet")}
-                </Badge>
-              </div>
-            </div>
-          )}
-        </FormSectionCard>
-      )}
+      <QuestionAcademicContextSection
+        allowEditableAcademicProps={allowEditableAcademicProps}
+        selectedStageId={selectedStageId}
+        onStageChange={handleStageChange}
+        selectedSubjId={selectedSubjId}
+        onSubjChange={setSelectedSubjId}
+        selectedInstId={selectedInstId}
+        onInstChange={setSelectedInstId}
+        mappedStages={mappedStages}
+        mappedSubjects={mappedSubjects}
+        mappedInstructors={mappedInstructors}
+        isLoadingOptions={isLoadingOptions}
+        requiresInstructorSelection={optionsData?.requires_instructor_selection}
+        examGrade={examGrade}
+        examSubject={examSubject}
+        examTeacherName={examTeacherName}
+        t={t}
+        tNew={tNew}
+      />
 
       {/* 4. Question Requirements (Grade & Answer specifics) */}
       <FormSectionCard
@@ -662,65 +552,20 @@ export function QuestionFormContent({
 
         {/* MCQ Options List */}
         {type === "mcq" && (
-          <div className="space-y-3 pt-2">
-            <div className="flex items-center justify-between">
-              <Label className="font-semibold text-xs text-foreground">
-                {t("mcqChoicesLabel")}
-              </Label>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddOption}
-                className="h-8 text-xs gap-1.5"
-              >
-                <Plus className="size-3.5" />
-                <span>{t("addChoice")}</span>
-              </Button>
-            </div>
-
-            <div className="space-y-2">
-              {options.map((opt, idx) => (
-                <div key={opt.id} className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setModelAnswer(opt.id)}
-                    className={cn(
-                      "size-9 rounded-lg border flex items-center justify-center shrink-0 transition-colors cursor-pointer",
-                      modelAnswer === opt.id
-                        ? "bg-emerald-500 text-white border-emerald-500"
-                        : "bg-card border-input hover:border-emerald-500/50 text-muted-foreground",
-                    )}
-                    title={t("markAsCorrect")}
-                  >
-                    {modelAnswer === opt.id ? (
-                      <Check className="size-4 stroke-3" />
-                    ) : (
-                      <span className="text-xs font-semibold">{idx + 1}</span>
-                    )}
-                  </button>
-
-                  <Input
-                    value={opt.text}
-                    onChange={(e) => handleUpdateOption(opt.id, e.target.value)}
-                    placeholder={`${t("choicePlaceholder")} ${idx + 1}`}
-                    className="text-xs"
-                  />
-
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    disabled={options.length <= 2}
-                    onClick={() => handleDeleteOption(opt.id)}
-                    className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
+          <QuestionMcqOptionsList
+            options={options}
+            modelAnswer={modelAnswer}
+            onModelAnswerChange={setModelAnswer}
+            onAddOption={handleAddOption}
+            onUpdateOption={handleUpdateOption}
+            onDeleteOption={handleDeleteOption}
+            labels={{
+              mcqChoicesLabel: t("mcqChoicesLabel"),
+              addChoice: t("addChoice"),
+              markAsCorrect: t("markAsCorrect"),
+              choicePlaceholder: t("choicePlaceholder"),
+            }}
+          />
         )}
 
         {/* Text Question Model Answer */}

@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet, Font } from "@react-pdf/renderer";
-import { FinancialYearData } from "@/lib/financial-summary-storage";
+import { FinancialYearData } from "@/types/finance";
 
 // Register IBM Plex Sans Arabic
 Font.register({

@@ -1,63 +1,61 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import React, { useState } from "react";
+import { Bell, CheckCheck, Loader2, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  useDeleteNotificationMutation,
+  useMarkNotificationReadMutation,
+  useProviderNotifications,
+} from "@/hooks/use-notifications";
 import { cn } from "@/lib/utils";
-
-type NotificationKey = "item1" | "item2" | "item3";
-
-interface MockNotification {
-  id: string;
-  itemKey: NotificationKey;
-  unread: boolean;
-}
+import type { BackendProviderNotification } from "@/types/api-contracts";
 
 export function NotificationsPopover() {
   const t = useTranslations("dashboard.notifications");
+  const locale = useLocale();
+  const dir = locale === "ar" ? "rtl" : "ltr";
 
-  const [data, setData] = useState<MockNotification[]>([
-    {
-      id: "1",
-      itemKey: "item1",
-      unread: true,
-    },
-    {
-      id: "2",
-      itemKey: "item2",
-      unread: true,
-    },
-    {
-      id: "3",
-      itemKey: "item3",
-      unread: false,
-    },
-  ]);
   const [open, setOpen] = useState(false);
-  const dir = useLocale() === "ar" ? "rtl" : "ltr";
 
-  // This will be replaced by a react-query hook later
-  const unreadCount = data.filter((n) => n.unread).length;
+  const { data: response, isLoading } = useProviderNotifications();
+  const markReadMutation = useMarkNotificationReadMutation();
+  const deleteMutation = useDeleteNotificationMutation();
 
-  const markAllAsRead = () => {
-    setData((prev) => prev.map((n) => ({ ...n, unread: false })));
+  const notifications = response?.notifications || [];
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  const handleMarkAsRead = (n: BackendProviderNotification) => {
+    if (!n.is_read) {
+      markReadMutation.mutate(n.id);
+    }
   };
 
-  // Mark as read when the popover opens
-  useEffect(() => {
-    if (open && unreadCount > 0) {
-      // Small delay to let the user see the unread state briefly before it fades
-      const timer = setTimeout(() => {
-        markAllAsRead();
-      }, 1000);
-      return () => clearTimeout(timer);
+  const handleDelete = (e: React.MouseEvent, id: string | number) => {
+    e.stopPropagation();
+    deleteMutation.mutate(id);
+  };
+
+  const getTitle = (n: BackendProviderNotification) => {
+    if (!n.data?.title) return t("title");
+    if (typeof n.data.title === "object") {
+      return n.data.title[locale as "ar" | "en"] || Object.values(n.data.title)[0] || t("title");
     }
-  }, [open, unreadCount]);
+    return String(n.data.title);
+  };
+
+  const getMessage = (n: BackendProviderNotification) => {
+    if (!n.data?.message) return "";
+    if (typeof n.data.message === "object") {
+      return n.data.message[locale as "ar" | "en"] || Object.values(n.data.message)[0] || "";
+    }
+    return String(n.data.message);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -77,7 +75,7 @@ export function NotificationsPopover() {
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
+      <PopoverContent className="w-80 p-0 shadow-lg" align="end">
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <div className="flex items-center gap-2">
             <h4 className="text-sm font-semibold">{t("title")}</h4>
@@ -88,46 +86,74 @@ export function NotificationsPopover() {
             )}
           </div>
         </div>
+
         <ScrollArea className="h-75" dir={dir}>
           <div className="grid gap-1 p-1">
-            {data.length > 0 ? (
-              data.map((notification) => (
-                <button
-                  key={notification.id}
-                  className={cn(
-                    "group flex flex-col items-start gap-1 rounded-md p-3 text-start text-sm transition-all hover:bg-accent",
-                    notification.unread && "bg-accent/40",
-                  )}
-                  onClick={() => {
-                    setData((prev) =>
-                      prev.map((n) => (n.id === notification.id ? { ...n, unread: false } : n)),
-                    );
-                  }}
-                >
-                  <div className="flex w-full items-center justify-between">
-                    <span
-                      className={cn(
-                        "font-medium transition-colors",
-                        notification.unread ? "text-foreground" : "text-muted-foreground",
-                      )}
-                    >
-                      {t(`items.${notification.itemKey}.title`)}
-                    </span>
-                    {notification.unread && <span className="h-2 w-2 rounded-full bg-primary" />}
-                  </div>
-                  <p
+            {isLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : notifications.length > 0 ? (
+              notifications.map((notification) => {
+                const title = getTitle(notification);
+                const message = getMessage(notification);
+                const isUnread = !notification.is_read;
+
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => handleMarkAsRead(notification)}
                     className={cn(
-                      "text-xs line-clamp-2 transition-colors",
-                      notification.unread ? "text-foreground/80" : "text-muted-foreground/70",
+                      "group flex flex-col items-start gap-1 rounded-md p-3 text-start text-sm transition-all hover:bg-accent cursor-pointer relative",
+                      isUnread && "bg-accent/40",
                     )}
                   >
-                    {t(`items.${notification.itemKey}.description`)}
-                  </p>
-                  <span className="text-[10px] text-muted-foreground mt-1 group-hover:text-foreground/50 transition-colors">
-                    {t(`items.${notification.itemKey}.time`)}
-                  </span>
-                </button>
-              ))
+                    <div className="flex w-full items-center justify-between">
+                      <span
+                        className={cn(
+                          "font-medium transition-colors line-clamp-1",
+                          isUnread ? "text-foreground font-semibold" : "text-muted-foreground",
+                        )}
+                      >
+                        {title}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        {isUnread && <span className="h-2 w-2 rounded-full bg-primary" />}
+                        <button
+                          type="button"
+                          onClick={(e) => handleDelete(e, notification.id)}
+                          className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-destructive transition-opacity"
+                          title="Delete"
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {message && (
+                      <p
+                        className={cn(
+                          "text-xs line-clamp-2 transition-colors",
+                          isUnread ? "text-foreground/80" : "text-muted-foreground/70",
+                        )}
+                      >
+                        {message}
+                      </p>
+                    )}
+
+                    {notification.created_at && (
+                      <span className="text-[10px] text-muted-foreground mt-1">
+                        {new Date(notification.created_at).toLocaleDateString(locale, {
+                          month: "short",
+                          day: "numeric",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    )}
+                  </div>
+                );
+              })
             ) : (
               <div className="flex h-32 flex-col items-center justify-center gap-1 text-center">
                 <Bell className="h-8 w-8 text-muted-foreground/50" />
@@ -136,14 +162,18 @@ export function NotificationsPopover() {
             )}
           </div>
         </ScrollArea>
+
         <Separator />
         <div className="p-2">
           <Button
             variant="ghost"
             className="w-full justify-center text-xs font-medium h-8"
-            onClick={markAllAsRead}
+            onClick={() => {
+              notifications.filter((n) => !n.is_read).forEach((n) => markReadMutation.mutate(n.id));
+            }}
             disabled={unreadCount === 0}
           >
+            <CheckCheck className="size-3.5 me-1.5" />
             {t("markAllRead")}
           </Button>
         </div>

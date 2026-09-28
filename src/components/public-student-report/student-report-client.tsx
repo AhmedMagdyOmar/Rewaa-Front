@@ -14,9 +14,6 @@ import { adaptBackendExamAttemptToExam } from "@/lib/adapters/exam-adapters";
 import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
 import { examsService } from "@/lib/api/exams-service";
 import { studentsService } from "@/lib/api/students-service";
-import { getStoredCourses } from "@/lib/courses-storage";
-import { getStoredExams } from "@/lib/exams-storage";
-import { getStudentById } from "@/lib/students-storage";
 import { Course } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { Student } from "@/types/student";
@@ -61,7 +58,7 @@ export function StudentReportClient({ studentId }: StudentReportClientProps) {
       try {
         setIsLoading(true);
         let foundStudent: Student | null = null;
-        let studentCourses: Course[] = getStoredCourses(locale);
+        let studentCourses: Course[] = [];
         let studentExams: Exam[] = [];
 
         try {
@@ -110,16 +107,15 @@ export function StudentReportClient({ studentId }: StudentReportClientProps) {
               // Non-fatal if attempts cannot be fetched
             }
           }
-        } catch {
-          foundStudent = getStudentById(locale, studentId);
+        } catch (e) {
+          console.error("Failed to load student report from API:", e);
         }
 
         if (!isMounted) return;
-        const allExams = studentExams.length > 0 ? studentExams : getStoredExams(locale);
 
         setStudent(foundStudent);
         setCourses(studentCourses);
-        setExams(allExams);
+        setExams(studentExams);
 
         // Check code from URL query parameter
         const urlCode = searchParams.get("code")?.trim();

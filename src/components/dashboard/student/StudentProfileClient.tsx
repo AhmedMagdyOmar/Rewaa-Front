@@ -1,13 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { ArrowLeft, Check, MapPin, RotateCcw, ShieldCheck, User } from "lucide-react";
+import { ArrowLeft, Check, Loader2, MapPin, RotateCcw, ShieldCheck, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import * as React from "react";
 import { toast } from "sonner";
 
-import { GradeSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
@@ -20,25 +19,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getStoredCustomRegistrationTypes } from "@/lib/custom-categories-storage";
-import { getStoredStudents, updateStoredStudent } from "@/lib/students-storage";
-import { Gender, RegistrationType, Student } from "@/types/student";
+import {
+  useStudentProfileOptions,
+  useStudentProfileQuery,
+  useUpdateStudentPasswordMutation,
+  useUpdateStudentProfileMutation,
+} from "@/hooks/use-student-profile";
+import { getErrorMessage } from "@/lib/api-utils";
+import { Gender, RegistrationType } from "@/types/student";
 
 interface StudentProfileFormData {
   firstName: string;
-  middleName: string;
-  lastName: string;
+  fatherName: string;
+  familyName: string;
   additionalName: string;
   phoneNumber: string;
   parentPhoneNumber: string;
   gender: Gender;
   email: string;
   image: string;
+  avatarFile?: File | null;
+  removeAvatar?: boolean;
   password?: string;
   confirmPassword?: string;
-  country: string;
-  state: string;
-  grade: string;
+  countryId: string;
+  governorateId: string;
+  educationalStageId: string;
   registrationType: RegistrationType;
 }
 
@@ -47,98 +53,88 @@ export function StudentProfileClient() {
   const t = useTranslations("studentDashboard.profilePage");
   const tForm = useTranslations("studentsPage.form");
 
-  const [student, setStudent] = React.useState<Student | null>(null);
-  const [formData, setFormData] = React.useState<StudentProfileFormData>({
+  const { data: profileData, isLoading: isProfileLoading, refetch } = useStudentProfileQuery();
+  const updateProfileMutation = useUpdateStudentProfileMutation();
+  const updatePasswordMutation = useUpdateStudentPasswordMutation();
+
+  const [formData, setFormData] = React.useState<
+    StudentProfileFormData & { currentPassword?: string }
+  >({
     firstName: "",
-    middleName: "",
-    lastName: "",
+    fatherName: "",
+    familyName: "",
     additionalName: "",
     phoneNumber: "",
     parentPhoneNumber: "",
     gender: "male",
     email: "",
     image: "",
+    avatarFile: null,
+    removeAvatar: false,
+    currentPassword: "",
     password: "",
     confirmPassword: "",
-    country: locale === "ar" ? "مصر" : "Egypt",
-    state: locale === "ar" ? "القاهرة" : "Cairo",
-    grade: "grade3",
+    countryId: "",
+    governorateId: "",
+    educationalStageId: "",
     registrationType: "center",
   });
 
-  const [customRegTypes, setCustomRegTypes] = React.useState<Array<{ id: string; name: string }>>(
-    [],
-  );
+  const { data: optionsData } = useStudentProfileOptions(formData.countryId || undefined);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Load active student data (default to first student std-1)
-  const loadStudentData = React.useCallback(() => {
-    const students = getStoredStudents(locale);
-    const active = students[0] || null;
-    if (active) {
-      setStudent(active);
+  // Sync state when backend profile loads or is refreshed
+  React.useEffect(() => {
+    if (profileData) {
       setFormData({
-        firstName: active.firstName || "",
-        middleName: active.middleName || "",
-        lastName: active.lastName || "",
-        additionalName: active.additionalName || "",
-        phoneNumber: active.phoneNumber || "",
-        parentPhoneNumber: active.parentPhoneNumber || "",
-        gender: active.gender || "male",
-        email: active.email || "",
-        image: active.image || "",
+        firstName: profileData.first_name || "",
+        fatherName: profileData.father_name || "",
+        familyName: profileData.family_name || "",
+        additionalName: profileData.additional_name || "",
+        phoneNumber: profileData.phone || "",
+        parentPhoneNumber: profileData.guardian_phone || "",
+        gender: (profileData.gender as Gender) || "male",
+        email: profileData.email || "",
+        image: profileData.avatar_url || "",
+        avatarFile: null,
+        removeAvatar: false,
+        currentPassword: "",
         password: "",
         confirmPassword: "",
-        country: active.country || (locale === "ar" ? "مصر" : "Egypt"),
-        state: active.state || (locale === "ar" ? "القاهرة" : "Cairo"),
-        grade: active.grade || "grade3",
-        registrationType: active.registrationType || "center",
+        countryId: profileData.country_id ? String(profileData.country_id) : "",
+        governorateId: profileData.governorate_id ? String(profileData.governorate_id) : "",
+        educationalStageId: profileData.educational_stage_id
+          ? String(profileData.educational_stage_id)
+          : "",
+        registrationType: (profileData.registration_type as RegistrationType) || "center",
       });
     }
-  }, [locale]);
+  }, [profileData]);
 
-  React.useEffect(() => {
-    loadStudentData();
-    setCustomRegTypes(getStoredCustomRegistrationTypes());
-
-    const handleUpdate = () => loadStudentData();
-    const handleCats = () => setCustomRegTypes(getStoredCustomRegistrationTypes());
-
-    window.addEventListener("rewaa_students_updated", handleUpdate);
-    window.addEventListener("rewaa_custom_categories_updated", handleCats);
-    window.addEventListener("rewaa_registration_types_updated", handleCats);
-
-    return () => {
-      window.removeEventListener("rewaa_students_updated", handleUpdate);
-      window.removeEventListener("rewaa_custom_categories_updated", handleCats);
-      window.removeEventListener("rewaa_registration_types_updated", handleCats);
-    };
-  }, [loadStudentData]);
-
-  const handleChange = (field: keyof StudentProfileFormData, value: string) => {
+  const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errorMsg) setErrorMsg(null);
   };
 
   const handleReset = () => {
-    loadStudentData();
+    refetch();
     setErrorMsg(null);
   };
 
   const validate = (): boolean => {
     if (
       !formData.firstName.trim() ||
-      !formData.lastName.trim() ||
+      !formData.familyName.trim() ||
       !formData.phoneNumber.trim() ||
       !formData.parentPhoneNumber.trim() ||
-      !formData.email.trim() ||
-      !formData.country.trim() ||
-      !formData.state.trim() ||
-      !formData.grade.trim() ||
-      !formData.registrationType
+      !formData.email.trim()
     ) {
       setErrorMsg(t("requiredFieldsError"));
+      return false;
+    }
+
+    if (formData.password && !formData.currentPassword?.trim()) {
+      setErrorMsg("يرجى إدخال كلمة المرور الحالية لتغيير كلمة المرور");
       return false;
     }
 
@@ -150,46 +146,62 @@ export function StudentProfileClient() {
     return true;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const isSubmitting = updateProfileMutation.isPending || updatePasswordMutation.isPending;
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    if (!student) return;
 
-    setIsSubmitting(true);
+    try {
+      // 1. Update Profile Information
+      await updateProfileMutation.mutateAsync({
+        first_name: formData.firstName.trim(),
+        father_name: formData.fatherName.trim(),
+        family_name: formData.familyName.trim(),
+        additional_name: formData.additionalName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phoneNumber.trim(),
+        guardian_phone: formData.parentPhoneNumber.trim(),
+        gender: formData.gender,
+        country_id: formData.countryId ? Number(formData.countryId) : undefined,
+        governorate_id: formData.governorateId ? Number(formData.governorateId) : undefined,
+        educational_stage_id: formData.educationalStageId
+          ? Number(formData.educationalStageId)
+          : undefined,
+        avatar: formData.avatarFile,
+        remove_avatar: formData.removeAvatar,
+      });
 
-    const updatePayload: Partial<Student> = {
-      firstName: formData.firstName.trim(),
-      middleName: formData.middleName.trim(),
-      lastName: formData.lastName.trim(),
-      additionalName: formData.additionalName.trim(),
-      phoneNumber: formData.phoneNumber.trim(),
-      parentPhoneNumber: formData.parentPhoneNumber.trim(),
-      gender: formData.gender,
-      email: formData.email.trim(),
-      image: formData.image,
-      country: formData.country.trim(),
-      state: formData.state.trim(),
-      grade: formData.grade,
-      registrationType: formData.registrationType,
-    };
+      // 2. Update Password if provided
+      if (formData.password?.trim()) {
+        await updatePasswordMutation.mutateAsync({
+          current_password: formData.currentPassword?.trim() || "",
+          password: formData.password.trim(),
+          password_confirmation: formData.confirmPassword?.trim() || formData.password.trim(),
+        });
+        setFormData((prev) => ({
+          ...prev,
+          currentPassword: "",
+          password: "",
+          confirmPassword: "",
+        }));
+      }
 
-    if (formData.password?.trim()) {
-      updatePayload.password = formData.password.trim();
-    }
-
-    const updated = updateStoredStudent(locale, student.id, updatePayload);
-    if (updated) {
-      setStudent(updated);
-      setFormData((prev) => ({
-        ...prev,
-        password: "",
-        confirmPassword: "",
-      }));
       toast.success(t("successToast"));
+    } catch (err) {
+      const msg = getErrorMessage(err, "Failed to update profile");
+      setErrorMsg(msg);
+      toast.error(msg);
     }
-
-    setIsSubmitting(false);
   };
+
+  if (isProfileLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-12">
@@ -235,8 +247,16 @@ export function StudentProfileClient() {
               id="student-profile-avatar"
               label={t("imageLabel")}
               value={formData.image}
-              onChange={(dataUrl) => handleChange("image", dataUrl)}
-              onClear={() => handleChange("image", "")}
+              onChange={(dataUrl, file) => {
+                handleChange("image", dataUrl);
+                handleChange("avatarFile", file || null);
+                handleChange("removeAvatar", false);
+              }}
+              onClear={() => {
+                handleChange("image", "");
+                handleChange("avatarFile", null);
+                handleChange("removeAvatar", true);
+              }}
               variant="avatar"
               prompt={t("imagePrompt")}
               changePrompt={t("imageChange")}
@@ -255,23 +275,23 @@ export function StudentProfileClient() {
                 />
               </div>
 
-              {/* Middle Name */}
+              {/* Father / Middle Name */}
               <div className="space-y-2">
-                <Label htmlFor="middleName">{t("middleNameLabel")}</Label>
+                <Label htmlFor="fatherName">{t("middleNameLabel")}</Label>
                 <Input
-                  id="middleName"
-                  value={formData.middleName}
-                  onChange={(e) => handleChange("middleName", e.target.value)}
+                  id="fatherName"
+                  value={formData.fatherName}
+                  onChange={(e) => handleChange("fatherName", e.target.value)}
                 />
               </div>
 
-              {/* Last Name */}
+              {/* Family / Last Name */}
               <div className="space-y-2">
-                <Label htmlFor="lastName">{t("lastNameLabel")}</Label>
+                <Label htmlFor="familyName">{t("lastNameLabel")}</Label>
                 <Input
-                  id="lastName"
-                  value={formData.lastName}
-                  onChange={(e) => handleChange("lastName", e.target.value)}
+                  id="familyName"
+                  value={formData.familyName}
+                  onChange={(e) => handleChange("familyName", e.target.value)}
                   required
                 />
               </div>
@@ -356,33 +376,92 @@ export function StudentProfileClient() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Country */}
             <div className="space-y-2">
-              <Label htmlFor="country">{t("countryLabel")}</Label>
-              <Input
-                id="country"
-                value={formData.country}
-                onChange={(e) => handleChange("country", e.target.value)}
-                required
-              />
+              <Label htmlFor="countryId">{t("countryLabel")}</Label>
+              <Select
+                value={formData.countryId}
+                onValueChange={(val) => {
+                  handleChange("countryId", val);
+                  handleChange("governorateId", "");
+                }}
+              >
+                <SelectTrigger id="countryId" className="bg-background">
+                  <SelectValue placeholder={t("countryLabel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionsData?.countries?.map((c) => {
+                    const countryName =
+                      typeof c.name === "object"
+                        ? c.name[locale as keyof typeof c.name] || Object.values(c.name)[0]
+                        : String(c.name);
+                    return (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {countryName}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* State / Governorate */}
             <div className="space-y-2">
-              <Label htmlFor="state">{t("stateLabel")}</Label>
-              <Input
-                id="state"
-                value={formData.state}
-                onChange={(e) => handleChange("state", e.target.value)}
-                required
-              />
+              <Label htmlFor="governorateId">{t("stateLabel")}</Label>
+              <Select
+                value={formData.governorateId}
+                onValueChange={(val) => handleChange("governorateId", val)}
+                disabled={!formData.countryId}
+              >
+                <SelectTrigger id="governorateId" className="bg-background">
+                  <SelectValue placeholder={t("stateLabel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionsData?.governorates
+                    ?.filter((g) =>
+                      formData.countryId
+                        ? String(g.country_id) === String(formData.countryId)
+                        : true,
+                    )
+                    .map((g) => {
+                      const govName =
+                        typeof g.name === "object"
+                          ? g.name[locale as keyof typeof g.name] || Object.values(g.name)[0]
+                          : String(g.name);
+                      return (
+                        <SelectItem key={g.id} value={String(g.id)}>
+                          {govName}
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select>
             </div>
 
-            {/* Grade Level */}
-            <GradeSelect
-              id="grade"
-              value={formData.grade}
-              onValueChange={(val) => handleChange("grade", val)}
-              label={t("gradeLabel")}
-            />
+            {/* Educational Stage */}
+            <div className="space-y-2">
+              <Label htmlFor="educationalStageId">{t("gradeLabel")}</Label>
+              <Select
+                value={formData.educationalStageId}
+                onValueChange={(val) => handleChange("educationalStageId", val)}
+              >
+                <SelectTrigger id="educationalStageId" className="bg-background">
+                  <SelectValue placeholder={t("gradeLabel")} />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionsData?.educational_stages?.map((stage) => {
+                    const stageName =
+                      typeof stage.name === "object"
+                        ? stage.name[locale as keyof typeof stage.name] ||
+                          Object.values(stage.name)[0]
+                        : String(stage.name);
+                    return (
+                      <SelectItem key={stage.id} value={String(stage.id)}>
+                        {stageName}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
 
             {/* Registration Type */}
             <div className="space-y-2">
@@ -399,17 +478,6 @@ export function StudentProfileClient() {
                   <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
                   <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
                   <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
-                  {customRegTypes
-                    .filter(
-                      (c) =>
-                        !["center", "online", "hybrid", "external"].includes(c.id) &&
-                        !["center", "online", "hybrid", "external"].includes(c.name),
-                    )
-                    .map((c) => (
-                      <SelectItem key={c.id} value={c.id}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -422,7 +490,20 @@ export function StudentProfileClient() {
           description={t("accountSecuritySubtitle")}
           icon={ShieldCheck}
         >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Current Password */}
+            <div className="space-y-2">
+              <Label htmlFor="currentPassword">كلمة المرور الحالية</Label>
+              <Input
+                id="currentPassword"
+                type="password"
+                placeholder="كلمة المرور الحالية"
+                value={formData.currentPassword || ""}
+                onChange={(e) => handleChange("currentPassword", e.target.value)}
+                dir="ltr"
+              />
+            </div>
+
             {/* New Password */}
             <div className="space-y-2">
               <Label htmlFor="password">{t("passwordLabel")}</Label>
@@ -465,7 +546,11 @@ export function StudentProfileClient() {
           </Button>
 
           <Button type="submit" disabled={isSubmitting} className="gap-1.5 min-w-32">
-            <Check className="size-4" />
+            {isSubmitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Check className="size-4" />
+            )}
             <span>{t("saveChanges")}</span>
           </Button>
         </div>

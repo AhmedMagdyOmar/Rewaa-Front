@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import {
@@ -41,13 +40,9 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 
-import { getStoredCourses } from "@/lib/courses-storage";
-import {
-  deleteStoredStudent,
-  getCourseEnrolledStudents,
-  resetStoredStudents,
-} from "@/lib/students-storage";
-import { Course } from "@/types/course";
+import { useProviderCourse } from "@/hooks/use-courses";
+import { useDeleteStudent, useStudentsList } from "@/hooks/use-students";
+import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
 import { RegistrationType, Student } from "@/types/student";
 
 export type StudentSortOption = "newest" | "oldest" | "name-asc" | "name-desc";
@@ -65,7 +60,6 @@ interface CourseStudentsClientProps {
 
 export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
   const locale = useLocale();
-  const isAr = locale === "ar";
 
   const t = useTranslations("courses.studentsPage");
   const tGlobalStudents = useTranslations("studentsPage");
@@ -112,37 +106,33 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
     [searchParams, pathname, router],
   );
 
-  const [course, setCourse] = React.useState<Course | null>(null);
-  const [students, setStudents] = React.useState<Student[]>([]);
-  const [isLoading, setIsLoading] = React.useState(true);
+  // Real backend queries
+  const { data: backendCourse } = useProviderCourse(courseId);
+  const {
+    data: studentsResponse,
+    isLoading,
+    refetch,
+  } = useStudentsList({
+    course_id: courseId,
+    search: searchQuery || undefined,
+    gender: selectedGender !== "all" ? (selectedGender as "male" | "female") : undefined,
+    registration_type: selectedRegType !== "all" ? selectedRegType : undefined,
+    page: currentPage,
+    per_page: itemsPerPage,
+  });
 
-  // Deletion State
+  const deleteStudentMutation = useDeleteStudent();
   const [deletingStudent, setDeletingStudent] = React.useState<Student | null>(null);
 
-  React.useEffect(() => {
-    const allCourses = getStoredCourses(locale);
-    const foundCourse = allCourses.find((c) => c.id === courseId) || null;
-    setCourse(foundCourse);
+  const students: Student[] = React.useMemo(() => {
+    return (studentsResponse?.students || []).map((s) => adaptBackendStudentToUI(s, locale));
+  }, [studentsResponse, locale]);
 
-    const loadedStudents = getCourseEnrolledStudents(locale, courseId);
-    setStudents(loadedStudents);
-    setIsLoading(false);
-
-    const handleUpdate = () => {
-      const freshCourses = getStoredCourses(locale);
-      setCourse(freshCourses.find((c) => c.id === courseId) || null);
-      setStudents(getCourseEnrolledStudents(locale, courseId));
-    };
-
-    window.addEventListener("rewaa_students_updated", handleUpdate);
-    window.addEventListener("rewaa_courses_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
-    return () => {
-      window.removeEventListener("rewaa_students_updated", handleUpdate);
-      window.removeEventListener("rewaa_courses_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
-    };
-  }, [locale, courseId]);
+  const courseTitle =
+    backendCourse?.title?.[locale as "ar" | "en"] ||
+    backendCourse?.title?.ar ||
+    backendCourse?.title?.en ||
+    "";
 
   // Available locations (state / country) from enrolled students
   const availableLocations = React.useMemo(() => {
@@ -164,86 +154,10 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
     [tGrades],
   );
 
-  // Filter and sort students
-  const filteredAndSortedStudents = React.useMemo(() => {
-    return students
-      .filter((student) => {
-        // Search query (fullName, phone, parentPhone, email, ID)
-        if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase().trim();
-          const fullName = [
-            student.firstName,
-            student.middleName,
-            student.lastName,
-            student.additionalName,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          const matchesName = fullName.includes(q);
-          const matchesPhone = student.phoneNumber?.toLowerCase().includes(q);
-          const matchesParentPhone = student.parentPhoneNumber?.toLowerCase().includes(q);
-          const matchesEmail = student.email?.toLowerCase().includes(q);
-          const matchesId = student.id?.toLowerCase().includes(q);
-
-          if (!matchesName && !matchesPhone && !matchesParentPhone && !matchesEmail && !matchesId) {
-            return false;
-          }
-        }
-
-        // Gender filter
-        if (selectedGender !== "all" && student.gender !== selectedGender) {
-          return false;
-        }
-
-        // Grade filter
-        if (selectedGrade !== "all" && student.grade !== selectedGrade) {
-          return false;
-        }
-
-        // Registration Type filter
-        if (selectedRegType !== "all" && student.registrationType !== selectedRegType) {
-          return false;
-        }
-
-        // Location / State filter
-        if (selectedLocation !== "all" && student.state !== selectedLocation) {
-          return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (sortBy === "oldest") {
-          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
-        }
-        if (sortBy === "name-asc") {
-          return (a.firstName || "").localeCompare(b.firstName || "");
-        }
-        if (sortBy === "name-desc") {
-          return (b.firstName || "").localeCompare(a.firstName || "");
-        }
-        // Default: newest
-        return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
-      });
-  }, [
-    students,
-    searchQuery,
-    selectedGender,
-    selectedGrade,
-    selectedRegType,
-    selectedLocation,
-    sortBy,
-  ]);
-
-  // Pagination bounds
-  const totalItems = filteredAndSortedStudents.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const totalItems = studentsResponse?.pagination?.total ?? students.length;
+  const totalPages =
+    studentsResponse?.pagination?.last_page ?? (Math.ceil(totalItems / itemsPerPage) || 1);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedStudents = React.useMemo(() => {
-    return filteredAndSortedStudents.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredAndSortedStudents, startIndex, itemsPerPage]);
 
   const isFilterActive =
     searchQuery.trim() !== "" ||
@@ -265,19 +179,12 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
     });
   };
 
-  const handleResetData = () => {
-    resetStoredStudents(locale);
-  };
-
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deletingStudent) {
-      deleteStoredStudent(locale, deletingStudent.id);
+      await deleteStudentMutation.mutateAsync(deletingStudent.id);
       setDeletingStudent(null);
     }
   };
-
-  const showingNumber =
-    Math.min(startIndex + itemsPerPage, totalItems) - Math.min(startIndex + 1, totalItems) + 1;
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
@@ -294,24 +201,25 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
 
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-              {course ? `${course.title} - ${t("title")}` : t("title")}
+              {courseTitle ? `${courseTitle} - ${t("title")}` : t("title")}
             </h1>
             <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-3 self-end sm:self-auto">
           <Button
             variant="outline"
-            onClick={handleResetData}
-            title={tGlobalStudents("refreshData")}
-            className="gap-2 text-muted-foreground hover:text-foreground"
+            size="sm"
+            onClick={() => refetch()}
+            className="flex items-center gap-2"
           >
             <RotateCcw className="size-4" />
-            <span className="hidden md:inline">{tGlobalStudents("refreshData")}</span>
+            <span className="hidden sm:inline">{tGlobalStudents("refresh") || "تحديث"}</span>
           </Button>
 
-          <Button asChild className="gap-2 shadow-xs font-semibold">
+          <Button asChild size="sm" className="flex items-center gap-2">
             <Link href={`/${locale}/dashboard/students/new?courseId=${courseId}`}>
               <Plus className="size-4" />
               <span>{t("addStudent")}</span>
@@ -321,57 +229,101 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
       </div>
 
       {/* ──────────────────────────────────────────────────────────────────────────────
-          3. FILTERS & SEARCH TOOLBAR
+          2. STATS OVERVIEW CARDS
       ────────────────────────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-3 bg-card border border-border/80 p-4 rounded-xl shadow-2xs">
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-card border rounded-xl p-4 flex items-center gap-4">
+          <div className="size-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            <Users className="size-6" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">{t("stats.total")}</p>
+            <h3 className="text-2xl font-bold mt-0.5">{totalItems}</h3>
+          </div>
+        </div>
+
+        <div className="bg-card border rounded-xl p-4 flex items-center gap-4">
+          <div className="size-12 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
+            <GraduationCap className="size-6" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">{t("stats.active")}</p>
+            <h3 className="text-2xl font-bold mt-0.5">
+              {students.filter((s) => s.status === "active").length}
+            </h3>
+          </div>
+        </div>
+
+        <div className="bg-card border rounded-xl p-4 flex items-center gap-4">
+          <div className="size-12 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-600 shrink-0">
+            <Users className="size-6" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">{t("stats.male")}</p>
+            <h3 className="text-2xl font-bold mt-0.5">
+              {students.filter((s) => s.gender === "male").length}
+            </h3>
+          </div>
+        </div>
+
+        <div className="bg-card border rounded-xl p-4 flex items-center gap-4">
+          <div className="size-12 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-600 shrink-0">
+            <Users className="size-6" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">{t("stats.female")}</p>
+            <h3 className="text-2xl font-bold mt-0.5">
+              {students.filter((s) => s.gender === "female").length}
+            </h3>
+          </div>
+        </div>
+      </div>
+
+      {/* ──────────────────────────────────────────────────────────────────────────────
+          3. FILTERS AND CONTROLS
+      ────────────────────────────────────────────────────────────────────────────── */}
+      <div className="bg-card border rounded-xl p-4 flex flex-col gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           {/* Search Input */}
-          <div className="relative flex-1">
-            <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+          <div className="relative lg:col-span-2">
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
-              type="search"
-              placeholder={t("filters.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => updateUrlParams({ search: e.target.value, page: 1 })}
-              className="ps-9 h-10 w-full"
+              placeholder={t("filters.searchPlaceholder")}
+              className="ps-9"
             />
           </div>
 
-          {/* Grade Select */}
-          <GradeSelect
-            className="w-full lg:w-48"
-            triggerClassName="h-10 w-full"
-            value={selectedGrade}
-            onValueChange={(val) => updateUrlParams({ grade: val, page: 1 })}
-            placeholder={t("filters.allGrades")}
-            showAllOption
-            allOptionLabel={t("filters.allGrades")}
-          />
-
-          {/* Governorate / Location Select */}
+          {/* Gender Filter */}
           <Select
-            value={selectedLocation}
-            onValueChange={(val) => updateUrlParams({ location: val, page: 1 })}
+            value={selectedGender}
+            onValueChange={(val) => updateUrlParams({ gender: val, page: 1 })}
           >
-            <SelectTrigger className="h-10 w-full lg:w-44">
-              <SelectValue placeholder={t("filters.allLocations")} />
+            <SelectTrigger>
+              <SelectValue placeholder={t("columns.gender")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">{t("filters.allLocations")}</SelectItem>
-              {availableLocations.map((loc) => (
-                <SelectItem key={loc} value={loc}>
-                  {loc}
-                </SelectItem>
-              ))}
+              <SelectItem value="all">{t("filters.allGenders")}</SelectItem>
+              <SelectItem value="male">{t("filters.male")}</SelectItem>
+              <SelectItem value="female">{t("filters.female")}</SelectItem>
             </SelectContent>
           </Select>
 
-          {/* Registration Type Select */}
+          {/* Grade Filter */}
+          <GradeSelect
+            value={selectedGrade === "all" ? "" : selectedGrade}
+            onValueChange={(val) => updateUrlParams({ grade: val || "all", page: 1 })}
+            label=""
+            placeholder={t("filters.allGrades")}
+          />
+
+          {/* Registration Type Filter */}
           <Select
             value={selectedRegType}
             onValueChange={(val) => updateUrlParams({ regType: val, page: 1 })}
           >
-            <SelectTrigger className="h-10 w-full lg:w-44">
+            <SelectTrigger>
               <SelectValue placeholder={t("filters.allRegTypes")} />
             </SelectTrigger>
             <SelectContent>
@@ -384,83 +336,121 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
               </SelectItem>
             </SelectContent>
           </Select>
+        </div>
 
-          {/* Sort Select */}
-          <Select value={sortBy} onValueChange={(val) => updateUrlParams({ sort: val, page: 1 })}>
-            <SelectTrigger className="h-10 w-full lg:w-44">
-              <SelectValue placeholder={t("filters.sortBy")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="newest">{t("filters.newest")}</SelectItem>
-              <SelectItem value="oldest">{t("filters.oldest")}</SelectItem>
-              <SelectItem value="name-asc">{t("filters.nameAsc")}</SelectItem>
-              <SelectItem value="name-desc">{t("filters.nameDesc")}</SelectItem>
-            </SelectContent>
-          </Select>
+        {/* Second row: Location filter + Sorting + Reset */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Location Select */}
+            {availableLocations.length > 0 && (
+              <Select
+                value={selectedLocation}
+                onValueChange={(val) => updateUrlParams({ location: val, page: 1 })}
+              >
+                <SelectTrigger className="w-44">
+                  <SelectValue placeholder={t("filters.allLocations")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filters.allLocations")}</SelectItem>
+                  {availableLocations.map((loc) => (
+                    <SelectItem key={loc} value={loc}>
+                      {loc}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          {/* Reset Filters */}
-          {isFilterActive && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="gap-2 text-xs text-muted-foreground hover:text-foreground shrink-0"
-            >
-              <RotateCcw className="size-3.5" />
-              <span>{t("resetFilters")}</span>
-            </Button>
-          )}
+            {/* Sort Select */}
+            <Select value={sortBy} onValueChange={(val) => updateUrlParams({ sort: val, page: 1 })}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder={t("filters.sortBy")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="newest">{t("filters.newest")}</SelectItem>
+                <SelectItem value="oldest">{t("filters.oldest")}</SelectItem>
+                <SelectItem value="name-asc">{t("filters.nameAsc")}</SelectItem>
+                <SelectItem value="name-desc">{t("filters.nameDesc")}</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {isFilterActive && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="text-xs text-muted-foreground hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5 me-1.5" />
+                {t("resetFilters")}
+              </Button>
+            )}
+          </div>
+
+          <div className="text-xs text-muted-foreground">
+            {tGlobalStudents("showing", {
+              start: startIndex + 1,
+              end: Math.min(startIndex + itemsPerPage, totalItems),
+              total: totalItems,
+            })}
+          </div>
         </div>
       </div>
 
       {/* ──────────────────────────────────────────────────────────────────────────────
-          4. STUDENTS TABLE & PAGINATION
+          4. STUDENTS LIST / TABLE
       ────────────────────────────────────────────────────────────────────────────── */}
-      <div className="bg-card border border-border/80 rounded-xl shadow-2xs overflow-hidden flex flex-col">
+      <div className="bg-card border rounded-xl overflow-hidden shadow-2xs">
         {isLoading ? (
           <div className="p-6 space-y-4">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-14 w-full rounded-lg" />
+              <div key={i} className="flex items-center gap-4 py-3 border-b last:border-0">
+                <Skeleton className="size-10 rounded-full shrink-0" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-48" />
+                  <Skeleton className="h-3 w-32" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
             ))}
           </div>
-        ) : paginatedStudents.length === 0 ? (
-          <div className="p-12 text-center flex flex-col items-center justify-center gap-3">
-            <div className="size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
-              <Users className="size-6" />
+        ) : students.length === 0 ? (
+          <div className="py-16 px-4 text-center">
+            <div className="size-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 text-muted-foreground">
+              <Users className="size-8" />
             </div>
-            <h3 className="text-base font-semibold text-foreground">{t("empty.title")}</h3>
-            <p className="text-sm text-muted-foreground max-w-sm">{t("empty.description")}</p>
-            <div className="flex items-center gap-3 mt-2">
-              {isFilterActive && (
-                <Button variant="outline" size="sm" onClick={handleResetFilters}>
-                  {t("resetFilters")}
-                </Button>
-              )}
-              <Button asChild size="sm">
+            <h3 className="text-lg font-bold">{t("empty.title")}</h3>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto mt-1 mb-6">
+              {t("empty.description")}
+            </p>
+            {isFilterActive ? (
+              <Button variant="outline" onClick={handleResetFilters}>
+                {t("resetFilters")}
+              </Button>
+            ) : (
+              <Button asChild>
                 <Link href={`/${locale}/dashboard/students/new?courseId=${courseId}`}>
-                  <Plus className="size-4 me-1" />
-                  <span>{t("addStudent")}</span>
+                  <Plus className="size-4 me-2" />
+                  {t("addStudent")}
                 </Link>
               </Button>
-            </div>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-start border-collapse">
-              <thead>
-                <tr className="border-b border-border/60 bg-muted/40 text-muted-foreground text-xs font-semibold">
-                  <th className="px-4 py-3.5 text-start font-bold">{t("columns.fullName")}</th>
-                  <th className="px-4 py-3.5 text-start font-bold">{t("columns.phoneNumbers")}</th>
-                  <th className="px-4 py-3.5 text-start font-bold">{t("columns.location")}</th>
-                  <th className="px-4 py-3.5 text-start font-bold">{t("columns.grade")}</th>
-                  <th className="px-4 py-3.5 text-center font-bold">
-                    {t("columns.registrationType")}
-                  </th>
-                  <th className="px-4 py-3.5 text-end font-bold">{t("columns.actions")}</th>
+            <table className="w-full text-sm text-start">
+              <thead className="bg-muted/50 text-xs font-semibold text-muted-foreground uppercase border-b">
+                <tr>
+                  <th className="py-3.5 px-4 text-start">{t("columns.fullName")}</th>
+                  <th className="py-3.5 px-4 text-start">{t("columns.phoneNumbers")}</th>
+                  <th className="py-3.5 px-4 text-start">{t("columns.grade")}</th>
+                  <th className="py-3.5 px-4 text-start">{t("columns.registrationType")}</th>
+                  <th className="py-3.5 px-4 text-start">{t("columns.gender")}</th>
+                  <th className="py-3.5 px-4 text-end">{t("columns.actions")}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/40">
-                {paginatedStudents.map((student) => {
+              <tbody className="divide-y">
+                {students.map((student) => {
                   const fullName = [
                     student.firstName,
                     student.middleName,
@@ -470,121 +460,138 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
                     .filter(Boolean)
                     .join(" ");
 
-                  const regTypeKey = student.registrationType;
-                  const regTypeLabel = tGlobalStudents(
-                    `registrationTypes.${regTypeKey}` as Parameters<typeof tGlobalStudents>[0],
-                  );
-
                   return (
-                    <tr key={student.id} className="hover:bg-muted/20 transition-colors group">
-                      {/* Full Name & Student ID / Email */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col">
-                          <Link
-                            href={`/${locale}/dashboard/students/${student.id}`}
-                            className="font-semibold text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
-                          >
-                            <span>{fullName}</span>
-                          </Link>
-                          <div className="flex flex-col items-start gap-0 mt-0.5">
-                            <span className="text-xs text-muted-foreground font-mono">
-                              ID: {student.id}
-                            </span>
-                            {student.email && (
-                              <span className="text-xs text-muted-foreground truncate max-w-45">
-                                {student.email}
-                              </span>
+                    <tr key={student.id} className="hover:bg-muted/30 transition-colors">
+                      {/* Student Info */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+                            {student.image ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={student.image}
+                                alt={fullName}
+                                className="size-full object-cover"
+                              />
+                            ) : (
+                              fullName.slice(0, 2).toUpperCase()
                             )}
+                          </div>
+                          <div>
+                            <Link
+                              href={`/${locale}/dashboard/students/${student.id}`}
+                              className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-1"
+                            >
+                              {fullName}
+                            </Link>
+                            <p className="text-xs text-muted-foreground">ID: {student.id}</p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Phone Number & Parent Phone */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col">
-                          <PhoneLink
-                            phone={student.phoneNumber}
-                            className="text-xs text-foreground flex items-center gap-1 hover:text-emerald-600"
-                          >
-                            <WhatsAppIcon className="size-3 shrink-0" />
-                            <span dir="ltr">{student.phoneNumber}</span>
-                          </PhoneLink>
-                          {student.parentPhoneNumber && (
-                            <PhoneLink
-                              phone={student.parentPhoneNumber}
-                              className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1 hover:text-emerald-600"
+                      {/* Contact */}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <PhoneLink phone={student.phoneNumber} />
+                            <a
+                              href={`https://wa.me/${student.phoneNumber.replace(/[^0-9]/g, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-600 hover:text-emerald-700"
+                              title="WhatsApp"
                             >
-                              <WhatsAppIcon className="size-3 shrink-0" />
-                              <span dir="ltr">{student.parentPhoneNumber}</span>
-                            </PhoneLink>
+                              <WhatsAppIcon className="size-3.5" />
+                            </a>
+                          </div>
+                          {student.email && (
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {student.email}
+                            </p>
                           )}
                         </div>
                       </td>
 
-                      {/* Governorate / Country */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs text-foreground">
-                          <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                          <span>
-                            {student.state}
-                            {student.country ? `, ${student.country}` : ""}
-                          </span>
+                      {/* Academic Info */}
+                      <td className="py-3.5 px-4">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1 text-xs font-medium">
+                            <GraduationCap className="size-3.5 text-muted-foreground shrink-0" />
+                            <span>{formatGrade(student.grade)}</span>
+                          </div>
+                          {(student.state || student.country) && (
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <MapPin className="size-3 text-muted-foreground shrink-0" />
+                              <span className="truncate max-w-[140px]">
+                                {[student.state, student.country].filter(Boolean).join(", ")}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </td>
 
-                      {/* Grade */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
-                          <GraduationCap className="size-3.5 text-muted-foreground shrink-0" />
-                          <span>{formatGrade(student.grade)}</span>
-                        </div>
-                      </td>
-
-                      {/* Registration Type Badge */}
-                      <td className="px-4 py-3.5 text-center">
+                      {/* Registration Type */}
+                      <td className="py-3.5 px-4">
                         <Badge
                           variant="outline"
-                          className={`text-xs capitalize font-medium ${
-                            REGISTRATION_TYPE_BADGES[student.registrationType] || ""
-                          }`}
+                          className={
+                            REGISTRATION_TYPE_BADGES[student.registrationType] ||
+                            "bg-muted text-muted-foreground"
+                          }
                         >
-                          {regTypeLabel}
+                          {tGlobalStudents(
+                            `registrationTypes.${student.registrationType}` as Parameters<
+                              typeof tGlobalStudents
+                            >[0],
+                          ) || student.registrationType}
                         </Badge>
                       </td>
 
-                      {/* Actions Dropdown */}
-                      <td className="px-4 py-3.5 text-end">
+                      {/* Status */}
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                            student.status === "active"
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : "bg-destructive/10 text-destructive"
+                          }`}
+                        >
+                          {student.status === "active"
+                            ? tGlobalStudents("statuses.active")
+                            : tGlobalStudents("statuses.suspended")}
+                        </span>
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-end">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8 rounded-lg">
-                              <MoreVertical className="size-4 text-muted-foreground" />
-                              <span className="sr-only">Open menu</span>
+                            <Button variant="ghost" size="icon" className="size-8">
+                              <MoreVertical className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align={isAr ? "start" : "end"} className="w-44">
+                          <DropdownMenuContent align="end">
                             <DropdownMenuItem asChild>
                               <Link
                                 href={`/${locale}/dashboard/students/${student.id}`}
-                                className="cursor-pointer gap-2"
+                                className="flex items-center gap-2 cursor-pointer"
                               >
                                 <Eye className="size-4" />
                                 <span>{t("actions.viewDetails")}</span>
                               </Link>
                             </DropdownMenuItem>
-
                             <DropdownMenuItem asChild>
                               <Link
                                 href={`/${locale}/dashboard/students/${student.id}/edit`}
-                                className="cursor-pointer gap-2"
+                                className="flex items-center gap-2 cursor-pointer"
                               >
                                 <Edit2 className="size-4" />
                                 <span>{t("actions.edit")}</span>
                               </Link>
                             </DropdownMenuItem>
-
                             <DropdownMenuItem
                               onClick={() => setDeletingStudent(student)}
-                              className="cursor-pointer gap-2 text-destructive focus:text-destructive"
+                              className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
                             >
                               <Trash2 className="size-4" />
                               <span>{t("actions.delete")}</span>
@@ -600,42 +607,39 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
           </div>
         )}
 
-        {/* Footer Pagination */}
-        {totalItems > 0 && (
-          <div className="p-4 border-t border-border/60">
+        {/* ──────────────────────────────────────────────────────────────────────────────
+            5. PAGINATION
+        ────────────────────────────────────────────────────────────────────────────── */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t flex items-center justify-between">
             <ContentPagination
               currentPage={currentPage}
               totalPages={totalPages}
               totalItems={totalItems}
               startIndex={startIndex}
               itemsPerPage={itemsPerPage}
-              showingText={`${locale === "ar" ? "عرض" : "Showing"} ${showingNumber} ${locale === "ar" ? "من إجمالي" : "of"} ${totalItems}`}
+              showingText={tGlobalStudents("showing", {
+                start: startIndex + 1,
+                end: Math.min(startIndex + itemsPerPage, totalItems),
+                total: totalItems,
+              })}
               onPageChange={(page) => updateUrlParams({ page })}
             />
           </div>
         )}
       </div>
 
-      {/* ──────────────────────────────────────────────────────────────────────────────
-          5. DELETE CONFIRMATION DIALOG
-      ────────────────────────────────────────────────────────────────────────────── */}
-      <DeleteStudentDialog
-        isOpen={!!deletingStudent}
-        studentName={
-          deletingStudent
-            ? [
-                deletingStudent.firstName,
-                deletingStudent.middleName,
-                deletingStudent.lastName,
-                deletingStudent.additionalName,
-              ]
-                .filter(Boolean)
-                .join(" ")
-            : ""
-        }
-        onClose={() => setDeletingStudent(null)}
-        onConfirm={handleDeleteConfirm}
-      />
+      {/* Delete Confirmation Dialog */}
+      {deletingStudent && (
+        <DeleteStudentDialog
+          isOpen={Boolean(deletingStudent)}
+          studentName={[deletingStudent.firstName, deletingStudent.lastName]
+            .filter(Boolean)
+            .join(" ")}
+          onClose={() => setDeletingStudent(null)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
     </div>
   );
 }
