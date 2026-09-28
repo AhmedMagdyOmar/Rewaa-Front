@@ -96,7 +96,9 @@
       "newPasswordLabel": "New Password",
       "confirmPasswordLabel": "Confirm New Password",
       "passwordsDoNotMatch": "Passwords do not match",
-      "successMessage": "Password reset successfully! You can now log in."
+      "successMessage": "Password reset successfully! You can now log in.",
+      "invalidToken": "Invalid or expired password reset link. Please request a new one.",
+      "requestNewLink": "Request New Link"
     },
     "register": {
       "title": "Create an account",
