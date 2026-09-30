@@ -71,6 +71,7 @@ interface LessonDialogProps {
   };
   availableExams?: Exam[];
   hideLessonCategory?: boolean;
+  isSectionLocked?: boolean;
   onSave: (sectionId: string, lesson: Lesson) => void;
   onSaveMany?: (sectionId: string, lessons: Lesson[]) => void;
   onOpenExamDialog?: (sectionId: string, lessonId?: string) => void;
@@ -85,6 +86,7 @@ export function LessonDialog({
   parentCourseContext,
   availableExams: passedExams,
   hideLessonCategory: _hideLessonCategory = true,
+  isSectionLocked = false,
   onSave,
   onSaveMany,
 }: LessonDialogProps) {
@@ -558,8 +560,19 @@ export function LessonDialog({
                   {locale === "ar" ? "القسم المرتبط" : "Linked Section"}{" "}
                   <span className="text-destructive">*</span>
                 </label>
-                <Select value={bankSectionId} onValueChange={setBankSectionId} required>
-                  <SelectTrigger id="bank-sec" className="w-full">
+                <Select
+                  value={bankSectionId}
+                  onValueChange={setBankSectionId}
+                  disabled={isSectionLocked}
+                  required
+                >
+                  <SelectTrigger
+                    id="bank-sec"
+                    className={cn(
+                      "w-full",
+                      isSectionLocked && "opacity-75 cursor-not-allowed bg-muted",
+                    )}
+                  >
                     <SelectValue placeholder={t("selectSection")} />
                   </SelectTrigger>
                   <SelectContent>
@@ -712,9 +725,16 @@ export function LessonDialog({
                   <Select
                     value={targetSectionId}
                     onValueChange={setTargetSectionId}
+                    disabled={isSectionLocked}
                     required={activeTab === "create"}
                   >
-                    <SelectTrigger id="les-target-sec" className="w-full">
+                    <SelectTrigger
+                      id="les-target-sec"
+                      className={cn(
+                        "w-full",
+                        isSectionLocked && "opacity-75 cursor-not-allowed bg-muted",
+                      )}
+                    >
                       <SelectValue placeholder={t("selectSection")} />
                     </SelectTrigger>
                     <SelectContent>

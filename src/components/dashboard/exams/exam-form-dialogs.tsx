@@ -33,6 +33,7 @@ interface ExamFormDialogsProps {
   onReorderSections: (sections: ExamSection[]) => void;
   editingQuestion: { question: Question; sectionId: string } | null;
   targetQuestionSectionId: string;
+  isSectionLocked?: boolean;
   onEditingQuestionChange: (val: { question: Question; sectionId: string } | null) => void;
   grade: string;
   subject: string;
@@ -63,6 +64,7 @@ export function ExamFormDialogs({
   onReorderSections,
   editingQuestion,
   targetQuestionSectionId,
+  isSectionLocked = false,
   onEditingQuestionChange,
   grade,
   subject,
@@ -120,6 +122,7 @@ export function ExamFormDialogs({
         sections={examSections}
         initialQuestion={editingQuestion?.question || null}
         initialSectionId={editingQuestion?.sectionId || targetQuestionSectionId}
+        isSectionLocked={isSectionLocked}
         examGrade={grade}
         examSubject={subject}
         examTeacherName={teacherName}

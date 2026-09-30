@@ -41,6 +41,7 @@ interface QuestionDialogProps {
   examGrade?: string;
   examSubject?: string;
   examTeacherName?: string;
+  isSectionLocked?: boolean;
   onSave: (question: Question, sectionId: string, keepOpen?: boolean) => void;
   onSaveMany?: (questions: Question[], sectionId: string) => void;
 }
@@ -54,6 +55,7 @@ export function QuestionDialog({
   examGrade,
   examSubject,
   examTeacherName,
+  isSectionLocked = false,
   onSave,
   onSaveMany,
 }: QuestionDialogProps) {
@@ -224,6 +226,7 @@ export function QuestionDialog({
               examGrade={examGrade}
               examSubject={examSubject}
               examTeacherName={examTeacherName}
+              isSectionLocked={isSectionLocked}
               onSave={handleSaveInternal}
               onCancel={() => onOpenChange(false)}
               showSaveAndAddAnother={!initialQuestion}
@@ -236,8 +239,18 @@ export function QuestionDialog({
               <label htmlFor="bank-target-sec" className="text-sm font-semibold text-foreground">
                 {t("targetSection")} <span className="text-destructive">*</span>
               </label>
-              <Select value={bankSectionId} onValueChange={setBankSectionId}>
-                <SelectTrigger id="bank-target-sec" className="w-full bg-background">
+              <Select
+                value={bankSectionId}
+                onValueChange={setBankSectionId}
+                disabled={isSectionLocked}
+              >
+                <SelectTrigger
+                  id="bank-target-sec"
+                  className={cn(
+                    "w-full bg-background",
+                    isSectionLocked && "opacity-75 cursor-not-allowed bg-muted",
+                  )}
+                >
                   <SelectValue placeholder={t("selectSectionPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>

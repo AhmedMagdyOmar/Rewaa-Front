@@ -282,6 +282,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
     sectionId: string;
   } | null>(null);
   const [targetQuestionSectionId, setTargetQuestionSectionId] = React.useState<string>("");
+  const [isQuestionSectionLocked, setIsQuestionSectionLocked] = React.useState<boolean>(false);
 
   const { data: allExamsData } = useProviderExams({ per_page: 50 });
   const allExams: Exam[] = React.useMemo(() => {
@@ -854,16 +855,19 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
                 if (key === "question") {
                   setEditingQuestion(null);
                   setTargetQuestionSectionId(examSections[0]?.id || "");
+                  setIsQuestionSectionLocked(false);
                 }
                 setActiveDialog(key);
               }}
               onOpenAddQuestion={(secId) => {
                 setEditingQuestion(null);
                 setTargetQuestionSectionId(secId);
+                setIsQuestionSectionLocked(true);
                 setActiveDialog("question");
               }}
               onOpenEditQuestion={(q, secId) => {
                 setEditingQuestion({ question: q, sectionId: secId });
+                setIsQuestionSectionLocked(true);
                 setActiveDialog("question");
               }}
               onDeleteQuestion={handleDeleteQuestion}
@@ -885,7 +889,10 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
 
       <ExamFormDialogs
         activeDialog={activeDialog}
-        onActiveDialogChange={setActiveDialog}
+        onActiveDialogChange={(dialog) => {
+          if (!dialog) setIsQuestionSectionLocked(false);
+          setActiveDialog(dialog);
+        }}
         newSecTitle={newSecTitle}
         onNewSecTitleChange={setNewSecTitle}
         onAddSection={handleAddSection}
@@ -904,6 +911,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
         onReorderSections={setExamSections}
         editingQuestion={editingQuestion}
         targetQuestionSectionId={targetQuestionSectionId}
+        isSectionLocked={isQuestionSectionLocked}
         onEditingQuestionChange={setEditingQuestion}
         grade={grade}
         subject={subject}

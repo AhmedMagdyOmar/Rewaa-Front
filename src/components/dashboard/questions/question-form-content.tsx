@@ -59,6 +59,7 @@ export interface QuestionFormContentProps {
   submitLabel?: string;
   cancelLabel?: string;
   showSaveAndAddAnother?: boolean;
+  isSectionLocked?: boolean;
 }
 
 export function QuestionFormContent({
@@ -77,6 +78,7 @@ export function QuestionFormContent({
   submitLabel,
   cancelLabel,
   showSaveAndAddAnother = false,
+  isSectionLocked = false,
 }: QuestionFormContentProps) {
   const locale = useLocale();
   const t = useTranslations("exams.questionDialog");
@@ -366,8 +368,10 @@ export function QuestionFormContent({
           <div className="pb-2 border-b border-border/40">
             <div className="flex flex-col gap-2">
               <Label className="text-sm font-medium text-foreground">{t("targetSection")}</Label>
-              <Select value={sectionId} onValueChange={setSectionId}>
-                <SelectTrigger>
+              <Select value={sectionId} onValueChange={setSectionId} disabled={isSectionLocked}>
+                <SelectTrigger
+                  className={cn(isSectionLocked && "opacity-75 cursor-not-allowed bg-muted")}
+                >
                   <SelectValue placeholder={t("selectSectionPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent>

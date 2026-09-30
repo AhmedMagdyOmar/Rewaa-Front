@@ -152,6 +152,9 @@ export function CurriculumView({
         sections={curriculum.sections}
         initialLesson={curriculum.editingLesson?.lesson || null}
         initialSectionId={curriculum.editingLesson?.sectionId || curriculum.lessonTargetSectionId}
+        isSectionLocked={Boolean(
+          curriculum.lessonTargetSectionId || curriculum.editingLesson?.sectionId,
+        )}
         parentCourseContext={curriculum.parentCourseContext}
         availableExams={curriculum.availableExams}
         onSave={curriculum.handleSaveLesson}
