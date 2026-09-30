@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import {
   useCreateExam,
+  useCreateExamCategory,
   useExamSectionMutations,
   useProviderExam,
   useProviderExamOptions,
@@ -245,6 +246,30 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
       { value: "test", label: t("category.test") },
     ];
   }, [optionsData, t]);
+
+  const createCategoryMutation = useCreateExamCategory();
+
+  const handleAddExamCategory = async (name: string): Promise<string | undefined> => {
+    try {
+      const res = await createCategoryMutation.mutateAsync({
+        name: { ar: name, en: name },
+      });
+      const newCode = res.category.code;
+      setCategory(newCode);
+      toast.success(
+        locale === "ar" ? "تمت إضافة تصنيف الامتحان بنجاح" : "Exam category created successfully",
+      );
+      return newCode;
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(
+          err,
+          locale === "ar" ? "فشل في إضافة تصنيف الامتحان" : "Failed to create exam category",
+        ),
+      );
+      return undefined;
+    }
+  };
 
   // Submissions and Dialog states
   const [activeDialog, setActiveDialog] = React.useState<string | null>(null);
@@ -795,6 +820,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
               category={category}
               onCategoryChange={setCategory}
               allExamCategoryOptions={examCategoryOptions}
+              onAddExamCategory={handleAddExamCategory}
               mappedStages={mappedStages}
               mappedSubjects={mappedSubjects}
               mappedInstructors={mappedInstructors}

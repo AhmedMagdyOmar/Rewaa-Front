@@ -33,7 +33,7 @@ export interface SelectWithAddProps {
   triggerClassName?: string;
   allowAdd?: boolean;
   addButtonTooltip?: string;
-  onAddNewOption?: (name: string) => void | Promise<void>;
+  onAddNewOption?: (name: string) => string | void | Promise<string | void>;
   addDialogTitle?: string;
   addDialogDescription?: string;
   addInputLabel?: string;
@@ -69,12 +69,16 @@ export function SelectWithAdd({
   const [isAddOpen, setIsAddOpen] = React.useState(false);
 
   const handleAdd = async (newName: string) => {
+    let selectedVal = newName;
     if (onAddNewOption) {
-      await onAddNewOption(newName);
+      const result = await onAddNewOption(newName);
+      if (typeof result === "string" && result) {
+        selectedVal = result;
+      }
     }
     // Automatically select the newly created option
     setTimeout(() => {
-      onValueChange(newName);
+      onValueChange(selectedVal);
     }, 50);
   };
 

@@ -609,6 +609,27 @@ export interface BackendExamOptions {
   }>;
 }
 
+export interface BackendExamCategory {
+  id: number;
+  provider_id: number | null;
+  code: string;
+  name: Record<string, string>;
+  name_label: string;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+}
+
+export interface ExamCategoryListResponse {
+  categories: BackendExamCategory[];
+}
+
+export interface StoreExamCategoryData {
+  name: { ar: string; en?: string };
+  code?: string;
+  is_active?: boolean;
+}
+
 export interface StoreExamData {
   exam_template_id?: number | null;
   title: { ar: string; en?: string };

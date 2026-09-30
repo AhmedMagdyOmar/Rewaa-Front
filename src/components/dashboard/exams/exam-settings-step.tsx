@@ -44,7 +44,7 @@ interface ExamSettingsStepProps {
   category: ExamCategory;
   onCategoryChange: (val: ExamCategory) => void;
   allExamCategoryOptions: Array<{ value: string; label: string }>;
-  onAddExamCategory?: (name: string) => void;
+  onAddExamCategory?: (name: string) => string | void | Promise<string | void>;
   mappedStages: Array<{ id: number | string; name: string }>;
   mappedSubjects: Array<{ id: number | string; name: string }>;
   mappedInstructors: Array<{ id: number | string; full_name: string }>;

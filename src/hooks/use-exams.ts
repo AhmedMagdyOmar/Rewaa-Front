@@ -250,3 +250,22 @@ export function useDeleteExamComplaint(examId: number | string) {
     },
   });
 }
+
+/**
+ * Hook to create a new exam category
+ */
+export function useCreateExamCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: import("@/types/api-contracts").StoreExamCategoryData) =>
+      import("@/lib/api/exam-categories-service").then((m) =>
+        m.examCategoriesService.createExamCategory(data),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.exams.options(),
+      });
+    },
+  });
+}
