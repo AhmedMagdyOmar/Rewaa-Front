@@ -46,24 +46,34 @@ export function FormTimelineSidebar({
               const isActive = currentStep === step.id;
               const isDone = Boolean(step.complete) || step.id < currentStep;
               const allowClick = Boolean(onStepClick);
+              const isNextClickable =
+                allowClick && !isActive && !isDone && step.id === currentStep + 1;
 
               const content = (
                 <>
-                  <span
-                    className={`absolute -left-7 rtl:-left-auto rtl:-right-7 flex size-6.5 items-center justify-center rounded-full text-xs font-bold ring-4 ring-background transition-all ${
-                      isDone
-                        ? "bg-emerald-500 text-white"
-                        : isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground"
-                    } ${
-                      allowClick
-                        ? "group-hover:scale-110 group-hover:ring-primary/30 cursor-pointer"
-                        : ""
-                    }`}
-                  >
-                    {isDone ? <CheckCircle2 className="size-4" /> : step.id}
-                  </span>
+                  <div className="absolute -left-7 rtl:-left-auto rtl:-right-7 flex size-6.5 items-center justify-center">
+                    {/* Expanding pulse ripple ring for next actionable step */}
+                    {isNextClickable && (
+                      <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping opacity-75 pointer-events-none" />
+                    )}
+                    <span
+                      className={`relative z-10 flex size-6.5 items-center justify-center rounded-full text-xs font-bold ring-4 ring-card transition-all ${
+                        isDone
+                          ? "bg-emerald-500 text-white"
+                          : isActive
+                            ? "bg-primary text-primary-foreground shadow-xs"
+                            : isNextClickable
+                              ? "bg-card text-primary border-2 border-primary shadow-xs"
+                              : "bg-muted text-muted-foreground"
+                      } ${
+                        allowClick
+                          ? "group-hover:scale-110 group-hover:ring-primary/30 cursor-pointer"
+                          : ""
+                      }`}
+                    >
+                      {isDone ? <CheckCircle2 className="size-4" /> : step.id}
+                    </span>
+                  </div>
                   <div className="flex items-center gap-2.5 min-w-0 ms-2">
                     <StepIcon
                       className={`size-5 shrink-0 transition-colors ${
@@ -71,7 +81,9 @@ export function FormTimelineSidebar({
                           ? "text-primary"
                           : isDone
                             ? "text-emerald-500"
-                            : "text-muted-foreground group-hover:text-foreground"
+                            : isNextClickable
+                              ? "text-primary"
+                              : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     />
                     <span
@@ -80,7 +92,9 @@ export function FormTimelineSidebar({
                           ? "text-foreground font-semibold"
                           : isDone
                             ? "text-foreground"
-                            : "text-muted-foreground group-hover:text-foreground"
+                            : isNextClickable
+                              ? "text-foreground font-medium"
+                              : "text-muted-foreground group-hover:text-foreground"
                       }`}
                     >
                       {step.label}
