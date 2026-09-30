@@ -673,6 +673,7 @@ export interface QuestionFilterParams {
   type?: string;
   difficulty?: string;
   classification?: string;
+  classifications?: string[];
   educational_stage_id?: number | string;
   subject_id?: number | string;
   instructor_id?: number | string;

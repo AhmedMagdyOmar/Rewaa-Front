@@ -1,10 +1,11 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { CheckSquare, ChevronDown, HelpCircle, Plus, Search, Sparkles, Square } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
-import { CheckSquare, HelpCircle, Plus, Search, Sparkles, Square } from "lucide-react";
 
+import { QuestionFormContent } from "@/components/dashboard/questions/question-form-content";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,6 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -26,8 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { QuestionFormContent } from "@/components/dashboard/questions/question-form-content";
-import { useProviderQuestions } from "@/hooks/use-questions";
+import { useProviderQuestionOptions, useProviderQuestions } from "@/hooks/use-questions";
 import { mapBackendQuestionToFrontend } from "@/lib/adapters/exam-adapters";
 import { cn } from "@/lib/utils";
 import { ExamSection, Question, QuestionDifficulty, QuestionType } from "@/types/exam";
@@ -72,9 +73,13 @@ export function QuestionDialog({
     initialSectionId || sections[0]?.id || "",
   );
   const [searchQuery, setSearchQuery] = React.useState("");
-  const [filterDifficulty, setFilterDifficulty] = React.useState<string>("all");
-  const [filterType, setFilterType] = React.useState<string>("all");
+  const [filterDifficulty, setFilterDifficulty] = React.useState<string>("");
+  const [filterType, setFilterType] = React.useState<string>("");
+  const [filterClassifications, setFilterClassifications] = React.useState<string[]>([]);
   const [selectedQuestionIds, setSelectedQuestionIds] = React.useState<string[]>([]);
+
+  // Fetch classifications and options
+  const { data: optionsData } = useProviderQuestionOptions(examGrade || undefined);
 
   // Fetch Questions from Question Bank (only standalone master questions)
   const { data: questionsData, isLoading: isLoadingQuestions } = useProviderQuestions({
@@ -82,8 +87,9 @@ export function QuestionDialog({
     is_standalone: true,
     educational_stage_id: examGrade || undefined,
     subject_id: examSubject || undefined,
-    difficulty: filterDifficulty !== "all" ? filterDifficulty : undefined,
-    type: filterType !== "all" ? filterType : undefined,
+    difficulty: filterDifficulty && filterDifficulty !== "all" ? filterDifficulty : undefined,
+    type: filterType && filterType !== "all" ? filterType : undefined,
+    classifications: filterClassifications.length > 0 ? filterClassifications : undefined,
     search: searchQuery.trim() || undefined,
   });
 
@@ -94,8 +100,9 @@ export function QuestionDialog({
       setBankSectionId(initialSectionId || sections[0]?.id || "");
       setSelectedQuestionIds([]);
       setSearchQuery("");
-      setFilterDifficulty("all");
-      setFilterType("all");
+      setFilterDifficulty("");
+      setFilterType("");
+      setFilterClassifications([]);
     }
   }, [open, initialSectionId, sections]);
 
@@ -193,6 +200,24 @@ export function QuestionDialog({
     }
   };
 
+  const classificationOptions = React.useMemo(() => {
+    if (optionsData?.classifications && Object.keys(optionsData.classifications).length > 0) {
+      return Object.entries(optionsData.classifications).map(([key, label]) => ({
+        value: key,
+        label,
+      }));
+    }
+    const defaultKinds = [
+      { value: "theoretical", label: t("kinds.theoretical") },
+      { value: "practical_applied", label: t("kinds.practical") },
+      { value: "applied", label: t("kinds.applicationBased") },
+      { value: "analytical", label: t("kinds.analytical") },
+      { value: "oral", label: t("kinds.oral") },
+      { value: "skill_based", label: t("kinds.skillBased") },
+    ];
+    return defaultKinds;
+  }, [optionsData?.classifications, t]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto overflow-x-hidden w-full">
@@ -277,7 +302,7 @@ export function QuestionDialog({
               </div>
 
               {/* Difficulty Filter */}
-              <div className="w-full sm:w-36 shrink-0">
+              <div className="w-full sm:w-32 shrink-0">
                 <Select value={filterDifficulty} onValueChange={setFilterDifficulty}>
                   <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder={t("bank.difficultyPlaceholder")} />
@@ -292,7 +317,7 @@ export function QuestionDialog({
               </div>
 
               {/* Type Filter */}
-              <div className="w-full sm:w-40 shrink-0">
+              <div className="w-full sm:w-36 shrink-0">
                 <Select value={filterType} onValueChange={setFilterType}>
                   <SelectTrigger className="w-full bg-background">
                     <SelectValue placeholder={t("bank.typePlaceholder")} />
@@ -304,6 +329,85 @@ export function QuestionDialog({
                     <SelectItem value="essay">{t("types.text")}</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Classification Filter (Multi-select Dropdown) */}
+              <div className="w-full sm:w-44 shrink-0">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      className="w-full justify-between bg-background font-normal text-start px-3"
+                    >
+                      <span className="truncate text-xs">
+                        {filterClassifications.length === 0
+                          ? t("bank.classificationPlaceholder")
+                          : filterClassifications.length === 1
+                            ? optionsData?.classifications?.[filterClassifications[0]] ||
+                              t(`kinds.${filterClassifications[0]}`) ||
+                              filterClassifications[0]
+                            : t("bank.selectedClassificationsCount", {
+                                count: filterClassifications.length,
+                              })}
+                      </span>
+                      <ChevronDown className="size-4 opacity-50 shrink-0 ms-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="start">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-border text-xs">
+                      <span className="font-semibold text-foreground">
+                        {t("bank.classificationPlaceholder")}
+                      </span>
+                      {filterClassifications.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          type="button"
+                          onClick={() => setFilterClassifications([])}
+                          className="h-6 px-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+                        >
+                          {locale === "ar" ? "مسح" : "Clear"}
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {classificationOptions.map((opt) => {
+                        const isChecked = filterClassifications.includes(opt.value);
+                        return (
+                          <div
+                            key={opt.value}
+                            onClick={() => {
+                              setFilterClassifications((prev) =>
+                                prev.includes(opt.value)
+                                  ? prev.filter((v) => v !== opt.value)
+                                  : [...prev, opt.value],
+                              );
+                            }}
+                            className={cn(
+                              "flex items-center gap-2.5 px-2 py-1.5 rounded-md cursor-pointer text-xs transition-colors hover:bg-muted/70",
+                              isChecked && "bg-primary/10 font-medium text-primary",
+                            )}
+                          >
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={() => {
+                                setFilterClassifications((prev) =>
+                                  prev.includes(opt.value)
+                                    ? prev.filter((v) => v !== opt.value)
+                                    : [...prev, opt.value],
+                                );
+                              }}
+                              onClick={(e) => e.stopPropagation()}
+                              className="size-4 data-checked:bg-primary data-checked:border-primary"
+                            />
+                            <span className="truncate flex-1">{opt.label}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
 
