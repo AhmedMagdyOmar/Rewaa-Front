@@ -175,7 +175,25 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
       }
 
       if (mapped.examSections && mapped.examSections.length > 0) {
-        setExamSections(mapped.examSections);
+        setExamSections((prevSections) => {
+          // If the backend returns a single fallback unsectioned section ("default-sec"),
+          // preserve the title the user currently has in their existing first section if available.
+          if (
+            mapped.examSections?.length === 1 &&
+            mapped.examSections[0].id === "default-sec" &&
+            prevSections.length === 1 &&
+            prevSections[0].title
+          ) {
+            return [
+              {
+                ...mapped.examSections[0],
+                id: prevSections[0].id,
+                title: prevSections[0].title,
+              },
+            ];
+          }
+          return mapped.examSections;
+        });
       }
     } else if (initialData) {
       setTitle(initialData.title);

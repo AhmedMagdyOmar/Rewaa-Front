@@ -215,7 +215,7 @@ export function mapBackendExamToFrontend(be: BackendExam, locale: string = "ar")
     examSections = [
       {
         id: "default-sec",
-        title: locale === "ar" ? "القسم الافتراضي" : "Default Section",
+        title: locale === "ar" ? "الفصل الأول - الأسئلة الرئيسية" : "Section 1 - Main Questions",
         questions: be.questions.map((q) => mapBackendQuestionToFrontend(q, locale)),
       },
     ];
