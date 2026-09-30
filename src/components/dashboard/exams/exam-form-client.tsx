@@ -410,7 +410,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
     setExamSections((prev) => [...prev, newSec]);
     setNewSecTitle("");
     setActiveDialog(null);
-    toast.success(locale === "ar" ? "تم إضافة القسم محلياً" : "Section added locally");
+    toast.success(locale === "ar" ? "تم إضافة القسم بنجاح" : "Section added successfully");
   };
 
   const handleOpenEditSection = (sec: ExamSection) => {
@@ -475,7 +475,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
 
     setExamSections((prev) => prev.filter((sec) => sec.id !== sectionToDelete.id));
     setSectionToDelete(null);
-    toast.success(locale === "ar" ? "تم حذف القسم محلياً" : "Section deleted locally");
+    toast.success(locale === "ar" ? "تم حذف القسم بنجاح" : "Section deleted successfully");
   };
 
   const handleSaveQuestion = async (
