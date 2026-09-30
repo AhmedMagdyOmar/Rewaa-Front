@@ -104,7 +104,14 @@ export function QuestionAcademicContextSection({
           <div className="space-y-1">
             <span className="text-[11px] text-muted-foreground block">{t("teacher")}</span>
             <Badge variant="secondary" className="font-semibold">
-              {examTeacherName || t("notSet")}
+              {(() => {
+                if (!examTeacherName) return t("notSet");
+                const found = mappedInstructors?.find(
+                  (i) => String(i.id) === String(examTeacherName),
+                );
+                if (found) return found.full_name;
+                return examTeacherName;
+              })()}
             </Badge>
           </div>
         </div>
