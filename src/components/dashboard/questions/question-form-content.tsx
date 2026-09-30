@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { useProviderQuestionOptions } from "@/hooks/use-questions";
 import type {
   ExamSection,
@@ -258,15 +259,42 @@ export function QuestionFormContent({
       Boolean(selectedSubjId) &&
       (optionsData?.requires_instructor_selection === false || Boolean(selectedInstId)));
 
-  const isValid =
-    Boolean(questionName.trim()) &&
-    Boolean(questionContent.trim()) &&
-    Boolean(questionType) &&
-    Boolean(difficulty) &&
-    isAcademicValid;
+  const validateForm = (): boolean => {
+    if (!questionName.trim()) {
+      toast.error(t("errors.titleRequired"));
+      return false;
+    }
+    if (!questionContent.trim()) {
+      toast.error(t("errors.contentRequired"));
+      return false;
+    }
+    if (!isAcademicValid) {
+      toast.error(t("errors.academicRequired"));
+      return false;
+    }
 
-  const handleSaveInternal = (keepOpen: boolean = false) => {
-    if (!isValid) return;
+    if (type === "mcq") {
+      const hasEmptyOption = options.some((opt) => !opt.text.trim());
+      if (hasEmptyOption) {
+        toast.error(t("errors.mcqOptionEmpty"));
+        return false;
+      }
+      if (!modelAnswer || !options.some((opt) => opt.id === modelAnswer)) {
+        toast.error(t("errors.mcqCorrectAnswerRequired"));
+        return false;
+      }
+    } else if (type === "true/false") {
+      if (!modelAnswer || (modelAnswer !== "true" && modelAnswer !== "false")) {
+        toast.error(t("errors.trueFalseAnswerRequired"));
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  const handleSaveInternal = async (keepOpen: boolean = false) => {
+    if (!validateForm()) return;
 
     const questionData: Question = {
       id: initialQuestion?.id || `q-${Date.now()}`,
@@ -283,17 +311,21 @@ export function QuestionFormContent({
       options: type === "mcq" ? options : undefined,
     };
 
-    onSave(questionData, sectionId || undefined, keepOpen, {
-      grade: selectedStageId,
-      subject: selectedSubjId,
-      teacherName: selectedInstId,
-      educationalStageId: Number(selectedStageId) || undefined,
-      subjectId: Number(selectedSubjId) || undefined,
-      instructorId: Number(selectedInstId) || undefined,
-    });
+    try {
+      onSave(questionData, sectionId || undefined, keepOpen, {
+        grade: selectedStageId,
+        subject: selectedSubjId,
+        teacherName: selectedInstId,
+        educationalStageId: Number(selectedStageId) || undefined,
+        subjectId: Number(selectedSubjId) || undefined,
+        instructorId: Number(selectedInstId) || undefined,
+      });
 
-    if (keepOpen) {
-      resetFormForNext();
+      if (keepOpen) {
+        resetFormForNext();
+      }
+    } catch {
+      // If saving fails (e.g. backend error), do NOT reset the form so the user can fix the issue.
     }
   };
 
@@ -594,12 +626,7 @@ export function QuestionFormContent({
         )}
 
         {showSaveAndAddAnother && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => handleSaveInternal(true)}
-            disabled={!isValid}
-          >
+          <Button type="button" variant="outline" onClick={() => handleSaveInternal(true)}>
             {t("actions.saveAndAddAnother")}
           </Button>
         )}
@@ -607,7 +634,6 @@ export function QuestionFormContent({
         <Button
           type="button"
           onClick={() => handleSaveInternal(false)}
-          disabled={!isValid}
           className="font-semibold min-w-32"
         >
           {submitLabel || (initialQuestion ? t("actions.saveChanges") : t("actions.saveQuestion"))}

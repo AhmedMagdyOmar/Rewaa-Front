@@ -1158,6 +1158,14 @@
         "saveQuestion": "Save Question",
         "saveChanges": "Save Changes"
       },
+      "errors": {
+        "titleRequired": "Please enter question title / name first",
+        "contentRequired": "Please enter question content first",
+        "mcqOptionEmpty": "Please fill in all choice texts",
+        "mcqCorrectAnswerRequired": "Please select the correct answer before saving",
+        "trueFalseAnswerRequired": "Please select the correct answer (True or False)",
+        "academicRequired": "Please complete required academic details (Stage, Subject, and Instructor)"
+      },
       "tabs": {
         "create": "Create New Question",
         "bank": "Choose from Question Bank"
