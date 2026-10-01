@@ -208,8 +208,17 @@ export function mapBackendExamToFrontend(be: BackendExam, locale: string = "ar")
         : "online";
 
   let examSections: ExamSection[] = [];
-  if (be.sections && be.sections.length > 0) {
+  if (Array.isArray(be.sections)) {
     examSections = be.sections.map((s) => mapBackendSectionToFrontend(s, locale));
+    if (examSections.length === 0 && be.questions && be.questions.length > 0) {
+      examSections = [
+        {
+          id: "default-sec",
+          title: locale === "ar" ? "الفصل الأول - الأسئلة الرئيسية" : "Section 1 - Main Questions",
+          questions: be.questions.map((q) => mapBackendQuestionToFrontend(q, locale)),
+        },
+      ];
+    }
   } else if (be.questions && be.questions.length > 0) {
     // If backend returns questions without sections, wrap them in a default section
     examSections = [

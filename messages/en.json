@@ -790,6 +790,7 @@
           "subtitle": "Drag or move sections to reorder the curriculum flow.",
           "moveUp": "Move Up",
           "moveDown": "Move Down",
+          "noSections": "No sections yet.",
           "done": "Done"
         },
         "deleteLessonDialog": {
