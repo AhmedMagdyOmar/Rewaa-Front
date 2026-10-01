@@ -607,6 +607,67 @@ export function CourseSelect({
   );
 }
 
+// --- Section Select ---
+export interface SectionSelectProps {
+  value: string;
+  onValueChange: (value: string) => void;
+  label?: React.ReactNode;
+  placeholder?: string;
+  disabled?: boolean;
+  required?: boolean;
+  id?: string;
+  className?: string;
+  triggerClassName?: string;
+  sections?: Array<{ id: string; title: string }>;
+  showAllOption?: boolean;
+  allOptionLabel?: string;
+  emptyLabel?: string;
+  allowAdd?: boolean;
+}
+
+export function SectionSelect({
+  value,
+  onValueChange,
+  label,
+  placeholder = "اختر القسم...",
+  disabled,
+  required,
+  id = "section-select",
+  className,
+  triggerClassName,
+  sections = [],
+  showAllOption = false,
+  allOptionLabel = "كل الأقسام",
+  emptyLabel = "لا يوجد قسم بهذا الاسم.",
+  allowAdd = false,
+}: SectionSelectProps) {
+  const options: ComboboxOption[] = [
+    ...(showAllOption ? [{ value: "all", label: allOptionLabel }] : []),
+    ...sections.map((s) => ({
+      value: s.id,
+      label: s.title,
+    })),
+  ];
+
+  return (
+    <ComboboxSelect
+      id={id}
+      value={value}
+      onValueChange={onValueChange}
+      options={options}
+      label={label}
+      placeholder={placeholder}
+      searchPlaceholder="ابحث عن قسم..."
+      emptyLabel={emptyLabel}
+      disabled={disabled}
+      required={required}
+      className={className}
+      triggerClassName={triggerClassName}
+      allowAdd={allowAdd}
+    />
+  );
+}
+
 // --- Lesson Select ---
 export interface LessonSelectProps {
   value: string;

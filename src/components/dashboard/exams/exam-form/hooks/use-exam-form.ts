@@ -58,6 +58,9 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   // Classification & Venue / Publish Status
   const [isIndependent, setIsIndependent] = useState<boolean>(true);
   const [venue, setVenue] = useState<ExamVenue>("online");
+  const [courseId, setCourseId] = useState<string>("");
+  const [courseSectionId, setCourseSectionId] = useState<string>("");
+  const [lessonId, setLessonId] = useState<string>("");
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const [performedCount, setPerformedCount] = useState<number>(0);
   const [examPublishStatus, setExamPublishStatus] = useState<"draft" | "published" | "scheduled">(
@@ -81,7 +84,21 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setEducationalStageId(newGrade);
     if (newGrade !== grade) {
       setSubject("");
+      setCourseId("");
+      setCourseSectionId("");
+      setLessonId("");
     }
+  };
+
+  const handleCourseChange = (newCourseId: string) => {
+    setCourseId(newCourseId);
+    setCourseSectionId("");
+    setLessonId("");
+  };
+
+  const handleCourseSectionChange = (newSectionId: string) => {
+    setCourseSectionId(newSectionId);
+    setLessonId("");
   };
 
   // Sync initial backend exam data when editing or loaded
@@ -118,6 +135,12 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setRandomizeMCQChoices(initialBackendExam.shuffle_answer_options ?? false);
 
       setIsIndependent(Boolean(initialBackendExam.is_standalone));
+      setCourseId(initialBackendExam.course_id ? String(initialBackendExam.course_id) : "");
+      setCourseSectionId(
+        initialBackendExam.course_section_id ? String(initialBackendExam.course_section_id) : "",
+      );
+      setLessonId(initialBackendExam.lesson_id ? String(initialBackendExam.lesson_id) : "");
+
       if (initialBackendExam.delivery_mode) {
         setVenue(
           initialBackendExam.delivery_mode === "in_person"
@@ -187,6 +210,35 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     }));
   }, [optionsData?.instructors]);
 
+  const mappedCourses = useMemo(() => {
+    return (optionsData?.courses || []).map((c) => ({
+      id: String(c.id),
+      title: locale === "ar" ? c.title?.ar || c.title?.en || "" : c.title?.en || c.title?.ar || "",
+      sections: c.sections || [],
+    }));
+  }, [optionsData?.courses, locale]);
+
+  const mappedSections = useMemo(() => {
+    if (!courseId) return [];
+    const selectedCourse = mappedCourses.find((c) => c.id === courseId);
+    if (!selectedCourse) return [];
+    return selectedCourse.sections.map((s) => ({
+      id: String(s.id),
+      title: locale === "ar" ? s.title?.ar || s.title?.en || "" : s.title?.en || s.title?.ar || "",
+      lessons: s.lessons || [],
+    }));
+  }, [courseId, mappedCourses, locale]);
+
+  const mappedLessons = useMemo(() => {
+    if (!courseSectionId) return [];
+    const selectedSection = mappedSections.find((s) => s.id === courseSectionId);
+    if (!selectedSection) return [];
+    return selectedSection.lessons.map((l) => ({
+      id: String(l.id),
+      title: locale === "ar" ? l.title?.ar || l.title?.en || "" : l.title?.en || l.title?.ar || "",
+    }));
+  }, [courseSectionId, mappedSections, locale]);
+
   // Exam categories from backend options
   const examCategoryOptions = useMemo(() => {
     if (optionsData?.classifications) {
@@ -239,6 +291,9 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       educational_stage_id: Number(grade) || 1,
       subject_id: Number(subject) || 1,
       ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
+      course_id: isIndependent ? null : Number(courseId) || null,
+      course_section_id: isIndependent ? null : Number(courseSectionId) || null,
+      lesson_id: isIndependent ? null : Number(lessonId) || null,
       classification: category,
       duration_minutes: Number(durationMinutes) || 30,
       passing_percentage: Number(passingPercentage) || 60,
@@ -382,6 +437,14 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setIsIndependent,
     venue,
     setVenue,
+    courseId,
+    setCourseId,
+    handleCourseChange,
+    courseSectionId,
+    setCourseSectionId,
+    handleCourseSectionChange,
+    lessonId,
+    setLessonId,
     coursesCount,
     performedCount,
     examPublishStatus,
@@ -391,6 +454,9 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     mappedStages,
     mappedSubjects,
     mappedInstructors,
+    mappedCourses,
+    mappedSections,
+    mappedLessons,
     isLoadingOptions,
     optionsData,
     examCategoryOptions,

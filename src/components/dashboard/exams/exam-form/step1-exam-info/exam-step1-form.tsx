@@ -1,6 +1,13 @@
 "use client";
 
-import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
+import {
+  CourseSelect,
+  GradeSelect,
+  LessonSelect,
+  SectionSelect,
+  SubjectSelect,
+  TeacherSelect,
+} from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { FormRadioGroup } from "@/components/ui/form-radio-group";
@@ -254,7 +261,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
           checked={form.isIndependent}
           onCheckedChange={form.setIsIndependent}
         >
-          {form.isIndependent && (
+          {form.isIndependent ? (
             <div className="space-y-3 pt-2 border-t border-border/50 animate-in fade-in duration-300">
               <FormRadioGroup
                 name="exam-venue"
@@ -281,6 +288,44 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
                   },
                 ]}
               />
+            </div>
+          ) : (
+            <div className="space-y-4 pt-2 border-t border-border/50 animate-in fade-in duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <CourseSelect
+                  value={form.courseId}
+                  onValueChange={form.handleCourseChange}
+                  courses={form.mappedCourses}
+                  disabled={form.isLoadingOptions}
+                  label={tForm("fields.linkedCourse")}
+                  placeholder={tForm("fields.selectCourse")}
+                  required
+                />
+
+                <SectionSelect
+                  value={form.courseSectionId}
+                  onValueChange={form.handleCourseSectionChange}
+                  sections={form.mappedSections}
+                  disabled={!form.courseId || form.isLoadingOptions}
+                  label={tForm("fields.linkedSection")}
+                  placeholder={
+                    !form.courseId ? tForm("fields.selectCourse") : tForm("fields.selectSection")
+                  }
+                />
+
+                <LessonSelect
+                  value={form.lessonId}
+                  onValueChange={form.setLessonId}
+                  lessons={form.mappedLessons}
+                  disabled={!form.courseSectionId || form.isLoadingOptions}
+                  label={tForm("fields.linkedLesson")}
+                  placeholder={
+                    !form.courseSectionId
+                      ? tForm("fields.selectSection")
+                      : tForm("fields.selectLesson")
+                  }
+                />
+              </div>
             </div>
           )}
         </FormToggleSetting>
