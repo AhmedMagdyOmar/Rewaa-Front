@@ -80,7 +80,7 @@ function SelectTrigger({
 function SelectContent({
   className,
   children,
-  position = "item-aligned",
+  position = "popper",
   align = "center",
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
@@ -95,7 +95,7 @@ function SelectContent({
         dir={isRTL ? "rtl" : "ltr"}
         className={cn(
           "relative z-50 max-h-(--radix-select-content-available-height)",
-          "-bottom-10 min-w-36",
+          "min-w-36",
           "origin-(--radix-select-content-transform-origin)",
           "overflow-x-hidden overflow-y-auto",
           "rounded-lg bg-popover text-popover-foreground",
@@ -130,7 +130,8 @@ function SelectContent({
         <SelectPrimitive.Viewport
           data-position={position}
           className={cn(
-            "data-[position=popper]:h-(--radix-select-trigger-height)",
+            "p-1",
+            "data-[position=popper]:h-(--radix-select-content-available-height)",
             "data-[position=popper]:w-full",
             "data-[position=popper]:min-w-(--radix-select-trigger-width)",
           )}

@@ -51,6 +51,7 @@ export function useCreateLesson() {
     mutationFn: (data: StoreLessonData | FormData) => lessonsService.createLesson(data),
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
+      queryClient.invalidateQueries({ queryKey: ["provider", "lessons"] });
       if (lesson.course_id) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.provider.courses.sections(lesson.course_id),

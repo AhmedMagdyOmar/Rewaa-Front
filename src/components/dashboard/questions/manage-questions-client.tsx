@@ -34,6 +34,7 @@ import {
 import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ContentPagination } from "../common/content-pagination";
+import { DeleteQuestionDialog } from "./delete-question-dialog";
 import {
   useDeleteQuestion,
   useProviderQuestionOptions,
@@ -71,6 +72,7 @@ export function ManageQuestionsClient() {
   const selectedGrade = searchParams.get("grade") || "all";
   const selectedSubject = searchParams.get("subject") || "all";
   const selectedType = searchParams.get("type") || "all";
+  const selectedExam = searchParams.get("exam") || "all";
   const sortBy = (searchParams.get("sort") as QuestionSortOption) || "latest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 12;
@@ -85,6 +87,7 @@ export function ManageQuestionsClient() {
           (key === "grade" && value === "all") ||
           (key === "subject" && value === "all") ||
           (key === "type" && value === "all") ||
+          (key === "exam" && value === "all") ||
           (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
         ) {
@@ -106,11 +109,11 @@ export function ManageQuestionsClient() {
     isFetching,
     refetch,
   } = useProviderQuestions({
-    is_standalone: true,
     search: searchQuery || undefined,
     type: selectedType !== "all" ? selectedType : undefined,
     educational_stage_id: selectedGrade !== "all" ? selectedGrade : undefined,
     subject_id: selectedSubject !== "all" ? selectedSubject : undefined,
+    exam_id: selectedExam !== "all" ? selectedExam : undefined,
     sort: sortBy,
     page: currentPage,
     per_page: itemsPerPage,
@@ -122,18 +125,23 @@ export function ManageQuestionsClient() {
 
   const deleteQuestionMutation = useDeleteQuestion();
 
+  const [questionToDelete, setQuestionToDelete] = React.useState<BackendQuestion | null>(null);
+
   const questions: BackendQuestion[] = questionsResponse?.questions || [];
   const pagination = questionsResponse?.pagination;
   const totalItems = pagination?.total || 0;
   const totalPages = pagination?.last_page || 1;
   const startIndex = (currentPage - 1) * itemsPerPage;
 
-  const handleDelete = async (questionId: number) => {
-    try {
-      await deleteQuestionMutation.mutateAsync(questionId);
-      toast.success(t("messages.deletedSuccessfully") || "تم حذف السؤال بنجاح");
-    } catch {
-      toast.error(t("messages.deleteFailed") || "فشل في حذف السؤال");
+  const confirmDelete = async () => {
+    if (questionToDelete) {
+      try {
+        await deleteQuestionMutation.mutateAsync(questionToDelete.id);
+        toast.success(t("messages.deletedSuccessfully") || "تم حذف السؤال بنجاح");
+        setQuestionToDelete(null);
+      } catch {
+        toast.error(t("messages.deleteFailed") || "فشل في حذف السؤال");
+      }
     }
   };
 
@@ -144,10 +152,21 @@ export function ManageQuestionsClient() {
   const handleTypeChange = (val: string) =>
     updateUrlParams({ type: val === "all" ? null : val, page: 1 });
 
+  const handleExamChange = (val: string) =>
+    updateUrlParams({ exam: val === "all" ? null : val, page: 1 });
+
   const handleSortChange = (sort: QuestionSortOption) => updateUrlParams({ sort, page: 1 });
 
   const handleResetFilters = () =>
-    updateUrlParams({ search: null, grade: null, subject: null, type: null, sort: null, page: 1 });
+    updateUrlParams({
+      search: null,
+      grade: null,
+      subject: null,
+      type: null,
+      exam: null,
+      sort: null,
+      page: 1,
+    });
 
   const formatGrade = (q: BackendQuestion) => {
     return q.educational_stage?.name?.[locale] || q.educational_stage?.name?.ar || "";
@@ -162,6 +181,7 @@ export function ManageQuestionsClient() {
     selectedGrade !== "all" ||
     selectedSubject !== "all" ||
     selectedType !== "all" ||
+    selectedExam !== "all" ||
     sortBy !== "latest";
 
   const sortOptions: { value: QuestionSortOption; label: string }[] = [
@@ -203,8 +223,8 @@ export function ManageQuestionsClient() {
         </div>
       </div>
 
-      {/* Filters Bar: Search Box, Grade Select, Subject Select, Type Select, Sort Dropdown & Reset button */}
-      <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
+      {/* Filters Bar: Search Box, Grade Select, Subject Select, Type Select, Exam Select, Sort Dropdown & Reset button */}
+      <div className="flex flex-col xl:flex-row items-stretch xl:items-start justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 flex-wrap">
           {/* Search Box */}
           <DebouncedSearchInput
@@ -275,25 +295,30 @@ export function ManageQuestionsClient() {
               </SelectContent>
             </Select>
           </div>
+
+          {/* Exam Select */}
+          <div className="w-full sm:w-44">
+            <Select value={selectedExam} onValueChange={handleExamChange}>
+              <SelectTrigger className="h-8 text-xs bg-background">
+                <SelectValue placeholder={t("allExams")} />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value="all">{t("allExams")}</SelectItem>
+                {optionsData?.exams?.map((exam) => (
+                  <SelectItem key={exam.id} value={String(exam.id)}>
+                    {exam.title[locale] || exam.title.ar}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
-        {/* Right Controls: Clear Filters & Sort Dropdown */}
-        <div className="flex items-center gap-2 self-start xl:self-auto shrink-0">
-          {isFilterActive && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleResetFilters}
-              className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-9 px-2.5"
-            >
-              <X className="h-3.5 w-3.5 me-1.5" />
-              {t("clearFilters")}
-            </Button>
-          )}
-
+        {/* Right Controls: Sort Dropdown & Clear Filters */}
+        <div className="flex items-center gap-2 self-start shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2 h-8">
                 <ArrowUpDown className="h-3.5 w-3.5" />
                 <span>{currentSortObj?.label || sortBy}</span>
               </Button>
@@ -306,6 +331,18 @@ export function ManageQuestionsClient() {
               ))}
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {isFilterActive && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilters}
+              className="text-muted-foreground hover:text-foreground hover:bg-muted text-xs h-9 px-2.5"
+            >
+              <X className="h-3.5 w-3.5 me-1.5" />
+              {t("clearFilters")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -450,7 +487,7 @@ export function ManageQuestionsClient() {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               className="flex items-center gap-2 text-destructive focus:text-destructive cursor-pointer"
-                              onClick={() => handleDelete(q.id)}
+                              onClick={() => setQuestionToDelete(q)}
                             >
                               <Trash2 className="h-4 w-4" />
                               <span>{t("actions.delete")}</span>
@@ -485,6 +522,13 @@ export function ManageQuestionsClient() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteQuestionDialog
+        questionToDelete={questionToDelete}
+        onClose={() => setQuestionToDelete(null)}
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

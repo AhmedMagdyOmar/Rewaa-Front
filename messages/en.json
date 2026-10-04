@@ -340,6 +340,7 @@
     }
   },
   "courses": {
+    "edit": "Edit",
     "manageTitle": "Manage Courses",
     "manageSubtitle": "Create, manage, and publish educational courses for the platform",
     "addNewCourse": "Add a new Course",
@@ -1471,13 +1472,21 @@
       "deletedSuccessfully": "Question deleted successfully",
       "deleteFailed": "Failed to delete question"
     },
+    "deleteDialog": {
+      "title": "Delete Question",
+      "description": "Are you sure you want to delete the question \"{title}\"? This action cannot be undone and will remove it from the Question Bank.",
+      "cancel": "Cancel",
+      "confirm": "Delete Question"
+    },
     "searchPlaceholder": "Search by question name, content, model answer, or teacher...",
     "filterGrade": "All Grades",
     "filterSubject": "All Subjects",
     "filterType": "All Types",
+    "filterExam": "All Exams",
     "allGrades": "All Grade Levels",
     "allSubjects": "All Subjects",
     "allTypes": "All Question Types",
+    "allExams": "All Exams",
     "clearFilters": "Clear Filters",
     "sort": {
       "timesUsedDesc": "Most Used",
@@ -1570,6 +1579,8 @@
     "resetLessons": "Refresh Data",
     "searchPlaceholder": "Search lessons by title, subject, teacher...",
     "clearFilters": "Clear Filters",
+    "filterCourse": "Filter by course",
+    "allCourses": "All Courses",
     "metadata": "Lesson Information",
     "tabs": {
       "all": "All Lessons",
@@ -1583,6 +1594,11 @@
     },
     "sort": {
       "newest": "Newest First",
+      "oldest": "Oldest First",
+      "titleAsc": "Title (A - Z)",
+      "titleDesc": "Title (Z - A)"
+    },
+    "card": {
       "videoText": "Video & Text",
       "textOnly": "Text Only",
       "independent": "Independent",
@@ -1604,7 +1620,9 @@
       "unpublishLesson": "Unpublish Lesson",
       "viewsCount": "{count, plural, =0 {No views} one {1 view} other {{count} views}}",
       "coursesCount": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
+      "linkedCoursesCount": "{count, plural, =0 {No courses} one {Linked to 1 course} other {Linked to {count} courses}}",
       "viewCourses": "View Courses",
+      "viewLinkedCourses": "View Linked Courses",
       "coursesPopupTitle": "Courses Including This Lesson",
       "multipleCourses": "Multiple Courses",
       "generalLesson": "General Lesson",
@@ -1928,8 +1946,15 @@
       "confirmPasswordPlaceholder": "••••••••",
       "countryLabel": "Country *",
       "countryPlaceholder": "Egypt",
+      "selectCountry": "Select Country",
+      "searchCountry": "Search country...",
+      "noCountryFound": "No country found",
       "stateLabel": "State / Governorate *",
       "statePlaceholder": "Cairo",
+      "selectState": "Select State / Governorate",
+      "searchState": "Search state/governorate...",
+      "noStateFound": "No state/governorate found",
+      "selectCountryFirst": "Please select a country first",
       "gradeLabel": "Grade Level *",
       "selectGrade": "Select Grade Level",
       "registrationTypeLabel": "Registration Type *",

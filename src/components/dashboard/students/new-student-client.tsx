@@ -36,21 +36,45 @@ export function NewStudentClient() {
     );
   }, [optionsData, locale]);
 
+  const countriesList = React.useMemo(() => {
+    if (!optionsData?.countries) return [];
+    return optionsData.countries.map((c) => ({
+      id: c.id,
+      name: c.name[locale] || c.name.ar || c.name.en || "",
+    }));
+  }, [optionsData, locale]);
+
+  const governoratesList = React.useMemo(() => {
+    if (!optionsData?.governorates) return [];
+    return optionsData.governorates.map((g) => ({
+      id: g.id,
+      countryId: g.country_id,
+      name: g.name[locale] || g.name.ar || g.name.en || "",
+    }));
+  }, [optionsData, locale]);
+
   const handleSubmit = (data: StudentFormData) => {
-    // Resolve stage, country, and governorate IDs if possible
+    // Resolve stage, country, and governorate IDs directly from backend contract
     const matchedStage = optionsData?.educational_stages?.find(
       (s: { id: number; name: Record<string, string> }) =>
         String(s.id) === data.grade || (s.name[locale] || s.name.ar || s.name.en) === data.grade,
     );
     const stageId = matchedStage ? matchedStage.id : Number(data.grade) || undefined;
-    const country = optionsData?.countries.find(
-      (c: { id: number; name: Record<string, string> }) =>
+
+    const matchedCountry = optionsData?.countries.find(
+      (c) =>
+        String(c.id) === data.country ||
         (c.name[locale] || c.name.ar || c.name.en) === data.country,
     );
-    const governorate = optionsData?.governorates.find(
-      (g: { id: number; name: Record<string, string> }) =>
-        (g.name[locale] || g.name.ar || g.name.en) === data.state,
+    const countryId = matchedCountry ? matchedCountry.id : Number(data.country) || undefined;
+
+    const matchedGovernorate = optionsData?.governorates.find(
+      (g) =>
+        String(g.id) === data.state || (g.name[locale] || g.name.ar || g.name.en) === data.state,
     );
+    const governorateId = matchedGovernorate
+      ? matchedGovernorate.id
+      : Number(data.state) || undefined;
 
     const password = data.password || "Password123!";
     const passwordConfirmation = data.confirmPassword || password;
@@ -69,8 +93,8 @@ export function NewStudentClient() {
         email: data.email,
         password,
         password_confirmation: passwordConfirmation,
-        country_id: country?.id,
-        governorate_id: governorate?.id,
+        country_id: countryId,
+        governorate_id: governorateId,
         educational_stage_id: stageId,
         registration_type: data.registrationType,
         status: "active",
@@ -134,6 +158,8 @@ export function NewStudentClient() {
       {/* Main Student Form */}
       <StudentForm
         educationalStages={educationalStagesList}
+        countries={countriesList}
+        governorates={governoratesList}
         onSubmit={handleSubmit}
         onSaveDraft={handleSaveDraft}
         onCancel={handleCancel}

@@ -29,8 +29,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-import { useDeleteExam, useProviderExams } from "@/hooks/use-exams";
+import { useDeleteExam, useProviderExamOptions, useProviderExams } from "@/hooks/use-exams";
 import type { BackendExam } from "@/types/api-contracts";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
@@ -59,6 +66,7 @@ export function ManageExamsClient() {
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as ExamFilterTab) || "all";
   const sortBy = (searchParams.get("sort") as ExamSortOption) || "latest";
+  const courseFilter = searchParams.get("course_id") || "all";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 12;
 
@@ -71,6 +79,7 @@ export function ManageExamsClient() {
           value === "" ||
           (key === "tab" && value === "all") ||
           (key === "sort" && value === "latest") ||
+          (key === "course_id" && value === "all") ||
           (key === "page" && value === 1)
         ) {
           params.delete(key);
@@ -84,6 +93,9 @@ export function ManageExamsClient() {
     [searchParams, pathname, router],
   );
 
+  // Fetch exam options (for courses list)
+  const { data: examOptions } = useProviderExamOptions();
+
   // Live Query from backend
   const {
     data: examsResponse,
@@ -93,6 +105,7 @@ export function ManageExamsClient() {
   } = useProviderExams({
     search: searchQuery || undefined,
     status: activeTab !== "all" ? activeTab : undefined,
+    course_id: courseFilter !== "all" ? courseFilter : undefined,
     sort: sortBy,
     page: currentPage,
     per_page: itemsPerPage,
@@ -121,6 +134,9 @@ export function ManageExamsClient() {
 
   const handleSortChange = (sort: ExamSortOption) => updateUrlParams({ sort, page: 1 });
 
+  const handleCourseChange = (courseId: string) =>
+    updateUrlParams({ course_id: courseId, page: 1 });
+
   const handlePageChange = (page: number) => updateUrlParams({ page });
 
   const confirmDelete = async () => {
@@ -136,7 +152,7 @@ export function ManageExamsClient() {
   };
 
   const handleResetFilters = () =>
-    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
+    updateUrlParams({ search: null, tab: null, sort: null, course_id: null, page: 1 });
 
   // ─── Format helpers ─────────────────────────────────────────────────────────
   const formatGrade = (exam: BackendExam) => {
@@ -191,6 +207,8 @@ export function ManageExamsClient() {
     </tr>
   );
 
+  const availableCourses = examOptions?.courses || [];
+
   return (
     <div className="space-y-6">
       {/* ── Top Header ─────────────────────────────────────────────────────── */}
@@ -233,6 +251,28 @@ export function ManageExamsClient() {
         defaultTab="all"
         defaultSort="latest"
         clearFiltersLabel={t("clearFilters")}
+        isFilterActiveCustom={courseFilter !== "all"}
+        extraFilters={
+          availableCourses.length > 0 ? (
+            <div className="w-48">
+              <Select value={courseFilter} onValueChange={handleCourseChange}>
+                <SelectTrigger className="h-9 text-xs bg-background">
+                  <SelectValue placeholder={locale === "ar" ? "جميع الدورات" : "All courses"} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {locale === "ar" ? "جميع الدورات" : "All courses"}
+                  </SelectItem>
+                  {availableCourses.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.title?.[locale] || c.title?.ar || c.title?.en || `Course #${c.id}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : undefined
+        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
         onSortChange={handleSortChange}

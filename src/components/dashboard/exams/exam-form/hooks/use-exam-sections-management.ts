@@ -196,6 +196,7 @@ export function useExamSectionsManagement({
         score: Number(savedQuestion.grade) || 1,
         has_explanation: savedQuestion.hasAnswerExplanation,
         is_active: true,
+        question_template_id: savedQuestion.questionTemplateId ?? undefined,
         exam_id: Number(examId),
         exam_section_id: !Number.isNaN(sectionIdNum) && sectionIdNum > 0 ? sectionIdNum : undefined,
         educational_stage_id: Number(parentExamContext.grade) || undefined,
@@ -268,21 +269,85 @@ export function useExamSectionsManagement({
   };
 
   const handleSaveManyQuestions = async (questions: Question[], targetSecId: string) => {
-    for (const q of questions) {
-      await handleSaveQuestion(q, targetSecId, true);
+    try {
+      const sectionIdNum = Number(targetSecId);
+      const validSectionId = !Number.isNaN(sectionIdNum) && sectionIdNum > 0 ? sectionIdNum : null;
+
+      for (const q of questions) {
+        if (!q.id.startsWith("q-")) {
+          // Existing bank question: build complete payload required by backend PUT validation
+          const payload: StoreQuestionData = {
+            title: { ar: q.questionName, en: q.questionName },
+            body: { ar: q.questionContent, en: q.questionContent },
+            type:
+              q.type === "mcq"
+                ? "multiple_choice"
+                : q.type === "true/false"
+                  ? "true_false"
+                  : "essay",
+            difficulty: q.difficulty || "medium",
+            classification: mapFrontendKindToBackend(q.questionType),
+            score: Number(q.grade) || 1,
+            has_explanation: Boolean(q.hasAnswerExplanation),
+            is_active: true,
+            exam_assignments: [
+              {
+                exam_id: Number(examId),
+                exam_section_id: validSectionId,
+              },
+            ],
+          };
+
+          if (q.hasAnswerExplanation && q.answerExplanation) {
+            payload.explanation = {
+              ar: q.answerExplanation,
+              en: q.answerExplanation,
+            };
+          }
+
+          if (q.type === "text" && q.modelAnswer) {
+            payload.model_answer = {
+              ar: q.modelAnswer,
+              en: q.modelAnswer,
+            };
+          } else if (q.type === "true/false") {
+            payload.correct_answer = q.modelAnswer === "true";
+          } else if (q.type === "mcq" && q.options) {
+            payload.options = q.options.map((opt) => ({
+              text: { ar: opt.text, en: opt.text },
+              is_correct: opt.id === q.modelAnswer,
+            }));
+          }
+
+          await updateQuestionMutation.mutateAsync({
+            id: q.id,
+            data: payload,
+          });
+        } else {
+          // New question created in dialog
+          await handleSaveQuestion(q, targetSecId, true);
+        }
+      }
+
+      await queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+      setActiveDialog(null);
+      setEditingQuestion(null);
+      toast.success(locale === "ar" ? "تم إضافة الأسئلة بنجاح" : "Questions added successfully");
+    } catch (err) {
+      toast.error(
+        getErrorMessage(err, locale === "ar" ? "فشل إضافة الأسئلة" : "Failed to add questions"),
+      );
     }
-    setActiveDialog(null);
-    setEditingQuestion(null);
   };
 
   const handleDeleteQuestion = async (secId: string, qId: string) => {
     if (!qId.startsWith("q-")) {
       try {
         await deleteQuestionMutation.mutateAsync(qId);
-        toast.success(locale === "ar" ? "تم حذف السؤال بنجاح" : "Question deleted successfully");
+        toast.success(locale === "ar" ? "تم إزالة السؤال بنجاح" : "Question removed successfully");
       } catch (err) {
         toast.error(
-          getErrorMessage(err, locale === "ar" ? "فشل حذف السؤال" : "Failed to delete question"),
+          getErrorMessage(err, locale === "ar" ? "فشل إزالة السؤال" : "Failed to remove question"),
         );
         return;
       }

@@ -249,6 +249,12 @@ export interface BackendLesson {
     title: Record<string, string>;
     cover_image?: string | null;
   } | null;
+  linked_courses_count?: number;
+  linked_courses?: Array<{
+    id: number;
+    title: Record<string, string>;
+    cover_image?: string | null;
+  }>;
   course_section?: {
     id: number;
     title: Record<string, string>;
@@ -454,6 +460,8 @@ export interface BackendQuestion {
   provider_id: number;
   created_by_id: number;
   question_template_id?: number | null;
+  original_question_id?: number | null;
+  is_clone?: boolean;
   exam_id?: number | null;
   exam?: { id: number; title: Record<string, string> } | null;
   exam_section_id?: number | null;
@@ -631,26 +639,28 @@ export interface StoreExamCategoryData {
 }
 
 export interface StoreExamData {
+  source_exam_id?: number | null;
   exam_template_id?: number | null;
-  title: { ar: string; en?: string };
+  title?: { ar: string; en?: string };
   description?: { ar?: string; en?: string };
-  educational_stage_id: number;
-  subject_id: number;
+  educational_stage_id?: number;
+  subject_id?: number;
   instructor_id?: number;
   course_id?: number | null;
   course_section_id?: number | null;
   lesson_id?: number | null;
-  classification: string;
-  duration_minutes: number;
+  scope?: "general" | "course" | "section" | "lesson" | string;
+  classification?: string;
+  duration_minutes?: number;
   ends_at?: string | null;
-  passing_percentage: number;
-  max_attempts: number;
+  passing_percentage?: number;
+  max_attempts?: number;
   questions_limit?: number | null;
-  show_correct_answers_after_submission: boolean;
-  shuffle_questions: boolean;
-  shuffle_answer_options: boolean;
-  delivery_mode: string;
-  is_active: boolean;
+  show_correct_answers_after_submission?: boolean;
+  shuffle_questions?: boolean;
+  shuffle_answer_options?: boolean;
+  delivery_mode?: string;
+  is_active?: boolean;
 }
 
 export type UpdateExamData = Partial<StoreExamData>;
@@ -720,6 +730,7 @@ export interface StoreQuestionData {
   question_template_id?: number | null;
   exam_id?: number | null;
   exam_section_id?: number | null;
+  exam_assignments?: Array<{ exam_id: number; exam_section_id?: number | null }>;
   type: QuestionTypeBackend;
   title: { ar: string; en?: string };
   body?: { ar?: string; en?: string };

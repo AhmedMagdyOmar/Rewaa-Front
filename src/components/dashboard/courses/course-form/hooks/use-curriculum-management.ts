@@ -14,6 +14,7 @@ import {
 import { Exam } from "@/types/exam";
 import { getErrorMessage } from "@/lib/api-utils";
 import { coursesService } from "@/lib/api/courses-service";
+import { examsService } from "@/lib/api/exams-service";
 import { queryKeys } from "@/lib/api/queryKeys";
 import {
   useCourseSections,
@@ -63,10 +64,10 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   const isBackendCourseId = Boolean(courseId && !courseId.startsWith("course-"));
   const { data: parentCourse } = useProviderCourse(isBackendCourseId ? courseId : undefined);
   const { data: backendSections } = useCourseSections(isBackendCourseId ? courseId : undefined);
-  const { data: courseExamsData } = useProviderExams(
-    isBackendCourseId ? { course_id: Number(courseId), per_page: 100 } : undefined,
+  const { data: allProviderExamsData } = useProviderExams({ per_page: 100 });
+  const { data: lessonOptionsData } = useProviderLessonOptions(
+    parentCourse?.educational_stage_id || undefined,
   );
-  const { data: lessonOptionsData } = useProviderLessonOptions();
 
   const createSectionMutation = useCreateCourseSection();
   const updateSectionMutation = useUpdateCourseSection();
@@ -110,11 +111,36 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     }
   }, [parentCourse, locale, courseId]);
 
-  // Sync available exams for this course from backend
+  // Sync available exams for the course matching educational stage and subject
   useEffect(() => {
-    if (courseExamsData?.exams && courseExamsData.exams.length > 0) {
+    const courseStageId = parentCourse?.educational_stage_id;
+    const courseSubjectId = parentCourse?.subject_id;
+    const courseInstructorId = parentCourse?.instructor_id;
+
+    if (allProviderExamsData?.exams && allProviderExamsData.exams.length > 0) {
+      const filtered = allProviderExamsData.exams.filter((e) => {
+        if (
+          courseStageId &&
+          e.educational_stage_id &&
+          Number(e.educational_stage_id) !== Number(courseStageId)
+        ) {
+          return false;
+        }
+        if (courseSubjectId && e.subject_id && Number(e.subject_id) !== Number(courseSubjectId)) {
+          return false;
+        }
+        if (
+          courseInstructorId &&
+          e.instructor_id &&
+          Number(e.instructor_id) !== Number(courseInstructorId)
+        ) {
+          return false;
+        }
+        return true;
+      });
+
       setAvailableExams(
-        courseExamsData.exams.map((e) => ({
+        filtered.map((e) => ({
           id: String(e.id),
           title:
             typeof e.title === "string"
@@ -131,8 +157,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           teacherName: e.instructor?.full_name || parentCourseContext.teacherName || "",
           venue: parentCourseContext.venue || "hybrid",
           category: "test",
-          examType: "course-dependent",
-          courseId,
+          examType: e.is_standalone ? "independent" : "course-dependent",
+          courseId: e.course_id ? String(e.course_id) : undefined,
           triesAllowed: e.max_attempts || 1,
           durationMinutes: e.duration_minutes || 60,
           passingPercentage: e.passing_percentage,
@@ -148,12 +174,29 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
         })),
       );
     } else if (lessonOptionsData?.exams) {
-      const courseIdNum = isBackendCourseId ? Number(courseId) : null;
-      const matchedExams = courseIdNum
-        ? lessonOptionsData.exams.filter((e) => Number(e.course_id) === courseIdNum)
-        : [];
+      const filtered = lessonOptionsData.exams.filter((e) => {
+        if (
+          courseStageId &&
+          e.educational_stage_id &&
+          Number(e.educational_stage_id) !== Number(courseStageId)
+        ) {
+          return false;
+        }
+        if (courseSubjectId && e.subject_id && Number(e.subject_id) !== Number(courseSubjectId)) {
+          return false;
+        }
+        if (
+          courseInstructorId &&
+          e.instructor_id &&
+          Number(e.instructor_id) !== Number(courseInstructorId)
+        ) {
+          return false;
+        }
+        return true;
+      });
+
       setAvailableExams(
-        matchedExams.map((e) => ({
+        filtered.map((e) => ({
           id: String(e.id),
           title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
           description: "",
@@ -162,8 +205,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           teacherName: parentCourseContext.teacherName || "",
           venue: parentCourseContext.venue || "hybrid",
           category: "test",
-          examType: "course-dependent",
-          courseId,
+          examType: "independent",
           triesAllowed: 1,
           durationMinutes: 60,
           passingPercentage: e.passing_percentage,
@@ -181,14 +223,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     } else {
       setAvailableExams([]);
     }
-  }, [
-    courseExamsData,
-    lessonOptionsData,
-    courseId,
-    isBackendCourseId,
-    locale,
-    parentCourseContext,
-  ]);
+  }, [allProviderExamsData, lessonOptionsData, parentCourse, locale, parentCourseContext]);
 
   // Sync backend sections into local state when fetched
   useEffect(() => {
@@ -432,23 +467,46 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     }
 
     const selectedExam = availableExams.find((e) => e.id === newSecLinkedExamId);
-    const parsedExamId =
+    let parsedExamId =
       newSecIsLinkedExam && newSecLinkedExamId ? Number(newSecLinkedExamId) || null : null;
-
-    const sectionPayload = {
-      title: {
-        ar: newSecTitle.trim(),
-        en: newSecTitle.trim(),
-      },
-      exam_id: parsedExamId,
-      requires_exam_pass_to_unlock_next_section: parsedExamId ? newSecIsReqPass : false,
-      status: newSecStatus,
-      scheduled_publish_at:
-        newSecStatus === "scheduled" && newSecScheduledDate ? newSecScheduledDate : undefined,
-    };
 
     try {
       if (isBackendCourseId) {
+        // Clone the selected exam into this course unless it's already the section's current exam
+        const isSameAsCurrent =
+          Boolean(editingSection?.linkedExamId) &&
+          String(editingSection?.linkedExamId) === String(parsedExamId);
+        if (parsedExamId && selectedExam && !isSameAsCurrent) {
+          try {
+            const clonedExam = await examsService.createExam({
+              source_exam_id: parsedExamId,
+              course_id: Number(courseId),
+              scope: "course",
+            });
+            parsedExamId = clonedExam.id;
+          } catch (cloneErr) {
+            console.error("Failed to clone exam for section:", cloneErr);
+            toast.error(
+              locale === "ar"
+                ? "فشل في ربط الامتحان بالقسم (تعذر نسخ الامتحان للدورة)"
+                : "Failed to clone exam for course section",
+            );
+            return;
+          }
+        }
+
+        const sectionPayload = {
+          title: {
+            ar: newSecTitle.trim(),
+            en: newSecTitle.trim(),
+          },
+          exam_id: parsedExamId,
+          requires_exam_pass_to_unlock_next_section: parsedExamId ? newSecIsReqPass : false,
+          status: newSecStatus,
+          scheduled_publish_at:
+            newSecStatus === "scheduled" && newSecScheduledDate ? newSecScheduledDate : undefined,
+        };
+
         if (editingSection && !editingSection.id.startsWith("sec-")) {
           await updateSectionMutation.mutateAsync({
             courseId,
@@ -475,7 +533,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               status: newSecStatus,
               scheduledPublishDate: newSecStatus === "scheduled" ? newSecScheduledDate : undefined,
               isLinkedToExam: newSecIsLinkedExam,
-              linkedExamId: newSecIsLinkedExam ? newSecLinkedExamId || undefined : undefined,
+              linkedExamId: newSecIsLinkedExam && parsedExamId ? String(parsedExamId) : undefined,
               linkedExamTitle: newSecIsLinkedExam ? selectedExam?.title : undefined,
               isRequiredPassExamForNextSection: newSecIsLinkedExam ? newSecIsReqPass : false,
             };
@@ -492,7 +550,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           status: newSecStatus,
           scheduledPublishDate: newSecStatus === "scheduled" ? newSecScheduledDate : undefined,
           isLinkedToExam: newSecIsLinkedExam,
-          linkedExamId: newSecIsLinkedExam ? newSecLinkedExamId || undefined : undefined,
+          linkedExamId: newSecIsLinkedExam && parsedExamId ? String(parsedExamId) : undefined,
           linkedExamTitle: newSecIsLinkedExam ? selectedExam?.title : undefined,
           isRequiredPassExamForNextSection: newSecIsLinkedExam ? newSecIsReqPass : false,
           lessons: [],
@@ -543,6 +601,42 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
       const isExistingBackendLesson = !savedLesson.id.startsWith("les-");
 
       if (isBackendCourseId && isBackendSec) {
+        let lessonExamId =
+          savedLesson.isLinkedToExam && savedLesson.linkedExamId
+            ? Number(savedLesson.linkedExamId)
+            : null;
+
+        const selectedLessonExam = availableExams.find((e) => e.id === savedLesson.linkedExamId);
+
+        // Clone the selected exam into this course unless it's already the lesson's current exam
+        const currentLessonExamId = sections
+          .flatMap((s) => s.lessons || [])
+          .find((l) => l.id === savedLesson.id)?.linkedExamId;
+        const isSameAsCurrentLessonExam =
+          Boolean(currentLessonExamId) && String(currentLessonExamId) === String(lessonExamId);
+        if (lessonExamId && selectedLessonExam && !isSameAsCurrentLessonExam) {
+          try {
+            const clonedExam = await examsService.createExam({
+              source_exam_id: lessonExamId,
+              course_id: Number(courseId),
+              scope: "course",
+            });
+            lessonExamId = clonedExam.id;
+            finalLesson = {
+              ...finalLesson,
+              linkedExamId: String(clonedExam.id),
+            };
+          } catch (cloneErr) {
+            console.error("Failed to clone exam for lesson:", cloneErr);
+            toast.error(
+              locale === "ar"
+                ? "فشل في ربط الامتحان بالدرس (تعذر نسخ الامتحان للدورة)"
+                : "Failed to clone exam for lesson",
+            );
+            return;
+          }
+        }
+
         const newPdfFiles = (savedLesson.pdfFiles || [])
           .map((p) => p.rawFile)
           .filter(Boolean) as File[];
@@ -572,11 +666,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             savedLesson.deleteMediaIds && savedLesson.deleteMediaIds.length > 0
               ? savedLesson.deleteMediaIds
               : undefined,
-          has_exam: Boolean(savedLesson.isLinkedToExam && savedLesson.linkedExamId),
-          exam_id:
-            savedLesson.isLinkedToExam && savedLesson.linkedExamId
-              ? Number(savedLesson.linkedExamId)
-              : null,
+          has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
+          exam_id: lessonExamId,
           requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
           status: savedLesson.publishStatus || "published",
           scheduled_publish_at: savedLesson.scheduledPublishDate || undefined,
@@ -661,7 +752,9 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             classification: "course",
             course_id: Number(courseId),
             course_section_id: Number(targetSecId),
-            original_lesson_id: !Number.isNaN(Number(l.id)) ? Number(l.id) : undefined,
+            original_lesson_id:
+              (l as unknown as { original_lesson_id?: number }).original_lesson_id ||
+              (!Number.isNaN(Number(l.id)) && !l.id.startsWith("les-") ? Number(l.id) : undefined),
             type: l.type === "text" ? "text_only" : "video_and_text",
             title: { ar: l.title, en: l.title },
             description: l.description ? { ar: l.description, en: l.description } : undefined,
@@ -682,6 +775,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           ...savedLessons[i],
           id: String(res.id),
         }));
+        await queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
+        await queryClient.invalidateQueries({ queryKey: ["provider", "lessons"] });
         toast.success(
           locale === "ar"
             ? `تم إضافة ${created.length} دروس بنجاح`

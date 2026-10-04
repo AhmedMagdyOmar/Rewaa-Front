@@ -8,6 +8,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CourseSelect } from "@/components/ui/academic-selects";
 import { CourseVenue, Lesson, LessonPublishStatus } from "@/types/course";
 import { LessonClassification } from "@/types/api-contracts";
 import { useProviderLessons, useUpdateLesson, useDeleteLesson } from "@/hooks/use-lessons";
@@ -29,10 +30,12 @@ export function ManageLessonsClient() {
   const {
     searchQuery,
     activeTab,
+    courseId,
     sortBy,
     currentPage,
     handleSearchChange,
     handleTabChange,
+    handleCourseChange,
     handleSortChange,
     handlePageChange,
     handleResetFilters,
@@ -47,6 +50,7 @@ export function ManageLessonsClient() {
   const { data, isLoading, refetch, isRefetching } = useProviderLessons({
     search: searchQuery.trim() || undefined,
     classification,
+    course_id: courseId || undefined,
     sort,
     page: currentPage,
     per_page: itemsPerPage,
@@ -78,6 +82,12 @@ export function ManageLessonsClient() {
     lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
     courseId: b.course_id ? String(b.course_id) : undefined,
     courseTitle: b.course?.title?.[locale] || b.course?.title?.ar || undefined,
+    linkedCoursesCount: b.linked_courses_count ?? (b.linked_courses ? b.linked_courses.length : 0),
+    linkedCourses: (b.linked_courses || []).map((c) => ({
+      id: String(c.id),
+      title: c.title?.[locale] || c.title?.ar || c.title?.en || "",
+      coverImage: c.cover_image || undefined,
+    })),
     sectionId: b.course_section_id ? String(b.course_section_id) : undefined,
     sectionTitle: b.course_section?.title?.[locale] || b.course_section?.title?.ar || undefined,
     completionsCount: b.completions_count ?? 0,
@@ -232,6 +242,19 @@ export function ManageLessonsClient() {
         sortBy={sortBy}
         sortOptions={sortOptions}
         clearFiltersLabel={t("clearFilters")}
+        isFilterActiveCustom={Boolean(courseId && courseId !== "all")}
+        extraFilters={
+          <div className="w-full sm:w-64">
+            <CourseSelect
+              value={courseId || "all"}
+              onValueChange={handleCourseChange}
+              placeholder={t("filterCourse")}
+              showAllOption
+              allOptionLabel={t("allCourses")}
+              triggerClassName="h-9"
+            />
+          </div>
+        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
         onSortChange={handleSortChange}

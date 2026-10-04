@@ -84,7 +84,6 @@ export function QuestionDialog({
   // Fetch Questions from Question Bank (only standalone master questions)
   const { data: questionsData, isLoading: isLoadingQuestions } = useProviderQuestions({
     per_page: 100,
-    is_standalone: true,
     educational_stage_id: examGrade || undefined,
     subject_id: examSubject || undefined,
     difficulty: filterDifficulty && filterDifficulty !== "all" ? filterDifficulty : undefined,
@@ -442,7 +441,7 @@ export function QuestionDialog({
             </div>
 
             {/* 4. Questions List */}
-            <div className="space-y-2.5 max-h-90 overflow-y-auto pe-1">
+            <div className="space-y-2.5 max-h-90 overflow-y-auto pe-1 overflow-hidden">
               {isLoadingQuestions ? (
                 <div className="space-y-3">
                   {Array.from({ length: 4 }).map((_, i) => (

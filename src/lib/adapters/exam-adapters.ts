@@ -146,6 +146,9 @@ export function mapBackendQuestionToFrontend(bq: BackendQuestion, locale: string
     difficulty,
     hasAnswerExplanation: Boolean(bq.has_explanation),
     answerExplanation,
+    questionTemplateId: bq.question_template_id,
+    originalQuestionId: bq.original_question_id,
+    isClone: bq.is_clone ?? (bq.question_template_id !== null || bq.original_question_id !== null),
   };
 }
 

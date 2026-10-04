@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +15,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  ExternalLink,
   EyeOff,
   FileCheck,
   FileText,
@@ -21,6 +23,7 @@ import {
   Globe2,
   GraduationCap,
   House,
+  Layers,
   MoreVertical,
   Paperclip,
   Pencil,
@@ -95,6 +98,13 @@ export function LessonCard({
     .join(" • ");
 
   const completionsCount = lesson.completionsCount ?? 0;
+  const [showLinkedCoursesDialog, setShowLinkedCoursesDialog] = React.useState(false);
+
+  const linkedCourses = lesson.linkedCourses || [];
+  const linkedCoursesCount =
+    lesson.linkedCoursesCount ??
+    (linkedCourses.length > 0 ? linkedCourses.length : lesson.courseId ? 1 : 0);
+  const isMultiCourse = linkedCoursesCount > 1;
 
   return (
     <div className="group flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
@@ -185,20 +195,32 @@ export function LessonCard({
             )}
           </div>
 
-          {/* Course and Section Link for Course Lessons */}
-          {!isIndependent && lesson.courseTitle && (
+          {/* Course and Section Link or Multi-Course Badge */}
+          {isMultiCourse ? (
+            <button
+              type="button"
+              onClick={() => setShowLinkedCoursesDialog(true)}
+              className="mb-2.5 flex items-center justify-between w-full text-xs text-muted-foreground bg-primary/5 hover:bg-primary/10 transition-colors px-2.5 py-1.5 rounded-md border border-primary/20 text-start cursor-pointer group/link"
+            >
+              <div className="flex items-center gap-1.5 font-semibold text-primary truncate">
+                <Layers className="size-3.5 shrink-0" />
+                <span className="truncate">
+                  {t("card.linkedCoursesCount", { count: linkedCoursesCount })}
+                </span>
+              </div>
+              <span className="text-[11px] text-primary/80 font-normal shrink-0 underline-offset-2 group-hover/link:underline">
+                {t("card.viewCourses")}
+              </span>
+            </button>
+          ) : !isIndependent && lesson.courseTitle ? (
             <div className="mb-2.5 flex flex-col items-start gap-1.5 text-xs text-muted-foreground truncate bg-muted/40 px-2 py-1 rounded-md border border-border/40">
               <div className="flex items-center gap-1.5 truncate font-medium text-foreground">
                 <BookOpen className="size-3.5 text-primary shrink-0" />
                 <span className="truncate">{lesson.courseTitle}</span>
               </div>
-              {lesson.sectionTitle && (
-                <>
-                  <span className="truncate">{lesson.sectionTitle}</span>
-                </>
-              )}
+              {lesson.sectionTitle && <span className="truncate">{lesson.sectionTitle}</span>}
             </div>
-          )}
+          ) : null}
 
           {/* Teacher and Subject Info */}
           <div className="flex flex-col gap-2">
@@ -269,7 +291,7 @@ export function LessonCard({
                 <TooltipTrigger asChild>
                   <div className="inline-flex items-center gap-1 bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2 py-1 rounded-md text-xs font-medium cursor-default">
                     <FileCheck className="h-3 w-3" />
-                    <span className="truncate max-w-[120px]">
+                    <span className="truncate max-w-30">
                       {lesson.linkedExamTitle || t("card.defaultExam")}
                     </span>
                   </div>
@@ -323,6 +345,13 @@ export function LessonCard({
                 </Link>
               </DropdownMenuItem>
 
+              {linkedCourses.length > 0 && (
+                <DropdownMenuItem onClick={() => setShowLinkedCoursesDialog(true)}>
+                  <Layers className="h-4 w-4 me-2 text-primary" />
+                  <span>{t("card.viewLinkedCourses")}</span>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem onClick={() => onCopyLink(lesson.id)}>
                 {copiedId === lesson.id ? (
                   <>
@@ -355,6 +384,54 @@ export function LessonCard({
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Linked Courses Dialog Modal */}
+      <Dialog open={showLinkedCoursesDialog} onOpenChange={setShowLinkedCoursesDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <Layers className="h-5 w-5 text-primary" />
+              <span>{t("card.coursesPopupTitle")}</span>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="divide-y divide-border/60 max-h-[60vh] overflow-y-auto mt-2">
+            {linkedCourses.map((c) => (
+              <div
+                key={c.id}
+                className="flex items-center justify-between py-3 gap-3 hover:bg-muted/40 px-2 rounded-lg transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative size-10 rounded-md overflow-hidden bg-muted shrink-0 border border-border/50 flex items-center justify-center">
+                    {c.coverImage ? (
+                      <Image
+                        src={c.coverImage}
+                        alt={c.title}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <BookOpen className="size-5 text-muted-foreground/60" />
+                    )}
+                  </div>
+                  <span className="font-semibold text-sm text-foreground truncate">{c.title}</span>
+                </div>
+                <Button
+                  asChild
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1.5 text-xs font-semibold"
+                >
+                  <Link href={`/${locale}/dashboard/courses/${c.id}/edit`}>
+                    <span>{t("card.editLesson")}</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

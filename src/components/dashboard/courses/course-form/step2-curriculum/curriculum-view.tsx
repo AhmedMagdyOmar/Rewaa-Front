@@ -128,7 +128,6 @@ export function CurriculumView({
         newSecIsReqPass={curriculum.newSecIsReqPass}
         onIsReqPassChange={curriculum.setNewSecIsReqPass}
         newSecScheduleDateError={curriculum.newSecScheduleDateError}
-        sections={curriculum.sections}
         availableExams={curriculum.availableExams}
         courseId={courseId}
         locale={locale}

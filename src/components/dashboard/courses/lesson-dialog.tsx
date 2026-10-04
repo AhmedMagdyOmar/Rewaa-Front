@@ -1,6 +1,8 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { ExamSelect, MultiLessonSelect } from "@/components/ui/academic-selects";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,8 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { ExamSelect, MultiLessonSelect } from "@/components/ui/academic-selects";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProviderLessonOptions, useProviderLessons } from "@/hooks/use-lessons";
@@ -54,7 +54,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface LessonDialogProps {
   open: boolean;
@@ -150,13 +150,23 @@ export function LessonDialog({
     }
 
     if (optionsData?.exams) {
-      const isRealCourse =
-        parentCourseContext.courseId && !parentCourseContext.courseId.startsWith("course-");
-      const filtered = isRealCourse
-        ? optionsData.exams.filter(
-            (e) => String(e.course_id) === String(parentCourseContext.courseId),
-          )
-        : [];
+      const filtered = optionsData.exams.filter((e) => {
+        if (
+          parentCourseContext.grade &&
+          e.educational_stage_id &&
+          String(e.educational_stage_id) !== String(parentCourseContext.grade)
+        ) {
+          return false;
+        }
+        if (
+          parentCourseContext.subject &&
+          e.subject_id &&
+          String(e.subject_id) !== String(parentCourseContext.subject)
+        ) {
+          return false;
+        }
+        return true;
+      });
 
       setAvailableExams(
         filtered.map((e) => ({
@@ -168,7 +178,7 @@ export function LessonDialog({
           teacherName: parentCourseContext.teacherName || "Teacher",
           venue: parentCourseContext.venue || "hybrid",
           category: "test",
-          examType: "course-dependent",
+          examType: e.course_id ? "course-dependent" : "independent",
           triesAllowed: 1,
           durationMinutes: 60,
           passingPercentage: e.passing_percentage,
@@ -250,26 +260,8 @@ export function LessonDialog({
     setIsExamModalOpen(false);
   };
 
-  // Filter available exams to exclude exams already linked to other lessons or sections in the course (Backend unique constraint)
-  const selectableExams = useMemo(() => {
-    const takenExamIds = new Set<string>();
-    sections.forEach((sec) => {
-      if (sec.linkedExamId) {
-        takenExamIds.add(String(sec.linkedExamId));
-      }
-      (sec.lessons || []).forEach((les) => {
-        if (les.linkedExamId && les.id !== initialLesson?.id) {
-          takenExamIds.add(String(les.linkedExamId));
-        }
-      });
-    });
-
-    return availableExams.filter(
-      (exam) =>
-        !takenExamIds.has(String(exam.id)) ||
-        (initialLesson?.linkedExamId && String(exam.id) === String(initialLesson.linkedExamId)),
-    );
-  }, [availableExams, sections, initialLesson]);
+  // Selected exams are cloned into the course on save, so linked exams stay selectable
+  const selectableExams = availableExams;
 
   // Populate state on open / initialLesson change
   useEffect(() => {
@@ -421,6 +413,7 @@ export function LessonDialog({
           return {
             ...found,
             id: `les-${Math.floor(1000 + Math.random() * 9000)}`,
+            original_lesson_id: !Number.isNaN(Number(found.id)) ? Number(found.id) : undefined,
             lessonCategory: "course-dependent",
             venue: parentCourseContext.venue || found.venue || "all",
             publishStatus: found.publishStatus || "published",
@@ -987,25 +980,25 @@ export function LessonDialog({
                         emptyLabel={
                           availableExams.length === 0
                             ? locale === "ar"
-                              ? "لا توجد امتحانات متاحة لهذه الدورة"
-                              : "No exams available for this course"
+                              ? "لا توجد امتحانات متاحة لنفس المرحلة والمادة"
+                              : "No exams available for this stage and subject"
                             : locale === "ar"
-                              ? "جميع امتحانات الدورة مستخدمة بالفعل"
-                              : "All course exams are already linked"
+                              ? "جميع الامتحانات المتاحة مستخدمة بالفعل"
+                              : "All available exams are already linked"
                         }
                       />
 
                       {availableExams.length === 0 ? (
                         <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                           {locale === "ar"
-                            ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان وربطه بهذه الدورة من قسم إدارة الامتحانات."
-                            : "No exams found for this course yet. You can create an exam linked to this course from the Exams section."}
+                            ? "لا توجد امتحانات مخصصة لهذه المرحلة الدراسية والمادة حتى الآن. يمكنك إنشاء امتحان من قسم إدارة الامتحانات."
+                            : "No exams found for this stage and subject yet. You can create an exam from the Exams section."}
                         </p>
                       ) : selectableExams.length === 0 && !linkedExamId ? (
                         <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
                           {locale === "ar"
-                            ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى (لا يمكن ربط نفس الامتحان بأكثر من درس أو قسم)."
-                            : "All exams assigned to this course are already linked to other sections or lessons (an exam can only be linked once)."}
+                            ? "جميع الامتحانات المتاحة مستخدمة بالفعل في أقسام أو دروس أخرى (لا يمكن ربط نفس الامتحان بأكثر من درس أو قسم)."
+                            : "All available exams are already linked to other sections or lessons (an exam can only be linked once)."}
                         </p>
                       ) : null}
 
@@ -1151,25 +1144,25 @@ export function LessonDialog({
                 emptyLabel={
                   availableExams.length === 0
                     ? locale === "ar"
-                      ? "لا توجد امتحانات متاحة لهذه الدورة"
-                      : "No exams available for this course"
+                      ? "لا توجد امتحانات متاحة لنفس المرحلة والمادة"
+                      : "No exams available for this stage and subject"
                     : locale === "ar"
-                      ? "جميع امتحانات الدورة مستخدمة بالفعل"
-                      : "All course exams are already linked"
+                      ? "جميع الامتحانات المتاحة مستخدمة بالفعل"
+                      : "All available exams are already linked"
                 }
               />
 
               {availableExams.length === 0 ? (
                 <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                   {locale === "ar"
-                    ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان للدورة من قسم الامتحانات."
-                    : "No exams found for this course yet. You can create an exam from the Exams section."}
+                    ? "لا توجد امتحانات مخصصة لهذه المرحلة الدراسية والمادة حتى الآن. يمكنك إنشاء امتحان من قسم الامتحانات."
+                    : "No exams found for this stage and subject yet. You can create an exam from the Exams section."}
                 </p>
               ) : selectableExams.length === 0 && !examSelectedId ? (
                 <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
                   {locale === "ar"
-                    ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى."
-                    : "All exams assigned to this course are already linked to other sections or lessons."}
+                    ? "جميع الامتحانات المتاحة مستخدمة بالفعل في أقسام أو دروس أخرى."
+                    : "All available exams are already linked to other sections or lessons."}
                 </p>
               ) : null}
             </div>

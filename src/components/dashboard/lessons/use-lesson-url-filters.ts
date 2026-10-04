@@ -12,6 +12,7 @@ export function useLessonUrlFilters() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as LessonFilterTab) || "all";
+  const courseId = searchParams.get("course_id") || "";
   const sortBy = (searchParams.get("sort") as LessonSortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
@@ -24,6 +25,7 @@ export function useLessonUrlFilters() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
+          (key === "course_id" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
           (key === "page" && value === 1)
         ) {
@@ -46,6 +48,10 @@ export function useLessonUrlFilters() {
     updateUrlParams({ tab, page: 1 });
   };
 
+  const handleCourseChange = (selectedCourseId: string) => {
+    updateUrlParams({ course_id: selectedCourseId === "all" ? null : selectedCourseId, page: 1 });
+  };
+
   const handleSortChange = (sortOption: LessonSortOption) => {
     updateUrlParams({ sort: sortOption, page: 1 });
   };
@@ -55,17 +61,19 @@ export function useLessonUrlFilters() {
   };
 
   const handleResetFilters = () => {
-    updateUrlParams({ search: null, tab: null, sort: null, page: 1 });
+    updateUrlParams({ search: null, tab: null, course_id: null, sort: null, page: 1 });
   };
 
   return {
     searchQuery,
     activeTab,
+    courseId,
     sortBy,
     currentPage,
     updateUrlParams,
     handleSearchChange,
     handleTabChange,
+    handleCourseChange,
     handleSortChange,
     handlePageChange,
     handleResetFilters,

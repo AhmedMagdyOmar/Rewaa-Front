@@ -43,6 +43,23 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
     );
   }, [optionsData, locale]);
 
+  const countriesList = React.useMemo(() => {
+    if (!optionsData?.countries) return [];
+    return optionsData.countries.map((c) => ({
+      id: c.id,
+      name: c.name[locale] || c.name.ar || c.name.en || "",
+    }));
+  }, [optionsData, locale]);
+
+  const governoratesList = React.useMemo(() => {
+    if (!optionsData?.governorates) return [];
+    return optionsData.governorates.map((g) => ({
+      id: g.id,
+      countryId: g.country_id,
+      name: g.name[locale] || g.name.ar || g.name.en || "",
+    }));
+  }, [optionsData, locale]);
+
   if (isLoading) {
     return (
       <div className="p-12 text-center text-muted-foreground animate-pulse">
@@ -75,14 +92,21 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
         String(s.id) === data.grade || (s.name[locale] || s.name.ar || s.name.en) === data.grade,
     );
     const stageId = matchedStage ? matchedStage.id : Number(data.grade) || undefined;
-    const country = optionsData?.countries.find(
-      (c: { id: number; name: Record<string, string> }) =>
+
+    const matchedCountry = optionsData?.countries.find(
+      (c) =>
+        String(c.id) === data.country ||
         (c.name[locale] || c.name.ar || c.name.en) === data.country,
     );
-    const governorate = optionsData?.governorates.find(
-      (g: { id: number; name: Record<string, string> }) =>
-        (g.name[locale] || g.name.ar || g.name.en) === data.state,
+    const countryId = matchedCountry ? matchedCountry.id : Number(data.country) || undefined;
+
+    const matchedGovernorate = optionsData?.governorates.find(
+      (g) =>
+        String(g.id) === data.state || (g.name[locale] || g.name.ar || g.name.en) === data.state,
     );
+    const governorateId = matchedGovernorate
+      ? matchedGovernorate.id
+      : Number(data.state) || undefined;
 
     const payloadData: Record<string, unknown> = {
       first_name: data.firstName,
@@ -95,8 +119,8 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
       guardian_phone: data.parentPhoneNumber,
       gender: data.gender,
       email: data.email,
-      country_id: country?.id,
-      governorate_id: governorate?.id,
+      country_id: countryId,
+      governorate_id: governorateId,
       educational_stage_id: stageId,
       registration_type: data.registrationType,
     };
@@ -175,6 +199,8 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
         initialData={student}
         isEditing={true}
         educationalStages={educationalStagesList}
+        countries={countriesList}
+        governorates={governoratesList}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
       />

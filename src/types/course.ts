@@ -52,6 +52,12 @@ export interface Lesson {
   lessonCategory?: LessonCategory;
   courseId?: string; // FK → Course.id
   courseTitle?: string; // denormalized
+  linkedCoursesCount?: number;
+  linkedCourses?: Array<{
+    id: string;
+    title: string;
+    coverImage?: string;
+  }>;
   sectionId?: string; // FK → CourseSection.id
   sectionTitle?: string; // denormalized
   completionsCount?: number; // how many students completed this lesson (from backend)

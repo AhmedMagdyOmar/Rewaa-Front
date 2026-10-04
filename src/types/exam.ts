@@ -37,6 +37,9 @@ export interface Question {
   difficulty: QuestionDifficulty;
   hasAnswerExplanation: boolean; // default false
   answerExplanation?: string;
+  questionTemplateId?: number | null;
+  originalQuestionId?: number | null;
+  isClone?: boolean;
 }
 
 // ─── ExamSection ──────────────────────────────────────────────────────────────

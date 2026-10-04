@@ -2,7 +2,7 @@
 "use client";
 
 import { MapPin, ShieldCheck, User } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import * as React from "react";
 
 import { GradeSelect } from "@/components/ui/academic-selects";
@@ -11,6 +11,7 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CountrySelect, GovernorateSelect, LocationOption } from "@/components/ui/location-selects";
 import {
   Select,
   SelectContent,
@@ -48,6 +49,8 @@ interface StudentFormProps {
   onCancel: () => void;
   submitLabel?: string;
   educationalStages?: Array<{ id: string | number; name: string }>;
+  countries?: LocationOption[];
+  governorates?: LocationOption[];
 }
 
 export function StudentForm({
@@ -58,33 +61,79 @@ export function StudentForm({
   onCancel,
   submitLabel,
   educationalStages,
+  countries = [],
+  governorates = [],
 }: StudentFormProps) {
-  const locale = useLocale();
-
   const tForm = useTranslations("studentsPage.form");
 
-  const [formData, setFormData] = React.useState<StudentFormData>({
-    firstName: initialData?.firstName || "",
-    middleName: initialData?.middleName || "",
-    lastName: initialData?.lastName || "",
-    additionalName: initialData?.additionalName || "",
-    phoneNumber: initialData?.phoneNumber || "",
-    parentPhoneNumber: initialData?.parentPhoneNumber || "",
-    gender: initialData?.gender || "male",
-    email: initialData?.email || "",
-    image: initialData?.image || "",
-    password: initialData?.password || "",
-    confirmPassword: initialData?.password || "",
-    country: initialData?.country || (locale === "ar" ? "مصر" : "Egypt"),
-    state: initialData?.state || (locale === "ar" ? "القاهرة" : "Cairo"),
-    grade: initialData?.educationalStageId
-      ? String(initialData.educationalStageId)
-      : initialData?.grade || "grade3",
-    registrationType: initialData?.registrationType || "center",
+  const [formData, setFormData] = React.useState<StudentFormData>(() => {
+    // Initial country resolution
+    let initialCountry = "";
+    if (initialData?.countryId) {
+      initialCountry = String(initialData.countryId);
+    } else if (initialData?.country) {
+      const match = countries.find(
+        (c) => c.name === initialData.country || String(c.id) === String(initialData.country),
+      );
+      initialCountry = match ? String(match.id) : initialData.country;
+    } else if (countries.length > 0) {
+      initialCountry = String(countries[0].id);
+    }
+
+    // Initial state resolution
+    let initialState = "";
+    if (initialData?.governorateId) {
+      initialState = String(initialData.governorateId);
+    } else if (initialData?.state) {
+      const match = governorates.find(
+        (g) => g.name === initialData.state || String(g.id) === String(initialData.state),
+      );
+      initialState = match ? String(match.id) : initialData.state;
+    }
+
+    return {
+      firstName: initialData?.firstName || "",
+      middleName: initialData?.middleName || "",
+      lastName: initialData?.lastName || "",
+      additionalName: initialData?.additionalName || "",
+      phoneNumber: initialData?.phoneNumber || "",
+      parentPhoneNumber: initialData?.parentPhoneNumber || "",
+      gender: initialData?.gender || "male",
+      email: initialData?.email || "",
+      image: initialData?.image || "",
+      password: initialData?.password || "",
+      confirmPassword: initialData?.password || "",
+      country: initialCountry,
+      state: initialState,
+      grade: initialData?.educationalStageId
+        ? String(initialData.educationalStageId)
+        : initialData?.grade || "grade3",
+      registrationType: initialData?.registrationType || "center",
+    };
   });
 
   React.useEffect(() => {
     if (initialData) {
+      let initialCountry = "";
+      if (initialData.countryId) {
+        initialCountry = String(initialData.countryId);
+      } else if (initialData.country) {
+        const match = countries.find(
+          (c) => c.name === initialData.country || String(c.id) === String(initialData.country),
+        );
+        initialCountry = match ? String(match.id) : initialData.country;
+      }
+
+      let initialState = "";
+      if (initialData.governorateId) {
+        initialState = String(initialData.governorateId);
+      } else if (initialData.state) {
+        const match = governorates.find(
+          (g) => g.name === initialData.state || String(g.id) === String(initialData.state),
+        );
+        initialState = match ? String(match.id) : initialData.state;
+      }
+
       setFormData({
         firstName: initialData.firstName || "",
         middleName: initialData.middleName || "",
@@ -97,17 +146,26 @@ export function StudentForm({
         image: initialData.image || "",
         password: initialData.password || "",
         confirmPassword: initialData.password || "",
-        country: initialData.country || (locale === "ar" ? "مصر" : "Egypt"),
-        state: initialData.state || (locale === "ar" ? "القاهرة" : "Cairo"),
+        country: initialCountry,
+        state: initialState,
         grade: initialData.educationalStageId
           ? String(initialData.educationalStageId)
           : initialData.grade || "grade3",
         registrationType: initialData.registrationType || "center",
       });
     }
-  }, [initialData, locale]);
+  }, [initialData, countries, governorates]);
 
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
+  const handleCountryChange = (newCountryId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      country: newCountryId,
+      state: "", // Reset state when country changes
+    }));
+    if (errorMsg) setErrorMsg(null);
+  };
 
   const handleChange = (field: keyof StudentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -343,28 +401,32 @@ export function StudentForm({
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Country */}
-          <div className="space-y-2">
-            <Label htmlFor="country">{tForm("countryLabel")}</Label>
-            <Input
-              id="country"
-              placeholder={tForm("countryPlaceholder")}
-              value={formData.country}
-              onChange={(e) => handleChange("country", e.target.value)}
-              required
-            />
-          </div>
+          <CountrySelect
+            id="country"
+            label={tForm("countryLabel")}
+            placeholder={tForm("selectCountry")}
+            searchPlaceholder={tForm("searchCountry")}
+            emptyLabel={tForm("noCountryFound")}
+            value={formData.country}
+            onValueChange={handleCountryChange}
+            countries={countries}
+            required
+          />
 
           {/* State / Governorate */}
-          <div className="space-y-2">
-            <Label htmlFor="state">{tForm("stateLabel")}</Label>
-            <Input
-              id="state"
-              placeholder={tForm("statePlaceholder")}
-              value={formData.state}
-              onChange={(e) => handleChange("state", e.target.value)}
-              required
-            />
-          </div>
+          <GovernorateSelect
+            id="state"
+            label={tForm("stateLabel")}
+            placeholder={formData.country ? tForm("selectState") : tForm("selectCountryFirst")}
+            searchPlaceholder={tForm("searchState")}
+            emptyLabel={tForm("noStateFound")}
+            value={formData.state}
+            onValueChange={(val) => handleChange("state", val)}
+            governorates={governorates}
+            countryId={formData.country}
+            disabled={!formData.country}
+            required
+          />
 
           {/* Grade Level */}
           <GradeSelect

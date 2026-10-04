@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import {
   Dialog,
@@ -27,7 +26,6 @@ import { Exam } from "@/types/exam";
 interface SectionFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sections?: CourseSection[];
   editingSection: CourseSection | null;
   newSecTitle: string;
   onTitleChange: (val: string) => void;
@@ -52,7 +50,6 @@ interface SectionFormDialogProps {
 export function SectionFormDialog({
   open,
   onOpenChange,
-  sections = [],
   editingSection,
   newSecTitle,
   onTitleChange,
@@ -75,26 +72,8 @@ export function SectionFormDialog({
 }: SectionFormDialogProps) {
   const t = useTranslations("courses.new");
 
-  // Filter out exams already used in other sections or lessons
-  const selectableExams = useMemo(() => {
-    const takenExamIds = new Set<string>();
-    sections.forEach((sec) => {
-      if (sec.linkedExamId && sec.id !== editingSection?.id) {
-        takenExamIds.add(String(sec.linkedExamId));
-      }
-      (sec.lessons || []).forEach((les) => {
-        if (les.linkedExamId) {
-          takenExamIds.add(String(les.linkedExamId));
-        }
-      });
-    });
-
-    return availableExams.filter(
-      (exam) =>
-        !takenExamIds.has(String(exam.id)) ||
-        (editingSection?.linkedExamId && String(exam.id) === String(editingSection.linkedExamId)),
-    );
-  }, [availableExams, sections, editingSection]);
+  // Selected exams are cloned by the backend/frontend flow, so linked exams stay selectable
+  const selectableExams = availableExams;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -191,27 +170,17 @@ export function SectionFormDialog({
                 }
                 exams={selectableExams}
                 emptyLabel={
-                  availableExams.length === 0
-                    ? locale === "ar"
-                      ? "لا توجد امتحانات متاحة لهذه الدورة"
-                      : "No exams available for this course"
-                    : locale === "ar"
-                      ? "جميع امتحانات الدورة مستخدمة بالفعل"
-                      : "All course exams are already linked"
+                  locale === "ar"
+                    ? "لا توجد امتحانات متاحة لنفس المرحلة والمادة"
+                    : "No exams available for this stage and subject"
                 }
               />
 
               {availableExams.length === 0 ? (
                 <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                   {locale === "ar"
-                    ? "لا توجد امتحانات مخصصة لهذه الدورة حتى الآن. يمكنك إنشاء امتحان وربطه بهذه الدورة من قسم إدارة الامتحانات."
-                    : "No exams found for this course yet. You can create an exam linked to this course from the Exams section."}
-                </p>
-              ) : selectableExams.length === 0 && !newSecLinkedExamId ? (
-                <p className="text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border">
-                  {locale === "ar"
-                    ? "جميع الامتحانات المخصصة لهذه الدورة مستخدمة بالفعل في أقسام أو دروس أخرى (لا يمكن ربط نفس الامتحان بأكثر من قسم أو درس)."
-                    : "All exams assigned to this course are already linked to other sections or lessons (an exam can only be linked once)."}
+                    ? "لا توجد امتحانات مخصصة لهذه المرحلة الدراسية والمادة حتى الآن. يمكنك إنشاء امتحان من قسم إدارة الامتحانات."
+                    : "No exams found for this stage and subject yet. You can create an exam from the Exams section."}
                 </p>
               ) : null}
             </div>
