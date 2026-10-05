@@ -62,17 +62,13 @@ export function adaptBackendStudentToUI(student: BackendStudent, locale: string 
     gender: (student.gender as Gender) || "male",
     email: student.email || "",
     image: resolveImageUrl(student.avatar),
-    country: localizedCountryName || (locale === "ar" ? "مصر" : "Egypt"),
+    country: localizedCountryName,
     countryId: student.country_id ?? student.country?.id,
-    state: localizedGovernorateName || (locale === "ar" ? "القاهرة" : "Cairo"),
+    state: localizedGovernorateName,
     governorateId: student.governorate_id ?? student.governorate?.id,
     grade:
       localizedStageName ||
-      (student.educational_stage_id
-        ? `الصف ${student.educational_stage_id}`
-        : locale === "ar"
-          ? "الصف الأول الثانوي"
-          : "Grade 10"),
+      (student.educational_stage_id ? `الصف ${student.educational_stage_id}` : ""),
     educationalStageId: student.educational_stage_id ?? student.educational_stage?.id,
     registrationType: (student.registration_type as RegistrationType) || "center",
     coursesCount:
@@ -82,9 +78,10 @@ export function adaptBackendStudentToUI(student: BackendStudent, locale: string 
       0,
     enrolledCourseIds: student.enrolled_courses?.map((c) => String(c.id)) || [],
     balance: walletBalance,
-    averageRating: student.average_rating ?? undefined,
+    averageRating: typeof student.average_rating === "number" ? student.average_rating : undefined,
     gpa: student.gpa ?? undefined,
     status: (student.status as StudentStatus) || "active",
+    reportToken: student.report_token,
     createdAt: student.registered_at || student.created_at,
     updatedAt: student.updated_at,
   };

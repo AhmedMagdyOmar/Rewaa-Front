@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { MapPin, ShieldCheck, User } from "lucide-react";
+import { Eye, EyeOff, MapPin, ShieldCheck, User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import * as React from "react";
 
@@ -66,6 +66,15 @@ export function StudentForm({
 }: StudentFormProps) {
   const tForm = useTranslations("studentsPage.form");
 
+  const getDefaultCountryId = React.useCallback((countryList: LocationOption[]) => {
+    if (!countryList.length) return "";
+    const egyptMatch = countryList.find((c) => {
+      const lower = c.name.toLowerCase();
+      return lower.includes("egypt") || lower.includes("مصر");
+    });
+    return String(egyptMatch ? egyptMatch.id : countryList[0].id);
+  }, []);
+
   const [formData, setFormData] = React.useState<StudentFormData>(() => {
     // Initial country resolution
     let initialCountry = "";
@@ -77,7 +86,11 @@ export function StudentForm({
       );
       initialCountry = match ? String(match.id) : initialData.country;
     } else if (countries.length > 0) {
-      initialCountry = String(countries[0].id);
+      const egyptMatch = countries.find((c) => {
+        const lower = c.name.toLowerCase();
+        return lower.includes("egypt") || lower.includes("مصر");
+      });
+      initialCountry = String(egyptMatch ? egyptMatch.id : countries[0].id);
     }
 
     // Initial state resolution
@@ -107,7 +120,7 @@ export function StudentForm({
       state: initialState,
       grade: initialData?.educationalStageId
         ? String(initialData.educationalStageId)
-        : initialData?.grade || "grade3",
+        : initialData?.grade || "",
       registrationType: initialData?.registrationType || "center",
     };
   });
@@ -150,13 +163,25 @@ export function StudentForm({
         state: initialState,
         grade: initialData.educationalStageId
           ? String(initialData.educationalStageId)
-          : initialData.grade || "grade3",
+          : initialData.grade || "",
         registrationType: initialData.registrationType || "center",
       });
+    } else if (countries.length > 0) {
+      setFormData((prev) => {
+        if (!prev.country) {
+          return {
+            ...prev,
+            country: getDefaultCountryId(countries),
+          };
+        }
+        return prev;
+      });
     }
-  }, [initialData, countries, governorates]);
+  }, [initialData, countries, governorates, getDefaultCountryId]);
 
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [showPassword, setShowPassword] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const handleCountryChange = (newCountryId: string) => {
     setFormData((prev) => ({
@@ -368,27 +393,51 @@ export function StudentForm({
           {/* Password */}
           <div className="space-y-2">
             <Label htmlFor="password">{tForm("passwordLabel")}</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder={tForm("passwordPlaceholder")}
-              value={formData.password || ""}
-              onChange={(e) => handleChange("password", e.target.value)}
-              dir="ltr"
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder={tForm("passwordPlaceholder")}
+                value={formData.password || ""}
+                onChange={(e) => handleChange("password", e.target.value)}
+                dir="ltr"
+                className="pe-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-hidden transition-colors"
+                tabIndex={-1}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
           </div>
 
           {/* Confirm Password */}
           <div className="space-y-2">
             <Label htmlFor="confirmPassword">{tForm("confirmPasswordLabel")}</Label>
-            <Input
-              id="confirmPassword"
-              type="password"
-              placeholder={tForm("confirmPasswordPlaceholder")}
-              value={formData.confirmPassword || ""}
-              onChange={(e) => handleChange("confirmPassword", e.target.value)}
-              dir="ltr"
-            />
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder={tForm("confirmPasswordPlaceholder")}
+                value={formData.confirmPassword || ""}
+                onChange={(e) => handleChange("confirmPassword", e.target.value)}
+                dir="ltr"
+                className="pe-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-s-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer focus:outline-hidden transition-colors"
+                tabIndex={-1}
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+              </button>
+            </div>
           </div>
         </div>
       </FormSectionCard>

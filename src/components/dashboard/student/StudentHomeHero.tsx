@@ -33,7 +33,7 @@ export function StudentHomeHero({ studentName: initialStudentName }: StudentHome
     <section className="relative w-full overflow-hidden rounded-2xl bg-neutral-900 text-white min-h-80 sm:min-h-90 flex items-center shadow-lg">
       {/* Background Image */}
       <Image
-        src="/student-dashboard-home-hero.jpg"
+        src="/student-dashboard-home-hero.png"
         alt={t("bgAlt")}
         fill
         priority

@@ -1828,7 +1828,9 @@
         "score": "Score",
         "dateTaken": "Date Taken",
         "passed": "Passed",
-        "failed": "Failed"
+        "failed": "Failed",
+        "correctAnswers": "{count, plural, =0 {No correct answers} one {1 correct answer} other {{count} correct answers}}",
+        "wrongAnswers": "{count, plural, =0 {No wrong answers} one {1 wrong answer} other {{count} wrong answers}}"
       },
       "billingTab": {
         "empty": "No billing transactions recorded",
@@ -1909,7 +1911,8 @@
       "newBalance": "Projected New Balance",
       "confirm": "Confirm Transaction",
       "cancel": "Cancel",
-      "invalidAmount": "Please enter a valid amount greater than zero"
+      "invalidAmount": "Please enter a valid amount greater than zero",
+      "unchangedBalance": "The new balance is the same as the current balance"
     },
     "form": {
       "createTitle": "Add New Student",
@@ -3380,7 +3383,8 @@
     "verifyButton": "View Report",
     "verifying": "Verifying...",
     "invalidCode": "Invalid confirmation code. Please check the received link or code.",
-    "enterCodePrompt": "Please enter the confirmation code to continue",
+    "invalidToken": "The report link is invalid or expired. Please contact the administration to get a valid link.",
+    "accessDenied": "Sorry, you do not have permission to access this report.",
     "studentNotFound": "The requested student record was not found.",
     "backToHome": "Back to Home",
     "secureAccess": "Secure and encrypted access to student report",

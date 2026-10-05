@@ -18,6 +18,7 @@ import {
   UserCheck,
   Users,
   Wallet,
+  XCircle,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
@@ -188,6 +189,9 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
           progressPercentage: ec.progress?.percentage ?? 0,
           completedLessons: ec.progress?.completed_lessons ?? 0,
           totalLessons: ec.progress?.total_lessons ?? 0,
+          examsPerformed: ec.exams_performed ?? 0,
+          correctAnswersCount: ec.correct_answers_count ?? 0,
+          incorrectAnswersCount: ec.incorrect_answers_count ?? 0,
         }))
       : [];
 
@@ -259,16 +263,41 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
   const handleTransactionSubmit = ({
     type,
     amount,
+    activeBalance,
     notes,
   }: {
     type: TransactionType;
     amount: number;
+    activeBalance: number;
     notes?: string;
   }) => {
     if (!student) return;
-    const direction = type === "withdraw" ? "debit" : "credit";
+
+    let direction: "credit" | "debit" = "credit";
+    let transactionAmount = amount;
     const reason = type === "deposit" ? "admin_top_up" : "adjustment";
     const fundingSource = type === "deposit" ? "cash" : undefined;
+
+    if (type === "withdraw") {
+      direction = "debit";
+      transactionAmount = amount;
+    } else if (type === "adjustment") {
+      const diff = amount - activeBalance;
+      if (diff === 0) {
+        toast.info(
+          locale === "ar"
+            ? "الرصيد الجديد هو نفس الرصيد الحالي"
+            : "The new balance is the same as the current balance",
+        );
+        return;
+      }
+      direction = diff > 0 ? "credit" : "debit";
+      transactionAmount = Math.abs(diff);
+    } else {
+      direction = "credit";
+      transactionAmount = amount;
+    }
+
     const idempotencyKey =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
@@ -282,7 +311,7 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
         studentId: student.id,
         data: {
           direction,
-          amount,
+          amount: Number(transactionAmount.toFixed(2)),
           reason,
           funding_source: fundingSource,
           notes,
@@ -623,10 +652,10 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
             </DashboardCard>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {enrolledCoursesList.map((course, idx) => {
+              {enrolledCoursesList.map((course) => {
                 const progressPct = course.progressPercentage ?? 0;
-                const courseExamsCount = 4 - idx;
-                const courseCorrectAnswers = 35 - idx * 5;
+                const courseExamsCount = course.examsPerformed ?? 0;
+                const courseCorrectAnswers = course.correctAnswersCount ?? 0;
 
                 return (
                   <DashboardCard
@@ -747,6 +776,25 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                       </div>
                       <Progress value={score} className="h-1.5" />
                     </div>
+
+                    {/* Question Performance Answers Count */}
+                    {(typeof exam.correctAnswersCount === "number" ||
+                      typeof exam.incorrectAnswersCount === "number") && (
+                      <div className="pt-2.5 border-t border-border/60 flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5 font-semibold text-emerald-600">
+                          <CheckCircle2 className="size-3.5" />
+                          {tDetails("examsTab.correctAnswers", {
+                            count: exam.correctAnswersCount ?? 0,
+                          })}
+                        </span>
+                        <span className="flex items-center gap-1.5 font-semibold text-rose-600">
+                          <XCircle className="size-3.5" />
+                          {tDetails("examsTab.wrongAnswers", {
+                            count: exam.incorrectAnswersCount ?? 0,
+                          })}
+                        </span>
+                      </div>
+                    )}
                   </DashboardCard>
                 );
               })}

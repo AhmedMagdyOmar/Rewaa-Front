@@ -33,7 +33,12 @@ interface BalanceTransactionDialogProps {
   currentBalance: number;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (data: { type: TransactionType; amount: number; notes?: string }) => void;
+  onConfirm: (data: {
+    type: TransactionType;
+    amount: number;
+    activeBalance: number;
+    notes?: string;
+  }) => void;
 }
 
 export function BalanceTransactionDialog({
@@ -84,9 +89,15 @@ export function BalanceTransactionDialog({
       return;
     }
 
+    if (transactionType === "adjustment" && amountNumber === activeBalance) {
+      setErrorMsg(tModal("unchangedBalance"));
+      return;
+    }
+
     onConfirm({
       type: transactionType,
       amount: amountNumber,
+      activeBalance,
       notes: notes.trim() || undefined,
     });
 
@@ -210,7 +221,7 @@ export function BalanceTransactionDialog({
             <div className="flex justify-between text-muted-foreground">
               <span>{tModal("previousBalance")}</span>
               <span className=" font-medium text-foreground" dir="ltr">
-                {currentBalance} {tDetails("currency")}
+                {activeBalance} {tDetails("currency")}
               </span>
             </div>
 

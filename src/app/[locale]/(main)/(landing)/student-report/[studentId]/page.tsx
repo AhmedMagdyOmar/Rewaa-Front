@@ -22,6 +22,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       index: false,
       follow: false,
     },
+    referrer: "no-referrer",
   };
 }
 

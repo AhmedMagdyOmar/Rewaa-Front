@@ -93,6 +93,21 @@ const styles = StyleSheet.create({
   },
   studentName: { fontSize: 16, fontWeight: 700, color: "#ffffff" },
   studentMeta: { fontSize: 9, color: "#ffffff", marginTop: 2 },
+  phoneContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+    marginTop: 4,
+  },
+  studentPhone: {
+    fontSize: 9,
+    fontWeight: 500,
+    color: "#ffffff",
+    marginLeft: 4,
+  },
 
   // Section Titles
   sectionTitle: { fontSize: 12, fontWeight: 700, color: "#0f172a", marginBottom: 2 },
@@ -209,6 +224,17 @@ export function StudentReportPDF({ student, courses, exams, locale, strings }: P
           <Text style={styles.studentMeta}>
             {strings.grade} • {strings.currentYear}
           </Text>
+          {student.phoneNumber && (
+            <View style={styles.phoneContainer}>
+              <Svg viewBox="0 0 48 48" width={9} height={9}>
+                <Path
+                  d="M23.993 0C10.762 0 0 10.765 0 24c0 5.248 1.693 10.116 4.57 14.067L1.58 46.984l9.225-2.948C14.599 46.547 19.126 48 24.007 48 37.238 48 48 37.234 48 24 48 10.766 37.238 0 24.007 0h-.014zM17.293 12.19c-.465-1.114-.818-1.156-1.523-1.185-.24-.014-.508-.028-.804-.028-.917 0-1.876.268-2.455.86-.705.72-2.454 2.399-2.454 5.842 0 3.443 2.51 6.773 2.85 7.239.352.465 4.894 7.633 11.946 10.554 5.515 2.286 7.152 2.074 8.407 1.806 1.834-.395 4.133-1.75 4.711-3.386.579-1.637.579-3.034.41-3.33-.17-.296-.635-.465-1.34-.818-.705-.353-4.133-2.046-4.782-2.272-.635-.24-1.241-.155-1.72.522-.677.946-1.34 1.906-1.876 2.484-.424.452-1.115.508-1.693.268-.776-.324-2.948-1.087-5.628-3.471-2.074-1.848-3.484-4.148-3.893-4.839-.41-.705-.043-1.115.28-1.496.353-.437.692-.748 1.045-1.157.353-.409.55-.621.776-1.101.24-.465.07-.945-.1-1.298-.17-.353-1.58-3.796-2.158-5.192z"
+                  fill="#ffffff"
+                />
+              </Svg>
+              <Text style={styles.studentPhone}>{student.phoneNumber}</Text>
+            </View>
+          )}
           <Text style={{ fontSize: 8, color: "#e2e8f0", marginTop: 4 }}>{strings.generatedAt}</Text>
         </View>
 

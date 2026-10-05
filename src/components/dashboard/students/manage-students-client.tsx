@@ -284,13 +284,13 @@ export function ManageStudentsClient() {
         case "grade-asc":
           return (a.grade || "").localeCompare(b.grade || "", locale);
         case "rating-high": {
-          const ratingA = a.averageRating ?? (a.gpa ? parseFloat(a.gpa) : 3.85);
-          const ratingB = b.averageRating ?? (b.gpa ? parseFloat(b.gpa) : 3.85);
+          const ratingA = a.averageRating ?? (a.gpa ? parseFloat(a.gpa) : 0);
+          const ratingB = b.averageRating ?? (b.gpa ? parseFloat(b.gpa) : 0);
           return ratingB - ratingA;
         }
         case "rating-low": {
-          const ratingA = a.averageRating ?? (a.gpa ? parseFloat(a.gpa) : 3.85);
-          const ratingB = b.averageRating ?? (b.gpa ? parseFloat(b.gpa) : 3.85);
+          const ratingA = a.averageRating ?? (a.gpa ? parseFloat(a.gpa) : 0);
+          const ratingB = b.averageRating ?? (b.gpa ? parseFloat(b.gpa) : 0);
           return ratingA - ratingB;
         }
         case "registration-type":
@@ -363,16 +363,41 @@ export function ManageStudentsClient() {
   const handleBalanceSubmit = ({
     type,
     amount,
+    activeBalance,
     notes,
   }: {
     type: TransactionType;
     amount: number;
+    activeBalance: number;
     notes?: string;
   }) => {
     if (!balanceStudent) return;
-    const direction = type === "withdraw" ? "debit" : "credit";
+
+    let direction: "credit" | "debit" = "credit";
+    let transactionAmount = amount;
     const reason = type === "deposit" ? "admin_top_up" : "adjustment";
     const fundingSource = type === "deposit" ? "cash" : undefined;
+
+    if (type === "withdraw") {
+      direction = "debit";
+      transactionAmount = amount;
+    } else if (type === "adjustment") {
+      const diff = amount - activeBalance;
+      if (diff === 0) {
+        toast.info(
+          locale === "ar"
+            ? "الرصيد الجديد هو نفس الرصيد الحالي"
+            : "The new balance is the same as the current balance",
+        );
+        return;
+      }
+      direction = diff > 0 ? "credit" : "debit";
+      transactionAmount = Math.abs(diff);
+    } else {
+      direction = "credit";
+      transactionAmount = amount;
+    }
+
     const idempotencyKey =
       typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
         ? crypto.randomUUID()
@@ -386,7 +411,7 @@ export function ManageStudentsClient() {
         studentId: balanceStudent.id,
         data: {
           direction,
-          amount,
+          amount: Number(transactionAmount.toFixed(2)),
           reason,
           funding_source: fundingSource,
           notes,
@@ -775,7 +800,11 @@ export function ManageStudentsClient() {
                       {/* Average CGPA / GPA Column */}
                       <td className="px-4 py-3.5 text-center">
                         <span className="text-xs font-semibold text-foreground">
-                          {student.gpa || `${(student.averageRating ?? 3.85).toFixed(2)} / 4.0`}
+                          {student.gpa
+                            ? student.gpa
+                            : typeof student.averageRating === "number"
+                              ? `${student.averageRating.toFixed(2)} / 4.0`
+                              : "-"}
                         </span>
                       </td>
 

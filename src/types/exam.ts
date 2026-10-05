@@ -101,6 +101,8 @@ export interface Exam {
   successRate: number; // 0–100
   score?: number; // student-specific attempt score percentage (0-100)
   isPassed?: boolean;
+  correctAnswersCount?: number;
+  incorrectAnswersCount?: number;
   timesUsed: number;
 
   // ── Dates ─────────────────────────────────────────────────────────────────

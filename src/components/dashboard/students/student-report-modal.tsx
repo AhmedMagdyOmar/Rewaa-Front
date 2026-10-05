@@ -142,10 +142,14 @@ export function StudentReportModal({
 
       const targetPhone = student.parentPhoneNumber || student.phoneNumber;
 
-      // Determine base URL for report link with verification code
+      // Report link is secured by an unguessable token; never fall back to a guessable URL
       const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const code = student.password || student.id.replace(/\D/g, "") || "123456";
-      const reportUrl = `${origin}/${locale}/student-report/${student.id}?code=${code}`;
+      const token = student.reportToken;
+      if (!token) {
+        console.error("Missing report token; cannot share student report.");
+        return;
+      }
+      const reportUrl = `${origin}/${locale}/student-report/${student.id}?token=${encodeURIComponent(token)}`;
 
       const message =
         locale === "ar"

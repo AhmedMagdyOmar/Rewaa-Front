@@ -553,6 +553,8 @@ export function adaptBackendExamAttemptToExam(
     successRate: score,
     score,
     isPassed: attempt.is_passed ?? score >= passingPercentage,
+    correctAnswersCount: attempt.result_summary?.correct_answers_count,
+    incorrectAnswersCount: attempt.result_summary?.incorrect_answers_count,
     timesUsed: attempt.attempt_number || 1,
     createdAt:
       attempt.submitted_at || attempt.started_at || attempt.created_at || new Date().toISOString(),

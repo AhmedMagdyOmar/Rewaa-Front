@@ -43,6 +43,7 @@ export interface Student {
   correctQuestions?: number;
   wrongQuestions?: number;
   status?: StudentStatus;
+  reportToken?: string;
   createdAt?: string;
   updatedAt?: string;
 }

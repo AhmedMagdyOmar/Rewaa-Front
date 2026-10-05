@@ -18,6 +18,7 @@ import { LogoIcon } from "@/components/landing/layout/logo";
 import { StudentReportPDF } from "@/components/pdf/StudentReportPDF";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 import { Progress } from "@/components/ui/progress";
 import {
   Table,
@@ -179,6 +180,20 @@ export function StudentReportView({
             <span>•</span>
             <span>{tReport("currentYear", { year: currentYear })}</span>
           </p>
+
+          {/* Student Phone Number with WhatsApp */}
+          {student.phoneNumber && (
+            <div className="flex items-center justify-center pt-0.5">
+              <PhoneLink
+                phone={student.phoneNumber}
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 hover:bg-white/25 text-white hover:text-white hover:no-underline text-xs font-medium transition-colors backdrop-blur-xs shadow-xs"
+                title={locale === "ar" ? "هاتف الطالب (واتساب)" : "Student Phone (WhatsApp)"}
+              >
+                <WhatsAppIcon className="size-3.5 fill-white text-white shrink-0" />
+                <span dir="ltr">{student.phoneNumber}</span>
+              </PhoneLink>
+            </div>
+          )}
 
           {/* Horizontal Separator */}
           <hr className="border-white/20 my-3" />

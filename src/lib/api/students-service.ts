@@ -3,6 +3,8 @@ import type {
   AdjustWalletData,
   BackendStudent,
   BackendStudentOptions,
+  BackendStudentReport,
+  BackendStudentReportResponse,
   BackendWalletTransaction,
   StudentFilterParams,
   StudentsListResponse,
@@ -108,6 +110,22 @@ export const studentsService = {
       return res.student;
     }
     return res as BackendStudent;
+  },
+
+  async getPublicStudentReport(
+    id: number | string,
+    params: { token: string },
+  ): Promise<BackendStudentReport> {
+    const res = await api<BackendStudentReportResponse | BackendStudentReport>({
+      url: `/api/website/students/${encodeURIComponent(String(id))}/report`,
+      method: "GET",
+      params,
+    });
+
+    if ("report" in res) {
+      return res.report;
+    }
+    return res;
   },
 
   async createStudent(data: StoreStudentData): Promise<BackendStudent> {

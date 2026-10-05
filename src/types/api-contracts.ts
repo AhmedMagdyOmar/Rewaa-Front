@@ -918,10 +918,26 @@ export interface BackendStudent {
       total_lessons: number;
       percentage: number;
     };
+    exams_performed?: number;
+    correct_answers_count?: number;
+    incorrect_answers_count?: number;
   }>;
+  report_token?: string;
   registered_at?: string;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface BackendStudentReport extends BackendStudent {
+  student_code?: string;
+  correct_questions?: number;
+  wrong_questions?: number;
+  exams_performed?: number;
+  exam_attempts?: BackendExamAttempt[];
+}
+
+export interface BackendStudentReportResponse {
+  report: BackendStudentReport;
 }
 
 export interface StudentFilterParams {
