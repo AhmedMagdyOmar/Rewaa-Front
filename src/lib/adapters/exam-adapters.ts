@@ -202,13 +202,20 @@ export function mapBackendExamToFrontend(be: BackendExam, locale: string = "ar")
   const teacherName = be.instructor?.full_name || "";
 
   const category = mapBackendCategoryToFrontend(be.classification);
-  const examType: ExamType = be.is_standalone ? "independent" : "course-dependent";
-  const venue: ExamVenue =
-    be.delivery_mode === "in_person"
-      ? "onsite"
-      : be.delivery_mode === "hybrid"
-        ? "hybrid"
-        : "online";
+  const isBankExam = be.scope === "bank" || (!be.course_id && !be.lesson_id && !be.is_standalone);
+  const examType: ExamType = isBankExam
+    ? "bank"
+    : be.is_standalone || be.scope === "general"
+      ? "independent"
+      : "course-dependent";
+  const venue: ExamVenue | undefined =
+    be.is_standalone || be.scope === "general"
+      ? be.delivery_mode === "in_person"
+        ? "onsite"
+        : be.delivery_mode === "hybrid"
+          ? "hybrid"
+          : "online"
+      : undefined;
 
   let examSections: ExamSection[] = [];
   if (Array.isArray(be.sections)) {

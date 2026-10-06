@@ -374,7 +374,33 @@ export function ManageExamsClient() {
 
                       {/* ── Type & Venue ──────────────────────────────────── */}
                       <td className="px-4 py-3 min-w-44">
-                        {exam.is_standalone ? (
+                        {exam.course ? (
+                          <div className="flex flex-col gap-1">
+                            <Link
+                              href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
+                              className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
+                              {exam.course.title[locale] || exam.course.title.ar}
+                            </Link>
+                          </div>
+                        ) : exam.lesson ? (
+                          <div className="flex flex-row gap-1 items-center">
+                            <span className="text-xs font-medium text-primary">
+                              {t("table.lessonLinked")}:
+                            </span>
+                            <span className="text-xs text-muted-foreground line-clamp-1">
+                              {exam.lesson.title[locale] || exam.lesson.title.ar}
+                            </span>
+                          </div>
+                        ) : exam.scope === "bank" ||
+                          (!exam.is_standalone && !exam.course_id && !exam.lesson_id) ? (
+                          <div className="flex flex-row gap-1 items-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                              {t("table.examBank")}
+                            </span>
+                          </div>
+                        ) : exam.is_standalone && exam.scope === "general" && exam.delivery_mode ? (
                           <div className="flex flex-row gap-1 items-center">
                             <VenueIcon venue={exam.delivery_mode} />
                             <span className="text-xs font-medium text-primary-dark/80">
@@ -387,16 +413,10 @@ export function ManageExamsClient() {
                             )}
                           </div>
                         ) : (
-                          <div className="flex flex-col gap-1">
-                            {exam.course ? (
-                              <Link
-                                href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
-                                className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
-                              >
-                                <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
-                                {exam.course.title[locale] || exam.course.title.ar}
-                              </Link>
-                            ) : null}
+                          <div className="flex flex-row gap-1 items-center">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
+                              {t("table.examBank")}
+                            </span>
                           </div>
                         )}
                       </td>

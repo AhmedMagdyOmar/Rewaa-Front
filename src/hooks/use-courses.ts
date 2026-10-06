@@ -63,6 +63,7 @@ export function useCreateCourse() {
     mutationFn: (data: StoreCourseData | FormData) => coursesService.createCourse(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.courses.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }
@@ -81,6 +82,7 @@ export function useUpdateCourse() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.provider.courses.detail(variables.id),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }
@@ -95,6 +97,7 @@ export function useDeleteCourse() {
     mutationFn: (id: number | string) => coursesService.deleteCourse(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.courses.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }
@@ -162,6 +165,7 @@ export function useCreateCourseSection() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.provider.courses.detail(variables.courseId),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }
@@ -189,6 +193,7 @@ export function useUpdateCourseSection() {
       queryClient.invalidateQueries({
         queryKey: [...queryKeys.provider.courses.detail(variables.courseId), "content"],
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }
@@ -217,6 +222,7 @@ export function useDeleteCourseSection() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.provider.courses.detail(variables.courseId),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }

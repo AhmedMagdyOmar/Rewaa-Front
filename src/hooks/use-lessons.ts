@@ -52,6 +52,7 @@ export function useCreateLesson() {
     onSuccess: (lesson) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
       queryClient.invalidateQueries({ queryKey: ["provider", "lessons"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
       if (lesson.course_id) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.provider.courses.sections(lesson.course_id),
@@ -78,6 +79,7 @@ export function useUpdateLesson() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.provider.lessons.detail(variables.id),
       });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
       if (lesson.course_id) {
         queryClient.invalidateQueries({
           queryKey: queryKeys.provider.courses.sections(lesson.course_id),
@@ -101,6 +103,7 @@ export function useDeleteLesson() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
       queryClient.invalidateQueries({ queryKey: queryKeys.provider.courses.all() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
     },
   });
 }

@@ -64,7 +64,7 @@ export type ExamCategory =
   | "placement"
   | string;
 
-export type ExamType = "independent" | "course-dependent";
+export type ExamType = "independent" | "course-dependent" | "bank";
 export type ExamVenue = CourseVenue;
 
 export interface Exam {

@@ -58,9 +58,13 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   // Classification & Venue / Publish Status
   const [isIndependent, setIsIndependent] = useState<boolean>(true);
   const [venue, setVenue] = useState<ExamVenue>("online");
+  const [attachmentType, setAttachmentType] = useState<"bank" | "course" | "standalone_lesson">(
+    "bank",
+  );
   const [courseId, setCourseId] = useState<string>("");
   const [courseSectionId, setCourseSectionId] = useState<string>("");
   const [lessonId, setLessonId] = useState<string>("");
+  const [standaloneLessonId, setStandaloneLessonId] = useState<string>("");
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const [performedCount, setPerformedCount] = useState<number>(0);
   const [examPublishStatus, setExamPublishStatus] = useState<"draft" | "published" | "scheduled">(
@@ -87,6 +91,7 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setCourseId("");
       setCourseSectionId("");
       setLessonId("");
+      setStandaloneLessonId("");
     }
   };
 
@@ -134,12 +139,30 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setRandomizeQuestionsOrder(initialBackendExam.shuffle_questions ?? true);
       setRandomizeMCQChoices(initialBackendExam.shuffle_answer_options ?? false);
 
-      setIsIndependent(Boolean(initialBackendExam.is_standalone));
-      setCourseId(initialBackendExam.course_id ? String(initialBackendExam.course_id) : "");
-      setCourseSectionId(
-        initialBackendExam.course_section_id ? String(initialBackendExam.course_section_id) : "",
-      );
-      setLessonId(initialBackendExam.lesson_id ? String(initialBackendExam.lesson_id) : "");
+      const isStand =
+        initialBackendExam.scope === "general" && Boolean(initialBackendExam.is_standalone);
+      setIsIndependent(isStand);
+      if (initialBackendExam.course_id) {
+        setAttachmentType("course");
+        setCourseId(String(initialBackendExam.course_id));
+        setCourseSectionId(
+          initialBackendExam.course_section_id ? String(initialBackendExam.course_section_id) : "",
+        );
+        setLessonId(initialBackendExam.lesson_id ? String(initialBackendExam.lesson_id) : "");
+        setStandaloneLessonId("");
+      } else if (initialBackendExam.lesson_id) {
+        setAttachmentType("standalone_lesson");
+        setStandaloneLessonId(String(initialBackendExam.lesson_id));
+        setCourseId("");
+        setCourseSectionId("");
+        setLessonId("");
+      } else {
+        setAttachmentType("bank");
+        setCourseId("");
+        setCourseSectionId("");
+        setLessonId("");
+        setStandaloneLessonId("");
+      }
 
       if (initialBackendExam.delivery_mode) {
         setVenue(
@@ -239,6 +262,16 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     }));
   }, [courseSectionId, mappedSections, locale]);
 
+  const mappedStandaloneLessons = useMemo(() => {
+    return (optionsData?.standalone_lessons || []).map((l) => ({
+      id: String(l.id),
+      title: locale === "ar" ? l.title?.ar || l.title?.en || "" : l.title?.en || l.title?.ar || "",
+      educational_stage_id: l.educational_stage_id,
+      subject_id: l.subject_id,
+      instructor_id: l.instructor_id,
+    }));
+  }, [optionsData?.standalone_lessons, locale]);
+
   // Exam categories from backend options
   const examCategoryOptions = useMemo(() => {
     if (optionsData?.classifications) {
@@ -283,6 +316,33 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
     const instId = requiresInstructor ? Number(teacherName) || undefined : undefined;
 
+    let payloadCourseId: number | null = null;
+    let payloadCourseSectionId: number | null = null;
+    let payloadLessonId: number | null = null;
+    let payloadScope: "general" | "bank" | "course" | "section" | "lesson" = "general";
+
+    if (isIndependent) {
+      payloadScope = "general";
+    } else {
+      if (attachmentType === "course") {
+        payloadCourseId = Number(courseId) || null;
+        payloadCourseSectionId = Number(courseSectionId) || null;
+        payloadLessonId = Number(lessonId) || null;
+        payloadScope = payloadLessonId ? "lesson" : payloadCourseSectionId ? "section" : "course";
+      } else if (attachmentType === "standalone_lesson") {
+        payloadCourseId = null;
+        payloadCourseSectionId = null;
+        payloadLessonId = Number(standaloneLessonId) || null;
+        payloadScope = "lesson";
+      } else {
+        // "bank"
+        payloadCourseId = null;
+        payloadCourseSectionId = null;
+        payloadLessonId = null;
+        payloadScope = "bank";
+      }
+    }
+
     return {
       title: { ar: title.trim(), en: title.trim() },
       description: description.trim()
@@ -291,9 +351,10 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       educational_stage_id: Number(grade) || 1,
       subject_id: Number(subject) || 1,
       ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
-      course_id: isIndependent ? null : Number(courseId) || null,
-      course_section_id: isIndependent ? null : Number(courseSectionId) || null,
-      lesson_id: isIndependent ? null : Number(lessonId) || null,
+      course_id: payloadCourseId,
+      course_section_id: payloadCourseSectionId,
+      lesson_id: payloadLessonId,
+      scope: payloadScope,
       classification: category,
       duration_minutes: Number(durationMinutes) || 30,
       passing_percentage: Number(passingPercentage) || 60,
@@ -437,6 +498,8 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setIsIndependent,
     venue,
     setVenue,
+    attachmentType,
+    setAttachmentType,
     courseId,
     setCourseId,
     handleCourseChange,
@@ -445,6 +508,8 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     handleCourseSectionChange,
     lessonId,
     setLessonId,
+    standaloneLessonId,
+    setStandaloneLessonId,
     coursesCount,
     performedCount,
     examPublishStatus,
@@ -457,6 +522,7 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     mappedCourses,
     mappedSections,
     mappedLessons,
+    mappedStandaloneLessons,
     isLoadingOptions,
     optionsData,
     examCategoryOptions,

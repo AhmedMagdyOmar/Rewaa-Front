@@ -291,41 +291,86 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
             </div>
           ) : (
             <div className="space-y-4 pt-2 border-t border-border/50 animate-in fade-in duration-300">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <CourseSelect
-                  value={form.courseId}
-                  onValueChange={form.handleCourseChange}
-                  courses={form.mappedCourses}
-                  disabled={form.isLoadingOptions}
-                  label={tForm("fields.linkedCourse")}
-                  placeholder={tForm("fields.selectCourse")}
-                  required
-                />
+              {/* Attachment Mode Selection */}
+              <FormRadioGroup
+                name="exam-attachment-type"
+                title={tForm("fields.attachmentType")}
+                value={form.attachmentType}
+                onValueChange={(val) =>
+                  form.setAttachmentType(val as "bank" | "course" | "standalone_lesson")
+                }
+                gridClassName="sm:grid-cols-3"
+                options={[
+                  {
+                    id: "bank",
+                    label: tForm("fields.examBank"),
+                    desc: tForm("fields.examBankDesc"),
+                  },
+                  {
+                    id: "course",
+                    label: tForm("fields.courseAttachment"),
+                    desc: tForm("fields.courseAttachmentDesc"),
+                  },
+                  {
+                    id: "standalone_lesson",
+                    label: tForm("fields.standaloneLessonAttachment"),
+                    desc: tForm("fields.standaloneLessonAttachmentDesc"),
+                  },
+                ]}
+              />
 
-                <SectionSelect
-                  value={form.courseSectionId}
-                  onValueChange={form.handleCourseSectionChange}
-                  sections={form.mappedSections}
-                  disabled={!form.courseId || form.isLoadingOptions}
-                  label={tForm("fields.linkedSection")}
-                  placeholder={
-                    !form.courseId ? tForm("fields.selectCourse") : tForm("fields.selectSection")
-                  }
-                />
+              {form.attachmentType === "course" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 animate-in fade-in duration-200">
+                  <CourseSelect
+                    value={form.courseId}
+                    onValueChange={form.handleCourseChange}
+                    courses={form.mappedCourses}
+                    disabled={form.isLoadingOptions}
+                    label={tForm("fields.linkedCourse")}
+                    placeholder={tForm("fields.selectCourse")}
+                    required
+                  />
 
-                <LessonSelect
-                  value={form.lessonId}
-                  onValueChange={form.setLessonId}
-                  lessons={form.mappedLessons}
-                  disabled={!form.courseSectionId || form.isLoadingOptions}
-                  label={tForm("fields.linkedLesson")}
-                  placeholder={
-                    !form.courseSectionId
-                      ? tForm("fields.selectSection")
-                      : tForm("fields.selectLesson")
-                  }
-                />
-              </div>
+                  <SectionSelect
+                    value={form.courseSectionId}
+                    onValueChange={form.handleCourseSectionChange}
+                    sections={form.mappedSections}
+                    disabled={!form.courseId || form.isLoadingOptions}
+                    label={tForm("fields.linkedSection")}
+                    placeholder={
+                      !form.courseId ? tForm("fields.selectCourse") : tForm("fields.selectSection")
+                    }
+                  />
+
+                  <LessonSelect
+                    value={form.lessonId}
+                    onValueChange={form.setLessonId}
+                    lessons={form.mappedLessons}
+                    disabled={!form.courseSectionId || form.isLoadingOptions}
+                    label={tForm("fields.linkedLesson")}
+                    placeholder={
+                      !form.courseSectionId
+                        ? tForm("fields.selectSection")
+                        : tForm("fields.selectLesson")
+                    }
+                  />
+                </div>
+              )}
+
+              {form.attachmentType === "standalone_lesson" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 animate-in fade-in duration-200">
+                  <LessonSelect
+                    id="standalone-lesson-select"
+                    value={form.standaloneLessonId}
+                    onValueChange={form.setStandaloneLessonId}
+                    lessons={form.mappedStandaloneLessons}
+                    disabled={form.isLoadingOptions}
+                    label={tForm("fields.linkedStandaloneLesson")}
+                    placeholder={tForm("fields.selectStandaloneLesson")}
+                    required
+                  />
+                </div>
+              )}
             </div>
           )}
         </FormToggleSetting>

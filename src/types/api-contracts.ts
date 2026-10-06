@@ -526,6 +526,8 @@ export interface BackendExam {
   lesson_id?: number | null;
   lesson?: { id: number; title: Record<string, string> } | null;
   is_standalone: boolean;
+  scope?: string;
+  scope_label?: string;
   classification: ExamClassification | string;
   classification_label: string;
   duration_minutes: number;
@@ -614,6 +616,14 @@ export interface BackendExamOptions {
         exam_id?: number | null;
       }>;
     }>;
+  }>;
+  standalone_lessons?: Array<{
+    id: number;
+    title: Record<string, string>;
+    educational_stage_id: number;
+    subject_id: number;
+    instructor_id: number;
+    exam_id?: number | null;
   }>;
 }
 
