@@ -13,7 +13,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
-import { FormRadioGroup } from "@/components/ui/form-radio-group";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
@@ -28,25 +27,16 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProviderLessonOptions, useProviderLessons } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
-import {
-  CourseSection,
-  CourseVenue,
-  Lesson,
-  LessonAttachment,
-  LessonPublishStatus,
-  LessonType,
-} from "@/types/course";
+import { CourseSection, CourseVenue, Lesson, LessonAttachment, LessonType } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
   AlertCircle,
   BookOpen,
-  Calendar,
   FileCheck,
   FileQuestion,
   FileText,
   ImageIcon,
   Plus,
-  Radio,
   Sparkles,
   Trash2,
   Upload,
@@ -120,11 +110,6 @@ export function LessonDialog({
   const [isLinkedToExam, setIsLinkedToExam] = useState(false);
   const [linkedExamId, setLinkedExamId] = useState("");
   const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
-
-  // Publish Status State
-  const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
-  const [scheduledPublishDate, setScheduledPublishDate] = useState("");
-  const [scheduleDateError, setScheduleDateError] = useState<string | null>(null);
 
   // Bank Form State
   const [bankSectionId, setBankSectionId] = useState("");
@@ -211,7 +196,6 @@ export function LessonDialog({
           lectureVideoLink: b.video_url || undefined,
           lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
           venue: (b.delivery_mode as CourseVenue) || "hybrid",
-          publishStatus: (b.status as LessonPublishStatus) || "published",
           hasPdfAttachments: Boolean(b.has_pdf_attachments),
           pdfFiles: (b.pdf_attachments || []).map((p) => ({
             id: String(p.id),
@@ -232,7 +216,6 @@ export function LessonDialog({
           linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
           linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
           isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
-          scheduledPublishDate: b.scheduled_publish_at || undefined,
         })),
       );
     }
@@ -311,10 +294,6 @@ export function LessonDialog({
         setIsLinkedToExam(Boolean(initialLesson.isLinkedToExam));
         setLinkedExamId(initialLesson.linkedExamId || "");
         setIsRequiredPassExam(Boolean(initialLesson.isRequiredPassExam));
-
-        setPublishStatus(initialLesson.publishStatus || "published");
-        setScheduledPublishDate(initialLesson.scheduledPublishDate || "");
-        setScheduleDateError(null);
         setVideoLinkError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
@@ -337,9 +316,6 @@ export function LessonDialog({
         setIsLinkedToExam(false);
         setLinkedExamId("");
         setIsRequiredPassExam(false);
-        setPublishStatus("published");
-        setScheduledPublishDate("");
-        setScheduleDateError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
         setBankSectionId(initialSectionId || sections[0]?.id || "");
@@ -416,7 +392,6 @@ export function LessonDialog({
             original_lesson_id: !Number.isNaN(Number(found.id)) ? Number(found.id) : undefined,
             lessonCategory: "course-dependent",
             venue: parentCourseContext.venue || found.venue || "all",
-            publishStatus: found.publishStatus || "published",
           } as Lesson;
         })
         .filter(Boolean) as Lesson[];
@@ -448,23 +423,6 @@ export function LessonDialog({
       return;
     }
 
-    setScheduleDateError(null);
-
-    // Validation: If lesson is scheduled, validate against Section schedule periods
-    if (publishStatus === "scheduled") {
-      const targetSec = sections.find((s) => s.id === targetSectionId);
-      if (targetSec && targetSec.status === "scheduled") {
-        if (targetSec.scheduledPublishDate && scheduledPublishDate) {
-          if (scheduledPublishDate < targetSec.scheduledPublishDate) {
-            setScheduleDateError(
-              t("lessonDateAfterSectionScheduleError", { date: targetSec.scheduledPublishDate }),
-            );
-            return;
-          }
-        }
-      }
-    }
-
     const selectedExamObj = availableExams.find((e) => e.id === linkedExamId);
     const updatedLesson: Lesson = {
       id: initialLesson?.id || `les-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -493,11 +451,9 @@ export function LessonDialog({
       linkedExamTitle: isLinkedToExam && selectedExamObj ? selectedExamObj.title : undefined,
       isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
 
-      // Organization & publish status
+      // Organization
       venue: parentCourseContext.venue || initialLesson?.venue || "all",
       lessonCategory: "course-dependent",
-      publishStatus: publishStatus,
-      scheduledPublishDate: publishStatus === "scheduled" ? scheduledPublishDate : undefined,
     };
 
     onSave(targetSectionId, updatedLesson);
@@ -1014,90 +970,6 @@ export function LessonDialog({
                     </div>
                   )}
                 </FormToggleSetting>
-              </div>
-
-              {/* GROUP 6: PUBLISH STATUS */}
-              <div className="space-y-4 p-4 rounded-xl border bg-muted/20">
-                <FormRadioGroup
-                  name="dialog-lesson-publish-status"
-                  title={t("publishStatus")}
-                  icon={Radio}
-                  value={publishStatus}
-                  onValueChange={(val) => setPublishStatus(val as LessonPublishStatus)}
-                  gridClassName="sm:grid-cols-3"
-                  options={[
-                    {
-                      id: "published",
-                      label: t("statusOptions.published"),
-                      desc: t("statusOptions.publishedDesc"),
-                    },
-                    {
-                      id: "draft",
-                      label: t("statusOptions.draft"),
-                      desc: t("statusOptions.draftDesc"),
-                    },
-                    {
-                      id: "scheduled",
-                      label: t("statusOptions.scheduled"),
-                      desc: t("statusOptions.scheduledDesc"),
-                    },
-                  ]}
-                />
-
-                {publishStatus === "scheduled" &&
-                  (() => {
-                    // Helper to convert date strings (e.g. "YYYY-MM-DD" or "YYYY-MM-DDTHH:mm") to valid datetime-local format
-                    const toDateTimeLocal = (dateStr?: string, isEnd = false) => {
-                      if (!dateStr) return undefined;
-                      if (dateStr.includes("T")) {
-                        return dateStr.slice(0, 16);
-                      }
-                      return `${dateStr}T${isEnd ? "23:59" : "00:00"}`;
-                    };
-
-                    // Compute min boundary from target section
-                    const targetSec = sections.find((s) => s.id === targetSectionId);
-                    let effectiveMinDate: string | undefined = undefined;
-
-                    if (targetSec?.status === "scheduled") {
-                      if (targetSec.scheduledPublishDate) {
-                        effectiveMinDate = targetSec.scheduledPublishDate;
-                      }
-                    }
-
-                    const minDateAttr = toDateTimeLocal(effectiveMinDate, false);
-
-                    return (
-                      <div className="space-y-3 pt-1 animate-in fade-in slide-in-from-top-1">
-                        <div className="flex flex-col gap-2">
-                          <label
-                            htmlFor="dialog-scheduled-date"
-                            className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                          >
-                            <Calendar className="size-4 text-primary" />
-                            {t("scheduledPublishDate")} <span className="text-destructive">*</span>
-                          </label>
-                          <Input
-                            id="dialog-scheduled-date"
-                            type="datetime-local"
-                            value={scheduledPublishDate}
-                            min={minDateAttr}
-                            onChange={(e) => {
-                              setScheduledPublishDate(e.target.value);
-                              setScheduleDateError(null);
-                            }}
-                            required={publishStatus === "scheduled"}
-                          />
-                        </div>
-
-                        {scheduleDateError && (
-                          <p className="text-xs text-destructive font-medium animate-in fade-in">
-                            {scheduleDateError}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })()}
               </div>
             </div>
           )}

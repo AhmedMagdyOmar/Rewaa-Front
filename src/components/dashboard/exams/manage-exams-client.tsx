@@ -334,11 +334,19 @@ export function ManageExamsClient() {
                           <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-relaxed">
                             {examTitle}
                           </p>
-                          {exam.instructor && (
+                          {exam.lesson ? (
+                            <p className="text-[11px] text-muted-foreground line-clamp-1">
+                              {exam.lesson.title?.[locale] || exam.lesson.title?.ar}
+                            </p>
+                          ) : exam.course ? (
+                            <p className="text-[11px] text-muted-foreground line-clamp-1">
+                              {exam.course.title?.[locale] || exam.course.title?.ar}
+                            </p>
+                          ) : exam.instructor ? (
                             <p className="text-[11px] text-muted-foreground">
                               {exam.instructor.full_name}
                             </p>
-                          )}
+                          ) : null}
                         </Link>
                       </td>
 
@@ -374,13 +382,14 @@ export function ManageExamsClient() {
                             </Link>
                           </div>
                         ) : exam.lesson ? (
-                          <div className="flex flex-row gap-1 items-center">
-                            <span className="text-xs font-medium text-primary">
-                              {t("table.lessonLinked")}:
-                            </span>
-                            <span className="text-xs text-muted-foreground line-clamp-1">
+                          <div className="flex flex-col gap-1">
+                            <Link
+                              href={`/${locale}/dashboard/lessons/${exam.lesson_id}/edit`}
+                              className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
+                            >
+                              <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
                               {exam.lesson.title[locale] || exam.lesson.title.ar}
-                            </span>
+                            </Link>
                           </div>
                         ) : exam.scope === "bank" ||
                           (!exam.is_standalone && !exam.course_id && !exam.lesson_id) ? (

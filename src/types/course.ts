@@ -57,12 +57,12 @@ export interface Lesson {
     id: string;
     title: string;
     coverImage?: string;
+    sectionId?: string;
+    sectionTitle?: string;
   }>;
   sectionId?: string; // FK → CourseSection.id
   sectionTitle?: string; // denormalized
   completionsCount?: number; // how many students completed this lesson (from backend)
-  publishStatus?: LessonPublishStatus;
-  scheduledPublishDate?: string;
   isActive?: boolean;
 
   attachments?: LessonAttachment[];

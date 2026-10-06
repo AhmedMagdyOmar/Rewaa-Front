@@ -254,6 +254,11 @@ export interface BackendLesson {
     id: number;
     title: Record<string, string>;
     cover_image?: string | null;
+    section?: {
+      id: number;
+      title: Record<string, string>;
+      position: number;
+    } | null;
   }>;
   course_section?: {
     id: number;
@@ -301,10 +306,6 @@ export interface BackendLesson {
     passing_percentage: number;
   } | null;
   requires_exam_pass_to_unlock_next_lesson: boolean;
-  status: LessonStatusBackend;
-  status_label?: string;
-  scheduled_publish_at?: string | null;
-  published_at?: string | null;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -314,7 +315,6 @@ export interface BackendLessonOptions {
   classifications: Record<string, string>;
   lesson_types: Record<string, string>;
   delivery_modes: Record<string, string>;
-  statuses: Record<string, string>;
   educational_stages: Array<{
     id: number;
     name: Record<string, string>;
@@ -350,14 +350,6 @@ export interface BackendLessonOptions {
   }>;
 }
 
-export interface LessonStatusCounts {
-  all: number;
-  published: number;
-  draft: number;
-  scheduled: number;
-  draft_and_scheduled?: number;
-}
-
 export interface LessonClassificationCounts {
   all: number;
   standalone: number;
@@ -366,15 +358,12 @@ export interface LessonClassificationCounts {
 
 export interface LessonListResponse {
   lessons: BackendLesson[];
-  status_counts: LessonStatusCounts;
   classification_counts?: LessonClassificationCounts;
   pagination: ApiPaginationMeta;
 }
 
 export interface LessonFilterParams {
   search?: string;
-  status?: string;
-  statuses?: string[];
   classification?: LessonClassification;
   course_id?: number | string;
   course_section_id?: number | string;
@@ -407,8 +396,6 @@ export interface StoreLessonData {
   has_exam: boolean;
   exam_id?: number | null;
   requires_exam_pass_to_unlock_next_lesson: boolean;
-  status: LessonStatusBackend | string;
-  scheduled_publish_at?: string;
   is_active: boolean;
 }
 

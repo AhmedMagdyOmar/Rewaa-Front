@@ -236,12 +236,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           id: String(l.id),
           title: l.title?.[locale] || l.title?.ar || l.title?.en || "",
           type: (l.type === "text_only" ? "text" : "videoAndText") as LessonType,
-          publishStatus: (l.status === "draft"
-            ? "draft"
-            : l.status === "scheduled"
-              ? "scheduled"
-              : "published") as LessonPublishStatus,
-          isDraft: l.status === "draft",
           description: l.description?.[locale] || l.description?.ar || l.description?.en || "",
           lectureVideoLink: l.video_url || l.intro_video_url || undefined,
           video_url: l.video_url || l.intro_video_url || undefined,
@@ -271,7 +265,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
           linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
           isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
-          scheduledPublishDate: l.scheduled_publish_at || undefined,
         }));
 
         return {
@@ -371,12 +364,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               id: String(l.id),
               title: l.title?.[locale] || l.title?.ar || l.title?.en || "",
               type: (l.type === "text_only" ? "text" : "videoAndText") as LessonType,
-              publishStatus: (l.status === "draft"
-                ? "draft"
-                : l.status === "scheduled"
-                  ? "scheduled"
-                  : "published") as LessonPublishStatus,
-              isDraft: l.status === "draft",
               description: l.description?.[locale] || l.description?.ar || l.description?.en || "",
               lectureVideoLink: l.video_url || l.intro_video_url || undefined,
               video_url: l.video_url || l.intro_video_url || undefined,
@@ -407,7 +394,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
               linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
               isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
-              scheduledPublishDate: l.scheduled_publish_at || undefined,
             })),
           }));
           setAvailableImportSections(secs);
@@ -669,8 +655,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
           exam_id: lessonExamId,
           requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
-          status: savedLesson.publishStatus || "published",
-          scheduled_publish_at: savedLesson.scheduledPublishDate || undefined,
           is_active: true,
         };
 
@@ -765,8 +749,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
             exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
             requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
-            status: l.publishStatus || "published",
-            scheduled_publish_at: l.scheduledPublishDate || undefined,
             is_active: true,
           }),
         );
@@ -883,8 +865,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
                 exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
                 requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
-                status: l.publishStatus || "draft",
-                scheduled_publish_at: l.scheduledPublishDate || undefined,
                 is_active: true,
               }),
             );

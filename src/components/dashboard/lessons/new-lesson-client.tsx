@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
-import { FormRadioGroup } from "@/components/ui/form-radio-group";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
@@ -23,13 +22,12 @@ import {
 } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
 import type { StoreLessonData, UpdateLessonData } from "@/types/api-contracts";
-import type { CourseVenue, LessonPublishStatus, LessonType } from "@/types/course";
+import type { CourseVenue, LessonType } from "@/types/course";
 import type { Exam } from "@/types/exam";
 import {
   AlertCircle,
   ArrowLeft,
   BookOpen,
-  Calendar,
   CheckCircle2,
   FileCheck,
   FileText,
@@ -37,8 +35,6 @@ import {
   ImageIcon,
   Layers,
   Loader2,
-  MapPin,
-  Radio,
   Trash2,
   Upload,
   Video,
@@ -95,20 +91,17 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [removeCoverImage, setRemoveCoverImage] = useState(false);
 
-  // Standalone Academic Info
+  // Academic Info (Always required)
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
   const [instructorId, setInstructorId] = useState("");
 
-  // Course Dependent Info
-  const [isGeneralLesson, setIsGeneralLesson] = useState<boolean>(true);
+  // Optional Course Dependent Info
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string>("");
 
-  // Venue & Publish Status
+  // Venue & Active Status
   const [venue, setVenue] = useState<CourseVenue>("hybrid");
-  const [publishStatus, setPublishStatus] = useState<LessonPublishStatus>("published");
-  const [scheduledPublishDate, setScheduledPublishDate] = useState("");
   const [isActive, setIsActive] = useState<boolean>(true);
 
   // Attachments
@@ -130,7 +123,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   // Top level submit error
   const [formError, setFormError] = useState<string | null>(null);
 
-  // Available Exams mapped for ExamSelect (strictly filtered by academic criteria)
+  // Available Exams mapped for ExamSelect (filtered by grade and subject)
   const exams = optionsData?.exams;
   const availableExams: Exam[] = useMemo(() => {
     if (!exams) return [];
@@ -141,24 +134,16 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           return true;
         }
 
-        if (isGeneralLesson) {
-          // Standalone lesson: must NOT belong to a course
-          if (e.course_id) return false;
-          if (grade && String(e.educational_stage_id) !== String(grade)) return false;
-          if (subject && String(e.subject_id) !== String(subject)) return false;
-          if (
-            optionsData?.requires_instructor_selection &&
-            instructorId &&
-            String(e.instructor_id) !== String(instructorId)
-          ) {
-            return false;
-          }
-          return true;
-        } else {
-          // Course lesson: must belong to the chosen course
-          if (!selectedCourseId) return false;
-          return String(e.course_id) === String(selectedCourseId);
+        if (grade && String(e.educational_stage_id) !== String(grade)) return false;
+        if (subject && String(e.subject_id) !== String(subject)) return false;
+        if (
+          optionsData?.requires_instructor_selection &&
+          instructorId &&
+          String(e.instructor_id) !== String(instructorId)
+        ) {
+          return false;
         }
+        return true;
       })
       .map((e) => ({
         id: String(e.id),
@@ -188,11 +173,9 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     exams,
     locale,
     linkedExamId,
-    isGeneralLesson,
     grade,
     subject,
     instructorId,
-    selectedCourseId,
     optionsData?.requires_instructor_selection,
   ]);
 
@@ -208,15 +191,8 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       if (!instructorId && optionsData.instructors?.length > 0) {
         setInstructorId(String(optionsData.instructors[0].id));
       }
-      if (!selectedCourseId && optionsData.courses?.length > 0) {
-        const firstCourse = optionsData.courses[0];
-        setSelectedCourseId(String(firstCourse.id));
-        if (firstCourse.sections?.length > 0) {
-          setSelectedSectionId(String(firstCourse.sections[0].id));
-        }
-      }
     }
-  }, [optionsData, initialLessonId, grade, subject, instructorId, selectedCourseId]);
+  }, [optionsData, initialLessonId, grade, subject, instructorId]);
 
   // When selectedCourseId changes, adjust default selectedSectionId
   const courses = optionsData?.courses;
@@ -227,12 +203,14 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   }, [selectedCourseId, courses]);
 
   useEffect(() => {
-    if (!isGeneralLesson && currentCourseSections.length > 0) {
+    if (selectedCourseId && currentCourseSections.length > 0) {
       if (!currentCourseSections.some((s) => String(s.id) === selectedSectionId)) {
         setSelectedSectionId(String(currentCourseSections[0].id));
       }
+    } else if (!selectedCourseId) {
+      setSelectedSectionId("");
     }
-  }, [isGeneralLesson, currentCourseSections, selectedSectionId]);
+  }, [selectedCourseId, currentCourseSections, selectedSectionId]);
 
   // Populate existing lesson on edit
   useEffect(() => {
@@ -260,9 +238,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     setCoverImageFile(null);
     setRemoveCoverImage(false);
 
-    const isStandalone = initialLesson.classification === "standalone";
-    setIsGeneralLesson(isStandalone);
-
     if (initialLesson.course_id) {
       setSelectedCourseId(String(initialLesson.course_id));
     }
@@ -281,12 +256,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     }
 
     setVenue((initialLesson.delivery_mode as CourseVenue) || "hybrid");
-    setPublishStatus((initialLesson.status as LessonPublishStatus) || "published");
     setIsActive(initialLesson.is_active ?? true);
-
-    if (initialLesson.scheduled_publish_at) {
-      setScheduledPublishDate(initialLesson.scheduled_publish_at.replace(" ", "T").slice(0, 16));
-    }
 
     // Attachments
     setHasPdfAttachments(Boolean(initialLesson.has_pdf_attachments));
@@ -381,6 +351,15 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       return;
     }
 
+    if (!grade || !subject) {
+      setFormError(
+        locale === "ar"
+          ? "يرجى تحديد المرحلة التعليمية والمادة الدراسية"
+          : "Please select educational stage and subject",
+      );
+      return;
+    }
+
     if (type === "videoAndText" && !lectureVideoLink.trim()) {
       setFormError(
         locale === "ar" ? "رابط فيديو المحاضرة مطلوب" : "Lecture video link is required",
@@ -393,20 +372,11 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       return;
     }
 
-    if (!isGeneralLesson && (!selectedCourseId || !selectedSectionId)) {
+    if (selectedCourseId && !selectedSectionId) {
       setFormError(
         locale === "ar"
-          ? "يرجى اختيار الدورة والقسم للدرس التابع لدورة"
-          : "Please select course and section for course-linked lesson",
-      );
-      return;
-    }
-
-    if (isGeneralLesson && publishStatus === "scheduled" && !scheduledPublishDate) {
-      setFormError(
-        locale === "ar"
-          ? "يرجى تحديد تاريخ ووقت النشر المجدول"
-          : "Please specify scheduled publish date and time",
+          ? "يرجى اختيار القسم التابع للدورة المحددة"
+          : "Please select the section for the chosen course",
       );
       return;
     }
@@ -424,29 +394,21 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       const newPdfFiles = pdfFiles.map((p) => p.file).filter(Boolean) as File[];
       const newImageFiles = imageFiles.map((i) => i.file).filter(Boolean) as File[];
 
-      let scheduledDateFormatted: string | undefined;
-      if (isGeneralLesson && publishStatus === "scheduled" && scheduledPublishDate) {
-        scheduledDateFormatted =
-          scheduledPublishDate.replace("T", " ") +
-          (scheduledPublishDate.length === 16 ? ":00" : "");
-      }
-
       const hasExamFlag = Boolean(isLinkedToExam && linkedExamId);
       const examIdValue = hasExamFlag ? Number(linkedExamId) : null;
       const passToUnlockFlag = Boolean(hasExamFlag && isRequiredPassExam);
+      const isCourseLinked = Boolean(selectedCourseId);
 
       if (initialLessonId) {
         // Update Lesson
         const updateData: UpdateLessonData = {
-          classification: isGeneralLesson ? "standalone" : "course",
+          classification: isCourseLinked ? "course" : "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
             ? { ar: description.trim(), en: description.trim() }
             : undefined,
           video_url: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
-          status: isGeneralLesson ? publishStatus : "published",
-          scheduled_publish_at: scheduledDateFormatted,
           is_active: isActive,
           has_pdf_attachments: hasPdfAttachments && pdfFiles.length > 0,
           has_explanatory_images: hasImageAttachments && imageFiles.length > 0,
@@ -460,7 +422,10 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           delete_media_ids: deleteMediaIds.length > 0 ? deleteMediaIds : undefined,
         };
 
-        if (isGeneralLesson) {
+        if (isCourseLinked) {
+          updateData.course_id = Number(selectedCourseId);
+          updateData.course_section_id = Number(selectedSectionId);
+        } else {
           updateData.educational_stage_id =
             Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
           updateData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
@@ -468,9 +433,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           if (optionsData?.requires_instructor_selection && instructorId) {
             updateData.instructor_id = Number(instructorId);
           }
-        } else {
-          updateData.course_id = Number(selectedCourseId);
-          updateData.course_section_id = Number(selectedSectionId);
         }
 
         await updateMutation.mutateAsync({
@@ -482,15 +444,13 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       } else {
         // Create Lesson
         const createData: StoreLessonData = {
-          classification: isGeneralLesson ? "standalone" : "course",
+          classification: isCourseLinked ? "course" : "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
             ? { ar: description.trim(), en: description.trim() }
             : undefined,
           video_url: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
-          status: isGeneralLesson ? publishStatus : "published",
-          scheduled_publish_at: scheduledDateFormatted,
           is_active: isActive,
           has_pdf_attachments: hasPdfAttachments && pdfFiles.length > 0,
           has_explanatory_images: hasImageAttachments && imageFiles.length > 0,
@@ -502,7 +462,10 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           explanatory_images: newImageFiles,
         };
 
-        if (isGeneralLesson) {
+        if (isCourseLinked) {
+          createData.course_id = Number(selectedCourseId);
+          createData.course_section_id = Number(selectedSectionId);
+        } else {
           createData.educational_stage_id =
             Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
           createData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
@@ -510,9 +473,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           if (optionsData?.requires_instructor_selection && instructorId) {
             createData.instructor_id = Number(instructorId);
           }
-        } else {
-          createData.course_id = Number(selectedCourseId);
-          createData.course_section_id = Number(selectedSectionId);
         }
 
         await createMutation.mutateAsync(createData);
@@ -756,65 +716,70 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           />
         </FormSectionCard>
 
-        {/* 4. ACADEMIC INFORMATION / COURSE LINK */}
-        {isGeneralLesson ? (
-          <FormSectionCard
-            title={tDialog("groups.academic")}
-            description={tDialog("groupDescriptions.academic")}
-            icon={GraduationCap}
-            contentClassName="grid grid-cols-1 sm:grid-cols-3 gap-4"
-          >
-            <GradeSelect
-              id="academic-grade"
-              value={grade}
-              onValueChange={setGrade}
-              label={tDialog("gradeLevel")}
-              grades={mappedStages}
-              disabled={isLoadingOptions}
-            />
+        {/* 4. ACADEMIC INFORMATION */}
+        <FormSectionCard
+          title={tDialog("groups.academic")}
+          description={tDialog("groupDescriptions.academic")}
+          icon={GraduationCap}
+          contentClassName="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          <GradeSelect
+            id="academic-grade"
+            value={grade}
+            onValueChange={setGrade}
+            label={tDialog("gradeLevel")}
+            grades={mappedStages}
+            disabled={isLoadingOptions}
+          />
 
-            <SubjectSelect
-              id="academic-subject"
-              value={subject}
-              onValueChange={setSubject}
-              label={tDialog("subject")}
-              subjects={mappedSubjects}
-              disabled={isLoadingOptions}
-            />
+          <SubjectSelect
+            id="academic-subject"
+            value={subject}
+            onValueChange={setSubject}
+            label={tDialog("subject")}
+            subjects={mappedSubjects}
+            disabled={isLoadingOptions}
+          />
 
-            <TeacherSelect
-              id="academic-teacher-select"
-              value={instructorId}
-              onValueChange={setInstructorId}
-              label={tDialog("teacherName")}
-              placeholder={tDialog("selectTeacher")}
-              showIcon
-              teachers={optionsData?.instructors || []}
-              disabled={isLoadingOptions || optionsData?.requires_instructor_selection === false}
-            />
-          </FormSectionCard>
-        ) : (
-          <FormSectionCard
-            title={locale === "ar" ? "بيانات الدورة والقسم" : "Course and Section Details"}
-            description={
-              locale === "ar"
-                ? "حدد الدورة والقسم التابع لهما هذا الدرس"
-                : "Select the parent course and section for this lesson"
-            }
-            icon={Layers}
-            contentClassName="grid grid-cols-1 sm:grid-cols-2 gap-4"
-          >
+          <TeacherSelect
+            id="academic-teacher-select"
+            value={instructorId}
+            onValueChange={setInstructorId}
+            label={tDialog("teacherName")}
+            placeholder={tDialog("selectTeacher")}
+            showIcon
+            teachers={optionsData?.instructors || []}
+            disabled={isLoadingOptions || optionsData?.requires_instructor_selection === false}
+          />
+        </FormSectionCard>
+
+        {/* 5. COURSE & SECTION (OPTIONAL) */}
+        <FormSectionCard
+          title={locale === "ar" ? "ربط بدورة تدريبية (اختياري)" : "Link to Course (Optional)"}
+          description={
+            locale === "ar"
+              ? "يمكنك ربط هذا الدرس بدورة وقسم محددين، أو تركه كدرس مستقل"
+              : "You can optionally link this lesson to a course and section, or leave it standalone"
+          }
+          icon={Layers}
+          contentClassName="space-y-4"
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <ComboboxSelect
                 id="course-select"
                 label={locale === "ar" ? "الدورة التابع لها" : "Parent Course"}
                 value={selectedCourseId}
-                onValueChange={setSelectedCourseId}
+                onValueChange={(val) => {
+                  setSelectedCourseId(val);
+                  setSelectedSectionId("");
+                }}
                 options={courseOptions}
-                placeholder={locale === "ar" ? "اختر دورة..." : "Select a course..."}
+                placeholder={
+                  locale === "ar" ? "اختر دورة (اختياري)..." : "Select a course (optional)..."
+                }
                 emptyLabel={locale === "ar" ? "لا توجد دورات" : "No courses found"}
                 disabled={isLoadingOptions}
-                required
               />
             </div>
 
@@ -825,16 +790,26 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                 value={selectedSectionId}
                 onValueChange={setSelectedSectionId}
                 options={sectionOptions}
-                placeholder={locale === "ar" ? "اختر قسماً..." : "Select a section..."}
+                placeholder={
+                  !selectedCourseId
+                    ? locale === "ar"
+                      ? "اختر دورة أولاً..."
+                      : "Select course first..."
+                    : locale === "ar"
+                      ? "اختر قسماً..."
+                      : "Select a section..."
+                }
                 emptyLabel={
                   locale === "ar" ? "لا توجد أقسام في هذه الدورة" : "No sections in this course"
                 }
-                disabled={isLoadingOptions || currentCourseSections.length === 0}
-                required
+                disabled={
+                  isLoadingOptions || !selectedCourseId || currentCourseSections.length === 0
+                }
+                required={Boolean(selectedCourseId)}
               />
             </div>
-          </FormSectionCard>
-        )}
+          </div>
+        </FormSectionCard>
 
         {/* 5. ATTACHMENTS & EXAMS */}
         <FormSectionCard
@@ -987,9 +962,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                   exams={availableExams}
                   emptyLabel={
                     locale === "ar"
-                      ? isGeneralLesson
-                        ? "لا توجد امتحانات مستقلة مطابقة"
-                        : "لا توجد امتحانات لهذه الدورة"
+                      ? "لا توجد امتحانات مطابقة للمرحلة والمادة"
                       : "No matching exams"
                   }
                 />
@@ -997,12 +970,8 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                 {availableExams.length === 0 && (
                   <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
                     {locale === "ar"
-                      ? isGeneralLesson
-                        ? "لا توجد امتحانات مستقلة متاحة تطابق المرحلة والمادة والمعلم المحدد. يمكنك إنشاء امتحان مستقل أولاً من قسم إدارة الامتحانات."
-                        : "لا توجد امتحانات مرتبطة بهذه الدورة حتى الآن. يمكنك إنشاء امتحان للدورة من قسم إدارة الامتحانات."
-                      : isGeneralLesson
-                        ? "No standalone exams match the selected stage, subject and instructor. Please create an exam in the Exams section first."
-                        : "No exams found for this course yet. Please create an exam for this course in the Exams section."}
+                      ? "لا توجد امتحانات متاحة تطابق المرحلة الدراسية والمادة المحددة. يمكنك إنشاء امتحان أولاً من قسم إدارة الامتحانات."
+                      : "No exams match the selected stage and subject. Please create an exam in the Exams section first."}
                   </p>
                 )}
 
@@ -1014,95 +983,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                   onCheckedChange={setIsRequiredPassExam}
                   className="mt-2"
                 />
-              </div>
-            )}
-          </FormToggleSetting>
-
-          {/* General vs Course Lesson Toggle */}
-          <FormToggleSetting
-            id="standalone-is-general-toggle"
-            title={t("isGeneralLesson")}
-            subtitle={t("isGeneralLessonSubtitle")}
-            checked={isGeneralLesson}
-            onCheckedChange={setIsGeneralLesson}
-          >
-            {isGeneralLesson && (
-              <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-1">
-                {/* Venue */}
-                <FormRadioGroup
-                  name="lesson-venue"
-                  title={tDialog("venue")}
-                  icon={MapPin}
-                  value={venue}
-                  onValueChange={(val) => setVenue(val as CourseVenue)}
-                  gridClassName="sm:grid-cols-3"
-                  options={[
-                    {
-                      id: "online",
-                      label: tCourses("new.venues.online.label"),
-                      desc: tCourses("new.venues.online.desc"),
-                    },
-                    {
-                      id: "onsite",
-                      label: tCourses("new.venues.onsite.label"),
-                      desc: tCourses("new.venues.onsite.desc"),
-                    },
-                    {
-                      id: "hybrid",
-                      label: tCourses("new.venues.hybrid.label"),
-                      desc: tCourses("new.venues.hybrid.desc"),
-                    },
-                  ]}
-                />
-
-                {/* Publish Status */}
-                <div className="space-y-4 pt-2 border-t border-border/40">
-                  <FormRadioGroup
-                    name="lesson-publish-status"
-                    title={tDialog("publishStatus")}
-                    icon={Radio}
-                    value={publishStatus}
-                    onValueChange={(val) => setPublishStatus(val as LessonPublishStatus)}
-                    gridClassName="sm:grid-cols-3"
-                    options={[
-                      {
-                        id: "published",
-                        label: tDialog("statusOptions.published"),
-                        desc: tDialog("statusOptions.publishedDesc"),
-                      },
-                      {
-                        id: "draft",
-                        label: tDialog("statusOptions.draft"),
-                        desc: tDialog("statusOptions.draftDesc"),
-                      },
-                      {
-                        id: "scheduled",
-                        label: tDialog("statusOptions.scheduled"),
-                        desc: tDialog("statusOptions.scheduledDesc"),
-                      },
-                    ]}
-                  />
-
-                  {publishStatus === "scheduled" && (
-                    <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-top-1 pt-2">
-                      <label
-                        htmlFor="standalone-scheduled-date"
-                        className="text-sm font-medium text-foreground flex items-center gap-1.5"
-                      >
-                        <Calendar className="size-4 text-primary" />
-                        {tDialog("scheduledPublishDate")}{" "}
-                        <span className="text-destructive">*</span>
-                      </label>
-                      <Input
-                        id="standalone-scheduled-date"
-                        type="datetime-local"
-                        value={scheduledPublishDate}
-                        onChange={(e) => setScheduledPublishDate(e.target.value)}
-                        required={publishStatus === "scheduled"}
-                      />
-                    </div>
-                  )}
-                </div>
               </div>
             )}
           </FormToggleSetting>

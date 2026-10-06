@@ -1,26 +1,26 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
 import { BookOpen, Plus, RefreshCw } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import * as React from "react";
 import { toast } from "sonner";
 
+import { CourseSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CourseSelect } from "@/components/ui/academic-selects";
-import { CourseVenue, Lesson, LessonPublishStatus } from "@/types/course";
-import { LessonClassification } from "@/types/api-contracts";
-import { useProviderLessons, useUpdateLesson, useDeleteLesson } from "@/hooks/use-lessons";
+import { useDeleteLesson, useProviderLessons } from "@/hooks/use-lessons";
 import { getErrorMessage } from "@/lib/api-utils";
 import { cn } from "@/lib/utils";
+import { LessonClassification } from "@/types/api-contracts";
+import { CourseVenue, Lesson } from "@/types/course";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
-import { LessonCard } from "./lesson-card";
 import { DeleteLessonDialog } from "./delete-lesson-dialog";
+import { LessonCard } from "./lesson-card";
 import { useLessonUrlFilters } from "./use-lesson-url-filters";
 
-export type LessonFilterTab = "all" | "general" | "course-linked";
+export type LessonFilterTab = "all" | "course-linked";
 export type LessonSortOption = "date-newest" | "date-oldest";
 
 export function ManageLessonsClient() {
@@ -44,7 +44,7 @@ export function ManageLessonsClient() {
 
   // Map filters to backend request params
   const classification: LessonClassification | undefined =
-    activeTab === "general" ? "standalone" : activeTab === "course-linked" ? "course" : undefined;
+    activeTab === "course-linked" ? "course" : undefined;
   const sort = sortBy === "date-oldest" ? "oldest" : "latest";
 
   const { data, isLoading, refetch, isRefetching } = useProviderLessons({
@@ -56,14 +56,10 @@ export function ManageLessonsClient() {
     per_page: itemsPerPage,
   });
 
-  const updateLessonMutation = useUpdateLesson();
   const deleteLessonMutation = useDeleteLesson();
 
   // Dialog state for lesson deletion
   const [lessonToDelete, setLessonToDelete] = React.useState<Lesson | null>(null);
-
-  // Copy feedback state
-  const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
   // Adapt backend lessons to local Lesson models for rendering
   const adaptedLessons: Lesson[] = (data?.lessons || []).map((b) => ({
@@ -80,19 +76,37 @@ export function ManageLessonsClient() {
     venue: (b.delivery_mode as CourseVenue) || "hybrid",
     classification: b.classification,
     lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
-    courseId: b.course_id ? String(b.course_id) : undefined,
-    courseTitle: b.course?.title?.[locale] || b.course?.title?.ar || undefined,
+    courseId: b.course_id
+      ? String(b.course_id)
+      : b.linked_courses && b.linked_courses.length > 0
+        ? String(b.linked_courses[0].id)
+        : undefined,
+    courseTitle:
+      b.course?.title?.[locale] ||
+      b.course?.title?.ar ||
+      (b.linked_courses && b.linked_courses.length > 0
+        ? b.linked_courses[0].title?.[locale] || b.linked_courses[0].title?.ar
+        : undefined),
     linkedCoursesCount: b.linked_courses_count ?? (b.linked_courses ? b.linked_courses.length : 0),
     linkedCourses: (b.linked_courses || []).map((c) => ({
       id: String(c.id),
       title: c.title?.[locale] || c.title?.ar || c.title?.en || "",
       coverImage: c.cover_image || undefined,
+      sectionId: c.section?.id ? String(c.section.id) : undefined,
+      sectionTitle: c.section?.title?.[locale] || c.section?.title?.ar || undefined,
     })),
-    sectionId: b.course_section_id ? String(b.course_section_id) : undefined,
-    sectionTitle: b.course_section?.title?.[locale] || b.course_section?.title?.ar || undefined,
+    sectionId: b.course_section_id
+      ? String(b.course_section_id)
+      : b.linked_courses && b.linked_courses.length > 0 && b.linked_courses[0].section?.id
+        ? String(b.linked_courses[0].section.id)
+        : undefined,
+    sectionTitle:
+      b.course_section?.title?.[locale] ||
+      b.course_section?.title?.ar ||
+      (b.linked_courses && b.linked_courses.length > 0
+        ? b.linked_courses[0].section?.title?.[locale] || b.linked_courses[0].section?.title?.ar
+        : undefined),
     completionsCount: b.completions_count ?? 0,
-    publishStatus: (b.status as LessonPublishStatus) || "published",
-    scheduledPublishDate: b.scheduled_publish_at || undefined,
     isActive: b.is_active,
     hasPdfAttachments: Boolean(b.has_pdf_attachments),
     pdfFiles: (b.pdf_attachments || []).map((p) => ({
@@ -122,31 +136,6 @@ export function ManageLessonsClient() {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedLessons = adaptedLessons;
 
-  const handlePublishToggle = async (lessonId: string) => {
-    const target = adaptedLessons.find((l) => l.id === lessonId);
-    if (!target) return;
-    const nextStatus = target.publishStatus === "published" ? "draft" : "published";
-
-    try {
-      await updateLessonMutation.mutateAsync({
-        id: lessonId,
-        data: { status: nextStatus },
-      });
-      toast.success(
-        nextStatus === "published"
-          ? locale === "ar"
-            ? "تم نشر الدرس بنجاح"
-            : "Lesson published successfully"
-          : locale === "ar"
-            ? "تم تحويل الدرس لمسودة"
-            : "Lesson unpublished",
-      );
-    } catch (err) {
-      console.error("Failed to update lesson status:", err);
-      toast.error(getErrorMessage(err));
-    }
-  };
-
   const confirmDelete = async () => {
     if (!lessonToDelete) return;
     try {
@@ -163,13 +152,6 @@ export function ManageLessonsClient() {
     refetch();
   };
 
-  const handleCopyLink = (lessonId: string) => {
-    const link = `${window.location.origin}/${locale}/student-dashboard/lessons/${lessonId}`;
-    navigator.clipboard.writeText(link);
-    setCopiedId(lessonId);
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
   // Classification counts from backend
   const classificationCounts = data?.classification_counts;
 
@@ -178,12 +160,7 @@ export function ManageLessonsClient() {
     {
       value: "all",
       label: t("tabs.all"),
-      count: classificationCounts?.all ?? data?.status_counts?.all ?? 0,
-    },
-    {
-      value: "general",
-      label: t("tabs.general"),
-      count: classificationCounts?.standalone ?? 0,
+      count: classificationCounts?.all ?? totalItems ?? 0,
     },
     {
       value: "course-linked",
@@ -290,14 +267,7 @@ export function ManageLessonsClient() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {paginatedLessons.map((lesson) => (
-            <LessonCard
-              key={lesson.id}
-              lesson={lesson}
-              copiedId={copiedId}
-              onPublishToggle={handlePublishToggle}
-              onCopyLink={handleCopyLink}
-              onDeleteRequest={setLessonToDelete}
-            />
+            <LessonCard key={lesson.id} lesson={lesson} onDeleteRequest={setLessonToDelete} />
           ))}
         </div>
       )}

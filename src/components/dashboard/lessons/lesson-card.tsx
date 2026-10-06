@@ -12,11 +12,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Lesson } from "@/types/course";
 import {
   BookOpen,
-  Check,
   CheckCircle2,
-  Copy,
   ExternalLink,
-  EyeOff,
   FileCheck,
   FileText,
   Globe,
@@ -39,9 +36,6 @@ import * as React from "react";
 
 interface LessonCardProps {
   lesson: Lesson;
-  copiedId: string | null;
-  onPublishToggle: (lessonId: string) => void;
-  onCopyLink: (lessonId: string) => void;
   onDeleteRequest: (lesson: Lesson) => void;
 }
 
@@ -50,13 +44,7 @@ function formatCount(n: number): string {
   return String(n);
 }
 
-export function LessonCard({
-  lesson,
-  copiedId,
-  onPublishToggle,
-  onCopyLink,
-  onDeleteRequest,
-}: LessonCardProps) {
+export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
   const t = useTranslations("lessons");
@@ -105,6 +93,8 @@ export function LessonCard({
     lesson.linkedCoursesCount ??
     (linkedCourses.length > 0 ? linkedCourses.length : lesson.courseId ? 1 : 0);
   const isMultiCourse = linkedCoursesCount > 1;
+  const effectiveCourseTitle =
+    lesson.courseTitle || (linkedCourses.length === 1 ? linkedCourses[0].title : undefined);
 
   return (
     <div className="group flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs hover:shadow-md transition-all duration-200">
@@ -212,11 +202,11 @@ export function LessonCard({
                 {t("card.viewCourses")}
               </span>
             </button>
-          ) : !isIndependent && lesson.courseTitle ? (
+          ) : effectiveCourseTitle ? (
             <div className="mb-2.5 flex flex-col items-start gap-1.5 text-xs text-muted-foreground truncate bg-muted/40 px-2 py-1 rounded-md border border-border/40">
               <div className="flex items-center gap-1.5 truncate font-medium text-foreground">
                 <BookOpen className="size-3.5 text-primary shrink-0" />
-                <span className="truncate">{lesson.courseTitle}</span>
+                <span className="truncate">{effectiveCourseTitle}</span>
               </div>
               {lesson.sectionTitle && <span className="truncate">{lesson.sectionTitle}</span>}
             </div>
@@ -308,26 +298,16 @@ export function LessonCard({
 
         {/* 4. FOOTER ACTIONS */}
         <div className="flex items-center gap-2 mt-4 pt-1">
-          {lesson.publishStatus === "draft" ? (
-            <Button
-              onClick={() => onPublishToggle(lesson.id)}
-              size="sm"
-              className="flex-1 font-bold text-sm py-3.5! cursor-pointer"
-            >
-              {t("card.publishNow")}
-            </Button>
-          ) : (
-            <Button
-              asChild
-              variant="outline"
-              size="sm"
-              className="flex-1 font-bold text-sm border border-primary! text-primary hover:text-primary py-3.5! cursor-pointer"
-            >
-              <Link href={`/${locale}/dashboard/lessons/${lesson.id}/edit`}>
-                {t("card.editLesson")}
-              </Link>
-            </Button>
-          )}
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="flex-1 font-bold text-sm border border-primary! text-primary hover:text-primary py-3.5! cursor-pointer"
+          >
+            <Link href={`/${locale}/dashboard/lessons/${lesson.id}/edit`}>
+              {t("card.editLesson")}
+            </Link>
+          </Button>
 
           {/* Action Menu */}
           <DropdownMenu>
@@ -349,27 +329,6 @@ export function LessonCard({
                 <DropdownMenuItem onClick={() => setShowLinkedCoursesDialog(true)}>
                   <Layers className="h-4 w-4 me-2 text-primary" />
                   <span>{t("card.viewLinkedCourses")}</span>
-                </DropdownMenuItem>
-              )}
-
-              <DropdownMenuItem onClick={() => onCopyLink(lesson.id)}>
-                {copiedId === lesson.id ? (
-                  <>
-                    <Check className="h-4 w-4 me-2 text-emerald-500" />
-                    <span className="text-emerald-500 font-medium">{t("card.linkCopied")}</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 me-2" />
-                    <span>{t("card.copyLink")}</span>
-                  </>
-                )}
-              </DropdownMenuItem>
-
-              {lesson.publishStatus === "published" && (
-                <DropdownMenuItem onClick={() => onPublishToggle(lesson.id)}>
-                  <EyeOff className="h-4 w-4 me-2" />
-                  <span>{t("card.unpublishLesson")}</span>
                 </DropdownMenuItem>
               )}
 
@@ -414,7 +373,16 @@ export function LessonCard({
                       <BookOpen className="size-5 text-muted-foreground/60" />
                     )}
                   </div>
-                  <span className="font-semibold text-sm text-foreground truncate">{c.title}</span>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-semibold text-sm text-foreground truncate">
+                      {c.title}
+                    </span>
+                    {c.sectionTitle && (
+                      <span className="text-xs text-muted-foreground truncate">
+                        {c.sectionTitle}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <Button
                   asChild

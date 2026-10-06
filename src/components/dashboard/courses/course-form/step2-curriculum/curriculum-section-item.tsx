@@ -137,124 +137,91 @@ export function CurriculumSectionItem({
       {/* Section Lessons & Linked Exam */}
       {section.lessons.length > 0 || (section.isLinkedToExam && section.linkedExamId) ? (
         <div className="pl-6 rtl:pl-0 rtl:pr-6 space-y-2 border-l rtl:border-l-0 rtl:border-r border-border">
-          {section.lessons.map((les, lIdx) => {
-            const lesPublishStatus = les.publishStatus || "published";
-            const isDifferentStatus = lesPublishStatus !== secPublishStatus;
+          {section.lessons.map((les, lIdx) => (
+            <div
+              key={les.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between text-xs py-2 px-3 rounded-lg bg-background border gap-2"
+            >
+              <div className="flex items-center gap-2.5 flex-wrap">
+                {les.type === "text" ? (
+                  <FileTextIcon className="size-4 text-emerald-500 shrink-0" />
+                ) : (
+                  <VideoIcon className="size-4 text-primary shrink-0" />
+                )}
+                <span className="font-semibold text-foreground">
+                  {lIdx + 1}. {les.title}
+                </span>
 
-            return (
-              <div
-                key={les.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between text-xs py-2 px-3 rounded-lg bg-background border gap-2"
-              >
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  {les.type === "text" ? (
-                    <FileTextIcon className="size-4 text-emerald-500 shrink-0" />
-                  ) : (
-                    <VideoIcon className="size-4 text-primary shrink-0" />
-                  )}
-                  <span className="font-semibold text-foreground">
-                    {lIdx + 1}. {les.title}
+                {/* Lesson Type Icon Badge with Tooltip */}
+                <TooltipProvider delayDuration={200}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span
+                        tabIndex={0}
+                        className={cn(
+                          "size-5 rounded-full flex items-center justify-center shrink-0 cursor-help",
+                          les.type === "text"
+                            ? "bg-emerald-500/10 text-emerald-600"
+                            : "bg-primary/10 text-primary",
+                        )}
+                      >
+                        {les.type === "text" ? (
+                          <FileTextIcon className="size-3 shrink-0" />
+                        ) : (
+                          <VideoIcon className="size-3 shrink-0" />
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {les.type === "text"
+                        ? t("step2.addLessonDialog.typeOptions.text")
+                        : t("step2.addLessonDialog.typeOptions.videoAndText")}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                {(les.hasPdfAttachments || (les.pdfFiles && les.pdfFiles.length > 0)) && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-medium flex items-center gap-1">
+                    <Paperclip className="size-3" />
+                    {t("step2.pdfsBadge", {
+                      count: (les.pdfFiles || []).length || 1,
+                    })}
                   </span>
+                )}
 
-                  {/* Lesson Type Icon Badge with Tooltip */}
-                  <TooltipProvider delayDuration={200}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <span
-                          tabIndex={0}
-                          className={cn(
-                            "size-5 rounded-full flex items-center justify-center shrink-0 cursor-help",
-                            les.type === "text"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : "bg-primary/10 text-primary",
-                          )}
-                        >
-                          {les.type === "text" ? (
-                            <FileTextIcon className="size-3 shrink-0" />
-                          ) : (
-                            <VideoIcon className="size-3 shrink-0" />
-                          )}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        {les.type === "text"
-                          ? t("step2.addLessonDialog.typeOptions.text")
-                          : t("step2.addLessonDialog.typeOptions.videoAndText")}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-
-                  {(les.hasPdfAttachments || (les.pdfFiles && les.pdfFiles.length > 0)) && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-medium flex items-center gap-1">
-                      <Paperclip className="size-3" />
-                      {t("step2.pdfsBadge", {
-                        count: (les.pdfFiles || []).length || 1,
-                      })}
-                    </span>
-                  )}
-
-                  {les.isLinkedToExam && (
-                    <Badge
-                      variant="outline"
-                      className="text-[10px] font-medium bg-amber-500/10 text-amber-600 border-amber-500/20 flex items-center gap-1"
-                    >
-                      <FileQuestion className="size-3 shrink-0" />
-                      <span>{t("step2.examLinkedBadge")}</span>
-                    </Badge>
-                  )}
-
-                  {/* Publish Status Badge if different from parent section */}
-                  {isDifferentStatus && (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-[10px] font-medium capitalize",
-                        lesPublishStatus === "published" &&
-                          "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                        lesPublishStatus === "draft" &&
-                          "bg-amber-500/10 text-amber-600 border-amber-500/20",
-                        lesPublishStatus === "scheduled" &&
-                          "bg-purple-500/10 text-purple-600 border-purple-500/20",
-                      )}
-                    >
-                      {lesPublishStatus === "published"
-                        ? locale === "ar"
-                          ? "منشور"
-                          : "Published"
-                        : lesPublishStatus === "scheduled"
-                          ? locale === "ar"
-                            ? "مجدول"
-                            : "Scheduled"
-                          : locale === "ar"
-                            ? "مسودة"
-                            : "Draft"}
-                    </Badge>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 self-end sm:self-center">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => onEditLesson(les, section.id)}
-                    className="text-muted-foreground hover:text-primary"
+                {les.isLinkedToExam && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] font-medium bg-amber-500/10 text-amber-600 border-amber-500/20 flex items-center gap-1"
                   >
-                    <Edit2 className="size-3.5" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    onClick={() => onDeleteLesson(les, section.id)}
-                    className="text-muted-foreground hover:text-destructive"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </Button>
-                </div>
+                    <FileQuestion className="size-3 shrink-0" />
+                    <span>{t("step2.examLinkedBadge")}</span>
+                  </Badge>
+                )}
               </div>
-            );
-          })}
+
+              <div className="flex items-center gap-2 self-end sm:self-center">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onEditLesson(les, section.id)}
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Edit2 className="size-3.5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-xs"
+                  onClick={() => onDeleteLesson(les, section.id)}
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
+            </div>
+          ))}
 
           {/* Linked Exam item under lessons */}
           {section.isLinkedToExam && section.linkedExamId && (
