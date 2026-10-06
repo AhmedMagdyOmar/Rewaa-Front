@@ -28,6 +28,7 @@ export function useProviderExamOptions(educationalStageId?: number | string) {
     queryKey: [...queryKeys.provider.exams.options(), { educationalStageId }],
     queryFn: () => examsService.getExamOptions(educationalStageId),
     staleTime: 5 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
   });
 }
 

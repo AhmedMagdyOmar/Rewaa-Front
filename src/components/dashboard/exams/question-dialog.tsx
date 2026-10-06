@@ -1,7 +1,15 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { CheckSquare, ChevronDown, HelpCircle, Plus, Search, Sparkles, Square } from "lucide-react";
+import {
+  CheckSquare,
+  ChevronDown,
+  HelpCircle,
+  Loader2,
+  Plus,
+  Search,
+  Sparkles,
+  Square,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 
@@ -44,7 +52,7 @@ interface QuestionDialogProps {
   examTeacherName?: string;
   isSectionLocked?: boolean;
   onSave: (question: Question, sectionId: string, keepOpen?: boolean) => void;
-  onSaveMany?: (questions: Question[], sectionId: string) => void;
+  onSaveMany?: (questions: Question[], sectionId: string) => Promise<void> | void;
 }
 
 export function QuestionDialog({
@@ -77,6 +85,7 @@ export function QuestionDialog({
   const [filterType, setFilterType] = React.useState<string>("");
   const [filterClassifications, setFilterClassifications] = React.useState<string[]>([]);
   const [selectedQuestionIds, setSelectedQuestionIds] = React.useState<string[]>([]);
+  const [isSubmittingBank, setIsSubmittingBank] = React.useState(false);
 
   // Fetch classifications and options
   const { data: optionsData } = useProviderQuestionOptions(examGrade || undefined);
@@ -92,9 +101,10 @@ export function QuestionDialog({
     search: searchQuery.trim() || undefined,
   });
 
-  // Reset state when dialog opens
+  // Reset state only when dialog transitions from closed -> open
+  const prevOpenRef = React.useRef(open);
   React.useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setActiveTab("create");
       setBankSectionId(initialSectionId || sections[0]?.id || "");
       setSelectedQuestionIds([]);
@@ -102,7 +112,9 @@ export function QuestionDialog({
       setFilterDifficulty("");
       setFilterType("");
       setFilterClassifications([]);
+      setIsSubmittingBank(false);
     }
+    prevOpenRef.current = open;
   }, [open, initialSectionId, sections]);
 
   const handleSaveInternal = (question: Question, sectionId?: string, keepOpen?: boolean) => {
@@ -139,8 +151,8 @@ export function QuestionDialog({
   };
 
   // Submit bank questions
-  const handleSaveBankQuestions = () => {
-    if (selectedQuestionIds.length === 0 || !bankSectionId) return;
+  const handleSaveBankQuestions = async () => {
+    if (selectedQuestionIds.length === 0 || !bankSectionId || isSubmittingBank) return;
 
     const chosenBackendQuestions = availableBankQuestions.filter((q) =>
       selectedQuestionIds.includes(String(q.id)),
@@ -150,13 +162,19 @@ export function QuestionDialog({
       mapBackendQuestionToFrontend(bq, locale),
     );
 
-    if (onSaveMany) {
-      onSaveMany(mappedQuestions, bankSectionId);
-    } else {
-      mappedQuestions.forEach((q) => onSave(q, bankSectionId));
+    setIsSubmittingBank(true);
+    try {
+      if (onSaveMany) {
+        await onSaveMany(mappedQuestions, bankSectionId);
+      } else {
+        mappedQuestions.forEach((q) => onSave(q, bankSectionId));
+      }
+      onOpenChange(false);
+    } catch {
+      // Error handled by onSaveMany or caller toast
+    } finally {
+      setIsSubmittingBank(false);
     }
-
-    onOpenChange(false);
   };
 
   const difficultyConfig: Record<
@@ -536,17 +554,31 @@ export function QuestionDialog({
 
             {/* 5. Dialog Footer */}
             <DialogFooter className="gap-2 sm:gap-0 pt-3 border-t border-border">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmittingBank}
+              >
                 {t("actions.cancel")}
               </Button>
               <Button
                 type="button"
                 onClick={handleSaveBankQuestions}
-                disabled={selectedQuestionIds.length === 0 || !bankSectionId}
-                className="gap-2 font-semibold"
+                disabled={selectedQuestionIds.length === 0 || !bankSectionId || isSubmittingBank}
+                className="gap-2 font-semibold min-w-36"
               >
-                <Plus className="size-4" />
-                <span>{t("bank.addSelected", { count: selectedQuestionIds.length })}</span>
+                {isSubmittingBank ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>{isAr ? "جاري الإضافة..." : "Adding..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    <span>{t("bank.addSelected", { count: selectedQuestionIds.length })}</span>
+                  </>
+                )}
               </Button>
             </DialogFooter>
           </div>

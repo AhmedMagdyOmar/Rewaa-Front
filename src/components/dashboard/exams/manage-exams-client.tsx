@@ -115,12 +115,6 @@ export function ManageExamsClient() {
   const [examToDelete, setExamToDelete] = React.useState<BackendExam | null>(null);
 
   const exams: BackendExam[] = examsResponse?.exams || [];
-  const statusCounts = examsResponse?.status_counts || {
-    all: 0,
-    published: 0,
-    draft: 0,
-    scheduled: 0,
-  };
   const pagination = examsResponse?.pagination;
   const totalItems = pagination?.total || 0;
   const totalPages = pagination?.last_page || 1;
@@ -171,12 +165,7 @@ export function ManageExamsClient() {
   };
 
   // ─── Tabs & sort options ────────────────────────────────────────────────────
-  const tabs: TabItem<ExamFilterTab>[] = [
-    { value: "all", label: t("tabs.all"), count: statusCounts.all },
-    { value: "published", label: "المنشورة", count: statusCounts.published },
-    { value: "draft", label: "المسودة", count: statusCounts.draft },
-    { value: "scheduled", label: "المجدولة", count: statusCounts.scheduled },
-  ];
+  const tabs: TabItem<ExamFilterTab>[] = [];
 
   const sortOptions: SortOptionItem<ExamSortOption>[] = [
     { value: "latest", label: t("sort.newest") },
@@ -293,7 +282,7 @@ export function ManageExamsClient() {
                   t("table.columns.typeVenue"),
                   t("table.columns.questions"),
                   t("table.columns.students"),
-                  t("table.columns.status"),
+                  locale === "ar" ? "عدد المحاولات" : "Attempts",
                   t("table.columns.actions"),
                 ].map((col) => (
                   <th
@@ -435,18 +424,10 @@ export function ManageExamsClient() {
                         </span>
                       </td>
 
-                      {/* ── Status Badge ──────────────────────────────────── */}
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-bold whitespace-nowrap px-2 py-0.5 rounded-full ${
-                            exam.status === "published"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : exam.status === "scheduled"
-                                ? "bg-amber-500/10 text-amber-600"
-                                : "bg-muted text-muted-foreground"
-                          }`}
-                        >
-                          {exam.status_label || exam.status}
+                      {/* ── Attempts Count ─────────────────────────────────── */}
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span className="text-xs font-medium text-foreground">
+                          {exam.attempts_count ?? 0} {locale === "ar" ? "محاولة" : "attempts"}
                         </span>
                       </td>
 

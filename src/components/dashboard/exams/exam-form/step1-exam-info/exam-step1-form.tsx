@@ -87,7 +87,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
             value={form.grade}
             onValueChange={form.handleGradeChange}
             grades={form.mappedStages}
-            disabled={form.isLoadingOptions}
+            disabled={Boolean(form.isLoadingOptions)}
             label={tForm("fields.grade")}
             placeholder={tForm("fields.selectGrade")}
           />
@@ -96,23 +96,24 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
             value={form.subject}
             onValueChange={form.setSubject}
             subjects={form.mappedSubjects}
-            disabled={!form.grade || form.isLoadingOptions}
+            disabled={!form.grade || Boolean(form.isLoadingOptions)}
             label={tForm("fields.subject")}
             placeholder={!form.grade ? tForm("fields.selectGrade") : tForm("fields.selectSubject")}
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {form.optionsData?.requires_instructor_selection !== false && (
-            <TeacherSelect
-              value={form.teacherName}
-              onValueChange={form.setTeacherName}
-              teachers={form.mappedInstructors}
-              disabled={form.isLoadingOptions}
-              label={tForm("fields.teacherName")}
-              placeholder={tForm("fields.selectTeacher")}
-            />
-          )}
+          <TeacherSelect
+            value={form.teacherName}
+            onValueChange={form.setTeacherName}
+            teachers={form.mappedInstructors}
+            disabled={
+              Boolean(form.isLoadingOptions) ||
+              form.optionsData?.requires_instructor_selection === false
+            }
+            label={tForm("fields.teacherName")}
+            placeholder={tForm("fields.selectTeacher")}
+          />
 
           <div className="flex flex-col gap-2">
             <SelectWithAdd
@@ -325,7 +326,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
                     value={form.courseId}
                     onValueChange={form.handleCourseChange}
                     courses={form.mappedCourses}
-                    disabled={form.isLoadingOptions}
+                    disabled={Boolean(form.isLoadingOptions)}
                     label={tForm("fields.linkedCourse")}
                     placeholder={tForm("fields.selectCourse")}
                     required
@@ -335,7 +336,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
                     value={form.courseSectionId}
                     onValueChange={form.handleCourseSectionChange}
                     sections={form.mappedSections}
-                    disabled={!form.courseId || form.isLoadingOptions}
+                    disabled={!form.courseId || Boolean(form.isLoadingOptions)}
                     label={tForm("fields.linkedSection")}
                     placeholder={
                       !form.courseId ? tForm("fields.selectCourse") : tForm("fields.selectSection")
@@ -346,7 +347,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
                     value={form.lessonId}
                     onValueChange={form.setLessonId}
                     lessons={form.mappedLessons}
-                    disabled={!form.courseSectionId || form.isLoadingOptions}
+                    disabled={!form.courseSectionId || Boolean(form.isLoadingOptions)}
                     label={tForm("fields.linkedLesson")}
                     placeholder={
                       !form.courseSectionId
@@ -364,7 +365,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
                     value={form.standaloneLessonId}
                     onValueChange={form.setStandaloneLessonId}
                     lessons={form.mappedStandaloneLessons}
-                    disabled={form.isLoadingOptions}
+                    disabled={Boolean(form.isLoadingOptions)}
                     label={tForm("fields.linkedStandaloneLesson")}
                     placeholder={tForm("fields.selectStandaloneLesson")}
                     required

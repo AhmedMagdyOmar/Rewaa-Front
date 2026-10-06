@@ -57,15 +57,7 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto animate-in fade-in duration-500 pb-28">
       {/* ── Page Header ─────────────────────────────────────────────────── */}
-      <ExamFormHeader
-        currentStep={form.currentStep}
-        title={form.title}
-        mode={mode}
-        examPublishStatus={form.examPublishStatus}
-        onPublishStatusChange={form.setExamPublishStatus}
-        examScheduledPublishDate={form.examScheduledPublishDate}
-        onScheduledPublishDateChange={form.setExamScheduledPublishDate}
-      />
+      <ExamFormHeader currentStep={form.currentStep} title={form.title} mode={mode} />
 
       {/* ── Main Layout: Timeline Sidebar (4 cols) + Content (8 cols) ─── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">

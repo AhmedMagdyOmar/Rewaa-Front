@@ -128,6 +128,7 @@ export function ComboboxSelect({
               role="combobox"
               aria-expanded={open}
               disabled={Boolean(disabled)}
+              suppressHydrationWarning
               className={cn(
                 triggerBaseStyles,
                 !value && "text-muted-foreground",

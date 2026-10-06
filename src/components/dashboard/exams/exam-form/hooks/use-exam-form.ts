@@ -6,8 +6,6 @@ import {
   useCreateExamCategory,
   useProviderExam,
   useProviderExamOptions,
-  usePublishExam,
-  useScheduleExam,
   useUpdateExam,
 } from "@/hooks/use-exams";
 import { mapBackendCategoryToFrontend } from "@/lib/adapters/exam-adapters";
@@ -67,20 +65,20 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   const [standaloneLessonId, setStandaloneLessonId] = useState<string>("");
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const [performedCount, setPerformedCount] = useState<number>(0);
-  const [examPublishStatus, setExamPublishStatus] = useState<"draft" | "published" | "scheduled">(
-    "draft",
-  );
-  const [examScheduledPublishDate, setExamScheduledPublishDate] = useState("");
 
   // TanStack Query & Mutation hooks
-  const { data: optionsData, isLoading: isLoadingOptions } =
+  const { data: optionsData, isLoading: isLoadingOptionsQuery } =
     useProviderExamOptions(educationalStageId);
+  // Keep the first client render identical to SSR (disabled) to avoid hydration mismatch
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+  const isLoadingOptions = !isMounted || isLoadingOptionsQuery;
   const { data: initialBackendExam } = useProviderExam(createdExamId || undefined);
 
   const createExamMutation = useCreateExam();
   const updateExamMutation = useUpdateExam();
-  const publishExamMutation = usePublishExam();
-  const scheduleExamMutation = useScheduleExam();
   const createCategoryMutation = useCreateExamCategory();
 
   const handleGradeChange = (newGrade: string) => {
@@ -175,18 +173,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       }
       setCoursesCount(initialBackendExam.course_id ? 1 : 0);
       setPerformedCount(initialBackendExam.students_count ?? 0);
-
-      const status = initialBackendExam.status;
-      if (status === "published" || status === "scheduled" || status === "draft") {
-        setExamPublishStatus(status);
-      }
-      if (initialBackendExam.scheduled_publish_at) {
-        setExamScheduledPublishDate(
-          initialBackendExam.scheduled_publish_at.split("T")[0] ||
-            initialBackendExam.scheduled_publish_at.split(" ")[0] ||
-            "",
-        );
-      }
 
       setIsLoaded(true);
     } else if (initialData) {
@@ -427,15 +413,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
         await updateExamMutation.mutateAsync({ id: finalExamId, data: payload });
       }
 
-      if (examPublishStatus === "published") {
-        await publishExamMutation.mutateAsync(finalExamId);
-      } else if (examPublishStatus === "scheduled" && examScheduledPublishDate) {
-        await scheduleExamMutation.mutateAsync({
-          id: finalExamId,
-          scheduledAt: examScheduledPublishDate,
-        });
-      }
-
       toast.success(
         mode === "create"
           ? locale === "ar"
@@ -456,11 +433,7 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   };
 
   const isInfoComplete = Boolean(title.trim() && grade && subject);
-  const isSubmitting =
-    createExamMutation.isPending ||
-    updateExamMutation.isPending ||
-    publishExamMutation.isPending ||
-    scheduleExamMutation.isPending;
+  const isSubmitting = createExamMutation.isPending || updateExamMutation.isPending;
 
   return {
     isLoaded,
@@ -512,10 +485,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setStandaloneLessonId,
     coursesCount,
     performedCount,
-    examPublishStatus,
-    setExamPublishStatus,
-    examScheduledPublishDate,
-    setExamScheduledPublishDate,
     mappedStages,
     mappedSubjects,
     mappedInstructors,

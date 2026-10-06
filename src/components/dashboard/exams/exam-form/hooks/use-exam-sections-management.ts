@@ -273,61 +273,92 @@ export function useExamSectionsManagement({
       const sectionIdNum = Number(targetSecId);
       const validSectionId = !Number.isNaN(sectionIdNum) && sectionIdNum > 0 ? sectionIdNum : null;
 
-      for (const q of questions) {
-        if (!q.id.startsWith("q-")) {
-          // Existing bank question: build complete payload required by backend PUT validation
-          const payload: StoreQuestionData = {
-            title: { ar: q.questionName, en: q.questionName },
-            body: { ar: q.questionContent, en: q.questionContent },
-            type:
-              q.type === "mcq"
-                ? "multiple_choice"
-                : q.type === "true/false"
-                  ? "true_false"
-                  : "essay",
-            difficulty: q.difficulty || "medium",
-            classification: mapFrontendKindToBackend(q.questionType),
-            score: Number(q.grade) || 1,
-            has_explanation: Boolean(q.hasAnswerExplanation),
-            is_active: true,
-            exam_assignments: [
-              {
-                exam_id: Number(examId),
-                exam_section_id: validSectionId,
-              },
-            ],
-          };
+      // Process requests in concurrent chunks of 6 to avoid bursting the API rate limiter
+      const CHUNK_SIZE = 6;
+      const savedQuestions: Question[] = [];
 
-          if (q.hasAnswerExplanation && q.answerExplanation) {
-            payload.explanation = {
-              ar: q.answerExplanation,
-              en: q.answerExplanation,
-            };
-          }
+      for (let i = 0; i < questions.length; i += CHUNK_SIZE) {
+        const chunk = questions.slice(i, i + CHUNK_SIZE);
+        const chunkResults = await Promise.all(
+          chunk.map(async (q) => {
+            if (!q.id.startsWith("q-")) {
+              // Existing bank question: build complete payload required by backend PUT validation
+              const payload: StoreQuestionData = {
+                title: { ar: q.questionName, en: q.questionName },
+                body: { ar: q.questionContent, en: q.questionContent },
+                type:
+                  q.type === "mcq"
+                    ? "multiple_choice"
+                    : q.type === "true/false"
+                      ? "true_false"
+                      : "essay",
+                difficulty: q.difficulty || "medium",
+                classification: mapFrontendKindToBackend(q.questionType),
+                score: Number(q.grade) || 1,
+                has_explanation: Boolean(q.hasAnswerExplanation),
+                is_active: true,
+                exam_assignments: [
+                  {
+                    exam_id: Number(examId),
+                    exam_section_id: validSectionId,
+                  },
+                ],
+              };
 
-          if (q.type === "text" && q.modelAnswer) {
-            payload.model_answer = {
-              ar: q.modelAnswer,
-              en: q.modelAnswer,
-            };
-          } else if (q.type === "true/false") {
-            payload.correct_answer = q.modelAnswer === "true";
-          } else if (q.type === "mcq" && q.options) {
-            payload.options = q.options.map((opt) => ({
-              text: { ar: opt.text, en: opt.text },
-              is_correct: opt.id === q.modelAnswer,
-            }));
-          }
+              if (q.hasAnswerExplanation && q.answerExplanation) {
+                payload.explanation = {
+                  ar: q.answerExplanation,
+                  en: q.answerExplanation,
+                };
+              }
 
-          await updateQuestionMutation.mutateAsync({
-            id: q.id,
-            data: payload,
-          });
-        } else {
-          // New question created in dialog
-          await handleSaveQuestion(q, targetSecId, true);
-        }
+              if (q.type === "text" && q.modelAnswer) {
+                payload.model_answer = {
+                  ar: q.modelAnswer,
+                  en: q.modelAnswer,
+                };
+              } else if (q.type === "true/false") {
+                payload.correct_answer = q.modelAnswer === "true";
+              } else if (q.type === "mcq" && q.options) {
+                payload.options = q.options.map((opt) => ({
+                  text: { ar: opt.text, en: opt.text },
+                  is_correct: opt.id === q.modelAnswer,
+                }));
+              }
+
+              const updated = await updateQuestionMutation.mutateAsync({
+                id: q.id,
+                data: payload,
+              });
+              return mapBackendQuestionToFrontend(updated, locale);
+            } else {
+              // New question created in dialog
+              await handleSaveQuestion(q, targetSecId, true);
+              return q;
+            }
+          }),
+        );
+        savedQuestions.push(...chunkResults);
       }
+
+      // Optimistically update local state with all new questions in the target section
+      setSections((prev) =>
+        prev.map((sec) => {
+          if (sec.id === targetSecId) {
+            const newQuestions = [...sec.questions];
+            for (const sq of savedQuestions) {
+              const existingIdx = newQuestions.findIndex((q) => q.id === sq.id);
+              if (existingIdx >= 0) {
+                newQuestions[existingIdx] = sq;
+              } else {
+                newQuestions.push(sq);
+              }
+            }
+            return { ...sec, questions: newQuestions };
+          }
+          return sec;
+        }),
+      );
 
       await queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
       setActiveDialog(null);
@@ -337,6 +368,7 @@ export function useExamSectionsManagement({
       toast.error(
         getErrorMessage(err, locale === "ar" ? "فشل إضافة الأسئلة" : "Failed to add questions"),
       );
+      throw err;
     }
   };
 
