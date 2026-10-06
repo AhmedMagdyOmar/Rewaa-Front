@@ -51,8 +51,9 @@ export function mapFrontendKindToBackend(
     case "skill-based":
       return "skill_based";
     case "theoretical":
-    default:
       return "theoretical";
+    default:
+      return kind || "theoretical";
   }
 }
 
@@ -72,8 +73,9 @@ export function mapBackendKindToFrontend(backendClassification: string): Questio
     case "skill_based":
       return "skill-based";
     case "theoretical":
-    default:
       return "theoretical";
+    default:
+      return backendClassification || "theoretical";
   }
 }
 

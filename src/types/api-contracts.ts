@@ -446,7 +446,8 @@ export type QuestionClassificationBackend =
   | "applied"
   | "analytical"
   | "oral"
-  | "skill_based";
+  | "skill_based"
+  | string;
 
 export interface BackendQuestionOption {
   id?: number;
@@ -643,6 +644,27 @@ export interface ExamCategoryListResponse {
 }
 
 export interface StoreExamCategoryData {
+  name: { ar: string; en?: string };
+  code?: string;
+  is_active?: boolean;
+}
+
+export interface BackendQuestionCategory {
+  id: number;
+  provider_id: number | null;
+  code: string;
+  name: Record<string, string>;
+  name_label: string;
+  is_active: boolean;
+  is_system: boolean;
+  created_at: string;
+}
+
+export interface QuestionCategoryListResponse {
+  categories: BackendQuestionCategory[];
+}
+
+export interface StoreQuestionCategoryData {
   name: { ar: string; en?: string };
   code?: string;
   is_active?: boolean;

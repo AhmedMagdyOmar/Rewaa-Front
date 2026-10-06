@@ -19,8 +19,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { getErrorMessage } from "@/lib/api-utils";
 import { toast } from "sonner";
-import { useProviderQuestionOptions } from "@/hooks/use-questions";
+import { useProviderQuestionOptions, useCreateQuestionCategory } from "@/hooks/use-questions";
+import { SelectWithAdd } from "@/components/ui/select-with-add";
 import type {
   ExamSection,
   MCQOption,
@@ -174,13 +176,15 @@ export function QuestionFormContent({
   const [answerExplanation, setAnswerExplanation] = React.useState<string>(
     initialQuestion?.answerExplanation || "",
   );
+  const createCategoryMutation = useCreateQuestionCategory();
+
   // Build question kinds options directly from backend optionsData.classifications
   const classifications = optionsData?.classifications;
   const questionKindOptions = React.useMemo(() => {
     if (classifications && Object.keys(classifications).length > 0) {
       return Object.entries(classifications).map(([key, label]) => ({
         value: key,
-        label,
+        label: label as string,
       }));
     }
     return [
@@ -192,6 +196,29 @@ export function QuestionFormContent({
       { value: "skill-based", label: t("kinds.skillBased") },
     ];
   }, [classifications, t]);
+
+  const handleAddQuestionCategory = async (name: string): Promise<string | undefined> => {
+    try {
+      const res = await createCategoryMutation.mutateAsync({
+        name: { ar: name, en: name },
+        is_active: true,
+      });
+      const newCode = res.category.code;
+      setQuestionType(newCode as QuestionKind);
+      toast.success(
+        locale === "ar" ? "تمت إضافة تصنيف السؤال بنجاح" : "Question category created successfully",
+      );
+      return newCode;
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(
+          err,
+          locale === "ar" ? "فشل في إضافة تصنيف السؤال" : "Failed to create question category",
+        ),
+      );
+      return undefined;
+    }
+  };
 
   // Build sections options from provided sections prop
   const sectionOptions = React.useMemo(() => {
@@ -312,13 +339,14 @@ export function QuestionFormContent({
     };
 
     try {
+      const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
       onSave(questionData, sectionId || undefined, keepOpen, {
         grade: selectedStageId,
         subject: selectedSubjId,
         teacherName: selectedInstId,
         educationalStageId: Number(selectedStageId) || undefined,
         subjectId: Number(selectedSubjId) || undefined,
-        instructorId: Number(selectedInstId) || undefined,
+        instructorId: requiresInstructor && selectedInstId ? Number(selectedInstId) : undefined,
       });
 
       if (keepOpen) {
@@ -446,22 +474,24 @@ export function QuestionFormContent({
         {/* Question Kind Classification & Difficulty Dropdowns */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
-            <Label className="text-sm font-medium text-foreground flex items-center gap-1.5">
-              <span>{t("questionKind")}</span>
-              <span className="text-destructive">*</span>
-            </Label>
-            <Select value={questionType} onValueChange={(v) => setQuestionType(v as QuestionKind)}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {questionKindOptions.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SelectWithAdd
+              id="q-kind"
+              value={questionType}
+              onValueChange={(v) => setQuestionType(v as QuestionKind)}
+              options={questionKindOptions}
+              allowAdd={true}
+              onAddNewOption={handleAddQuestionCategory}
+              label={t("questionKind")}
+              required
+              placeholder={t("kinds.theoretical")}
+              addDialogTitle={
+                locale === "ar" ? "إضافة تصنيف سؤال جديد" : "Add New Question Category"
+              }
+              addInputLabel={locale === "ar" ? "اسم تصنيف السؤال" : "Question Category Name"}
+              addInputPlaceholder={
+                locale === "ar" ? "مثال: أسئلة مهارات عليا" : "e.g. Higher Order Thinking"
+              }
+            />
           </div>
 
           <div className="flex flex-col gap-2">

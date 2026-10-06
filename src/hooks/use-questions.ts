@@ -126,3 +126,22 @@ export function useReorderQuestions() {
     },
   });
 }
+
+/**
+ * Hook to create a new question category
+ */
+export function useCreateQuestionCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: import("@/types/api-contracts").StoreQuestionCategoryData) =>
+      import("@/lib/api/question-categories-service").then((m) =>
+        m.questionCategoriesService.createQuestionCategory(data),
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.questions.options(),
+      });
+    },
+  });
+}
