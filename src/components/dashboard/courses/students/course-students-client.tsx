@@ -21,7 +21,6 @@ import * as React from "react";
 import { ContentPagination } from "@/components/dashboard/common/content-pagination";
 import { DeleteStudentDialog } from "@/components/dashboard/students/delete-student-dialog";
 import { GradeSelect } from "@/components/ui/academic-selects";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -30,6 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 import {
   Select,
   SelectContent,
@@ -38,21 +38,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 
 import { useProviderCourse } from "@/hooks/use-courses";
 import { useDeleteStudent, useStudentsList } from "@/hooks/use-students";
 import { adaptBackendStudentToUI } from "@/lib/adapters/student-adapter";
-import { RegistrationType, Student } from "@/types/student";
+import { Student } from "@/types/student";
 
 export type StudentSortOption = "newest" | "oldest" | "name-asc" | "name-desc";
-
-const REGISTRATION_TYPE_BADGES: Record<RegistrationType, string> = {
-  center: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  online: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  hybrid: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  external: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-};
 
 interface CourseStudentsClientProps {
   courseId: string;
@@ -73,7 +65,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
   const searchQuery = searchParams.get("search") || "";
   const selectedGender = searchParams.get("gender") || "all";
   const selectedGrade = searchParams.get("grade") || "all";
-  const selectedRegType = searchParams.get("regType") || "all";
   const selectedLocation = searchParams.get("location") || "all";
   const sortBy = (searchParams.get("sort") as StudentSortOption) || "newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
@@ -88,7 +79,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
           value === "" ||
           (key === "gender" && value === "all") ||
           (key === "grade" && value === "all") ||
-          (key === "regType" && value === "all") ||
           (key === "location" && value === "all") ||
           (key === "sort" && value === "newest") ||
           (key === "page" && value === 1)
@@ -116,7 +106,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
     course_id: courseId,
     search: searchQuery || undefined,
     gender: selectedGender !== "all" ? (selectedGender as "male" | "female") : undefined,
-    registration_type: selectedRegType !== "all" ? selectedRegType : undefined,
     page: currentPage,
     per_page: itemsPerPage,
   });
@@ -163,7 +152,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
     searchQuery.trim() !== "" ||
     selectedGender !== "all" ||
     selectedGrade !== "all" ||
-    selectedRegType !== "all" ||
     selectedLocation !== "all" ||
     sortBy !== "newest";
 
@@ -172,7 +160,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
       search: null,
       gender: null,
       grade: null,
-      regType: null,
       location: null,
       sort: null,
       page: 1,
@@ -317,25 +304,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
             label=""
             placeholder={t("filters.allGrades")}
           />
-
-          {/* Registration Type Filter */}
-          <Select
-            value={selectedRegType}
-            onValueChange={(val) => updateUrlParams({ regType: val, page: 1 })}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder={t("filters.allRegTypes")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("filters.allRegTypes")}</SelectItem>
-              <SelectItem value="center">{tGlobalStudents("registrationTypes.center")}</SelectItem>
-              <SelectItem value="online">{tGlobalStudents("registrationTypes.online")}</SelectItem>
-              <SelectItem value="hybrid">{tGlobalStudents("registrationTypes.hybrid")}</SelectItem>
-              <SelectItem value="external">
-                {tGlobalStudents("registrationTypes.external")}
-              </SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Second row: Location filter + Sorting + Reset */}
@@ -444,7 +412,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
                   <th className="py-3.5 px-4 text-start">{t("columns.fullName")}</th>
                   <th className="py-3.5 px-4 text-start">{t("columns.phoneNumbers")}</th>
                   <th className="py-3.5 px-4 text-start">{t("columns.grade")}</th>
-                  <th className="py-3.5 px-4 text-start">{t("columns.registrationType")}</th>
                   <th className="py-3.5 px-4 text-start">{t("columns.gender")}</th>
                   <th className="py-3.5 px-4 text-end">{t("columns.actions")}</th>
                 </tr>
@@ -528,23 +495,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
                             </div>
                           )}
                         </div>
-                      </td>
-
-                      {/* Registration Type */}
-                      <td className="py-3.5 px-4">
-                        <Badge
-                          variant="outline"
-                          className={
-                            REGISTRATION_TYPE_BADGES[student.registrationType] ||
-                            "bg-muted text-muted-foreground"
-                          }
-                        >
-                          {tGlobalStudents(
-                            `registrationTypes.${student.registrationType}` as Parameters<
-                              typeof tGlobalStudents
-                            >[0],
-                          ) || student.registrationType}
-                        </Badge>
                       </td>
 
                       {/* Status */}

@@ -69,7 +69,7 @@ export const lessonsService = {
   },
 
   /**
-   * Get lookup options (classifications, types, delivery modes, stages, subjects, instructors, courses, exams)
+   * Get lookup options (classifications, types, stages, subjects, instructors, courses, exams)
    */
   async getLessonOptions(educationalStageId?: number | string): Promise<BackendLessonOptions> {
     return api<BackendLessonOptions>({

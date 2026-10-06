@@ -52,7 +52,7 @@ import {
 } from "@/lib/adapters/student-adapter";
 import { Course } from "@/types/course";
 import { Exam } from "@/types/exam";
-import { RegistrationType, Student, StudentTransaction, TransactionType } from "@/types/student";
+import { Student, StudentTransaction, TransactionType } from "@/types/student";
 import { toast } from "sonner";
 import { BalanceTransactionDialog } from "./balance-transaction-dialog";
 import { StudentInvoiceModal } from "./student-invoice-modal";
@@ -61,13 +61,6 @@ import { StudentReportModal } from "./student-report-modal";
 interface StudentDetailsClientProps {
   studentId: string;
 }
-
-const REGISTRATION_TYPE_BADGES: Record<RegistrationType, string> = {
-  center: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-  online: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  hybrid: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  external: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-};
 
 function formatDate(iso?: string, locale: string = "ar") {
   if (!iso) return "-";
@@ -171,10 +164,6 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
     .filter(Boolean)
     .join(" ");
 
-  const regTypeLabel = t(
-    `registrationTypes.${student.registrationType}` as Parameters<typeof t>[0],
-  );
-
   const enrolledCoursesList =
     backendStudent?.enrolled_courses && backendStudent.enrolled_courses.length > 0
       ? backendStudent.enrolled_courses.map((ec) => ({
@@ -220,7 +209,6 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
           hasOffer: false,
           hasTimeLimit: false,
           isSplitToSections: false,
-          venue: "online",
           numberOfParticipants: 0,
           isDraft: false,
           sections: [],
@@ -413,12 +401,6 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                     {t("statuses.suspended")}
                   </Badge>
                 )}
-                <Badge
-                  variant="outline"
-                  className={`text-xs font-semibold ${REGISTRATION_TYPE_BADGES[student.registrationType]}`}
-                >
-                  {regTypeLabel}
-                </Badge>
               </div>
 
               {/* Subtitle: Grade + Joined Date + Country & State */}

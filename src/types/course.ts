@@ -1,6 +1,4 @@
 export type CoursePeriod = "monthly" | "yearly" | "term" | (string & {});
-export type CourseDeliveryMode = "online" | "onsite" | "hybrid";
-export type CourseVenue = CourseDeliveryMode;
 export type CourseBadge = "featured" | "revision" | "new" | "bestseller" | "limited";
 export type LessonType = "videoAndText" | "text";
 export type LessonClassification = "standalone" | "course";
@@ -47,7 +45,6 @@ export interface Lesson {
   isRequiredPassExam?: boolean;
 
   // Organization and publish status
-  venue?: CourseVenue;
   classification?: LessonClassification;
   lessonCategory?: LessonCategory;
   courseId?: string; // FK → Course.id
@@ -129,7 +126,6 @@ export interface Course {
   hasTimeLimit: boolean;
   timeLimitValue?: number;
   isSplitToSections: boolean;
-  venue: CourseVenue;
   numberOfParticipants: number;
   isDraft: boolean;
   publishStatus?: LessonPublishStatus;

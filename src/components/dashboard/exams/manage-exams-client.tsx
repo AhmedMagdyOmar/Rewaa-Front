@@ -5,9 +5,6 @@ import {
   CircleAlert,
   ExternalLink,
   FileQuestion,
-  Globe,
-  Globe2,
-  House,
   MoreVertical,
   Pencil,
   Plus,
@@ -28,7 +25,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -36,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 
 import { useDeleteExam, useProviderExamOptions, useProviderExams } from "@/hooks/use-exams";
 import type { BackendExam } from "@/types/api-contracts";
@@ -178,13 +175,6 @@ export function ManageExamsClient() {
     total: totalItems,
   });
 
-  // ─── Venue icon helper ──────────────────────────────────────────────────────
-  function VenueIcon({ venue }: { venue?: string }) {
-    if (venue === "online") return <Globe className="h-3.5 w-3.5 shrink-0" />;
-    if (venue === "onsite" || venue === "center") return <House className="h-3.5 w-3.5 shrink-0" />;
-    return <Globe2 className="h-3.5 w-3.5 shrink-0" />;
-  }
-
   // ─── Skeleton rows ──────────────────────────────────────────────────────────
   const SkeletonRow = () => (
     <tr className="border-b border-border/50">
@@ -279,7 +269,6 @@ export function ManageExamsClient() {
                   t("table.columns.title"),
                   t("table.columns.subjectGrade"),
                   t("table.columns.category"),
-                  t("table.columns.typeVenue"),
                   t("table.columns.questions"),
                   t("table.columns.students"),
                   locale === "ar" ? "عدد المحاولات" : "Attempts",
@@ -369,7 +358,7 @@ export function ManageExamsClient() {
                         </span>
                       </td>
 
-                      {/* ── Type & Venue ──────────────────────────────────── */}
+                      {/* ── Type ──────────────────────────────────── */}
                       <td className="px-4 py-3 min-w-44">
                         {exam.course ? (
                           <div className="flex flex-col gap-1">
@@ -398,17 +387,11 @@ export function ManageExamsClient() {
                               {t("table.examBank")}
                             </span>
                           </div>
-                        ) : exam.is_standalone && exam.scope === "general" && exam.delivery_mode ? (
+                        ) : exam.is_standalone && exam.scope === "general" ? (
                           <div className="flex flex-row gap-1 items-center">
-                            <VenueIcon venue={exam.delivery_mode} />
                             <span className="text-xs font-medium text-primary-dark/80">
                               {t("table.independent")}
                             </span>
-                            {exam.delivery_mode_label && (
-                              <span className="text-xs text-muted-foreground">
-                                - {exam.delivery_mode_label}
-                              </span>
-                            )}
                           </div>
                         ) : (
                           <div className="flex flex-row gap-1 items-center">

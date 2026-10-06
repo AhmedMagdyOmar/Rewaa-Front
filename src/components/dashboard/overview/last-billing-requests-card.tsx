@@ -91,9 +91,6 @@ export function LastBillingRequestsCard({ onSelectInvoice }: LastBillingRequests
         targetPayment.order?.order_number ||
         "Course Subscription";
 
-      const deliveryMode =
-        primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
-
       const studentPhone =
         targetPayment.submitted_phone || targetPayment.phone || targetPayment.student?.phone || "";
 
@@ -115,7 +112,6 @@ export function LastBillingRequestsCard({ onSelectInvoice }: LastBillingRequests
         country: locale === "ar" ? "مصر" : "Egypt",
         state: locale === "ar" ? "القاهرة" : "Cairo",
         grade: studentGrade,
-        registrationType: deliveryMode === "online" ? "online" : "center",
       };
 
       const transactionObj: StudentTransaction = {

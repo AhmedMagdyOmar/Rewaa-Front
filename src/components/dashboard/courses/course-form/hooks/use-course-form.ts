@@ -1,19 +1,19 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useLocale, useTranslations } from "next-intl";
-import { toast } from "sonner";
-import { CourseVenue, LessonPublishStatus } from "@/types/course";
-import { getErrorMessage } from "@/lib/api-utils";
 import {
+  useCreateCourse,
+  useCreateCourseCategory,
   useProviderCourse,
   useProviderCourseOptions,
-  useCreateCourse,
   useUpdateCourse,
-  useCreateCourseCategory,
 } from "@/hooks/use-courses";
+import { getErrorMessage } from "@/lib/api-utils";
+import { LessonPublishStatus } from "@/types/course";
+import { useLocale, useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 
 interface UseCourseFormProps {
   initialCourseId?: string;
@@ -58,7 +58,6 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
   const [hasTimeLimit, setHasTimeLimit] = useState(false);
   const [timeLimitValue, setTimeLimitValue] = useState<number | "">("");
   const [isActive, setIsActive] = useState(true);
-  const [venue, setVenue] = useState<CourseVenue>("hybrid");
   const [coursePublishStatus, setCoursePublishStatus] = useState<LessonPublishStatus>("draft");
   const [courseScheduledPublishDate, setCourseScheduledPublishDate] = useState("");
 
@@ -172,7 +171,6 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
       setOfferEndDate(bCourse.discount_ends_at || "");
       setHasTimeLimit(Boolean(bCourse.has_limited_access));
       setTimeLimitValue(bCourse.access_duration_days ? Number(bCourse.access_duration_days) : "");
-      setVenue(bCourse.delivery_mode);
 
       if (bCourse.educational_stage_id) {
         setGrade(String(bCourse.educational_stage_id));
@@ -192,7 +190,6 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     const stageId = Number(grade) || courseOptions?.educational_stages?.[0]?.id || 1;
     const subjectId = Number(subject) || courseOptions?.subjects?.[0]?.id || 1;
     const instructorId = Number(teacherName) || courseOptions?.instructors?.[0]?.id || undefined;
-    const deliveryMode = venue || "hybrid";
     const subPeriod = period || "monthly";
 
     const isNewCourse =
@@ -236,7 +233,6 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
       has_limited_access: hasTimeLimit,
       access_duration_days: hasTimeLimit && timeLimitValue ? Number(timeLimitValue) : undefined,
       uses_student_groups: false,
-      delivery_mode: deliveryMode,
       status: targetStatus,
       scheduled_publish_at:
         targetStatus === "scheduled" && courseScheduledPublishDate
@@ -403,8 +399,6 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     setTimeLimitValue,
     isActive,
     setIsActive,
-    venue,
-    setVenue,
     coursePublishStatus,
     setCoursePublishStatus: handleUpdatePublishStatus,
     courseScheduledPublishDate,

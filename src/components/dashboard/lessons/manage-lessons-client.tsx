@@ -13,7 +13,7 @@ import { useDeleteLesson, useProviderLessons } from "@/hooks/use-lessons";
 import { getErrorMessage } from "@/lib/api-utils";
 import { cn } from "@/lib/utils";
 import { LessonClassification } from "@/types/api-contracts";
-import { CourseVenue, Lesson } from "@/types/course";
+import { Lesson } from "@/types/course";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteLessonDialog } from "./delete-lesson-dialog";
@@ -73,7 +73,6 @@ export function ManageLessonsClient() {
     subject: b.subject?.name?.[locale] || b.subject?.name?.ar || undefined,
     teacherName: b.instructor?.full_name || undefined,
     teacherImage: b.instructor?.avatar || undefined,
-    venue: (b.delivery_mode as CourseVenue) || "hybrid",
     classification: b.classification,
     lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
     courseId: b.course_id

@@ -30,8 +30,6 @@ export interface BackendWebsiteStudentProfile {
   governorate?: { id: number; name: string } | null;
   educational_stage_id: number | null;
   educational_stage?: { id: number; name: string } | null;
-  registration_type: string;
-  registration_type_label?: string;
   status: "active" | "suspended" | null;
   status_label?: string;
   courses_count?: number;
@@ -74,7 +72,7 @@ export const studentProfileService = {
   },
 
   /**
-   * Get student profile options (genders, registration_types, countries, governorates, educational_stages)
+   * Get student profile options (genders, countries, governorates, educational_stages)
    * GET /api/website/profile/options
    */
   async getOptions(countryId?: number | string): Promise<BackendStudentOptions> {

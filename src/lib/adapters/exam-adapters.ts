@@ -12,7 +12,6 @@ import {
   ExamCategory,
   ExamSection,
   ExamType,
-  ExamVenue,
   MCQOption,
   Question,
   QuestionDifficulty,
@@ -214,14 +213,6 @@ export function mapBackendExamToFrontend(be: BackendExam, locale: string = "ar")
     : be.is_standalone || be.scope === "general"
       ? "independent"
       : "course-dependent";
-  const venue: ExamVenue | undefined =
-    be.is_standalone || be.scope === "general"
-      ? be.delivery_mode === "in_person"
-        ? "onsite"
-        : be.delivery_mode === "hybrid"
-          ? "hybrid"
-          : "online"
-      : undefined;
 
   let examSections: ExamSection[] = [];
   if (Array.isArray(be.sections)) {
@@ -258,7 +249,6 @@ export function mapBackendExamToFrontend(be: BackendExam, locale: string = "ar")
     teacherName,
     category,
     examType,
-    venue,
     courseId: be.course_id ? String(be.course_id) : undefined,
     courseTitle: be.course
       ? isEn

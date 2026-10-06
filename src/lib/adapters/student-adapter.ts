@@ -3,7 +3,6 @@ import {
   Student,
   StudentTransaction,
   Gender,
-  RegistrationType,
   StudentStatus,
   TransactionType,
 } from "@/types/student";
@@ -70,7 +69,6 @@ export function adaptBackendStudentToUI(student: BackendStudent, locale: string 
       localizedStageName ||
       (student.educational_stage_id ? `الصف ${student.educational_stage_id}` : ""),
     educationalStageId: student.educational_stage_id ?? student.educational_stage?.id,
-    registrationType: (student.registration_type as RegistrationType) || "center",
     coursesCount:
       student.enrolled_courses_count ??
       student.courses_count ??

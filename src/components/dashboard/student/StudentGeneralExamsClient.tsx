@@ -23,9 +23,6 @@ import {
   Clock,
   FileCheck2,
   FileQuestion,
-  Globe,
-  Globe2,
-  House,
   RotateCcw,
   Search,
   Timer,
@@ -65,7 +62,6 @@ export function StudentGeneralExamsClient() {
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.generalExamsPage");
   const tExams = useTranslations("studentDashboard.examsPage");
-  const tCourses = useTranslations("courses");
   const tGeneralExamTypes = useTranslations("exams");
 
   const router = useRouter();
@@ -144,24 +140,12 @@ export function StudentGeneralExamsClient() {
     return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
   };
 
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "onsite" || v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
-  };
-
   const formatCategory = (cat: string) => {
     const key = cat as Parameters<typeof tGeneralExamTypes.has>[0];
     return tGeneralExamTypes.has(`category.${key}` as Parameters<typeof tGeneralExamTypes.has>[0])
       ? tGeneralExamTypes(`category.${key}` as Parameters<typeof tGeneralExamTypes>[0])
       : cat;
   };
-
-  function VenueIcon({ venue }: { venue?: string }) {
-    if (venue === "online") return <Globe className="size-3.5 shrink-0" />;
-    if (venue === "onsite" || venue === "center") return <House className="size-3.5 shrink-0" />;
-    return <Globe2 className="size-3.5 shrink-0" />;
-  }
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -356,9 +340,6 @@ export function StudentGeneralExamsClient() {
                     {tExams("table.columns.subjectGrade")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                    {tExams("table.columns.sourceCourse")}
-                  </th>
-                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {tExams("table.columns.category")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
@@ -437,19 +418,6 @@ export function StudentGeneralExamsClient() {
                             </span>
                             {stageStr && (
                               <span className="text-xs text-muted-foreground">{stageStr}</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Source / Scope */}
-                        <td className="px-4 py-3.5 min-w-44">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <VenueIcon venue={exam.delivery_mode} />
-                            <span>{tExams("table.independent")}</span>
-                            {exam.delivery_mode && (
-                              <span className="text-muted-foreground/80">
-                                ({formatVenue(exam.delivery_mode)})
-                              </span>
                             )}
                           </div>
                         </td>
@@ -557,9 +525,6 @@ export function StudentGeneralExamsClient() {
                     {tExams("table.columns.subjectGrade")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                    {tExams("table.columns.sourceCourse")}
-                  </th>
-                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {tExams("table.columns.score")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
@@ -643,19 +608,6 @@ export function StudentGeneralExamsClient() {
                             </span>
                             {stageStr && (
                               <span className="text-xs text-muted-foreground">{stageStr}</span>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Source Scope */}
-                        <td className="px-4 py-3.5 min-w-44">
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                            <VenueIcon venue={exam.delivery_mode} />
-                            <span>{tExams("table.independent")}</span>
-                            {exam.delivery_mode && (
-                              <span className="text-muted-foreground/80">
-                                ({formatVenue(exam.delivery_mode)})
-                              </span>
                             )}
                           </div>
                         </td>

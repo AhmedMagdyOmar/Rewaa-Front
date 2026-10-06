@@ -90,16 +90,10 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   const router = useRouter();
 
   // Handle Enrollment Action via backend order creation
-  const handleEnroll = (targetCourseId: number, deliveryMode?: string) => {
-    const payload: { course_ids: number[]; delivery_modes?: Record<string | number, string> } = {
+  const handleEnroll = (targetCourseId: number) => {
+    const payload: { course_ids: number[] } = {
       course_ids: [targetCourseId],
     };
-
-    if (deliveryMode) {
-      payload.delivery_modes = {
-        [targetCourseId]: deliveryMode,
-      };
-    }
 
     enrollMutation.mutate(payload, {
       onSuccess: (data) => {

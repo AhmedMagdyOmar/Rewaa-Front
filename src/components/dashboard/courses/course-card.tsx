@@ -7,15 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Course } from "@/types/course";
 import {
   Barcode,
   BookOpen,
   Calendar,
-  Globe,
-  Globe2,
-  House,
   MoreVertical,
   Pencil,
   Tag,
@@ -204,30 +200,8 @@ export function CourseCard({
 
       {/* Card Body */}
       <div className="flex flex-col flex-1 p-4">
-        {/* Course Title with Venue Icon */}
+        {/* Course Title */}
         <div className="flex items-start gap-1.5 mb-2 group-hover:text-primary transition-colors">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="mt-1 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
-                  {course.venue === "online" ? (
-                    <Globe className="h-4 w-4" />
-                  ) : course.venue === "onsite" ? (
-                    <House className="h-4 w-4" />
-                  ) : (
-                    <Globe2 className="h-4 w-4" />
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {course.venue === "hybrid"
-                  ? t("venue.hybrid")
-                  : course.venue === "online"
-                    ? t("venue.online")
-                    : t("venue.onsite")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <h3 className="font-bold text-foreground line-clamp-2 text-base leading-snug">
             {course.title}
           </h3>

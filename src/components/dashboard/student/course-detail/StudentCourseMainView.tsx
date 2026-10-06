@@ -22,7 +22,6 @@ export function StudentCourseMainView({
   onSelectLesson,
 }: StudentCourseMainViewProps) {
   const t = useTranslations("studentDashboard.courseDetails");
-  const tCourses = useTranslations("courses");
   const locale = useLocale();
   const isRtl = locale === "ar";
 
@@ -131,18 +130,6 @@ export function StudentCourseMainView({
                     className="bg-black/40 text-white border-white/20 backdrop-blur-xs text-xs font-semibold"
                   >
                     {subjectName}
-                  </Badge>
-                )}
-                {course.delivery_mode && (
-                  <Badge
-                    variant="outline"
-                    className="bg-black/40 text-white border-white/20 backdrop-blur-xs text-xs font-semibold"
-                  >
-                    {tCourses.has(
-                      `venue.${course.delivery_mode}` as Parameters<typeof tCourses.has>[0],
-                    )
-                      ? tCourses(`venue.${course.delivery_mode}` as Parameters<typeof tCourses>[0])
-                      : course.delivery_mode}
                   </Badge>
                 )}
               </div>

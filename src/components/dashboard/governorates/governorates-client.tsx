@@ -1,31 +1,29 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
 import {
   ArrowLeft,
   ArrowUpDown,
   Building2,
   Globe2,
   GraduationCap,
-  Laptop,
+  Loader2,
   MapPin,
   RotateCcw,
   Search,
   Sparkles,
   TrendingUp,
   Users,
-  Loader2,
 } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import Link from "next/link";
+import React, { useMemo, useState } from "react";
 
-import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { ContentPagination } from "@/components/dashboard/common/content-pagination";
+import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ProgressBar } from "@/components/ui/charts/progress-bar";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -33,6 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -58,8 +57,6 @@ interface ProcessedGovernorate {
   studentsCount: number;
   activeStudentsCount: number;
   percentage: number;
-  centerStudents: number;
-  onlineStudents: number;
   topGradeName: string;
 }
 
@@ -119,8 +116,6 @@ export function GovernoratesClient() {
         countryNameEn: string;
         studentsCount: number;
         activeStudentsCount: number;
-        centerStudents: number;
-        onlineStudents: number;
         stagesCountMap: Record<string, number>;
         percentage: number;
       }
@@ -139,8 +134,6 @@ export function GovernoratesClient() {
         countryNameEn: country?.name?.en || country?.name?.ar || "Egypt",
         studentsCount: 0,
         activeStudentsCount: 0,
-        centerStudents: 0,
-        onlineStudents: 0,
         stagesCountMap: {},
         percentage: 0,
       });
@@ -186,15 +179,13 @@ export function GovernoratesClient() {
           countryNameEn: "Egypt",
           studentsCount: bg.students_count,
           activeStudentsCount: 0,
-          centerStudents: 0,
-          onlineStudents: 0,
           stagesCountMap: {},
           percentage: bg.percentage,
         });
       }
     });
 
-    // 3. Aggregate student-level breakdown (center vs online, active status, educational stages)
+    // 3. Aggregate student-level breakdown (active status, educational stages)
     const hasBackendCounts = backendGovDistribution.length > 0;
     students.forEach((st) => {
       const rawGovId = st.governorate_id ?? st.governorate?.id;
@@ -236,8 +227,6 @@ export function GovernoratesClient() {
           countryNameEn,
           studentsCount: 0,
           activeStudentsCount: 0,
-          centerStudents: 0,
-          onlineStudents: 0,
           stagesCountMap: {},
           percentage: 0,
         };
@@ -251,11 +240,6 @@ export function GovernoratesClient() {
 
       if (st.status === "active") {
         existing.activeStudentsCount += 1;
-      }
-      if (st.registration_type === "center") {
-        existing.centerStudents += 1;
-      } else {
-        existing.onlineStudents += 1;
       }
 
       const stageName =
@@ -280,15 +264,6 @@ export function GovernoratesClient() {
         }
       });
 
-      // If we have student counts from backend stats but no individual student sample yet,
-      // assume default active count or online
-      if (entry.studentsCount > 0 && entry.centerStudents === 0 && entry.onlineStudents === 0) {
-        entry.onlineStudents = entry.studentsCount;
-        if (entry.activeStudentsCount === 0) {
-          entry.activeStudentsCount = entry.studentsCount;
-        }
-      }
-
       const percentage =
         entry.percentage > 0
           ? entry.percentage
@@ -307,8 +282,6 @@ export function GovernoratesClient() {
         studentsCount: entry.studentsCount,
         activeStudentsCount: entry.activeStudentsCount,
         percentage,
-        centerStudents: entry.centerStudents,
-        onlineStudents: entry.onlineStudents,
         topGradeName: topStageName,
       });
     });
@@ -675,9 +648,6 @@ export function GovernoratesClient() {
                 <TableHead className="text-xs font-bold min-w-44">
                   {t("table.columns.percentage")}
                 </TableHead>
-                <TableHead className="text-xs font-bold min-w-36">
-                  {t("table.columns.learningMode")}
-                </TableHead>
                 <TableHead className="text-xs font-bold min-w-32">
                   {t("table.columns.activeStudents")}
                 </TableHead>
@@ -750,37 +720,6 @@ export function GovernoratesClient() {
                             </span>
                           </div>
                           <ProgressBar value={Math.min(gov.percentage * 3.5, 100)} />
-                        </div>
-                      </TableCell>
-
-                      {/* Learning Mode (Center vs Online) */}
-                      <TableCell className="text-xs">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {gov.centerStudents > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] font-medium bg-emerald-500/10 text-emerald-600 border-emerald-500/20 gap-1 px-1.5 py-0"
-                            >
-                              <Building2 className="size-2.5" />
-                              <span>
-                                {t("table.centerShort")} ({gov.centerStudents})
-                              </span>
-                            </Badge>
-                          )}
-                          {gov.onlineStudents > 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] font-medium bg-blue-500/10 text-blue-600 border-blue-500/20 gap-1 px-1.5 py-0"
-                            >
-                              <Laptop className="size-2.5" />
-                              <span>
-                                {t("table.onlineShort")} ({gov.onlineStudents})
-                              </span>
-                            </Badge>
-                          )}
-                          {gov.centerStudents === 0 && gov.onlineStudents === 0 && (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
                         </div>
                       </TableCell>
 

@@ -23,9 +23,6 @@ import {
   Clock,
   FileCheck2,
   FileQuestion,
-  Globe,
-  Globe2,
-  House,
   Search,
   Timer,
   X,
@@ -63,7 +60,6 @@ export function StudentExamsClient() {
   const locale = useLocale();
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.examsPage");
-  const tCourses = useTranslations("courses");
   const tExams = useTranslations("exams");
 
   const router = useRouter();
@@ -144,12 +140,6 @@ export function StudentExamsClient() {
       : cat;
   };
 
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "onsite" || v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
-  };
-
   const getLocalizedString = (field?: Record<string, string> | null) => {
     if (!field) return "";
     return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
@@ -167,13 +157,6 @@ export function StudentExamsClient() {
     setSearchTerm("");
     updateUrlParams({ search: null, sort: null, page: 1 });
   };
-
-  // Venue icon helper
-  function VenueIcon({ venue }: { venue?: string }) {
-    if (venue === "online") return <Globe className="size-3.5 shrink-0" />;
-    if (venue === "onsite" || venue === "center") return <House className="size-3.5 shrink-0" />;
-    return <Globe2 className="size-3.5 shrink-0" />;
-  }
 
   const isRequiredTab = activeTab === "required";
 
@@ -422,7 +405,7 @@ export function StudentExamsClient() {
 
                         {/* Source Course */}
                         <td className="px-4 py-3.5 min-w-44">
-                          {exam.scope === "course" && exam.course ? (
+                          {exam.scope === "course" && exam.course && (
                             <Link
                               href={`/student-dashboard/courses/${exam.course.id}`}
                               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1 group"
@@ -430,16 +413,6 @@ export function StudentExamsClient() {
                               <BookOpen className="size-3.5 shrink-0" />
                               <span className="truncate">{courseTitleStr || exam.course.id}</span>
                             </Link>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                              <VenueIcon venue={exam.delivery_mode} />
-                              <span>{t("table.independent")}</span>
-                              {exam.delivery_mode && (
-                                <span className="text-muted-foreground/80">
-                                  ({formatVenue(exam.delivery_mode)})
-                                </span>
-                              )}
-                            </div>
                           )}
                         </td>
 
@@ -591,7 +564,7 @@ export function StudentExamsClient() {
 
                         {/* Source Course */}
                         <td className="px-4 py-3.5 min-w-44">
-                          {exam.scope === "course" && exam.course ? (
+                          {exam.scope === "course" && exam.course && (
                             <Link
                               href={`/student-dashboard/courses/${exam.course.id}`}
                               className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
@@ -599,16 +572,6 @@ export function StudentExamsClient() {
                               <BookOpen className="size-3.5 shrink-0" />
                               <span className="truncate">{courseTitleStr || exam.course.id}</span>
                             </Link>
-                          ) : (
-                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
-                              <VenueIcon venue={exam.delivery_mode} />
-                              <span>{t("table.independent")}</span>
-                              {exam.delivery_mode && (
-                                <span className="text-muted-foreground/80">
-                                  ({formatVenue(exam.delivery_mode)})
-                                </span>
-                              )}
-                            </div>
                           )}
                         </td>
 

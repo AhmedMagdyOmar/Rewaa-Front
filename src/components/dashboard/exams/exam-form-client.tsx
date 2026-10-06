@@ -103,7 +103,6 @@ export function ExamFormClient({ mode, examId, initialData }: ExamFormClientProp
                 grade: form.grade,
                 subject: form.subject,
                 teacherName: form.teacherName,
-                venue: form.venue,
               }}
               onBackToStep1={() => form.setCurrentStep(1)}
               onFinish={form.handleFinish}

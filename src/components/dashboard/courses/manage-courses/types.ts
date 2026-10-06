@@ -1,9 +1,8 @@
-import { CourseVenueFilter, FilterTab, SortOption } from "../course-filters";
+import { FilterTab, SortOption } from "../course-filters";
 
 export interface CourseUrlFiltersState {
   searchQuery: string;
   activeTab: FilterTab;
-  venueFilter: CourseVenueFilter;
   stageFilter: string;
   subjectFilter: string;
   instructorFilter: string;

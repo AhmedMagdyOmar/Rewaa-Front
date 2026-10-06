@@ -16,7 +16,6 @@ import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SelectWithAdd } from "@/components/ui/select-with-add";
-import { ExamVenue } from "@/types/exam";
 import {
   BookOpen,
   Eye,
@@ -24,7 +23,6 @@ import {
   GraduationCap,
   Info,
   ListOrdered,
-  MapPin,
   Settings,
   Shuffle,
 } from "lucide-react";
@@ -39,7 +37,6 @@ interface ExamStep1FormProps {
 
 export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
   const tForm = useTranslations("exams.form");
-  const tCourses = useTranslations("courses");
 
   return (
     <div className="space-y-6">
@@ -262,35 +259,7 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
           checked={form.isIndependent}
           onCheckedChange={form.setIsIndependent}
         >
-          {form.isIndependent ? (
-            <div className="space-y-3 pt-2 border-t border-border/50 animate-in fade-in duration-300">
-              <FormRadioGroup
-                name="exam-venue"
-                title={tForm("fields.venue")}
-                icon={MapPin}
-                value={form.venue}
-                onValueChange={(val) => form.setVenue(val as ExamVenue)}
-                gridClassName="sm:grid-cols-3"
-                options={[
-                  {
-                    id: "online",
-                    label: tCourses("new.venues.online.label"),
-                    desc: tCourses("new.venues.online.desc"),
-                  },
-                  {
-                    id: "onsite",
-                    label: tCourses("new.venues.onsite.label"),
-                    desc: tCourses("new.venues.onsite.desc"),
-                  },
-                  {
-                    id: "hybrid",
-                    label: tCourses("new.venues.hybrid.label"),
-                    desc: tCourses("new.venues.hybrid.desc"),
-                  },
-                ]}
-              />
-            </div>
-          ) : (
+          {!form.isIndependent && (
             <div className="space-y-4 pt-2 border-t border-border/50 animate-in fade-in duration-300">
               {/* Attachment Mode Selection */}
               <FormRadioGroup

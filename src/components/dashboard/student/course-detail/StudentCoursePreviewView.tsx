@@ -13,9 +13,6 @@ import {
   Calendar,
   Clock,
   FileText,
-  Globe,
-  Globe2,
-  House,
   KeyRound,
   Sparkles,
   Tag,
@@ -28,7 +25,7 @@ import { StudentRedeemCodeDialog } from "../courses/StudentRedeemCodeDialog";
 
 interface StudentCoursePreviewViewProps {
   course: BackendStudentCourseDetails;
-  onEnroll: (courseId: number, deliveryMode?: string) => void;
+  onEnroll: (courseId: number) => void;
   isEnrolling?: boolean;
 }
 
@@ -44,9 +41,6 @@ export function StudentCoursePreviewView({
   const tRedeem = useTranslations("studentDashboard.activationCodeRedemption");
   const [redeemDialogOpen, setRedeemDialogOpen] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
-  const [selectedDeliveryMode, setSelectedDeliveryMode] = React.useState<string>(
-    course.delivery_mode === "hybrid" ? "online" : course.delivery_mode || "online",
-  );
 
   // Helper to extract bilingual record
   const resolveText = (field: Record<string, string> | string | null | undefined): string => {
@@ -101,7 +95,7 @@ export function StudentCoursePreviewView({
           <div className="lg:col-span-8 space-y-6">
             {/* 1. Header Badges, Title & Teacher info */}
             <div className="space-y-4 bg-card p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-border/80 shadow-xs">
-              {/* Badges for Grade, Subject & Venue */}
+              {/* Badges for Grade, Subject */}
               <div className="flex flex-wrap items-center gap-2">
                 {stageName && (
                   <Badge className="bg-primary text-primary-foreground font-bold text-xs px-3 py-1">
@@ -114,14 +108,6 @@ export function StudentCoursePreviewView({
                     className="bg-muted/60 text-foreground border-border/80 text-xs font-semibold px-3 py-1"
                   >
                     {subjectName}
-                  </Badge>
-                )}
-                {course.delivery_mode && (
-                  <Badge
-                    variant="secondary"
-                    className="text-xs font-medium text-muted-foreground px-2.5 py-1"
-                  >
-                    {tCourses(`venue.${course.delivery_mode}` as Parameters<typeof tCourses>[0])}
                   </Badge>
                 )}
               </div>
@@ -245,21 +231,6 @@ export function StudentCoursePreviewView({
                     <BookOpen className="size-12 opacity-60" />
                   </div>
                 )}
-                {/* Venue Badge on top-end */}
-                {course.delivery_mode && (
-                  <div className="absolute top-3 inset-e-3 z-10">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-black/60 text-white backdrop-blur-md border border-white/10 shadow-xs">
-                      {course.delivery_mode === "online" ? (
-                        <Globe className="h-3.5 w-3.5" />
-                      ) : course.delivery_mode === "onsite" ? (
-                        <House className="h-3.5 w-3.5" />
-                      ) : (
-                        <Globe2 className="h-3.5 w-3.5" />
-                      )}
-                      {tCourses(`venue.${course.delivery_mode}` as Parameters<typeof tCourses>[0])}
-                    </span>
-                  </div>
-                )}
                 <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
               </div>
 
@@ -293,49 +264,11 @@ export function StudentCoursePreviewView({
                 </div>
               </div>
 
-              {/* Attendance Mode Selector for Hybrid Courses */}
-              {course.delivery_mode === "hybrid" && (
-                <div className="space-y-2 pt-2 border-t border-border/60">
-                  <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                    <span>{isRtl ? "طريقة الحضور المفضلة:" : "Preferred Attendance Mode:"}</span>
-                    <span className="text-[11px] text-muted-foreground">
-                      {isRtl ? "مطلوب" : "Required"}
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDeliveryMode("online")}
-                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                        selectedDeliveryMode === "online"
-                          ? "border-primary bg-primary/10 text-primary shadow-xs"
-                          : "border-border/70 hover:border-border text-muted-foreground hover:text-foreground bg-muted/20"
-                      }`}
-                    >
-                      <Globe className="size-3.5" />
-                      <span>{tCourses("venue.online")}</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDeliveryMode("onsite")}
-                      className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl border text-xs font-semibold transition-all cursor-pointer ${
-                        selectedDeliveryMode === "onsite"
-                          ? "border-primary bg-primary/10 text-primary shadow-xs"
-                          : "border-border/70 hover:border-border text-muted-foreground hover:text-foreground bg-muted/20"
-                      }`}
-                    >
-                      <House className="size-3.5" />
-                      <span>{tCourses("venue.onsite")}</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* 3. CTA Button: Full Width "Enroll in Course" */}
               <Button
                 type="button"
                 size="lg"
-                onClick={() => onEnroll(course.id, selectedDeliveryMode)}
+                onClick={() => onEnroll(course.id)}
                 disabled={isEnrolling}
                 className="w-full font-bold text-base py-6 rounded-xl shadow-md cursor-pointer gap-2"
               >

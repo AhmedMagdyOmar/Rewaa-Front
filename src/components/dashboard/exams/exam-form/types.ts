@@ -1,5 +1,4 @@
 import { LucideIcon } from "lucide-react";
-import { ExamVenue } from "@/types/exam";
 
 export type ExamFormStep = 1 | 2;
 
@@ -24,5 +23,4 @@ export interface ParentExamContext {
   grade: string;
   subject: string;
   teacherName: string;
-  venue: ExamVenue;
 }

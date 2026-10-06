@@ -3,14 +3,7 @@ import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import {
-  Course,
-  CourseSection,
-  CourseVenue,
-  Lesson,
-  LessonPublishStatus,
-  LessonType,
-} from "@/types/course";
+import { Course, CourseSection, Lesson, LessonPublishStatus, LessonType } from "@/types/course";
 import { Exam } from "@/types/exam";
 import { getErrorMessage } from "@/lib/api-utils";
 import { coursesService } from "@/lib/api/courses-service";
@@ -57,7 +50,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     grade: "",
     subject: "",
     teacherName: "",
-    venue: "hybrid" as CourseVenue,
   });
 
   const queryClient = useQueryClient();
@@ -106,7 +98,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           "",
         subject: parentCourse.subject?.name?.[locale] || parentCourse.subject?.name?.ar || "",
         teacherName: parentCourse.instructor?.full_name || "",
-        venue: parentCourse.delivery_mode || "hybrid",
       });
     }
   }, [parentCourse, locale, courseId]);
@@ -155,7 +146,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             parentCourseContext.grade ||
             "",
           teacherName: e.instructor?.full_name || parentCourseContext.teacherName || "",
-          venue: parentCourseContext.venue || "hybrid",
           category: "test",
           examType: e.is_standalone ? "independent" : "course-dependent",
           courseId: e.course_id ? String(e.course_id) : undefined,
@@ -203,7 +193,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           subject: parentCourseContext.subject || "",
           grade: parentCourseContext.grade || "",
           teacherName: parentCourseContext.teacherName || "",
-          venue: parentCourseContext.venue || "hybrid",
           category: "test",
           examType: "independent",
           triesAllowed: 1,
@@ -318,7 +307,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             hasOffer: false,
             hasTimeLimit: false,
             isSplitToSections: true,
-            venue: c.delivery_mode || "online",
             sections: [],
           }));
         setAllCoursesList(bList);

@@ -11,7 +11,7 @@ import {
 import { mapBackendCategoryToFrontend } from "@/lib/adapters/exam-adapters";
 import { getErrorMessage } from "@/lib/api-utils";
 import { StoreExamData } from "@/types/api-contracts";
-import { Exam, ExamCategory, ExamVenue } from "@/types/exam";
+import { Exam, ExamCategory } from "@/types/exam";
 import { useLocale, useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -53,9 +53,8 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   const [randomizeQuestionsOrder, setRandomizeQuestionsOrder] = useState(true);
   const [randomizeMCQChoices, setRandomizeMCQChoices] = useState(false);
 
-  // Classification & Venue / Publish Status
+  // Classification & Publish Status
   const [isIndependent, setIsIndependent] = useState<boolean>(true);
-  const [venue, setVenue] = useState<ExamVenue>("online");
   const [attachmentType, setAttachmentType] = useState<"bank" | "course" | "standalone_lesson">(
     "bank",
   );
@@ -162,15 +161,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
         setStandaloneLessonId("");
       }
 
-      if (initialBackendExam.delivery_mode) {
-        setVenue(
-          initialBackendExam.delivery_mode === "in_person"
-            ? "onsite"
-            : initialBackendExam.delivery_mode === "hybrid"
-              ? "hybrid"
-              : "online",
-        );
-      }
       setCoursesCount(initialBackendExam.course_id ? 1 : 0);
       setPerformedCount(initialBackendExam.students_count ?? 0);
 
@@ -190,7 +180,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setRandomizeQuestionsOrder(initialData.randomizeQuestionsOrder);
       setRandomizeMCQChoices(initialData.randomizeMCQChoices);
       setIsIndependent(initialData.examType === "independent");
-      if (initialData.venue) setVenue(initialData.venue);
       setCoursesCount(initialData.coursesCount ?? 0);
       setPerformedCount(initialData.numberOfStudents ?? 0);
       setIsLoaded(true);
@@ -349,13 +338,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       show_correct_answers_after_submission: showModelAnswers,
       shuffle_questions: randomizeQuestionsOrder,
       shuffle_answer_options: randomizeMCQChoices,
-      delivery_mode: isIndependent
-        ? venue === "hybrid"
-          ? "mixed"
-          : venue === "onsite"
-            ? "center"
-            : "online"
-        : "online",
       is_active: true,
     };
   };
@@ -469,8 +451,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setRandomizeMCQChoices,
     isIndependent,
     setIsIndependent,
-    venue,
-    setVenue,
     attachmentType,
     setAttachmentType,
     courseId,

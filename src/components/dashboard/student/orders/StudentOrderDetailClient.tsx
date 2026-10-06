@@ -46,7 +46,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
   const t = useTranslations("studentOrders.detail");
   const tStatus = useTranslations("studentOrders.status");
   const tMethods = useTranslations("studentOrders.paymentMethods");
-  const tCourses = useTranslations("courses");
   const tCommon = useTranslations("common");
 
   const [selectedTab, setSelectedTab] = React.useState<PaymentTab>("wallet");
@@ -134,14 +133,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
     }
   };
 
-  const getDeliveryModeLabel = (mode?: string | null) => {
-    if (!mode) return "";
-    if (tCourses.has(`venue.${mode}`)) {
-      return tCourses(`venue.${mode}`);
-    }
-    return mode;
-  };
-
   if (isOrderLoading) {
     return (
       <div className="space-y-6 w-full max-w-5xl mx-auto py-6">
@@ -209,7 +200,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
       country: locale === "ar" ? "مصر" : "Egypt",
       state: locale === "ar" ? "القاهرة" : "Cairo",
       grade: "",
-      registrationType: "online",
     };
 
     const transactionObj: StudentTransaction = {
@@ -298,14 +288,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
                     <p className="font-medium text-sm text-foreground truncate">
                       {resolveTranslation(item.course_title) || t("courseFallback")}
                     </p>
-                    {(item.selected_delivery_mode || item.delivery_mode) && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {t("deliveryMode")}{" "}
-                        <span className="font-medium text-foreground">
-                          {getDeliveryModeLabel(item.selected_delivery_mode || item.delivery_mode)}
-                        </span>
-                      </p>
-                    )}
                   </div>
                   <span className="font-bold text-sm text-foreground shrink-0">
                     {Number(item.final_price ?? item.original_price).toFixed(2)} {currency}

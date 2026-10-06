@@ -52,7 +52,7 @@ import {
   useStudentsList,
   useUpdateStudentStatus,
 } from "@/hooks/use-students";
-import { RegistrationType, Student, TransactionType } from "@/types/student";
+import { Student, TransactionType } from "@/types/student";
 import { toast } from "sonner";
 import { ContentPagination } from "../common/content-pagination";
 import { BalanceTransactionDialog } from "./balance-transaction-dialog";
@@ -66,15 +66,7 @@ export type StudentSortOption =
   | "name-desc"
   | "grade-asc"
   | "rating-high"
-  | "rating-low"
-  | "registration-type";
-
-const REGISTRATION_TYPE_BADGES: Record<RegistrationType, string> = {
-  center: "bg-emerald-500/10 text-emerald-600  border-emerald-500/20",
-  online: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-  hybrid: "bg-purple-500/10 text-purple-600 border-purple-500/20",
-  external: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-};
+  | "rating-low";
 
 export function ManageStudentsClient() {
   const locale = useLocale();
@@ -90,7 +82,6 @@ export function ManageStudentsClient() {
   // URL query state
   const searchQuery = searchParams.get("search") || "";
   const selectedGrade = searchParams.get("grade") || "all";
-  const selectedRegType = searchParams.get("regType") || "all";
   const selectedCountry = searchParams.get("country") || "all";
   const selectedState = searchParams.get("state") || "all";
   const sortBy = (searchParams.get("sort") as StudentSortOption) || "date-newest";
@@ -105,7 +96,6 @@ export function ManageStudentsClient() {
           value === null ||
           value === "" ||
           (key === "grade" && value === "all") ||
-          (key === "regType" && value === "all") ||
           (key === "country" && value === "all") ||
           (key === "state" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
@@ -155,7 +145,6 @@ export function ManageStudentsClient() {
     country_id: selectedCountry !== "all" ? selectedCountry : undefined,
     governorate_id: selectedState !== "all" ? selectedState : undefined,
     educational_stage_id: selectedStageId,
-    registration_type: selectedRegType !== "all" ? selectedRegType : undefined,
     per_page: itemsPerPage,
     page: currentPage,
   });
@@ -214,10 +203,6 @@ export function ManageStudentsClient() {
         return false;
       }
 
-      if (selectedRegType !== "all" && student.registrationType !== selectedRegType) {
-        return false;
-      }
-
       if (selectedCountry !== "all" && student.country !== selectedCountry) {
         return false;
       }
@@ -261,7 +246,7 @@ export function ManageStudentsClient() {
 
       return true;
     });
-  }, [students, selectedGrade, selectedRegType, selectedCountry, selectedState, searchQuery]);
+  }, [students, selectedGrade, selectedCountry, selectedState, searchQuery]);
 
   // Sort Logic
   const sortedStudents = React.useMemo(() => {
@@ -293,8 +278,6 @@ export function ManageStudentsClient() {
           const ratingB = b.averageRating ?? (b.gpa ? parseFloat(b.gpa) : 0);
           return ratingA - ratingB;
         }
-        case "registration-type":
-          return a.registrationType.localeCompare(b.registrationType);
         default:
           return 0;
       }
@@ -310,7 +293,6 @@ export function ManageStudentsClient() {
   const isFilterActive =
     searchQuery.trim() !== "" ||
     selectedGrade !== "all" ||
-    selectedRegType !== "all" ||
     selectedCountry !== "all" ||
     selectedState !== "all" ||
     sortBy !== "date-newest";
@@ -319,7 +301,6 @@ export function ManageStudentsClient() {
     updateUrlParams({
       search: null,
       grade: null,
-      regType: null,
       country: null,
       state: null,
       sort: null,
@@ -480,7 +461,6 @@ export function ManageStudentsClient() {
     { value: "grade-asc", label: t("sort.gradeAsc") },
     { value: "rating-high", label: t("sort.ratingHigh") },
     { value: "rating-low", label: t("sort.ratingLow") },
-    { value: "registration-type", label: t("sort.registrationType") },
   ];
 
   const currentSortLabel =
@@ -579,23 +559,6 @@ export function ManageStudentsClient() {
             className="w-full"
           />
 
-          {/* Registration Type Filter */}
-          <Select
-            value={selectedRegType}
-            onValueChange={(val) => updateUrlParams({ regType: val, page: 1 })}
-          >
-            <SelectTrigger className="bg-background h-9 text-xs">
-              <SelectValue placeholder={t("allRegistrationTypes")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("allRegistrationTypes")}</SelectItem>
-              <SelectItem value="center">{t("registrationTypes.center")}</SelectItem>
-              <SelectItem value="online">{t("registrationTypes.online")}</SelectItem>
-              <SelectItem value="hybrid">{t("registrationTypes.hybrid")}</SelectItem>
-              <SelectItem value="external">{t("registrationTypes.external")}</SelectItem>
-            </SelectContent>
-          </Select>
-
           {/* Country Filter */}
           <Select
             value={selectedCountry}
@@ -672,9 +635,6 @@ export function ManageStudentsClient() {
                   <th className="px-4 py-3.5 text-center font-medium">
                     {t("columns.averageRating")}
                   </th>
-                  <th className="px-4 py-3.5 text-center font-medium">
-                    {t("columns.registrationType")}
-                  </th>
                   <th className="px-4 py-3.5 text-end font-medium">{t("columns.actions")}</th>
                 </tr>
               </thead>
@@ -688,11 +648,6 @@ export function ManageStudentsClient() {
                   ]
                     .filter(Boolean)
                     .join(" ");
-
-                  const regTypeKey = student.registrationType;
-                  const regTypeLabel = t(
-                    `registrationTypes.${regTypeKey}` as Parameters<typeof t>[0],
-                  );
 
                   const isSuspended = student.status === "suspended";
 
@@ -806,18 +761,6 @@ export function ManageStudentsClient() {
                               ? `${student.averageRating.toFixed(2)} / 4.0`
                               : "-"}
                         </span>
-                      </td>
-
-                      {/* Registration Type Badge */}
-                      <td className="px-4 py-3.5 text-center">
-                        <Badge
-                          variant="outline"
-                          className={`text-xs capitalize font-medium ${
-                            REGISTRATION_TYPE_BADGES[student.registrationType] || ""
-                          }`}
-                        >
-                          {regTypeLabel}
-                        </Badge>
                       </td>
 
                       {/* Actions Dropdown */}

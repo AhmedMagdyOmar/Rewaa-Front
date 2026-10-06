@@ -27,7 +27,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useProviderLessonOptions, useProviderLessons } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
-import { CourseSection, CourseVenue, Lesson, LessonAttachment, LessonType } from "@/types/course";
+import { CourseSection, Lesson, LessonAttachment, LessonType } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
   AlertCircle,
@@ -58,7 +58,6 @@ interface LessonDialogProps {
     grade: string;
     subject: string;
     teacherName: string;
-    venue: CourseVenue;
   };
   availableExams?: Exam[];
   hideLessonCategory?: boolean;
@@ -167,7 +166,6 @@ export function LessonDialog({
           subject: parentCourseContext.subject || "General",
           grade: parentCourseContext.grade || "General",
           teacherName: parentCourseContext.teacherName || "Teacher",
-          venue: parentCourseContext.venue || "hybrid",
           category: "test",
           examType: e.course_id ? "course-dependent" : "independent",
           triesAllowed: 1,
@@ -201,7 +199,6 @@ export function LessonDialog({
           coverImage: b.cover_image || b.cover_image_url || undefined,
           lectureVideoLink: b.video_url || undefined,
           lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
-          venue: (b.delivery_mode as CourseVenue) || "hybrid",
           hasPdfAttachments: Boolean(b.has_pdf_attachments),
           pdfFiles: (b.pdf_attachments || []).map((p) => ({
             id: String(p.id),
@@ -397,7 +394,6 @@ export function LessonDialog({
             id: `les-${Math.floor(1000 + Math.random() * 9000)}`,
             original_lesson_id: !Number.isNaN(Number(found.id)) ? Number(found.id) : undefined,
             lessonCategory: "course-dependent",
-            venue: parentCourseContext.venue || found.venue || "all",
           } as Lesson;
         })
         .filter(Boolean) as Lesson[];
@@ -466,7 +462,6 @@ export function LessonDialog({
       isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
 
       // Organization
-      venue: parentCourseContext.venue || initialLesson?.venue || "all",
       lessonCategory: "course-dependent",
     };
 

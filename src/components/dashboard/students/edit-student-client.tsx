@@ -122,7 +122,6 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
       country_id: countryId,
       governorate_id: governorateId,
       educational_stage_id: stageId,
-      registration_type: data.registrationType,
     };
 
     if (data.password) {

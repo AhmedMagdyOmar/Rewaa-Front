@@ -26,7 +26,7 @@ import {
   useUpdateStudentProfileMutation,
 } from "@/hooks/use-student-profile";
 import { getErrorMessage } from "@/lib/api-utils";
-import { Gender, RegistrationType } from "@/types/student";
+import { Gender } from "@/types/student";
 
 interface StudentProfileFormData {
   firstName: string;
@@ -45,13 +45,11 @@ interface StudentProfileFormData {
   countryId: string;
   governorateId: string;
   educationalStageId: string;
-  registrationType: RegistrationType;
 }
 
 export function StudentProfileClient() {
   const locale = useLocale();
   const t = useTranslations("studentDashboard.profilePage");
-  const tForm = useTranslations("studentsPage.form");
 
   const { data: profileData, isLoading: isProfileLoading, refetch } = useStudentProfileQuery();
   const updateProfileMutation = useUpdateStudentProfileMutation();
@@ -77,7 +75,6 @@ export function StudentProfileClient() {
     countryId: "",
     governorateId: "",
     educationalStageId: "",
-    registrationType: "center",
   });
 
   const { data: optionsData } = useStudentProfileOptions(formData.countryId || undefined);
@@ -106,7 +103,6 @@ export function StudentProfileClient() {
         educationalStageId: profileData.educational_stage_id
           ? String(profileData.educational_stage_id)
           : "",
-        registrationType: (profileData.registration_type as RegistrationType) || "center",
       });
     }
   }, [profileData]);
@@ -459,25 +455,6 @@ export function StudentProfileClient() {
                       </SelectItem>
                     );
                   })}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Registration Type */}
-            <div className="space-y-2">
-              <Label htmlFor="registrationType">{t("registrationTypeLabel")}</Label>
-              <Select
-                value={formData.registrationType}
-                onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
-              >
-                <SelectTrigger id="registrationType" className="bg-background">
-                  <SelectValue placeholder={tForm("selectRegistrationType")} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="center">{tForm("registrationTypes.center")}</SelectItem>
-                  <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
-                  <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
-                  <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>

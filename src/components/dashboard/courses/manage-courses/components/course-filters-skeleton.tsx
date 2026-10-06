@@ -20,8 +20,6 @@ export function CourseFiltersSkeleton() {
 
         {/* Line 2 / Wrapped Dropdown Filters */}
         <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-          {/* Venue filter */}
-          <Skeleton className="h-9 w-36 rounded-md" />
           {/* Stage filter */}
           <Skeleton className="h-9 w-36 rounded-md" />
           {/* Subject filter */}

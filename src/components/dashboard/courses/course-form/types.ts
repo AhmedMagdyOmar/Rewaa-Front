@@ -1,4 +1,4 @@
-import { CourseVenue, Lesson, LessonPublishStatus } from "@/types/course";
+import { Lesson, LessonPublishStatus } from "@/types/course";
 
 export interface NewCourseClientProps {
   initialCourseId?: string;
@@ -13,7 +13,6 @@ export interface ParentCourseContext {
   grade: string;
   subject: string;
   teacherName: string;
-  venue: CourseVenue;
 }
 
 export interface EditingLessonState {
@@ -56,7 +55,6 @@ export interface CourseFormState {
   hasTimeLimit: boolean;
   timeLimitValue: number | "";
   isActive: boolean;
-  venue: CourseVenue;
   coursePublishStatus: LessonPublishStatus;
   courseScheduledPublishDate: string;
 }

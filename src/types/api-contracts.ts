@@ -51,7 +51,6 @@ export interface TranslatableField {
 }
 
 export type CourseStatus = "draft" | "scheduled" | "published";
-export type CourseDeliveryMode = "onsite" | "online" | "hybrid";
 export type SubscriptionPeriod = "monthly" | "yearly" | "term";
 export type CourseSectionStatus = "draft" | "scheduled" | "published";
 
@@ -79,7 +78,6 @@ export interface StoreCourseCategoryData {
 export interface BackendCourseOptions {
   currency_code: string[];
   subscription_periods: Record<string, string>;
-  delivery_modes: Record<string, string>;
   statuses: Record<string, string>;
   section_statuses: Record<string, string>;
   categories?: BackendCourseCategory[];
@@ -207,8 +205,6 @@ export interface BackendCourse {
   has_limited_access: boolean;
   access_duration_days?: number | null;
   uses_student_groups: boolean;
-  delivery_mode: CourseDeliveryMode;
-  delivery_mode_label: string;
   status: CourseStatus;
   status_label: string;
   scheduled_publish_at?: string | null;
@@ -315,8 +311,6 @@ export interface BackendLesson {
     avatar?: string | null;
   } | null;
   completions_count?: number;
-  delivery_mode?: CourseDeliveryMode | null;
-  delivery_mode_label?: string | null;
   has_pdf_attachments: boolean;
   pdf_attachments: BackendLessonMediaItem[];
   has_explanatory_images: boolean;
@@ -338,7 +332,6 @@ export interface BackendLesson {
 export interface BackendLessonOptions {
   classifications: Record<string, string>;
   lesson_types: Record<string, string>;
-  delivery_modes: Record<string, string>;
   educational_stages: Array<{
     id: number;
     name: Record<string, string>;
@@ -406,7 +399,6 @@ export interface StoreLessonData {
   educational_stage_id?: number;
   subject_id?: number;
   instructor_id?: number;
-  delivery_mode?: string;
   type: LessonTypeBackend;
   title: { ar: string; en?: string };
   description?: { ar?: string; en?: string };
@@ -552,8 +544,6 @@ export interface BackendExam {
   show_correct_answers_after_submission: boolean;
   shuffle_questions: boolean;
   shuffle_answer_options: boolean;
-  delivery_mode: string;
-  delivery_mode_label: string;
   status: ExamStatus | string;
   status_label: string;
   scheduled_publish_at?: string | null;
@@ -597,7 +587,6 @@ export interface ExamFilterParams {
 
 export interface BackendExamOptions {
   classifications: Record<string, string>;
-  delivery_modes: Record<string, string>;
   statuses: Record<string, string>;
   educational_stages: Array<{
     id: number;
@@ -704,7 +693,6 @@ export interface StoreExamData {
   show_correct_answers_after_submission?: boolean;
   shuffle_questions?: boolean;
   shuffle_answer_options?: boolean;
-  delivery_mode?: string;
   is_active?: boolean;
 }
 
@@ -908,7 +896,6 @@ export interface ExamComplaintsListResponse {
 // -------------------------------------------------------------
 
 export type BackendGender = "male" | "female";
-export type BackendRegistrationType = "center" | "online" | "hybrid" | "external" | string;
 export type BackendStudentStatus = "active" | "suspended";
 
 export interface BackendStudent {
@@ -941,8 +928,6 @@ export interface BackendStudent {
     id: number;
     name: Record<string, string>;
   } | null;
-  registration_type: BackendRegistrationType;
-  registration_type_label?: string;
   status: BackendStudentStatus;
   status_label?: string;
   wallet?: {
@@ -992,7 +977,6 @@ export interface StudentFilterParams {
   country_id?: number | string;
   governorate_id?: number | string;
   educational_stage_id?: number | string;
-  registration_type?: string;
   status?: string;
   sort?: string;
   per_page?: number;
@@ -1018,7 +1002,6 @@ export interface BackendStudentOptions {
     id: number;
     name: Record<string, string>;
   }>;
-  registration_types: Record<string, string>;
   statuses: Record<string, string>;
 }
 
@@ -1038,7 +1021,6 @@ export interface StoreStudentData {
   country_id?: number;
   governorate_id?: number;
   educational_stage_id?: number;
-  registration_type: BackendRegistrationType;
   status: BackendStudentStatus;
   avatar?: File | null;
 }
@@ -1189,8 +1171,6 @@ export interface BackendOrderItem {
   instructor_id?: number | null;
   instructor_name?: string | null;
   educational_stage_name?: Record<string, string> | null;
-  delivery_mode: string;
-  selected_delivery_mode?: string | null;
   original_price: number | string;
   discount_amount?: number | string;
   final_price: number | string;
@@ -1464,9 +1444,6 @@ export interface BackendMyCourse {
     avatar?: string | null;
     avatar_url?: string | null;
   } | null;
-  delivery_mode?: CourseDeliveryMode | string | null;
-  selected_delivery_mode?: string | null;
-  delivery_mode_label?: string;
   status?: CourseStatus | string;
   is_free?: boolean;
   final_price?: number;
@@ -1507,8 +1484,6 @@ export interface MyCoursesOptions {
 /** Matches AvailableCourseResource from GET /api/website/courses */
 export interface AvailableCourse {
   id: number;
-  delivery_mode: string; // "online" | "onsite" | "hybrid"
-  delivery_options: string[];
   is_enrolled: boolean; // always false — backend filters enrolled courses out
   title: Record<string, string>; // { ar: "...", en: "..." }
   description: Record<string, string>;
@@ -1563,7 +1538,6 @@ export interface BackendStudentCourseDetails {
   title: Record<string, string>;
   description: Record<string, string>;
   cover_image: string | null;
-  delivery_mode: string | null; // "online" | "onsite" | "hybrid"
   educational_stage: { id: number; name: Record<string, string> } | null;
   subject: { id: number; name: Record<string, string> } | null;
   instructor: { id: number; full_name: string } | null;
@@ -1580,7 +1554,6 @@ export interface BackendStudentCourseDetails {
     id: number;
     starts_at: string | null;
     expires_at: string | null;
-    selected_delivery_mode: string | null;
   } | null;
   progress?: {
     completed_lessons: number;
@@ -1595,7 +1568,6 @@ export interface StudentCourseDetailsResponse {
 
 export interface StoreStudentOrderPayload {
   course_ids: number[];
-  delivery_modes?: Record<string | number, string>;
 }
 
 export interface StoreStudentOrderResponse {
@@ -1760,7 +1732,6 @@ export interface BackendStudentExam {
   } | null;
   questions_count: number;
   duration_minutes: number;
-  delivery_mode: string;
   passing_percentage: number;
   max_attempts: number;
   attempts_used: number;

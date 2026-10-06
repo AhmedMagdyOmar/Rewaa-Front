@@ -20,7 +20,5 @@ export interface GovernorateItem {
   studentsCount: number;
   activeStudentsCount: number;
   percentage: number;
-  centerStudents: number;
-  onlineStudents: number;
   topGradeKey: string;
 }

@@ -62,7 +62,6 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
   const t = useTranslations("studentDashboard.examResultPage");
   const tExams = useTranslations("exams");
   const tDetails = useTranslations("exams.details");
-  const tCourses = useTranslations("courses");
 
   // React Query Hooks
   const { data: exam, isLoading: isExamLoading, error: examError } = useStudentExam(examId);
@@ -184,12 +183,6 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
   const getLocalizedString = (field?: Record<string, string> | null) => {
     if (!field) return "";
     return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
-  };
-
-  const formatVenue = (v?: string | null) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
   };
 
   const formatCategory = (cat?: string | null) => {
@@ -1089,15 +1082,6 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 <div className="flex justify-between items-center py-1 border-b border-border/40">
                   <span className="text-muted-foreground">{t("sidebar.sourceCourse")}</span>
                   <span className="font-semibold text-foreground">{t("sidebar.independent")}</span>
-                </div>
-              )}
-
-              {exam.delivery_mode && (
-                <div className="flex justify-between items-center py-1 border-b border-border/40">
-                  <span className="text-muted-foreground">{t("sidebar.venue")}</span>
-                  <span className="font-semibold text-foreground">
-                    {formatVenue(exam.delivery_mode)}
-                  </span>
                 </div>
               )}
 

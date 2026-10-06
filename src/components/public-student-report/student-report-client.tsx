@@ -84,7 +84,6 @@ export function StudentReportClient({ studentId }: StudentReportClientProps) {
               hasOffer: false,
               hasTimeLimit: false,
               isSplitToSections: false,
-              venue: "online",
               numberOfParticipants: 0,
               isDraft: false,
               sections: [],

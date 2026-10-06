@@ -46,7 +46,6 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
   const locale = useLocale();
   const t = useTranslations("exams");
   const tDetails = useTranslations("exams.details");
-  const tCourses = useTranslations("courses");
   const tGrades = useTranslations("courses.new.grades");
   const tSubjects = useTranslations("courses.new.subjects");
 
@@ -103,12 +102,6 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
     } catch {
       return s;
     }
-  };
-
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
   };
 
   const formatCategory = (cat: string) => {
@@ -400,13 +393,6 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
                     : t("table.courseLinked")}
                 </span>
               </div>
-
-              {exam.examType === "independent" && exam.venue && (
-                <div className="flex justify-between py-1 border-b border-border/40">
-                  <span className="text-muted-foreground">{tDetails("metadata.venue")}</span>
-                  <span className="font-semibold text-foreground">{formatVenue(exam.venue)}</span>
-                </div>
-              )}
 
               {exam.examType === "course-dependent" && exam.courseId && (
                 <div className="flex justify-between py-1 border-b border-border/40">

@@ -352,15 +352,6 @@
       "published": "منشور",
       "draft": "مسودة"
     },
-    "filters": {
-      "venue": {
-        "all": "جميع الأماكن",
-        "online": "أونلاين",
-        "onsite": "حضوري / سنتر",
-        "hybrid": "مدمج (أونلاين وحضوري)",
-        "center": "سنتر"
-      }
-    },
     "clearFilters": "مسح الفلاتر",
     "sort": {
       "newest": "التاريخ: الأحدث أولاً",
@@ -384,13 +375,6 @@
       "published": "منشور",
       "draft": "مسودة",
       "scheduled": "مجدول"
-    },
-    "venue": {
-      "online": "أونلاين",
-      "onsite": "حضوري / سنتر",
-      "hybrid": "مدمج (أونلاين وحضوري)",
-      "all": "سنتر وأونلاين",
-      "center": "سنتر"
     },
     "badge": {
       "offer": "عرض خاص",
@@ -459,7 +443,6 @@
       "grade": "المرحلة الدراسية",
       "subject": "المادة",
       "period": "تصنيف الكورسات",
-      "venue": "مكان النشر",
       "createdAt": "تاريخ الإنشاء",
       "timeLimit": "مدة الصلاحية",
       "timeLimitDays": "{days, plural, =0 {لا أيام} zero {لا أيام} one {يوم واحد} two {يومين} few {{days} أيام} many {{days} يوماً} other {{days} يوم}}",
@@ -537,28 +520,6 @@
         "SAR": "ريال سعودي (SAR)",
         "AED": "درهم إماراتي (AED)"
       },
-      "venues": {
-        "online": {
-          "label": "أونلاين",
-          "desc": "تعلم رقمي عن بُعد"
-        },
-        "onsite": {
-          "label": "حضوري / سنتر",
-          "desc": "حضور في السنتر التعليمي أو القاعة"
-        },
-        "hybrid": {
-          "label": "مدمج (أونلاين وحضوري)",
-          "desc": "خيارات حضور مدمجة تشمل الأونلاين والسنتر"
-        },
-        "center": {
-          "label": "سنتر",
-          "desc": "حضور في السنتر التعليمي"
-        },
-        "all": {
-          "label": "سنتر وأونلاين",
-          "desc": "خيارات حضور مدمجة"
-        }
-      },
       "sections": {
         "mainInfo": {
           "title": "المعلومات الرئيسية",
@@ -616,8 +577,6 @@
         "timeLimitDaysSuffix": "أيام",
         "isActive": "تفعيل الدورة",
         "isActiveSubtitle": "تحديد ما إذا كانت الدورة نشطة ومتاحة للظهور للطلاب والاشتراك.",
-        "venue": "مكان النشر",
-        "venueSubtitle": "اختر ما إذا كانت الدورة تدرس أونلاين فقط، أم في السنتر، أم متاحة بالخيارين.",
         "badge": "شارة الدورة",
         "badgeSubtitle": "اختر شارة تظهر على بطاقة الدورة لتمييزها في قائمة الدورات."
       },
@@ -749,7 +708,6 @@
           "lessonDateAfterCourseScheduleError": "يجب أن يكون تاريخ نشر الدرس بعد تاريخ نشر الدورة المجدولة ({date}).",
           "lessonDateBeforeCourseScheduleEndError": "يجب أن يكون تاريخ انتهاء الدرس قبل تاريخ انتهاء الدورة المجدولة ({date}).",
           "lessonEndDateAfterStartError": "يجب أن يكون تاريخ انتهاء الدرس بعد تاريخ البدء.",
-          "venue": "مكان النشر",
           "lessonCategory": "تصنيف الدرس",
           "categoryOptions": {
             "courseDependent": "مرتبط بدورة تعليمية",
@@ -848,7 +806,6 @@
         "female": "أنثى",
         "allGrades": "جميع المراحل الدراسية",
         "allLocations": "جميع المحافظات",
-        "allRegTypes": "جميع أنواع التسجيل",
         "sortBy": "الترتيب حسب",
         "newest": "الأحدث تسجيلاً",
         "oldest": "الأقدم تسجيلاً",
@@ -861,7 +818,6 @@
         "gender": "النوع",
         "location": "المحافظة / الدولة",
         "grade": "المرحلة الدراسية",
-        "registrationType": "نوع التسجيل",
         "actions": "الإجراءات"
       },
       "actions": {
@@ -910,7 +866,6 @@
         "title": "العنوان",
         "subjectGrade": "المادة/المرحلة",
         "category": "الفئة",
-        "typeVenue": "النطاق",
         "questions": "الأسئلة",
         "students": "الطلاب",
         "questionsStudents": "الأسئلة/الطلاب",
@@ -1015,8 +970,6 @@
         "expirationDaysPlaceholder": "مثال: 30",
         "isIndependent": "امتحان مستقل",
         "isIndependentDesc": "قم بالتفعيل إذا كان هذا الامتحان مستقلاً وغير مرتبط بدورة أو درس معين وله مكان نشر خاص به.",
-        "venue": "مكان النشر",
-        "selectVenue": "اختر مكان النشر...",
         "attachmentType": "نوع الربط بالمنهج",
         "attachmentTypeDesc": "حدد ما إذا كنت تريد ترك الامتحان في بنك الامتحانات، أو ربطه بدورة تدريبية، أو ربطه بدرس مستقل.",
         "examBank": "بنك الامتحانات (غير مرتبط حالياً)",
@@ -1227,7 +1180,6 @@
         "teacher": "المعلم / المحاضر",
         "category": "تصنيف الامتحان",
         "type": "نوع الامتحان",
-        "venue": "مكان النشر",
         "linkedCourse": "الدورة المرتبطة",
         "triesAllowed": "المحاولات المتاحة",
         "duration": "المدة بالدقائق",
@@ -1670,7 +1622,6 @@
       "passingScore": "نسبة النجاح المطلوب: {score}%",
       "teacherInfo": "المحاضر",
       "subjectAndGrade": "المادة والمرحلة الدراسية",
-      "venue": "مكان النشر",
       "status": "الحالة",
       "category": "تصنيف الدرس",
       "linkedCourse": "الدورة المرتبطة",
@@ -1734,15 +1685,8 @@
     "resetData": "تحديث البيانات",
     "searchPlaceholder": "ابحث باسم الطالب، رقم الهاتف، البريد الإلكتروني...",
     "allGrades": "جميع الصفوف",
-    "allRegistrationTypes": "جميع أنواع التسجيل",
     "allCountries": "جميع الدول",
     "allStates": "جميع المحافظات / الولايات",
-    "registrationTypes": {
-      "center": "سنتر",
-      "online": "أونلاين",
-      "hybrid": "الجميع",
-      "external": "خارجي"
-    },
     "sort": {
       "dateNewest": "التاريخ (الأحدث أولاً)",
       "dateOldest": "التاريخ (الأقدم أولاً)",
@@ -1750,8 +1694,7 @@
       "nameDesc": "الاسم (ي-أ)",
       "gradeAsc": "الصف الدراسي",
       "ratingHigh": "التقييم / المعدل (الأعلى)",
-      "ratingLow": "التقييم / المعدل (الأقل)",
-      "registrationType": "نوع التسجيل"
+      "ratingLow": "التقييم / المعدل (الأقل)"
     },
     "columns": {
       "fullNameAndId": "اسم الطالب",
@@ -1764,7 +1707,6 @@
       "grade": "الصف الدراسي",
       "averageRating": "المعدل التراكمي",
       "registrationDate": "تاريخ التسجيل",
-      "registrationType": "نوع التسجيل",
       "actions": "الإجراءات"
     },
     "actions": {
@@ -1822,7 +1764,6 @@
       "country": "الدولة",
       "state": "المحافظة / الولاية",
       "grade": "الصف الدراسي",
-      "registrationType": "نوع التسجيل",
       "viewCourse": "عرض الدورة",
       "lessonsCount": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسين} few {{count} دروس} many {{count} درساً} other {{count} درس}}",
       "joinedIn": "انضم في {date}",
@@ -1980,8 +1921,6 @@
       "selectCountryFirst": "يرجى اختيار الدولة أولاً",
       "gradeLabel": "الصف الدراسي *",
       "selectGrade": "اختر الصف الدراسي",
-      "registrationTypeLabel": "نوع التسجيل *",
-      "selectRegistrationType": "اختر نوع التسجيل",
       "saveDraft": "حفظ كمسودة",
       "createStudent": "إنشاء الطالب",
       "saveChanges": "حفظ التغييرات",
@@ -1990,13 +1929,7 @@
       "requiredFieldsError": "يرجى ملء جميع الحقول المطلوبة",
       "imageLabel": "صورة الملف الشخصي",
       "imagePrompt": "انقر أو اسحب صورة لرفعها كصورة شخصية",
-      "imageChange": "تغيير الصورة الشخصية",
-      "registrationTypes": {
-        "center": "سنتر",
-        "online": "أونلاين",
-        "hybrid": "الجميع",
-        "external": "خارجي"
-      }
+      "imageChange": "تغيير الصورة الشخصية"
     }
   },
   "billingRequestsPage": {
@@ -2027,11 +1960,6 @@
         "amountDesc": "المبلغ: الأعلى أولاً",
         "amountAsc": "المبلغ: الأقل أولاً"
       },
-      "venue": {
-        "all": "كل أماكن النشر",
-        "center": "سنتر",
-        "online": "أونلاين"
-      },
       "resetFilters": "إعادة تعيين الفلاتر"
     },
     "table": {
@@ -2042,7 +1970,6 @@
         "amount": "المبلغ",
         "paymentMethod": "طريقة الدفع",
         "course": "الدورة التعليمية",
-        "venue": "مكان النشر",
         "status": "الحالة",
         "actions": "الإجراءات"
       },
@@ -2914,8 +2841,7 @@
       "metadata": "تفاصيل الدرس",
       "category": "نوع الدرس",
       "subjectAndGrade": "المادة والصف الدراسي",
-      "teacher": "المعلم",
-      "venue": "طبيعة الحضور"
+      "teacher": "المعلم"
     },
     "generalExamsPage": {
       "title": "الامتحانات العامة",
@@ -3050,7 +2976,6 @@
         "category": "نوع الامتحان",
         "sourceCourse": "الدورة المرتبطة",
         "independent": "امتحان عام للمنصة",
-        "venue": "مكان النشر",
         "triesAllowed": "المحاولات المتاحة",
         "duration": "مدة الامتحان",
         "passingPercentage": "نسبة النجاح",
@@ -3080,7 +3005,6 @@
         "passingPercentage": "{percent}٪",
         "triesAllowed": "المحاولات المسموحة",
         "triesCount": "{count, plural, =0 {لا محاولات} zero {لا محاولات} one {محاولة واحدة} two {محاولتان} few {{count} محاولات} many {{count} محاولة} other {{count} محاولة}}",
-        "venue": "مكان النشر",
         "teacher": "المعلم"
       },
       "timerBar": {
@@ -3309,7 +3233,6 @@
       "countryLabel": "الدولة *",
       "stateLabel": "المحافظة / الولاية *",
       "gradeLabel": "الصف الدراسي *",
-      "registrationTypeLabel": "نوع التسجيل *",
       "passwordLabel": "كلمة المرور الجديدة",
       "passwordPlaceholder": "اتركها فارغة إذا لم ترغب بالتغيير",
       "confirmPasswordLabel": "تأكيد كلمة المرور الجديدة",
@@ -3450,12 +3373,9 @@
         "country": "الدولة",
         "studentsCount": "عدد الطلاب",
         "percentage": "النسبة من الإجمالي",
-        "learningMode": "طبيعة الحضور",
         "activeStudents": "الطلاب النشطون",
         "topGrade": "الصف الأكثر تواجداً"
       },
-      "centerShort": "سنتر",
-      "onlineShort": "أونلاين",
       "activeRateBadge": "{percentage}% نشط",
       "empty": {
         "title": "لا توجد نتائج مطابقة",
@@ -3492,7 +3412,6 @@
       "backToOrders": "العودة لقائمة الطلبات",
       "title": "تفاصيل الطلب",
       "orderItems": "محتويات الطلب",
-      "deliveryMode": "طريقة الحضور:",
       "courseFallback": "دورة تدريبية",
       "paymentMethod": "طريقة الدفع",
       "paymentMethodSubtitle": "اختر وسيلة الدفع المناسبة لك لإتمام عملية الاشتراك",

@@ -1,7 +1,5 @@
 export type Gender = "male" | "female";
 
-export type RegistrationType = "center" | "online" | "hybrid" | "external";
-
 export type TransactionType = "deposit" | "withdraw" | "refund" | "adjustment";
 
 export interface StudentTransaction {
@@ -33,7 +31,6 @@ export interface Student {
   governorateId?: number;
   grade: string;
   educationalStageId?: number;
-  registrationType: RegistrationType;
   coursesCount?: number;
   enrolledCourseIds?: string[];
   balance?: number;

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CourseVenueFilter, FilterTab, SortOption } from "../../course-filters";
+import { FilterTab, SortOption } from "../../course-filters";
 
 export function useCourseUrlFilters() {
   const router = useRouter();
@@ -12,7 +12,6 @@ export function useCourseUrlFilters() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as FilterTab) || "all";
-  const venueFilter = (searchParams.get("venue") as CourseVenueFilter) || "all";
   const stageFilter = searchParams.get("stage") || "all";
   const subjectFilter = searchParams.get("subject") || "all";
   const instructorFilter = searchParams.get("instructor") || "all";
@@ -28,7 +27,6 @@ export function useCourseUrlFilters() {
           value === null ||
           value === "" ||
           (key === "tab" && value === "all") ||
-          (key === "venue" && value === "all") ||
           (key === "stage" && value === "all") ||
           (key === "subject" && value === "all") ||
           (key === "instructor" && value === "all") ||
@@ -52,10 +50,6 @@ export function useCourseUrlFilters() {
 
   const handleTabChange = (tab: FilterTab) => {
     updateUrlParams({ tab, page: 1 });
-  };
-
-  const handleVenueChange = (venue: string) => {
-    updateUrlParams({ venue: venue === "all" ? null : venue, page: 1 });
   };
 
   const handleStageChange = (stageId: string) => {
@@ -82,7 +76,6 @@ export function useCourseUrlFilters() {
     updateUrlParams({
       search: null,
       tab: null,
-      venue: null,
       stage: null,
       subject: null,
       instructor: null,
@@ -94,7 +87,6 @@ export function useCourseUrlFilters() {
   return {
     searchQuery,
     activeTab,
-    venueFilter,
     stageFilter,
     subjectFilter,
     instructorFilter,
@@ -103,7 +95,6 @@ export function useCourseUrlFilters() {
     updateUrlParams,
     handleSearchChange,
     handleTabChange,
-    handleVenueChange,
     handleStageChange,
     handleSubjectChange,
     handleInstructorChange,

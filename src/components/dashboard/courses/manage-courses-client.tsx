@@ -23,7 +23,6 @@ export function ManageCoursesClient() {
         isLoading={manage.isLoadingOptions}
         searchQuery={filters.searchQuery}
         activeTab={filters.activeTab}
-        venueFilter={filters.venueFilter}
         stageFilter={filters.stageFilter}
         subjectFilter={filters.subjectFilter}
         instructorFilter={filters.instructorFilter}
@@ -37,7 +36,6 @@ export function ManageCoursesClient() {
         scheduledCount={manage.statusCounts.scheduled}
         onSearchChange={filters.handleSearchChange}
         onTabChange={filters.handleTabChange}
-        onVenueChange={filters.handleVenueChange}
         onStageChange={filters.handleStageChange}
         onSubjectChange={filters.handleSubjectChange}
         onInstructorChange={filters.handleInstructorChange}

@@ -56,17 +56,6 @@ export function CourseSidebar({ course }: CourseSidebarProps) {
         </div>
 
         <div className="flex justify-between py-1 border-b border-border/40">
-          <span className="text-muted-foreground">{t("details.venue")}</span>
-          <span className="font-semibold text-foreground">
-            {course.venue === "online"
-              ? t("venue.online")
-              : course.venue === "onsite"
-                ? t("venue.onsite")
-                : t("venue.hybrid")}
-          </span>
-        </div>
-
-        <div className="flex justify-between py-1 border-b border-border/40">
           <span className="text-muted-foreground">{t("details.timeLimit")}</span>
           <span className="font-semibold text-foreground">
             {course.hasTimeLimit && course.timeLimitValue

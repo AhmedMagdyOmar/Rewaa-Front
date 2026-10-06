@@ -1,12 +1,10 @@
 "use client";
 
-import { useTranslations } from "next-intl";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
-import { FormRadioGroup } from "@/components/ui/form-radio-group";
 import { Input } from "@/components/ui/input";
-import { Clock, Layers, MapPin, Power } from "lucide-react";
-import { CourseVenue } from "@/types/course";
+import { Clock, Layers, Power } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface AdvancedSettingsSectionProps {
   hasTimeLimit: boolean;
@@ -15,8 +13,6 @@ interface AdvancedSettingsSectionProps {
   onTimeLimitValueChange: (val: number | "") => void;
   isActive: boolean;
   onIsActiveChange: (val: boolean) => void;
-  venue: CourseVenue;
-  onVenueChange: (val: CourseVenue) => void;
 }
 
 export function AdvancedSettingsSection({
@@ -26,8 +22,6 @@ export function AdvancedSettingsSection({
   onTimeLimitValueChange,
   isActive,
   onIsActiveChange,
-  venue,
-  onVenueChange,
 }: AdvancedSettingsSectionProps) {
   const t = useTranslations("courses.new");
 
@@ -76,33 +70,6 @@ export function AdvancedSettingsSection({
         icon={Power}
         checked={isActive}
         onCheckedChange={onIsActiveChange}
-      />
-
-      {/* Venue (Radio Group with 3 options) */}
-      <FormRadioGroup
-        name="venue-option"
-        title={t("fields.venue")}
-        subtitle={t("fields.venueSubtitle")}
-        icon={MapPin}
-        value={venue}
-        onValueChange={(val) => onVenueChange(val as CourseVenue)}
-        options={[
-          {
-            id: "online",
-            label: t("venues.online.label"),
-            desc: t("venues.online.desc"),
-          },
-          {
-            id: "onsite",
-            label: t("venues.onsite.label"),
-            desc: t("venues.onsite.desc"),
-          },
-          {
-            id: "hybrid",
-            label: t("venues.hybrid.label"),
-            desc: t("venues.hybrid.desc"),
-          },
-        ]}
       />
     </FormSectionCard>
   );

@@ -19,7 +19,6 @@ export interface StudentEnrolledLessonItem {
   instructor: { id: number; full_name: string; avatar?: string | null } | null;
   educationalStage: { id: number; name: Record<string, string> } | null;
   subject: { id: number; name: Record<string, string> } | null;
-  deliveryMode?: string | null;
   exam: {
     id: number;
     title: Record<string, string>;
@@ -86,7 +85,6 @@ export function useStudentEnrolledLessons() {
             instructor: course.instructor || null,
             educationalStage: course.educational_stage || null,
             subject: course.subject || null,
-            deliveryMode: course.delivery_mode,
             exam: lesson.exam
               ? {
                   id: lesson.exam.id,

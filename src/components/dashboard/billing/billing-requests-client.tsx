@@ -35,7 +35,6 @@ import {
   CreditCard,
   Eye,
   Loader2,
-  MapPin,
   Receipt,
   RotateCcw,
   Search,
@@ -59,7 +58,6 @@ export function BillingRequestsClient() {
   );
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage");
-  const tCourses = useTranslations("courses");
 
   const router = useRouter();
   const pathname = usePathname();
@@ -68,15 +66,10 @@ export function BillingRequestsClient() {
   // Read URL query params
   const searchQuery = searchParams.get("search") || "";
   const statusTab = (searchParams.get("status") as "all" | BackendPaymentStatus) || "all";
-  const venueFilter = (searchParams.get("venue") as "all" | "center" | "online") || "all";
   const sortBy =
     (searchParams.get("sort") as "newest" | "oldest" | "amountDesc" | "amountAsc") || "newest";
 
-  const isFilterActive =
-    Boolean(searchQuery.trim()) ||
-    statusTab !== "all" ||
-    venueFilter !== "all" ||
-    sortBy !== "newest";
+  const isFilterActive = Boolean(searchQuery.trim()) || statusTab !== "all" || sortBy !== "newest";
 
   const updateUrlParams = (updates: Record<string, string | null>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -85,7 +78,6 @@ export function BillingRequestsClient() {
         value === null ||
         value === "" ||
         (key === "status" && value === "all") ||
-        (key === "venue" && value === "all") ||
         (key === "sort" && value === "newest")
       ) {
         params.delete(key);
@@ -103,7 +95,6 @@ export function BillingRequestsClient() {
     updateUrlParams({
       search: null,
       status: null,
-      venue: null,
       sort: null,
     });
   };
@@ -155,15 +146,6 @@ export function BillingRequestsClient() {
     };
   }, [payments]);
 
-  // Format delivery mode / venue helper
-  const formatVenue = (mode?: string | null) => {
-    if (!mode) return "";
-    if (tCourses.has(`venue.${mode}`)) {
-      return tCourses(`venue.${mode}`);
-    }
-    return mode;
-  };
-
   // Format payment method helper
   const formatPaymentMethod = (method?: string) => {
     if (!method) return t("methods.other");
@@ -214,9 +196,6 @@ export function BillingRequestsClient() {
         targetPayment.order?.order_number ||
         "Course Subscription";
 
-      const deliveryMode =
-        primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
-
       const studentPhone =
         targetPayment.submitted_phone || targetPayment.phone || targetPayment.student?.phone || "";
 
@@ -238,7 +217,6 @@ export function BillingRequestsClient() {
         country: locale === "ar" ? "مصر" : "Egypt",
         state: locale === "ar" ? "القاهرة" : "Cairo",
         grade: studentGrade,
-        registrationType: deliveryMode === "online" ? "online" : "center",
       };
 
       const transactionObj: StudentTransaction = {
@@ -270,19 +248,6 @@ export function BillingRequestsClient() {
       toast.error(errorMsg);
     }
   };
-
-  // Client-side venue filter when selected
-  const filteredPayments = useMemo(() => {
-    return payments.filter((payment) => {
-      if (venueFilter === "all") return true;
-      const firstItem = payment.order?.items?.[0];
-      const deliveryMode =
-        firstItem?.selected_delivery_mode || firstItem?.delivery_mode || "online";
-      if (venueFilter === "center") return deliveryMode === "center" || deliveryMode === "onsite";
-      if (venueFilter === "online") return deliveryMode === "online";
-      return true;
-    });
-  }, [payments, venueFilter]);
 
   return (
     <div className="space-y-6">
@@ -437,26 +402,6 @@ export function BillingRequestsClient() {
               </TabsList>
             </Tabs>
 
-            <Select value={venueFilter} onValueChange={(v) => updateUrlParams({ venue: v })}>
-              <SelectTrigger className="h-9 text-xs w-full sm:w-36 shrink-0">
-                <div className="flex items-center gap-2">
-                  <MapPin className="size-3.5 text-muted-foreground" />
-                  <SelectValue placeholder={t("filters.venue.all")} />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">
-                  {t("filters.venue.all")}
-                </SelectItem>
-                <SelectItem value="center" className="text-xs">
-                  {t("filters.venue.center")}
-                </SelectItem>
-                <SelectItem value="online" className="text-xs">
-                  {t("filters.venue.online")}
-                </SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select value={sortBy} onValueChange={(v) => updateUrlParams({ sort: v })}>
               <SelectTrigger className="h-9 text-xs w-full sm:w-44 shrink-0">
                 <div className="flex items-center gap-2">
@@ -501,7 +446,6 @@ export function BillingRequestsClient() {
                   {t("table.columns.paymentMethod")}
                 </TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.course")}</TableHead>
-                <TableHead className="text-xs font-bold">{t("table.columns.venue")}</TableHead>
                 <TableHead className="text-xs font-bold">{t("table.columns.status")}</TableHead>
                 <TableHead className="text-xs font-bold text-end">
                   {t("table.columns.actions")}
@@ -522,7 +466,7 @@ export function BillingRequestsClient() {
                     </div>
                   </TableCell>
                 </TableRow>
-              ) : filteredPayments.length === 0 ? (
+              ) : payments.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={9} className="h-48 text-center">
                     <div className="flex flex-col items-center justify-center text-muted-foreground space-y-2">
@@ -533,7 +477,7 @@ export function BillingRequestsClient() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredPayments.map((payment) => {
+                payments.map((payment) => {
                   const statusBadgeVariant =
                     payment.status === "pending"
                       ? "bg-amber-500/10 text-amber-600 border-amber-500/20"
@@ -569,9 +513,6 @@ export function BillingRequestsClient() {
                     payment.student?.educational_stage?.name?.[locale] ||
                     payment.student?.educational_stage?.name?.ar ||
                     "-";
-
-                  const deliveryMode =
-                    firstItem?.selected_delivery_mode || firstItem?.delivery_mode || "online";
 
                   const displayStatus = payment.status === "approved" ? "accepted" : payment.status;
 
@@ -616,12 +557,6 @@ export function BillingRequestsClient() {
                         title={courseTitle}
                       >
                         {courseTitle}
-                      </TableCell>
-
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="text-[11px] font-normal">
-                          {formatVenue(deliveryMode)}
-                        </Badge>
                       </TableCell>
 
                       <TableCell className="text-xs">

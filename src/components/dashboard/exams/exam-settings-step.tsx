@@ -1,3 +1,12 @@
+import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
+import { Button } from "@/components/ui/button";
+import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
+import { FormSectionCard } from "@/components/ui/form-section-card";
+import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { SelectWithAdd } from "@/components/ui/select-with-add";
+import type { ExamCategory } from "@/types/exam";
 import {
   BookOpen,
   Eye,
@@ -5,21 +14,10 @@ import {
   GraduationCap,
   Info,
   ListOrdered,
-  MapPin,
   Settings,
   Shuffle,
 } from "lucide-react";
 import Link from "next/link";
-import { FormSectionCard } from "@/components/ui/form-section-card";
-import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
-import { FormRadioGroup } from "@/components/ui/form-radio-group";
-import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
-import { SelectWithAdd } from "@/components/ui/select-with-add";
-import type { ExamCategory, ExamVenue } from "@/types/exam";
 
 interface ExamSettingsStepProps {
   mode: "create" | "edit";
@@ -58,8 +56,6 @@ interface ExamSettingsStepProps {
   onRandomizeMCQChoicesChange: (val: boolean) => void;
   isIndependent: boolean;
   onIsIndependentChange: (val: boolean) => void;
-  venue: ExamVenue;
-  onVenueChange: (val: ExamVenue) => void;
   coursesCount: number;
   isSubmitting: boolean;
   locale: string;
@@ -105,13 +101,10 @@ export function ExamSettingsStep({
   onRandomizeMCQChoicesChange,
   isIndependent,
   onIsIndependentChange,
-  venue,
-  onVenueChange,
   coursesCount,
   isSubmitting,
   locale,
   tForm,
-  tCourses,
   onProceedToStep2,
 }: ExamSettingsStepProps) {
   return (
@@ -299,7 +292,7 @@ export function ExamSettingsStep({
         </div>
       </FormSectionCard>
 
-      {/* Section 4: Independent Exam Toggle (with Venue & Publish Status) */}
+      {/* Section 4: Independent Exam Toggle (with Publish Status) */}
       <FormSectionCard
         title={tForm("fields.isIndependent")}
         description={tForm("fields.isIndependentDesc")}
@@ -320,38 +313,7 @@ export function ExamSettingsStep({
             icon={FileQuestion}
             checked={isIndependent}
             onCheckedChange={onIsIndependentChange}
-          >
-            {isIndependent && (
-              <div className="space-y-4 pt-2 animate-in fade-in slide-in-from-top-1">
-                {/* Venue */}
-                <FormRadioGroup
-                  name="exam-venue"
-                  title={tForm("fields.venue")}
-                  icon={MapPin}
-                  value={venue}
-                  onValueChange={(v) => onVenueChange(v as ExamVenue)}
-                  gridClassName="sm:grid-cols-3"
-                  options={[
-                    {
-                      id: "online",
-                      label: tCourses("new.venues.online.label"),
-                      desc: tCourses("new.venues.online.desc"),
-                    },
-                    {
-                      id: "onsite",
-                      label: tCourses("new.venues.onsite.label"),
-                      desc: tCourses("new.venues.onsite.desc"),
-                    },
-                    {
-                      id: "hybrid",
-                      label: tCourses("new.venues.hybrid.label"),
-                      desc: tCourses("new.venues.hybrid.desc"),
-                    },
-                  ]}
-                />
-              </div>
-            )}
-          </FormToggleSetting>
+          />
         </div>
       </FormSectionCard>
 

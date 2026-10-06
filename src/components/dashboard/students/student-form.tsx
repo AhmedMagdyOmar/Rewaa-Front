@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Gender, RegistrationType, Student } from "@/types/student";
+import { Gender, Student } from "@/types/student";
 
 export interface StudentFormData {
   firstName: string;
@@ -38,7 +38,6 @@ export interface StudentFormData {
   country: string;
   state: string;
   grade: string;
-  registrationType: RegistrationType;
 }
 
 interface StudentFormProps {
@@ -121,7 +120,6 @@ export function StudentForm({
       grade: initialData?.educationalStageId
         ? String(initialData.educationalStageId)
         : initialData?.grade || "",
-      registrationType: initialData?.registrationType || "center",
     };
   });
 
@@ -164,7 +162,6 @@ export function StudentForm({
         grade: initialData.educationalStageId
           ? String(initialData.educationalStageId)
           : initialData.grade || "",
-        registrationType: initialData.registrationType || "center",
       });
     } else if (countries.length > 0) {
       setFormData((prev) => {
@@ -206,8 +203,7 @@ export function StudentForm({
       !formData.email.trim() ||
       !formData.country.trim() ||
       !formData.state.trim() ||
-      !formData.grade.trim() ||
-      !formData.registrationType
+      !formData.grade.trim()
     ) {
       setErrorMsg(tForm("requiredFieldsError"));
       return false;
@@ -486,25 +482,6 @@ export function StudentForm({
             placeholder={tForm("selectGrade")}
             grades={educationalStages}
           />
-
-          {/* Registration Type */}
-          <div className="space-y-2">
-            <Label htmlFor="registrationType">{tForm("registrationTypeLabel")}</Label>
-            <Select
-              value={formData.registrationType}
-              onValueChange={(val) => handleChange("registrationType", val as RegistrationType)}
-            >
-              <SelectTrigger id="registrationType" className="bg-background">
-                <SelectValue placeholder={tForm("selectRegistrationType")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="center">{tForm("registrationTypes.center")}</SelectItem>
-                <SelectItem value="online">{tForm("registrationTypes.online")}</SelectItem>
-                <SelectItem value="hybrid">{tForm("registrationTypes.hybrid")}</SelectItem>
-                <SelectItem value="external">{tForm("registrationTypes.external")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </FormSectionCard>
 

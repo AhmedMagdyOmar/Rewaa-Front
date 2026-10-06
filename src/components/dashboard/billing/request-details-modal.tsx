@@ -48,7 +48,6 @@ export function RequestDetailsModal({
   const t = useTranslations("billingRequestsPage.modal");
   const tStatus = useTranslations("billingRequestsPage.status");
   const tMethods = useTranslations("billingRequestsPage.methods");
-  const tCourses = useTranslations("courses");
   const tDetails = useTranslations("studentsPage.details");
 
   const [isRejecting, setIsRejecting] = React.useState(false);
@@ -108,16 +107,6 @@ export function RequestDetailsModal({
     payment.student?.educational_stage?.name?.[locale] ||
     payment.student?.educational_stage?.name?.ar ||
     "-";
-
-  const deliveryMode =
-    primaryItem?.selected_delivery_mode || primaryItem?.delivery_mode || "online";
-
-  const formatDeliveryMode = (mode: string) => {
-    if (tCourses.has(`venue.${mode}`)) {
-      return tCourses(`venue.${mode}`);
-    }
-    return mode;
-  };
 
   const proofUrl = payment.proof?.url || (payment.proof_endpoint ? payment.proof_endpoint : null);
 
@@ -241,14 +230,6 @@ export function RequestDetailsModal({
                     <span className="font-medium text-foreground">{stageName}</span>
                   </div>
                 )}
-                <div className="flex justify-between items-center border-b border-border/40 pb-2">
-                  <span className="text-muted-foreground text-xs">
-                    {locale === "ar" ? "نوع الحضور" : "Venue / Mode"}
-                  </span>
-                  <Badge variant="outline" className="text-xs">
-                    {formatDeliveryMode(deliveryMode)}
-                  </Badge>
-                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground text-xs">{t("amountRequired")}</span>
                   <span className="font-bold text-primary text-base">

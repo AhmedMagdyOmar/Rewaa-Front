@@ -1,6 +1,6 @@
 import { BackendCourse } from "@/types/api-contracts";
 import { Course } from "@/types/course";
-import { CourseVenueFilter, FilterTab, SortOption } from "../course-filters";
+import { FilterTab, SortOption } from "../course-filters";
 
 /**
  * Adapter: converts BackendCourse to legacy Course format for CourseCard
@@ -49,7 +49,6 @@ export function adaptBackendCourseToCourse(backend: BackendCourse, locale: strin
     hasTimeLimit: Boolean(backend.has_limited_access),
     timeLimitValue: backend.access_duration_days || undefined,
     isSplitToSections: true,
-    venue: backend.delivery_mode || "hybrid",
     numberOfParticipants: backend.enrolled_students_count || 0,
     isDraft,
     publishStatus,
@@ -76,15 +75,6 @@ export function mapSortToBackend(sortBy: SortOption): string {
       return "latest";
   }
 }
-
-/**
- * Maps frontend venue filter to backend delivery_mode param
- */
-export function mapVenueFilterToDeliveryMode(venueFilter: CourseVenueFilter): string | undefined {
-  if (venueFilter === "all") return undefined;
-  return venueFilter;
-}
-
 /**
  * Maps frontend tab to backend status param
  */

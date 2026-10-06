@@ -16,10 +16,7 @@ import {
   ExternalLink,
   FileCheck,
   FileText,
-  Globe,
-  Globe2,
   GraduationCap,
-  House,
   Layers,
   MoreVertical,
   Paperclip,
@@ -48,7 +45,6 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
   const t = useTranslations("lessons");
-  const tCourses = useTranslations("courses");
   const tGrades = useTranslations("courses.new.grades");
   const tSubjects = useTranslations("courses.new.subjects");
 
@@ -56,13 +52,6 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
     lesson.classification === "standalone" ||
     lesson.lessonCategory === "independent" ||
     (!lesson.classification && !lesson.courseId);
-
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "onsite" || v === "center") return tCourses("venue.onsite");
-    if (v === "hybrid" || v === "all") return tCourses("venue.hybrid");
-    return v || "";
-  };
 
   const formatGrade = (g?: string) => {
     if (!g) return "";
@@ -137,7 +126,7 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
       {/* 2. CARD BODY (Title First) */}
       <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
         <div>
-          {/* Lesson Title Row with Category Icon (start) and Venue Icon (end, general only) */}
+          {/* Lesson Title Row with Category Icon (start) */}
           <div className="flex items-start justify-between gap-2 mb-2.5 group-hover:text-primary transition-colors">
             <div className="flex items-start gap-1.5 min-w-0 flex-1">
               <TooltipProvider delayDuration={200}>
@@ -163,26 +152,6 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
                 {lesson.title}
               </h3>
             </div>
-
-            {/* Venue Icon at the end of the title row (visible only if general/independent) */}
-            {isIndependent && (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="mt-0.5 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
-                      {lesson.venue === "online" ? (
-                        <Globe className="h-4 w-4" />
-                      ) : lesson.venue === "onsite" ? (
-                        <House className="h-4 w-4" />
-                      ) : (
-                        <Globe2 className="h-4 w-4" />
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">{formatVenue(lesson.venue)}</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            )}
           </div>
 
           {/* Course and Section Link or Multi-Course Badge */}

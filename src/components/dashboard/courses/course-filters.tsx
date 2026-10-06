@@ -13,7 +13,6 @@ import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filte
 import { CourseFiltersSkeleton } from "./manage-courses/components/course-filters-skeleton";
 
 export type FilterTab = "all" | "published" | "draft" | "scheduled";
-export type CourseVenueFilter = "all" | "online" | "onsite" | "hybrid";
 export type SortOption =
   | "date-newest"
   | "date-oldest"
@@ -31,7 +30,6 @@ interface CourseFiltersProps {
   isLoading?: boolean;
   searchQuery: string;
   activeTab: FilterTab;
-  venueFilter: CourseVenueFilter;
   stageFilter?: string;
   subjectFilter?: string;
   instructorFilter?: string;
@@ -45,7 +43,6 @@ interface CourseFiltersProps {
   scheduledCount: number;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onTabChange: (tab: FilterTab) => void;
-  onVenueChange: (venue: string) => void;
   onStageChange?: (stageId: string) => void;
   onSubjectChange?: (subjectId: string) => void;
   onInstructorChange?: (instructorId: string) => void;
@@ -57,7 +54,6 @@ export function CourseFilters({
   isLoading = false,
   searchQuery,
   activeTab,
-  venueFilter,
   stageFilter = "all",
   subjectFilter = "all",
   instructorFilter = "all",
@@ -71,7 +67,6 @@ export function CourseFilters({
   scheduledCount,
   onSearchChange,
   onTabChange,
-  onVenueChange,
   onStageChange,
   onSubjectChange,
   onInstructorChange,
@@ -101,10 +96,7 @@ export function CourseFilters({
   ];
 
   const hasExtraFilters =
-    venueFilter !== "all" ||
-    stageFilter !== "all" ||
-    subjectFilter !== "all" ||
-    instructorFilter !== "all";
+    stageFilter !== "all" || subjectFilter !== "all" || instructorFilter !== "all";
 
   if (isLoading) {
     return <CourseFiltersSkeleton />;
@@ -122,21 +114,6 @@ export function CourseFilters({
       isFilterActiveCustom={hasExtraFilters}
       extraFilters={
         <div className="flex flex-wrap items-center gap-2">
-          {/* Venue / Delivery Mode filter */}
-          <div className="w-36">
-            <Select value={venueFilter} onValueChange={onVenueChange}>
-              <SelectTrigger className="h-9 text-xs bg-background">
-                <SelectValue placeholder={t("filters.venue.all")} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("filters.venue.all")}</SelectItem>
-                <SelectItem value="online">{t("filters.venue.online")}</SelectItem>
-                <SelectItem value="onsite">{t("filters.venue.onsite")}</SelectItem>
-                <SelectItem value="hybrid">{t("filters.venue.hybrid")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Stage filter */}
           {stages.length > 0 && onStageChange && (
             <div className="w-36">

@@ -22,7 +22,7 @@ import {
 } from "@/hooks/use-lessons";
 import { cn } from "@/lib/utils";
 import type { StoreLessonData, UpdateLessonData } from "@/types/api-contracts";
-import type { CourseVenue, LessonType } from "@/types/course";
+import type { LessonType } from "@/types/course";
 import type { Exam } from "@/types/exam";
 import {
   AlertCircle,
@@ -100,8 +100,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [selectedCourseId, setSelectedCourseId] = useState<string>("");
   const [selectedSectionId, setSelectedSectionId] = useState<string>("");
 
-  // Venue & Active Status
-  const [venue, setVenue] = useState<CourseVenue>("hybrid");
+  // Active Status
   const [isActive, setIsActive] = useState<boolean>(true);
 
   // Attachments
@@ -152,7 +151,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         subject: String(e.subject_id),
         grade: String(e.educational_stage_id),
         teacherName: "",
-        venue: "hybrid",
         category: "test",
         examType: e.course_id ? "course-dependent" : "independent",
         courseId: e.course_id ? String(e.course_id) : undefined,
@@ -255,7 +253,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       setInstructorId(String(initialLesson.instructor_id));
     }
 
-    setVenue((initialLesson.delivery_mode as CourseVenue) || "hybrid");
     setIsActive(initialLesson.is_active ?? true);
 
     // Attachments
@@ -429,7 +426,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           updateData.educational_stage_id =
             Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
           updateData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
-          updateData.delivery_mode = venue;
           if (optionsData?.requires_instructor_selection && instructorId) {
             updateData.instructor_id = Number(instructorId);
           }
@@ -469,7 +465,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           createData.educational_stage_id =
             Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
           createData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
-          createData.delivery_mode = venue;
           if (optionsData?.requires_instructor_selection && instructorId) {
             createData.instructor_id = Number(instructorId);
           }

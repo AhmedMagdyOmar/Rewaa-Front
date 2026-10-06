@@ -13,7 +13,6 @@ export interface CourseFilterParams {
   subject_id?: number | string;
   instructor_id?: number | string;
   subscription_period?: string;
-  delivery_mode?: string;
   is_free?: boolean | number | string;
   is_active?: boolean | number | string;
   has_discount?: boolean | number | string;
@@ -41,7 +40,6 @@ export interface StoreCourseData {
   has_limited_access: boolean;
   access_duration_days?: number;
   uses_student_groups: boolean;
-  delivery_mode: string;
   status?: string;
   scheduled_publish_at?: string;
   is_active: boolean;

@@ -96,7 +96,6 @@ export function NewStudentClient() {
         country_id: countryId,
         governorate_id: governorateId,
         educational_stage_id: stageId,
-        registration_type: data.registrationType,
         status: "active",
         avatar: data.imageFile || undefined,
       },

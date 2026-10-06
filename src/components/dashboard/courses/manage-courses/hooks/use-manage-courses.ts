@@ -15,7 +15,6 @@ import {
   adaptBackendCourseToCourse,
   mapSortToBackend,
   mapTabToStatusParam,
-  mapVenueFilterToDeliveryMode,
 } from "../manage-courses-utils";
 import { useCourseUrlFilters } from "./use-course-url-filters";
 
@@ -40,10 +39,6 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
     return mapSortToBackend(filters.sortBy);
   }, [filters.sortBy]);
 
-  const deliveryModeParam = React.useMemo(() => {
-    return mapVenueFilterToDeliveryMode(filters.venueFilter);
-  }, [filters.venueFilter]);
-
   const statusParam = React.useMemo(() => {
     return mapTabToStatusParam(filters.activeTab);
   }, [filters.activeTab]);
@@ -56,7 +51,6 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
   } = useProviderCourses({
     search: filters.searchQuery.trim() || undefined,
     status: statusParam,
-    delivery_mode: deliveryModeParam,
     educational_stage_id: filters.stageFilter !== "all" ? filters.stageFilter : undefined,
     subject_id: filters.subjectFilter !== "all" ? filters.subjectFilter : undefined,
     instructor_id: filters.instructorFilter !== "all" ? filters.instructorFilter : undefined,

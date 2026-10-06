@@ -36,7 +36,6 @@ export function StudentExamIntroView({
   const locale = useLocale();
   const t = useTranslations("studentDashboard.examTakingPage.intro");
   const tGlobal = useTranslations("studentDashboard.examResultPage");
-  const tCourses = useTranslations("courses");
   const tExams = useTranslations("exams");
 
   const getLocalizedString = (field?: Record<string, string> | null) => {
@@ -55,12 +54,6 @@ export function StudentExamIntroView({
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
       ? tExams(`category.${key}` as Parameters<typeof tExams>[0])
       : cat;
-  };
-
-  const formatVenue = (v?: string) => {
-    if (v === "online") return tCourses("venue.online");
-    if (v === "onsite" || v === "center") return tCourses("venue.center");
-    return tCourses("venue.all");
   };
 
   const canStart = exam.can_start !== false;
@@ -221,15 +214,6 @@ export function StudentExamIntroView({
                   </span>
                   <span className="font-semibold text-foreground truncate max-w-40">
                     {courseTitleStr}
-                  </span>
-                </div>
-              )}
-
-              {exam.delivery_mode && (
-                <div className="flex justify-between items-center py-1.5">
-                  <span className="text-muted-foreground">{t("venue")}</span>
-                  <span className="font-semibold text-foreground">
-                    {formatVenue(exam.delivery_mode)}
                   </span>
                 </div>
               )}

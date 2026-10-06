@@ -86,8 +86,6 @@ export function CourseStep1Form({ form, initialCourseId }: CourseStep1FormProps)
         onTimeLimitValueChange={form.setTimeLimitValue}
         isActive={form.isActive}
         onIsActiveChange={form.setIsActive}
-        venue={form.venue}
-        onVenueChange={form.setVenue}
       />
 
       {/* CTA Buttons */}

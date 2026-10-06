@@ -352,15 +352,6 @@
       "published": "Published",
       "draft": "Draft"
     },
-    "filters": {
-      "venue": {
-        "all": "All Delivery Modes",
-        "online": "Online",
-        "onsite": "On-site / Center",
-        "hybrid": "Hybrid",
-        "center": "Center"
-      }
-    },
     "clearFilters": "Clear all filters",
     "sort": {
       "newest": "Date: Newest first",
@@ -384,13 +375,6 @@
       "published": "Published",
       "draft": "Draft",
       "scheduled": "Scheduled"
-    },
-    "venue": {
-      "online": "Online",
-      "onsite": "On-site / Center",
-      "hybrid": "Hybrid",
-      "all": "Hybrid",
-      "center": "Center"
     },
     "badge": {
       "offer": "Special Offer",
@@ -459,7 +443,6 @@
       "grade": "Grade Level",
       "subject": "Subject",
       "period": "Subscription Period",
-      "venue": "Venue",
       "createdAt": "Created Date",
       "timeLimit": "Access Validity",
       "timeLimitDays": "{days, plural, =1 {1 day} other {{days} days}}",
@@ -537,28 +520,6 @@
         "SAR": "SAR (Saudi Riyal)",
         "AED": "AED (UAE Dirham)"
       },
-      "venues": {
-        "online": {
-          "label": "Online",
-          "desc": "Digital remote learning"
-        },
-        "onsite": {
-          "label": "On-site / Center",
-          "desc": "Physical center attendance"
-        },
-        "hybrid": {
-          "label": "Hybrid",
-          "desc": "Combined online and in-person attendance"
-        },
-        "center": {
-          "label": "Center",
-          "desc": "Physical center"
-        },
-        "all": {
-          "label": "Center & Online",
-          "desc": "Hybrid attendance options"
-        }
-      },
       "sections": {
         "mainInfo": {
           "title": "Main Information",
@@ -574,7 +535,7 @@
         },
         "advancedSettings": {
           "title": "Advanced Settings",
-          "description": "Set access validity, group splitting options, and attendance venue type."
+          "description": "Set access validity, group splitting options."
         }
       },
       "fields": {
@@ -616,8 +577,6 @@
         "timeLimitDaysSuffix": "Days",
         "isActive": "Active Course",
         "isActiveSubtitle": "Determine whether the course is active and visible for student enrollment.",
-        "venue": "Attendance Venue",
-        "venueSubtitle": "Choose whether this course is taught online, in an educational center, or both.",
         "badge": "Course Badge",
         "badgeSubtitle": "Select a badge to display on the course card to highlight it in the course listing."
       },
@@ -691,7 +650,7 @@
             "type": "Choose whether this lesson includes video lecture or text content.",
             "mainInfo": "Title and detailed Markdown description for the lesson.",
             "media": "Upload or enter video link and cover thumbnail image.",
-            "academic": "Grade level, subject matter, teacher name, and venue.",
+            "academic": "Grade level, subject matter, and teacher name.",
             "attachmentsAndExams": "PDF files, explanatory images, and linked exams.",
             "organization": "Set publish status and schedule publication date.",
             "category": "Choose whether this lesson is independent or belongs to a course."
@@ -749,7 +708,6 @@
           "lessonDateAfterCourseScheduleError": "Lesson scheduled publish date must be after the course's scheduled publish date ({date}).",
           "lessonDateBeforeCourseScheduleEndError": "Lesson scheduled end date must be before the course's scheduled end date ({date}).",
           "lessonEndDateAfterStartError": "Lesson scheduled end date must be after the publish date.",
-          "venue": "Venue",
           "lessonCategory": "Lesson Category",
           "categoryOptions": {
             "courseDependent": "Course Dependent",
@@ -848,7 +806,6 @@
         "female": "Female",
         "allGrades": "All Grades",
         "allLocations": "All Governorates",
-        "allRegTypes": "All Registration Types",
         "sortBy": "Sort by",
         "newest": "Newest Enrolled",
         "oldest": "Oldest Enrolled",
@@ -861,7 +818,6 @@
         "gender": "Gender",
         "location": "Governorate / Country",
         "grade": "Grade",
-        "registrationType": "Registration Type",
         "actions": "Actions"
       },
       "actions": {
@@ -910,7 +866,6 @@
         "title": "Title",
         "subjectGrade": "Subject & Grade",
         "category": "Category",
-        "typeVenue": "Type & Venue",
         "questions": "Questions",
         "students": "Students",
         "questionsStudents": "Questions & Students",
@@ -1014,9 +969,7 @@
         "expirationDays": "Expiration Period (Days)",
         "expirationDaysPlaceholder": "e.g., 30",
         "isIndependent": "Independent Exam",
-        "isIndependentDesc": "Toggle on if this exam is not linked to any specific course or lesson and has its own venue.",
-        "venue": "Attendance Venue",
-        "selectVenue": "Select venue...",
+        "isIndependentDesc": "Toggle on if this exam is not linked to any specific course or lesson.",
         "attachmentType": "Curriculum Attachment",
         "attachmentTypeDesc": "Choose whether to leave this exam in the Exam Bank, link to a course, or link to a standalone lesson.",
         "examBank": "Exam Bank (Unlinked for now)",
@@ -1227,7 +1180,6 @@
         "teacher": "Teacher / Instructor",
         "category": "Exam Category",
         "type": "Exam Type",
-        "venue": "Venue",
         "linkedCourse": "Linked Course",
         "triesAllowed": "Tries Allowed",
         "duration": "Duration (Minutes)",
@@ -1670,7 +1622,6 @@
       "passingScore": "Passing Score: {score}%",
       "teacherInfo": "Instructor",
       "subjectAndGrade": "Subject & Level",
-      "venue": "Attendance Venue",
       "status": "Status",
       "category": "Lesson Category",
       "linkedCourse": "Linked Course",
@@ -1727,22 +1678,15 @@
   },
   "studentsPage": {
     "title": "Students Management",
-    "subtitle": "View and manage all registered students, control their data, and filter by governorate, grade, and registration type.",
+    "subtitle": "View and manage all registered students, control their data, and filter by governorate, and grade.",
     "addNewStudent": "Add New Student",
     "refresh": "Refresh",
     "refreshData": "Refresh Data",
     "resetData": "Refresh Data",
     "searchPlaceholder": "Search by student name, phone number, email...",
     "allGrades": "All Grades",
-    "allRegistrationTypes": "All Registration Types",
     "allCountries": "All Countries",
     "allStates": "All Governorates / States",
-    "registrationTypes": {
-      "center": "Center",
-      "online": "Online",
-      "hybrid": "Hybrid",
-      "external": "External"
-    },
     "sort": {
       "dateNewest": "Date (Newest First)",
       "dateOldest": "Date (Oldest First)",
@@ -1750,8 +1694,7 @@
       "nameDesc": "Name (Z-A)",
       "gradeAsc": "Grade",
       "ratingHigh": "Rating / GPA (Highest)",
-      "ratingLow": "Rating / GPA (Lowest)",
-      "registrationType": "Registration Type"
+      "ratingLow": "Rating / GPA (Lowest)"
     },
     "columns": {
       "fullNameAndId": "Student Name",
@@ -1764,7 +1707,6 @@
       "grade": "Grade",
       "averageRating": "Cumulative GPA",
       "registrationDate": "Registration Date",
-      "registrationType": "Registration Type",
       "actions": "Actions"
     },
     "actions": {
@@ -1822,7 +1764,6 @@
       "country": "Country",
       "state": "Governorate / State",
       "grade": "Grade",
-      "registrationType": "Registration Type",
       "viewCourse": "View Course",
       "lessonsCount": "{count, plural, =0 {No lessons} one {1 lesson} other {{count} lessons}}",
       "joinedIn": "Joined in {date}",
@@ -1944,7 +1885,7 @@
       "accountSecurity": "Account and Security",
       "accountSecuritySubtitle": "Password and platform account confirmation",
       "locationLevel": "Location and Level",
-      "locationLevelSubtitle": "Country, governorate/state, grade, and registration type",
+      "locationLevelSubtitle": "Country, governorate/state, and grade",
       "firstNameLabel": "First Name *",
       "firstNamePlaceholder": "Ahmed",
       "middleNameLabel": "Middle Name",
@@ -1980,8 +1921,6 @@
       "selectCountryFirst": "Please select a country first",
       "gradeLabel": "Grade Level *",
       "selectGrade": "Select Grade Level",
-      "registrationTypeLabel": "Registration Type *",
-      "selectRegistrationType": "Select Registration Type",
       "saveDraft": "Save as Draft",
       "createStudent": "Create Student",
       "saveChanges": "Save Changes",
@@ -1990,13 +1929,7 @@
       "requiredFieldsError": "Please fill in all required fields",
       "imageLabel": "Profile Image",
       "imagePrompt": "Click or drag image to upload as profile photo",
-      "imageChange": "Change Profile Photo",
-      "registrationTypes": {
-        "center": "Center",
-        "online": "Online",
-        "hybrid": "Hybrid",
-        "external": "External"
-      }
+      "imageChange": "Change Profile Photo"
     }
   },
   "billingRequestsPage": {
@@ -2027,11 +1960,6 @@
         "amountDesc": "Amount: High to Low",
         "amountAsc": "Amount: Low to High"
       },
-      "venue": {
-        "all": "All Venues",
-        "center": "Center",
-        "online": "Online"
-      },
       "resetFilters": "Reset Filters"
     },
     "table": {
@@ -2042,7 +1970,6 @@
         "amount": "Amount",
         "paymentMethod": "Payment Method",
         "course": "Course",
-        "venue": "Venue",
         "status": "Status",
         "actions": "Actions"
       },
@@ -2913,8 +2840,7 @@
       "metadata": "Lesson Information",
       "category": "Category",
       "subjectAndGrade": "Subject & Grade",
-      "teacher": "Teacher",
-      "venue": "Attendance Format"
+      "teacher": "Teacher"
     },
     "generalExamsPage": {
       "title": "General & Independent Exams",
@@ -3049,7 +2975,6 @@
         "category": "Exam Type",
         "sourceCourse": "Source Course",
         "independent": "General Platform Exam",
-        "venue": "Venue",
         "triesAllowed": "Tries Allowed",
         "duration": "Exam Duration",
         "passingPercentage": "Passing Mark",
@@ -3079,7 +3004,6 @@
         "passingPercentage": "{percent}%",
         "triesAllowed": "Attempts Allowed",
         "triesCount": "{count, plural, =0 {No attempts} one {1 attempt} other {{count} attempts}}",
-        "venue": "Venue",
         "teacher": "Instructor"
       },
       "timerBar": {
@@ -3289,7 +3213,7 @@
       "personalAndContactInfo": "Personal & Contact Information",
       "personalAndContactInfoSubtitle": "Full name, contact phone numbers, email address, and profile photo",
       "academicAndLocation": "Location & Academic Level",
-      "academicAndLocationSubtitle": "Country, governorate/state, grade level, and registration type",
+      "academicAndLocationSubtitle": "Country, governorate/state, and grade level.",
       "accountSecurity": "Account & Security",
       "accountSecuritySubtitle": "Change the password for your student platform account",
       "imageLabel": "Profile Picture",
@@ -3308,7 +3232,6 @@
       "countryLabel": "Country *",
       "stateLabel": "State / Governorate *",
       "gradeLabel": "Grade Level *",
-      "registrationTypeLabel": "Registration Type *",
       "passwordLabel": "New Password",
       "passwordPlaceholder": "Leave blank if you do not wish to change it",
       "confirmPasswordLabel": "Confirm New Password",
@@ -3449,12 +3372,9 @@
         "country": "Country",
         "studentsCount": "Students Count",
         "percentage": "Share Percentage",
-        "learningMode": "Attendance Mode",
         "activeStudents": "Active Students",
         "topGrade": "Primary Grade"
       },
-      "centerShort": "Center",
-      "onlineShort": "Online",
       "activeRateBadge": "{percentage}% Active",
       "empty": {
         "title": "No Matching Regions Found",
@@ -3491,7 +3411,6 @@
       "backToOrders": "Back to Orders",
       "title": "Order Details",
       "orderItems": "Order Items",
-      "deliveryMode": "Delivery Mode:",
       "courseFallback": "Course",
       "paymentMethod": "Payment Method",
       "paymentMethodSubtitle": "Select your preferred payment method to complete enrollment",

@@ -1,10 +1,9 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import type { AvailableCourse } from "@/types/api-contracts";
-import { BookOpen, Calendar, Globe, Globe2, House, Tag, User } from "lucide-react";
+import { BookOpen, Calendar, Tag, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
@@ -121,30 +120,8 @@ export function StudentAvailableCourseCard({
 
       {/* Card Body */}
       <div className="flex flex-col flex-1 p-4">
-        {/* Course Title with Venue Icon */}
+        {/* Course Title */}
         <div className="flex items-start gap-1.5 mb-2 group-hover:text-primary transition-colors">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div className="mt-1 shrink-0 cursor-default text-muted-foreground hover:text-primary transition-colors">
-                  {course.delivery_mode === "online" ? (
-                    <Globe className="h-4 w-4" />
-                  ) : course.delivery_mode === "onsite" ? (
-                    <House className="h-4 w-4" />
-                  ) : (
-                    <Globe2 className="h-4 w-4" />
-                  )}
-                </div>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {course.delivery_mode === "hybrid"
-                  ? tCourses("venue.hybrid")
-                  : course.delivery_mode === "online"
-                    ? tCourses("venue.online")
-                    : tCourses("venue.onsite")}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
           <h3 className="font-bold text-foreground line-clamp-2 text-base leading-snug">{title}</h3>
         </div>
 

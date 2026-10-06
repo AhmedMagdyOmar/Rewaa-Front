@@ -97,7 +97,6 @@ export function StudentReportModal({
         hasOffer: false,
         hasTimeLimit: false,
         isSplitToSections: false,
-        venue: "online",
         numberOfParticipants: 0,
         isDraft: false,
         sections: [],
