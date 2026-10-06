@@ -24,6 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useProviderExam } from "@/hooks/use-exams";
+import { mapBackendExamToFrontend } from "@/lib/adapters/exam-adapters";
 import { cn } from "@/lib/utils";
 import { Exam, ExamSection, Question } from "@/types/exam";
 
@@ -53,52 +55,56 @@ export function ImportFromExamsDialog({
   );
   const [expandedSections, setExpandedSections] = React.useState<Record<string, boolean>>({});
 
-  // Reset internal state when dialog opens or selected exam changes
+  // Fetch full details of the currently selected exam so sections & questions are populated
+  const { data: fullExamData, isLoading: isExamDetailsLoading } = useProviderExam(
+    selectedExamId || undefined,
+  );
+
+  const selectedExam: Exam | null = React.useMemo(() => {
+    if (!selectedExamId) return null;
+    if (fullExamData) {
+      return mapBackendExamToFrontend(fullExamData, locale);
+    }
+    return availableExams.find((e) => e.id === selectedExamId) || null;
+  }, [availableExams, fullExamData, locale, selectedExamId]);
+
+  // Set default selected exam ID on open
   React.useEffect(() => {
     if (open) {
       if (availableExams.length > 0 && !selectedExamId) {
-        const firstExam = availableExams[0];
-        setSelectedExamId(firstExam.id);
-        const sectionIds = firstExam.examSections.map((s) => s.id);
-        setSelectedSectionIds(sectionIds);
-
-        const initialQuestions: Record<string, string[]> = {};
-        const initialExpanded: Record<string, boolean> = {};
-        firstExam.examSections.forEach((s) => {
-          initialQuestions[s.id] = s.questions.map((q) => q.id);
-          initialExpanded[s.id] = true;
-        });
-        setIncludedQuestionIds(initialQuestions);
-        setExpandedSections(initialExpanded);
+        setSelectedExamId(availableExams[0].id);
       }
+    } else {
+      setSelectedExamId("");
+      setSelectedSectionIds([]);
+      setIncludedQuestionIds({});
+      setExpandedSections({});
     }
   }, [open, availableExams, selectedExamId]);
 
-  const handleSelectExam = (examId: string) => {
-    setSelectedExamId(examId);
-    const chosenExam = availableExams.find((e) => e.id === examId);
-    if (chosenExam) {
-      const sectionIds = chosenExam.examSections.map((s) => s.id);
+  // When selectedExam (with full sections and questions) is loaded or changes, initialize selection
+  React.useEffect(() => {
+    if (selectedExam && selectedExam.examSections.length > 0) {
+      const sectionIds = selectedExam.examSections.map((s) => s.id);
       setSelectedSectionIds(sectionIds);
       const initialQuestions: Record<string, string[]> = {};
       const initialExpanded: Record<string, boolean> = {};
-      chosenExam.examSections.forEach((s) => {
+      selectedExam.examSections.forEach((s) => {
         initialQuestions[s.id] = s.questions.map((q) => q.id);
         initialExpanded[s.id] = true;
       });
       setIncludedQuestionIds(initialQuestions);
       setExpandedSections(initialExpanded);
-    } else {
+    } else if (selectedExam && selectedExam.examSections.length === 0) {
       setSelectedSectionIds([]);
       setIncludedQuestionIds({});
       setExpandedSections({});
     }
-  };
+  }, [selectedExam]);
 
-  const selectedExam = React.useMemo(
-    () => availableExams.find((e) => e.id === selectedExamId) || null,
-    [availableExams, selectedExamId],
-  );
+  const handleSelectExam = (examId: string) => {
+    setSelectedExamId(examId);
+  };
 
   const toggleSection = (sectionId: string) => {
     setSelectedSectionIds((prev) => {
@@ -232,30 +238,43 @@ export function ImportFromExamsDialog({
                   <SelectValue placeholder={t("selectExamPlaceholder")} />
                 </SelectTrigger>
                 <SelectContent className="max-h-64">
-                  {availableExams.map((exam) => (
-                    <SelectItem key={exam.id} value={exam.id} className="cursor-pointer py-2.5">
-                      <div className="flex items-center justify-between gap-3 w-full">
-                        <span className="font-medium text-foreground">{exam.title}</span>
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted">
-                            {exam.examSections.length} {isRTL ? "أقسام" : "sections"}
-                          </span>
-                          <span>•</span>
-                          <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
-                            {exam.examSections.reduce((acc, s) => acc + s.questions.length, 0)}{" "}
-                            {isRTL ? "سؤال" : "questions"}
-                          </span>
+                  {availableExams.map((exam) => {
+                    const qCount =
+                      exam.numberOfQuestions ||
+                      exam.examSections.reduce((acc, s) => acc + s.questions.length, 0);
+
+                    return (
+                      <SelectItem key={exam.id} value={exam.id} className="cursor-pointer py-2.5">
+                        <div className="flex items-center justify-between gap-3 w-full">
+                          <span className="font-medium text-foreground">{exam.title}</span>
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                            {exam.examSections.length > 0 && (
+                              <>
+                                <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted">
+                                  {exam.examSections.length} {isRTL ? "أقسام" : "sections"}
+                                </span>
+                                <span>•</span>
+                              </>
+                            )}
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium">
+                              {qCount} {isRTL ? "سؤال" : "questions"}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             )}
           </div>
 
           {/* Step 2: Multi-select Sections */}
-          {selectedExam && (
+          {isExamDetailsLoading ? (
+            <div className="flex items-center justify-center py-10">
+              <div className="size-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : selectedExam ? (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold text-foreground flex items-center gap-1.5">
@@ -333,7 +352,7 @@ export function ImportFromExamsDialog({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Step 3: Granular Question Inclusion / Exclusion underneath for selected sections */}
           {selectedExam && selectedSectionIds.length > 0 && (

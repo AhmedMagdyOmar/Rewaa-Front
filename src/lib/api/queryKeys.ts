@@ -29,6 +29,7 @@ export const queryKeys = {
       detail: (id: number | string) => [...queryKeys.provider.courses.all(), "detail", id] as const,
       options: (stageId?: number | string) =>
         [...queryKeys.provider.courses.all(), "options", { stageId }] as const,
+      categories: () => [...queryKeys.provider.courses.all(), "categories"] as const,
       sections: (courseId: number | string) =>
         [...queryKeys.provider.courses.detail(courseId), "sections"] as const,
     },

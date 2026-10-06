@@ -55,6 +55,22 @@ export function CourseCard({
   const tNew = useTranslations("courses.new");
   const tStudent = useTranslations("studentDashboard.latestCourses");
 
+  const formatCategory = (catCode?: string, catLabel?: string) => {
+    if (catLabel) return catLabel;
+    if (!catCode) return "";
+    const key = `categories.${catCode}` as Parameters<typeof tNew>[0];
+    if (tNew.has(key)) return tNew(key);
+    const fallbackMap: Record<string, { ar: string; en: string }> = {
+      workshops_training: { ar: "ورش وتدريبات", en: "Workshops & Training" },
+      important_topics: { ar: "موضوعات هامة", en: "Important Topics" },
+      revisions: { ar: "مراجعات", en: "Revisions" },
+    };
+    if (fallbackMap[catCode]) {
+      return isAr ? fallbackMap[catCode].ar : fallbackMap[catCode].en;
+    }
+    return catCode;
+  };
+
   const formatGrade = (gradeVal: string) => {
     return tNew.has(`grades.${gradeVal}` as Parameters<typeof tNew.has>[0])
       ? tNew(`grades.${gradeVal}` as Parameters<typeof tNew>[0])
@@ -216,9 +232,23 @@ export function CourseCard({
             {course.title}
           </h3>
         </div>
-        {/* Grade */}
-        <div className="text-xs font-semibold text-primary/80 mb-1">
-          {course.subject ? formatSubject(course.subject) : ""} / {formatGrade(course.grade)}
+        {/* Academic hierarchy: Category / Subject / Grade */}
+        <div className="text-xs font-semibold text-primary/80 mb-1 flex items-center flex-wrap gap-1">
+          {course.category && (
+            <>
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-primary/10 text-primary">
+                {formatCategory(course.category, course.categoryLabel)}
+              </span>
+              {(course.subject || course.grade) && (
+                <span className="text-muted-foreground/60">•</span>
+              )}
+            </>
+          )}
+          <span>
+            {course.subject ? formatSubject(course.subject) : ""}
+            {course.subject && course.grade ? " / " : ""}
+            {formatGrade(course.grade)}
+          </span>
         </div>
 
         {/* Teacher Info */}

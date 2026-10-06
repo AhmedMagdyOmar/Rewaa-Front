@@ -44,6 +44,10 @@ export function CourseStep1Form({ form, initialCourseId }: CourseStep1FormProps)
 
       {/* 2. CATEGORY INFORMATION */}
       <CategoryInfoSection
+        category={form.category}
+        onCategoryChange={form.setCategory}
+        categoryOptions={form.courseCategoryOptions}
+        onAddCategory={form.handleAddCourseCategory}
         grade={form.grade}
         onGradeChange={form.setGrade}
         subject={form.subject}

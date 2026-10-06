@@ -722,6 +722,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     } catch (err) {
       console.error("Failed to save lesson:", err);
       toast.error(getErrorMessage(err));
+      throw err;
     }
   };
 
@@ -731,38 +732,68 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
       let attachedLessons = [...savedLessons];
 
       if (isBackendCourseId && isBackendSec) {
-        const promises = savedLessons.map((l) =>
-          createLessonMutation.mutateAsync({
-            classification: "course",
-            course_id: Number(courseId),
-            course_section_id: Number(targetSecId),
-            original_lesson_id:
-              (l as unknown as { original_lesson_id?: number }).original_lesson_id ||
-              (!Number.isNaN(Number(l.id)) && !l.id.startsWith("les-") ? Number(l.id) : undefined),
-            type: l.type === "text" ? "text_only" : "video_and_text",
-            title: { ar: l.title, en: l.title },
-            description: l.description ? { ar: l.description, en: l.description } : undefined,
-            video_url: l.lectureVideoLink || undefined,
-            cover_image: l.coverImageFile || undefined,
-            has_pdf_attachments: Boolean(l.hasPdfAttachments),
-            has_explanatory_images: Boolean(l.hasImageAttachments),
-            has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
-            exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
-            requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
-            is_active: true,
-          }),
-        );
-        const created = await Promise.all(promises);
-        attachedLessons = created.map((res, i) => ({
-          ...savedLessons[i],
-          id: String(res.id),
-        }));
+        const CHUNK_SIZE = 4;
+        const createdLessons: Lesson[] = [];
+
+        for (let i = 0; i < savedLessons.length; i += CHUNK_SIZE) {
+          const chunk = savedLessons.slice(i, i + CHUNK_SIZE);
+          const chunkResults = await Promise.all(
+            chunk.map(async (l) => {
+              let lessonExamId = l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null;
+              const selectedLessonExam = availableExams.find((e) => e.id === l.linkedExamId);
+
+              if (lessonExamId && selectedLessonExam) {
+                try {
+                  const clonedExam = await examsService.createExam({
+                    source_exam_id: lessonExamId,
+                    course_id: Number(courseId),
+                    scope: "course",
+                  });
+                  lessonExamId = clonedExam.id;
+                } catch (cloneErr) {
+                  console.error("Failed to clone exam for bank lesson:", cloneErr);
+                }
+              }
+
+              const res = await createLessonMutation.mutateAsync({
+                classification: "course",
+                course_id: Number(courseId),
+                course_section_id: Number(targetSecId),
+                original_lesson_id:
+                  (l as unknown as { original_lesson_id?: number }).original_lesson_id ||
+                  (!Number.isNaN(Number(l.id)) && !l.id.startsWith("les-")
+                    ? Number(l.id)
+                    : undefined),
+                type: l.type === "text" ? "text_only" : "video_and_text",
+                title: { ar: l.title, en: l.title },
+                description: l.description ? { ar: l.description, en: l.description } : undefined,
+                video_url: l.lectureVideoLink || undefined,
+                cover_image: l.coverImageFile || undefined,
+                has_pdf_attachments: Boolean(l.hasPdfAttachments),
+                has_explanatory_images: Boolean(l.hasImageAttachments),
+                has_exam: Boolean(l.isLinkedToExam && lessonExamId),
+                exam_id: l.isLinkedToExam && lessonExamId ? lessonExamId : null,
+                requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
+                is_active: true,
+              });
+
+              return {
+                ...l,
+                id: String(res.id),
+                linkedExamId: lessonExamId ? String(lessonExamId) : undefined,
+              };
+            }),
+          );
+          createdLessons.push(...chunkResults);
+        }
+
+        attachedLessons = createdLessons;
         await queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
         await queryClient.invalidateQueries({ queryKey: ["provider", "lessons"] });
         toast.success(
           locale === "ar"
-            ? `تم إضافة ${created.length} دروس بنجاح`
-            : `Successfully added ${created.length} lessons`,
+            ? `تم إضافة ${attachedLessons.length} دروس بنجاح`
+            : `Successfully added ${attachedLessons.length} lessons`,
         );
       }
 
@@ -778,6 +809,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     } catch (err) {
       console.error("Failed to add lessons from bank:", err);
       toast.error(getErrorMessage(err));
+      throw err;
     }
   };
 
@@ -841,17 +873,51 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
         let totalImportedLessonsCount = 0;
 
         for (const sec of selectedImportSectionsList) {
+          let sectionExamId =
+            sec.isLinkedToExam && sec.linkedExamId ? Number(sec.linkedExamId) : null;
+          if (sectionExamId) {
+            try {
+              const clonedSectionExam = await examsService.createExam({
+                source_exam_id: sectionExamId,
+                course_id: Number(courseId),
+                scope: "course",
+              });
+              sectionExamId = clonedSectionExam.id;
+            } catch (cloneErr) {
+              console.error("Failed to clone exam for imported section:", cloneErr);
+            }
+          }
+
           const createdSection = await coursesService.createSection(courseId, {
             title: {
               ar: sec.title,
               en: sec.title,
             },
+            exam_id: sectionExamId,
+            requires_exam_pass_to_unlock_next_section: sectionExamId
+              ? Boolean(sec.isRequiredPassExamForNextSection)
+              : false,
             status: "draft",
           });
 
           if (sec.lessons && sec.lessons.length > 0) {
-            const lessonPromises = sec.lessons.map((l) =>
-              createLessonMutation.mutateAsync({
+            const lessonPromises = sec.lessons.map(async (l) => {
+              let lessonExamId = l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null;
+
+              if (lessonExamId) {
+                try {
+                  const clonedExam = await examsService.createExam({
+                    source_exam_id: lessonExamId,
+                    course_id: Number(courseId),
+                    scope: "course",
+                  });
+                  lessonExamId = clonedExam.id;
+                } catch (cloneErr) {
+                  console.error("Failed to clone exam for imported lesson:", cloneErr);
+                }
+              }
+
+              return createLessonMutation.mutateAsync({
                 classification: "course",
                 course_id: Number(courseId),
                 course_section_id: Number(createdSection.id),
@@ -862,12 +928,12 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 video_url: l.lectureVideoLink || undefined,
                 has_pdf_attachments: Boolean(l.hasPdfAttachments),
                 has_explanatory_images: Boolean(l.hasImageAttachments),
-                has_exam: Boolean(l.isLinkedToExam && l.linkedExamId),
-                exam_id: l.isLinkedToExam && l.linkedExamId ? Number(l.linkedExamId) : null,
+                has_exam: Boolean(l.isLinkedToExam && lessonExamId),
+                exam_id: l.isLinkedToExam && lessonExamId ? lessonExamId : null,
                 requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
                 is_active: true,
-              }),
-            );
+              });
+            });
 
             await Promise.all(lessonPromises);
             totalImportedLessonsCount += sec.lessons.length;

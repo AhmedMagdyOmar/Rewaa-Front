@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -12,6 +12,7 @@ import {
   useProviderCourseOptions,
   useCreateCourse,
   useUpdateCourse,
+  useCreateCourseCategory,
 } from "@/hooks/use-courses";
 
 interface UseCourseFormProps {
@@ -40,6 +41,7 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
   const [removeCoverImage, setRemoveCoverImage] = useState(false);
 
+  const [category, setCategory] = useState("workshops_training");
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
   const [teacherName, setTeacherName] = useState("");
@@ -67,6 +69,55 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     useProviderCourse(initialCourseId);
   const createCourseMutation = useCreateCourse();
   const updateCourseMutation = useUpdateCourse();
+  const createCategoryMutation = useCreateCourseCategory();
+
+  const courseCategoryOptions = useMemo(() => {
+    if (courseOptions?.categories && courseOptions.categories.length > 0) {
+      return courseOptions.categories.map((c) => ({
+        value: c.code,
+        label: c.name[locale] || c.name.ar || c.name.en || c.name_label || c.code,
+      }));
+    }
+    return [
+      {
+        value: "workshops_training",
+        label: locale === "ar" ? "ورش وتدريبات" : "Workshops & Training",
+      },
+      {
+        value: "important_topics",
+        label: locale === "ar" ? "موضوعات هامة" : "Important Topics",
+      },
+      {
+        value: "revisions",
+        label: locale === "ar" ? "مراجعات" : "Revisions",
+      },
+    ];
+  }, [courseOptions, locale]);
+
+  const handleAddCourseCategory = async (name: string): Promise<string | undefined> => {
+    try {
+      const res = await createCategoryMutation.mutateAsync({
+        name: { ar: name, en: name },
+        is_active: true,
+      });
+      const newCode = res.category.code;
+      setCategory(newCode);
+      toast.success(
+        locale === "ar"
+          ? "تمت إضافة تصنيف الدورة بنجاح"
+          : "Course classification created successfully",
+      );
+      return newCode;
+    } catch (err: unknown) {
+      toast.error(
+        getErrorMessage(
+          err,
+          locale === "ar" ? "فشل في إضافة تصنيف الدورة" : "Failed to create course classification",
+        ),
+      );
+      return undefined;
+    }
+  };
 
   const handleGradeChange = (newGrade: string) => {
     setGrade(newGrade);
@@ -103,6 +154,9 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
       }
 
       setPeriod(bCourse.subscription_period || "monthly");
+      if (bCourse.category) {
+        setCategory(bCourse.category);
+      }
       setIsActive(bCourse.is_active !== undefined ? Boolean(bCourse.is_active) : true);
 
       setIsFree(Boolean(bCourse.is_free));
@@ -171,6 +225,7 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
         ? { instructor_id: instructorId }
         : {}),
       subscription_period: subPeriod,
+      category: category || "workshops_training",
       is_free: isFree,
       base_price: isFree ? 0 : Number(coursePrice) || 0,
       currency_code: currency || "EGP",
@@ -316,6 +371,10 @@ export function useCourseForm({ initialCourseId, onSuccessStepChange }: UseCours
     setCoverImageFile,
     removeCoverImage,
     setRemoveCoverImage,
+    category,
+    setCategory,
+    courseCategoryOptions,
+    handleAddCourseCategory,
     grade,
     setGrade: handleGradeChange,
     subject,

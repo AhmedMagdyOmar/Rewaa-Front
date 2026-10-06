@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
+import { SelectWithAdd } from "@/components/ui/select-with-add";
 import {
   Select,
   SelectContent,
@@ -14,6 +15,10 @@ import { Tag } from "lucide-react";
 import { BackendCourseOptions } from "@/types/api-contracts";
 
 interface CategoryInfoSectionProps {
+  category: string;
+  onCategoryChange: (val: string) => void;
+  categoryOptions: Array<{ value: string; label: string }>;
+  onAddCategory?: (name: string) => string | void | Promise<string | void>;
   grade: string;
   onGradeChange: (val: string) => void;
   subject: string;
@@ -26,6 +31,10 @@ interface CategoryInfoSectionProps {
 }
 
 export function CategoryInfoSection({
+  category,
+  onCategoryChange,
+  categoryOptions,
+  onAddCategory,
   grade,
   onGradeChange,
   subject,
@@ -84,6 +93,22 @@ export function CategoryInfoSection({
         teachers={courseOptions?.instructors || []}
         disabled={courseOptions?.requires_instructor_selection === false}
       />
+
+      {/* Course Classification (Category) */}
+      <div className="flex flex-col gap-2">
+        <SelectWithAdd
+          value={category}
+          onValueChange={onCategoryChange}
+          options={categoryOptions}
+          allowAdd={Boolean(onAddCategory)}
+          onAddNewOption={onAddCategory}
+          label={t("fields.category")}
+          placeholder={t("fields.selectCategory")}
+          addDialogTitle={t("fields.addCategoryDialogTitle")}
+          addInputLabel={t("fields.addCategoryInputLabel")}
+          addInputPlaceholder={t("fields.addCategoryInputPlaceholder")}
+        />
+      </div>
 
       {/* Period */}
       <div className="flex flex-col gap-2">

@@ -110,6 +110,8 @@ export interface Course {
   title: string;
   description: string;
   previewVideoLink?: string;
+  category?: string;
+  categoryLabel?: string;
   subject: string;
   grade: string;
   teacherName: string;

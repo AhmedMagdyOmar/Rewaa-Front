@@ -49,6 +49,7 @@ export function QuickAddDialog({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     if (children) {
       // If custom children form is provided, submission is handled by children/dialog wrapper
       return;

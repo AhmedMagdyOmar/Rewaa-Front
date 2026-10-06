@@ -34,6 +34,8 @@ export function adaptBackendCourseToCourse(backend: BackendCourse, locale: strin
     teacherName: backend.instructor?.full_name || "",
     teacherImage:
       (backend.instructor as { avatar?: string } | null | undefined)?.avatar || undefined,
+    category: backend.category || undefined,
+    categoryLabel: backend.category_label || undefined,
     period: backend.subscription_period || "monthly",
     date: backend.created_at ? backend.created_at.split(" ")[0] : "",
     numberOfLessons: backend.lessons_count || 0,

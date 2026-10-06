@@ -246,3 +246,39 @@ export function useReorderCourseSections() {
     },
   });
 }
+
+/**
+ * Hook to fetch course categories
+ */
+export function useCourseCategories() {
+  return useQuery({
+    queryKey: queryKeys.provider.courses.categories(),
+    queryFn: () =>
+      import("@/lib/api/course-categories-service").then((m) =>
+        m.courseCategoriesService.getCourseCategories(),
+      ),
+  });
+}
+
+/**
+ * Hook to create a new course category
+ */
+export function useCreateCourseCategory() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: import("@/types/api-contracts").StoreCourseCategoryData) =>
+      import("@/lib/api/course-categories-service").then((m) =>
+        m.courseCategoriesService.createCourseCategory(data),
+      ),
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.provider.courses.categories(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: [...queryKeys.provider.courses.all(), "options"],
+        }),
+      ]),
+  });
+}

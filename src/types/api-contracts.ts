@@ -55,12 +55,34 @@ export type CourseDeliveryMode = "onsite" | "online" | "hybrid";
 export type SubscriptionPeriod = "monthly" | "yearly" | "term";
 export type CourseSectionStatus = "draft" | "scheduled" | "published";
 
+export interface BackendCourseCategory {
+  id: number;
+  provider_id: number | null;
+  code: string;
+  name: Record<string, string>;
+  name_label?: string;
+  is_active: boolean;
+  is_system: boolean;
+  created_at?: string;
+}
+
+export interface CourseCategoryListResponse {
+  categories: BackendCourseCategory[];
+}
+
+export interface StoreCourseCategoryData {
+  name: { ar: string; en?: string };
+  code?: string;
+  is_active?: boolean;
+}
+
 export interface BackendCourseOptions {
   currency_code: string[];
   subscription_periods: Record<string, string>;
   delivery_modes: Record<string, string>;
   statuses: Record<string, string>;
   section_statuses: Record<string, string>;
+  categories?: BackendCourseCategory[];
   educational_stages: Array<{
     id: number;
     name: Record<string, string>;
@@ -153,6 +175,8 @@ export interface BackendCourse {
   description?: Record<string, string>;
   intro_video_url?: string | null;
   cover_image?: string | null;
+  category?: string | null;
+  category_label?: string | null;
   educational_stage_id: number;
   educational_stage?: {
     id: number;

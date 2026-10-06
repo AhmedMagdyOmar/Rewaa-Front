@@ -36,6 +36,7 @@ import {
   FileQuestion,
   FileText,
   ImageIcon,
+  Loader2,
   Plus,
   Sparkles,
   Trash2,
@@ -62,8 +63,8 @@ interface LessonDialogProps {
   availableExams?: Exam[];
   hideLessonCategory?: boolean;
   isSectionLocked?: boolean;
-  onSave: (sectionId: string, lesson: Lesson) => void;
-  onSaveMany?: (sectionId: string, lessons: Lesson[]) => void;
+  onSave: (sectionId: string, lesson: Lesson) => Promise<void> | void;
+  onSaveMany?: (sectionId: string, lessons: Lesson[]) => Promise<void> | void;
   onOpenExamDialog?: (sectionId: string, lessonId?: string) => void;
 }
 
@@ -81,11 +82,16 @@ export function LessonDialog({
   onSaveMany,
 }: LessonDialogProps) {
   const locale = useLocale();
+  const isAr = locale === "ar";
   const t = useTranslations("courses.new.step2.addLessonDialog");
   const tCourses = useTranslations("courses");
 
   // Tab State: "create" | "bank"
   const [activeTab, setActiveTab] = useState<"create" | "bank">("create");
+
+  // Loading States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmittingBank, setIsSubmittingBank] = useState(false);
 
   // Form State (Create New Lesson)
   const [targetSectionId, setTargetSectionId] = useState("");
@@ -376,7 +382,7 @@ export function LessonDialog({
   };
 
   // Save submit handler with validation
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (activeTab === "bank") {
@@ -396,14 +402,22 @@ export function LessonDialog({
         })
         .filter(Boolean) as Lesson[];
 
-      if (onSaveMany) {
-        onSaveMany(bankSectionId, lessonsToSave);
-      } else {
-        // Fallback (single-lesson callers): call onSave once per lesson
-        lessonsToSave.forEach((l) => onSave(bankSectionId, l));
+      try {
+        setIsSubmittingBank(true);
+        if (onSaveMany) {
+          await onSaveMany(bankSectionId, lessonsToSave);
+        } else {
+          // Fallback (single-lesson callers): call onSave once per lesson
+          for (const l of lessonsToSave) {
+            await onSave(bankSectionId, l);
+          }
+        }
+        onOpenChange(false);
+      } catch {
+        // Error handled in parent handler toast
+      } finally {
+        setIsSubmittingBank(false);
       }
-
-      onOpenChange(false);
       return;
     }
 
@@ -456,8 +470,15 @@ export function LessonDialog({
       lessonCategory: "course-dependent",
     };
 
-    onSave(targetSectionId, updatedLesson);
-    onOpenChange(false);
+    try {
+      setIsSubmitting(true);
+      await onSave(targetSectionId, updatedLesson);
+      onOpenChange(false);
+    } catch {
+      // Error handled in parent handler toast
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const availableBankLessons = bankLessons.filter((l) => {
@@ -974,11 +995,49 @@ export function LessonDialog({
             </div>
           )}
 
-          <DialogFooter className="gap-2 pt-2">
-            <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+          <DialogFooter className="gap-2 pt-2 border-t border-border">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting || isSubmittingBank}
+            >
               {t("cancel")}
             </Button>
-            <Button type="submit">{initialLesson ? t("saveChanges") : t("createLesson")}</Button>
+            <Button
+              type="submit"
+              disabled={
+                activeTab === "bank"
+                  ? selectedBankLessonIds.length === 0 || !bankSectionId || isSubmittingBank
+                  : !title.trim() || !targetSectionId || isSubmitting
+              }
+              className="gap-2 font-semibold min-w-36"
+            >
+              {activeTab === "bank" ? (
+                isSubmittingBank ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    <span>{isAr ? "جاري الإضافة..." : "Adding..."}</span>
+                  </>
+                ) : (
+                  <>
+                    <Plus className="size-4" />
+                    <span>
+                      {isAr
+                        ? `إضافة المحدد (${selectedBankLessonIds.length})`
+                        : `Add Selected (${selectedBankLessonIds.length})`}
+                    </span>
+                  </>
+                )
+              ) : isSubmitting ? (
+                <>
+                  <Loader2 className="size-4 animate-spin" />
+                  <span>{isAr ? "جاري الحفظ..." : "Saving..."}</span>
+                </>
+              ) : (
+                <span>{initialLesson ? t("saveChanges") : t("createLesson")}</span>
+              )}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>
