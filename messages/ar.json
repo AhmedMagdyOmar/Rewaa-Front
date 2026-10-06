@@ -1157,6 +1157,7 @@
       "notSet": "غير محدد",
       "requirementsGroup": "متطلبات الإجابة والدرجة",
       "gradePoints": "درجة السؤال",
+      "pointsDisabledHelp": "لا يمكن تعديل درجة السؤال لوجود طلاب قاموا بحل هذا السؤال بالفعل في امتحانات سابقة.",
       "selectCorrectTrueFalse": "حدد الإجابة الصحيحة:",
       "trueOption": "صحيح (True)",
       "falseOption": "خطأ (False)",
@@ -1501,6 +1502,8 @@
     "allExams": "جميع الامتحانات",
     "clearFilters": "مسح الفلاتر",
     "sort": {
+      "newest": "الأحدث",
+      "oldest": "الأقدم",
       "timesUsedDesc": "الأكثر استخداماً",
       "timesUsedAsc": "الأقل استخداماً"
     },

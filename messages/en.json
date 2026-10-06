@@ -1157,6 +1157,7 @@
       "notSet": "Not set",
       "requirementsGroup": "Question Requirements & Points",
       "gradePoints": "Points / Grade",
+      "pointsDisabledHelp": "Question points cannot be modified because students have already attempted/solved this question in exams.",
       "selectCorrectTrueFalse": "Select Correct Answer:",
       "trueOption": "True",
       "falseOption": "False",
@@ -1501,6 +1502,8 @@
     "allExams": "All Exams",
     "clearFilters": "Clear Filters",
     "sort": {
+      "newest": "Newest",
+      "oldest": "Oldest",
       "timesUsedDesc": "Most Used",
       "timesUsedAsc": "Least Used"
     },

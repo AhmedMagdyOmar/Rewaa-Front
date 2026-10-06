@@ -490,6 +490,8 @@ export interface BackendQuestion {
   model_answer?: Record<string, string> | null;
   options?: BackendQuestionOption[];
   usage_count: number;
+  attempt_answers_count?: number;
+  is_points_editable?: boolean;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;

@@ -50,7 +50,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 const emptySubscribe = () => () => {};
 
-export type QuestionSortOption = "latest" | "oldest";
+export type QuestionSortOption = "latest" | "oldest" | "usage_desc" | "usage_asc";
 
 export function ManageQuestionsClient() {
   const locale = useLocale();
@@ -185,8 +185,10 @@ export function ManageQuestionsClient() {
     sortBy !== "latest";
 
   const sortOptions: { value: QuestionSortOption; label: string }[] = [
-    { value: "latest", label: t("sort.timesUsedDesc") || "الأحدث" },
-    { value: "oldest", label: t("sort.timesUsedAsc") || "الأقدم" },
+    { value: "latest", label: t("sort.newest") || "الأحدث" },
+    { value: "oldest", label: t("sort.oldest") || "الأقدم" },
+    { value: "usage_desc", label: t("sort.timesUsedDesc") || "الأكثر استخداماً" },
+    { value: "usage_asc", label: t("sort.timesUsedAsc") || "الأقل استخداماً" },
   ];
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];

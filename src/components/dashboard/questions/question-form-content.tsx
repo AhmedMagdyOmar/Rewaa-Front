@@ -1,7 +1,16 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { BookOpen, CheckCircle2, FileText, HelpCircle, ListOrdered, XCircle } from "lucide-react";
+import {
+  AlertCircle,
+  BookOpen,
+  CheckCircle2,
+  FileText,
+  HelpCircle,
+  ListOrdered,
+  Lock,
+  XCircle,
+} from "lucide-react";
 import { useTranslations, useLocale } from "next-intl";
 import * as React from "react";
 
@@ -156,6 +165,9 @@ export function QuestionFormContent({
     setSelectedStageId(newStage);
     setSelectedSubjId(""); // reset dependent subject
   };
+
+  const isEditing = Boolean(initialQuestion);
+  const isPointsEditable = initialQuestion?.isPointsEditable ?? true;
 
   // Input groups state
   const [type, setType] = React.useState<QuestionType>(initialQuestion?.type || "mcq");
@@ -364,12 +376,15 @@ export function QuestionFormContent({
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <button
             type="button"
+            disabled={isEditing}
             onClick={() => {
+              if (isEditing) return;
               setType("mcq");
               setModelAnswer("");
             }}
             className={cn(
-              "p-4 rounded-xl border text-start transition-all cursor-pointer flex flex-col gap-1.5",
+              "p-4 rounded-xl border text-start transition-all flex flex-col gap-1.5",
+              isEditing ? "cursor-not-allowed opacity-60" : "cursor-pointer",
               type === "mcq"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20 font-bold"
                 : "border-border bg-card hover:bg-muted/40",
@@ -383,12 +398,15 @@ export function QuestionFormContent({
 
           <button
             type="button"
+            disabled={isEditing}
             onClick={() => {
+              if (isEditing) return;
               setType("true/false");
               setModelAnswer("true");
             }}
             className={cn(
-              "p-4 rounded-xl border text-start transition-all cursor-pointer flex flex-col gap-1.5",
+              "p-4 rounded-xl border text-start transition-all flex flex-col gap-1.5",
+              isEditing ? "cursor-not-allowed opacity-60" : "cursor-pointer",
               type === "true/false"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20 font-bold"
                 : "border-border bg-card hover:bg-muted/40",
@@ -402,12 +420,15 @@ export function QuestionFormContent({
 
           <button
             type="button"
+            disabled={isEditing}
             onClick={() => {
+              if (isEditing) return;
               setType("text");
               setModelAnswer("");
             }}
             className={cn(
-              "p-4 rounded-xl border text-start transition-all cursor-pointer flex flex-col gap-1.5",
+              "p-4 rounded-xl border text-start transition-all flex flex-col gap-1.5",
+              isEditing ? "cursor-not-allowed opacity-60" : "cursor-pointer",
               type === "text"
                 ? "border-primary bg-primary/10 ring-2 ring-primary/20 font-bold"
                 : "border-border bg-card hover:bg-muted/40",
@@ -563,19 +584,35 @@ export function QuestionFormContent({
         icon={CheckCircle2}
         contentClassName="space-y-4"
       >
-        <div className="flex items-center justify-between">
-          <Label htmlFor="q-grade" className="text-sm font-medium text-foreground">
-            {t("gradePoints")}
-          </Label>
-          <Input
-            id="q-grade"
-            type="number"
-            min={1}
-            max={100}
-            className="w-24 h-9 text-center text-xs font-semibold"
-            value={grade}
-            onChange={(e) => setGrade(parseInt(e.target.value, 10) || 1)}
-          />
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Label
+              htmlFor="q-grade"
+              className="text-sm font-medium text-foreground flex items-center gap-1.5"
+            >
+              <span>{t("gradePoints")}</span>
+              {!isPointsEditable && <Lock className="size-3.5 text-amber-500" />}
+            </Label>
+            <Input
+              id="q-grade"
+              type="number"
+              min={1}
+              max={100}
+              disabled={!isPointsEditable}
+              className={cn(
+                "w-24 h-9 text-center text-xs font-semibold",
+                !isPointsEditable && "cursor-not-allowed opacity-60 bg-muted",
+              )}
+              value={grade}
+              onChange={(e) => setGrade(parseInt(e.target.value, 10) || 1)}
+            />
+          </div>
+          {!isPointsEditable && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mt-1 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
+              <AlertCircle className="size-3.5 shrink-0" />
+              <span>{t("pointsDisabledHelp")}</span>
+            </p>
+          )}
         </div>
 
         {/* True / False Selection */}

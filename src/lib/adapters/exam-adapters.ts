@@ -151,6 +151,10 @@ export function mapBackendQuestionToFrontend(bq: BackendQuestion, locale: string
     questionTemplateId: bq.question_template_id,
     originalQuestionId: bq.original_question_id,
     isClone: bq.is_clone ?? (bq.question_template_id !== null || bq.original_question_id !== null),
+    isPointsEditable:
+      bq.is_points_editable ??
+      (bq.attempt_answers_count === undefined ? true : bq.attempt_answers_count === 0),
+    attemptAnswersCount: bq.attempt_answers_count ?? 0,
   };
 }
 

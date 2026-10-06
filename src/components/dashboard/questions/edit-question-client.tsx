@@ -77,6 +77,10 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
     difficulty: question.difficulty || "medium",
     hasAnswerExplanation: question.has_explanation,
     answerExplanation: question.explanation?.[locale] || question.explanation?.ar || "",
+    isPointsEditable:
+      question.is_points_editable ??
+      (question.attempt_answers_count === undefined ? true : question.attempt_answers_count === 0),
+    attemptAnswersCount: question.attempt_answers_count ?? 0,
   };
 
   const handleSave = async (

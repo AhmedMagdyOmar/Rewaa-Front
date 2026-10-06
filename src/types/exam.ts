@@ -40,6 +40,8 @@ export interface Question {
   questionTemplateId?: number | null;
   originalQuestionId?: number | null;
   isClone?: boolean;
+  isPointsEditable?: boolean;
+  attemptAnswersCount?: number;
 }
 
 // ─── ExamSection ──────────────────────────────────────────────────────────────
