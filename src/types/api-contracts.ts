@@ -364,6 +364,7 @@ export interface BackendLessonOptions {
     subject_id: number;
     title: Record<string, string>;
     passing_percentage: number;
+    questions_count?: number;
   }>;
 }
 
@@ -382,6 +383,8 @@ export interface LessonListResponse {
 export interface LessonFilterParams {
   search?: string;
   classification?: LessonClassification;
+  educational_stage_id?: number | string;
+  subject_id?: number | string;
   course_id?: number | string;
   course_section_id?: number | string;
   exclude_clones?: boolean;
@@ -1537,6 +1540,7 @@ export interface BackendStudentCourseDetails {
   id: number;
   title: Record<string, string>;
   description: Record<string, string>;
+  intro_video_url?: string | null;
   cover_image: string | null;
   educational_stage: { id: number; name: Record<string, string> } | null;
   subject: { id: number; name: Record<string, string> } | null;

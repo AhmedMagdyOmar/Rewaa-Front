@@ -608,7 +608,7 @@ export function QuestionFormContent({
             />
           </div>
           {!isPointsEditable && (
-            <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5 mt-1 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
+            <p className="text-xs text-amber-600 flex items-center gap-1.5 mt-1 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1.5 rounded-lg">
               <AlertCircle className="size-3.5 shrink-0" />
               <span>{t("pointsDisabledHelp")}</span>
             </p>

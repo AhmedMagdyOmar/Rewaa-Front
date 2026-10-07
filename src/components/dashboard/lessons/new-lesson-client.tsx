@@ -161,7 +161,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         randomizeQuestionsOrder: false,
         randomizeMCQChoices: false,
         examSections: [],
-        numberOfQuestions: 0,
+        numberOfQuestions: e.questions_count ?? 0,
         numberOfStudents: 0,
         successRate: 0,
         timesUsed: 0,

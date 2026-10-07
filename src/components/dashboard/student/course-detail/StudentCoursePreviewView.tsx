@@ -21,6 +21,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
+import { getEmbedUrl } from "@/lib/video-utils";
 import { StudentRedeemCodeDialog } from "../courses/StudentRedeemCodeDialog";
 
 interface StudentCoursePreviewViewProps {
@@ -73,6 +74,7 @@ export function StudentCoursePreviewView({
   };
 
   const showCover = Boolean(course.cover_image) && !imageError;
+  const embedUrl = getEmbedUrl(course.intro_video_url);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -213,25 +215,35 @@ export function StudentCoursePreviewView({
           ──────────────────────────────────────────────────────────────────────── */}
           <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-6">
             <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/80 shadow-md overflow-hidden p-5 sm:p-6 space-y-6">
-              {/* 1. Cover Image */}
+              {/* 1. Video Preview or Cover Image */}
               <div className="relative aspect-video w-full rounded-xl sm:rounded-2xl overflow-hidden bg-muted border border-border/60 shadow-xs flex items-center justify-center">
-                {showCover ? (
-                  <Image
-                    src={course.cover_image!}
-                    alt={title || "Course cover"}
-                    fill
-                    priority
-                    unoptimized
-                    onError={() => setImageError(true)}
-                    className="object-cover"
-                    sizes="(max-width: 1024px) 100vw, 33vw"
+                {embedUrl ? (
+                  <iframe
+                    src={embedUrl}
+                    title={title || "Course Intro Video"}
+                    className="w-full h-full"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
                   />
+                ) : showCover ? (
+                  <>
+                    <Image
+                      src={course.cover_image!}
+                      alt={title || "Course cover"}
+                      fill
+                      priority
+                      unoptimized
+                      onError={() => setImageError(true)}
+                      className="object-cover"
+                      sizes="(max-width: 1024px) 100vw, 33vw"
+                    />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-primary/10 text-primary text-2xl font-bold">
                     <BookOpen className="size-12 opacity-60" />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
               </div>
 
               {/* 2. Cost & Active Offers */}

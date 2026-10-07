@@ -10,6 +10,8 @@ export type DialogType = "section" | "lesson" | "arrange" | "import" | null;
 
 export interface ParentCourseContext {
   courseId?: string;
+  educationalStageId?: number | string;
+  subjectId?: number | string;
   grade: string;
   subject: string;
   teacherName: string;

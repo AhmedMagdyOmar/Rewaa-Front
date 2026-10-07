@@ -69,7 +69,7 @@ export function EducationalContentCard({
       subtitle: isLoading ? (
         <Skeleton className="h-4 w-12 mx-auto mt-0.5" />
       ) : (
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="text-xs font-medium text-emerald-600">
           {t("addedToday", { count: coursesToday })}
         </span>
       ),
@@ -81,7 +81,7 @@ export function EducationalContentCard({
       subtitle: isLoading ? (
         <Skeleton className="h-4 w-12 mx-auto mt-0.5" />
       ) : (
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="text-xs font-medium text-emerald-600">
           {t("addedToday", { count: lecturesToday })}
         </span>
       ),
@@ -93,7 +93,7 @@ export function EducationalContentCard({
       subtitle: isLoading ? (
         <Skeleton className="h-4 w-12 mx-auto mt-0.5" />
       ) : (
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="text-xs font-medium text-emerald-600">
           {t("addedToday", { count: questionsToday })}
         </span>
       ),
@@ -105,7 +105,7 @@ export function EducationalContentCard({
       subtitle: isLoading ? (
         <Skeleton className="h-4 w-12 mx-auto mt-0.5" />
       ) : (
-        <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <span className="text-xs font-medium text-emerald-600">
           {t("addedToday", { count: examsToday })}
         </span>
       ),

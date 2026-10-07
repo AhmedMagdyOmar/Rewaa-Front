@@ -34,6 +34,7 @@ import { QuickAddDialog } from "@/components/ui/quick-add-dialog";
 export interface ComboboxOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 export interface ComboboxSelectProps {
@@ -158,12 +159,15 @@ export function ComboboxSelect({
                     <CommandItem
                       key={opt.value}
                       value={`${opt.label} ___ ${opt.value}`}
+                      disabled={opt.disabled}
                       onSelect={() => {
+                        if (opt.disabled) return;
                         onValueChange(opt.value === value ? "" : opt.value);
                         setOpen(false);
                       }}
                       className={cn(
                         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-2 text-sm outline-hidden select-none",
+                        opt.disabled && "opacity-50 cursor-not-allowed",
                         isRTL ? "pl-8 pr-1.5 text-right" : "pr-8 pl-1.5 text-left",
                       )}
                     >
@@ -425,7 +429,13 @@ export interface ExamSelectProps {
   id?: string;
   className?: string;
   triggerClassName?: string;
-  exams?: Array<{ id: string; title: string; teacherName?: string }>;
+  exams?: Array<{
+    id: string;
+    title: string;
+    teacherName?: string;
+    numberOfQuestions?: number;
+    questions_count?: number;
+  }>;
   showNoneOption?: boolean;
   noneOptionLabel?: string;
   emptyLabel?: string;
@@ -452,7 +462,13 @@ export function ExamSelect({
 }: ExamSelectProps) {
   const locale = useLocale();
   const [internalExams, setInternalExams] = React.useState<
-    Array<{ id: string; title: string; teacherName?: string }>
+    Array<{
+      id: string;
+      title: string;
+      teacherName?: string;
+      numberOfQuestions?: number;
+      questions_count?: number;
+    }>
   >([]);
 
   React.useEffect(() => {
@@ -468,6 +484,8 @@ export function ExamSelect({
               id: String(e.id),
               title: e.title[locale] || e.title.ar || "",
               teacherName: e.instructor?.full_name,
+              questions_count: e.questions_count,
+              numberOfQuestions: e.questions_count,
             })),
           );
         }
@@ -486,12 +504,28 @@ export function ExamSelect({
 
   const options: ComboboxOption[] = [
     ...(showNoneOption ? [{ value: "none", label: noneOptionLabel }] : []),
-    ...activeExams.map((exam) => ({
-      value: exam.id,
-      label: `${exam.title}${
-        showTeacherNameInOption && exam.teacherName ? ` (${exam.teacherName})` : ""
-      }`,
-    })),
+    ...activeExams.map((exam) => {
+      const qCount =
+        exam.numberOfQuestions !== undefined
+          ? exam.numberOfQuestions
+          : exam.questions_count !== undefined
+            ? exam.questions_count
+            : null;
+      const hasZeroQuestions = qCount !== null && qCount === 0;
+      const disclaimer = hasZeroQuestions
+        ? locale === "ar"
+          ? " (لا يحتوي على أسئلة - غير قابل للربط)"
+          : " (0 questions - cannot be linked)"
+        : "";
+
+      return {
+        value: exam.id,
+        label: `${exam.title}${
+          showTeacherNameInOption && exam.teacherName ? ` (${exam.teacherName})` : ""
+        }${disclaimer}`,
+        disabled: hasZeroQuestions,
+      };
+    }),
   ];
 
   return (

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import { BackendCourseContent, BackendStudentLessonDetail } from "@/types/api-contracts";
+import { getEmbedUrl } from "@/lib/video-utils";
 import {
   ArrowLeft,
   ArrowRight,
@@ -38,27 +39,6 @@ interface StudentCourseLessonViewProps {
   hasNextLesson?: boolean;
   hasPreviousLesson?: boolean;
   isNextLessonLocked?: boolean;
-}
-
-function getEmbedUrl(url?: string | null): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  if (trimmed.includes("youtube.com/embed/")) return trimmed;
-  if (trimmed.includes("youtube.com/watch")) {
-    const videoId = trimmed.split("v=")[1]?.split("&")[0];
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : trimmed.replace("watch?v=", "embed/");
-  }
-  if (trimmed.includes("youtu.be/")) {
-    const videoId = trimmed.split("youtu.be/")[1]?.split("?")[0];
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : trimmed;
-  }
-  if (trimmed.includes("vimeo.com/")) {
-    const videoId = trimmed.split("vimeo.com/")[1]?.split("?")[0];
-    return videoId ? `https://player.vimeo.com/video/${videoId}` : trimmed;
-  }
-  return null;
 }
 
 function formatFileSize(bytes?: number): string {
@@ -147,23 +127,6 @@ export function StudentCourseLessonView({
               </Tooltip>
             </div>
           </div>
-
-          {/* Completion Checkbox */}
-          <div className="flex items-center gap-3 self-end sm:self-center bg-muted/40 px-3.5 py-2 rounded-xl border border-border/60 shrink-0">
-            <Checkbox
-              id="lesson-completion-toggle"
-              checked={isCompleted}
-              disabled={isTogglingCompletion}
-              onCheckedChange={() => onToggleCompletion(lesson.id)}
-              className="size-4.5 rounded-lg data-checked:bg-emerald-600 data-checked:border-emerald-600"
-            />
-            <label
-              htmlFor="lesson-completion-toggle"
-              className="text-xs sm:text-sm font-bold text-foreground cursor-pointer select-none"
-            >
-              {t("lesson.completed")}
-            </label>
-          </div>
         </div>
 
         {/* Video Player (if video lesson) */}
@@ -195,6 +158,76 @@ export function StudentCourseLessonView({
                   )}
                 </div>
               )}
+            </div>
+
+            {/* Completion Action Bar below Video */}
+            <div className="flex items-center justify-between gap-4 p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-xs">
+              <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                {isCompleted ? (
+                  <span className="text-emerald-600 font-medium flex items-center gap-1.5">
+                    <CheckCircle2 className="size-4" />
+                    {t("lesson.completed")}
+                  </span>
+                ) : (
+                  <span>
+                    {locale === "ar"
+                      ? "حدد الدرس كمكتمل عند الانتهاء من المشاهدة"
+                      : "Mark lesson as completed when finished"}
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2.5 bg-muted/40 hover:bg-muted/70 transition-colors px-3.5 py-2 rounded-xl border border-border/60 shrink-0">
+                <Checkbox
+                  id="lesson-completion-toggle"
+                  checked={isCompleted}
+                  disabled={isTogglingCompletion}
+                  onCheckedChange={() => onToggleCompletion(lesson.id)}
+                  className="size-4.5 rounded-lg data-checked:bg-emerald-600 data-checked:border-emerald-600"
+                />
+                <label
+                  htmlFor="lesson-completion-toggle"
+                  className="text-xs sm:text-sm font-bold text-foreground cursor-pointer select-none"
+                >
+                  {t("lesson.completed")}
+                </label>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Completion Action Bar for Non-Video Lessons */}
+        {!isVideoLesson && (
+          <div className="flex items-center justify-between gap-4 p-3 sm:p-4 rounded-2xl bg-card border border-border/80 shadow-xs">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+              {isCompleted ? (
+                <span className="text-emerald-600 font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="size-4" />
+                  {t("lesson.completed")}
+                </span>
+              ) : (
+                <span>
+                  {locale === "ar"
+                    ? "حدد الدرس كمكتمل عند الانتهاء من القراءة"
+                    : "Mark lesson as completed when finished"}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2.5 bg-muted/40 hover:bg-muted/70 transition-colors px-3.5 py-2 rounded-xl border border-border/60 shrink-0">
+              <Checkbox
+                id="lesson-completion-toggle"
+                checked={isCompleted}
+                disabled={isTogglingCompletion}
+                onCheckedChange={() => onToggleCompletion(lesson.id)}
+                className="size-4.5 rounded-lg data-checked:bg-emerald-600 data-checked:border-emerald-600"
+              />
+              <label
+                htmlFor="lesson-completion-toggle"
+                className="text-xs sm:text-sm font-bold text-foreground cursor-pointer select-none"
+              >
+                {t("lesson.completed")}
+              </label>
             </div>
           </div>
         )}

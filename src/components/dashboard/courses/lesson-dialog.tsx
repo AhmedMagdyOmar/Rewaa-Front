@@ -55,6 +55,8 @@ interface LessonDialogProps {
   initialSectionId?: string;
   parentCourseContext: {
     courseId?: string;
+    educationalStageId?: number | string;
+    subjectId?: number | string;
     grade: string;
     subject: string;
     teacherName: string;
@@ -127,7 +129,12 @@ export function LessonDialog({
   const [examTargetLessonId, setExamTargetLessonId] = useState<string | null>(null);
 
   const { data: optionsData } = useProviderLessonOptions();
-  const { data: lessonsData } = useProviderLessons({ per_page: 50, classification: "standalone" });
+  const { data: lessonsData } = useProviderLessons({
+    per_page: 50,
+    classification: "standalone",
+    educational_stage_id: parentCourseContext.educationalStageId,
+    subject_id: parentCourseContext.subjectId,
+  });
 
   // Stored / Available exams & lessons bank
   const [availableExams, setAvailableExams] = useState<Exam[]>([]);
@@ -141,6 +148,20 @@ export function LessonDialog({
 
     if (optionsData?.exams) {
       const filtered = optionsData.exams.filter((e) => {
+        if (
+          parentCourseContext.educationalStageId &&
+          e.educational_stage_id &&
+          Number(e.educational_stage_id) !== Number(parentCourseContext.educationalStageId)
+        ) {
+          return false;
+        }
+        if (
+          parentCourseContext.subjectId &&
+          e.subject_id &&
+          Number(e.subject_id) !== Number(parentCourseContext.subjectId)
+        ) {
+          return false;
+        }
         if (
           parentCourseContext.grade &&
           e.educational_stage_id &&
@@ -190,39 +211,59 @@ export function LessonDialog({
   useEffect(() => {
     if (lessonsData?.lessons) {
       setBankLessons(
-        lessonsData.lessons.map((b) => ({
-          id: String(b.id),
-          title: b.title?.[locale] || b.title?.ar || b.title?.en || "",
-          description: b.description?.[locale] || b.description?.ar || "",
-          writtenText: b.description?.[locale] || b.description?.ar || "",
-          type: b.type === "text_only" ? "text" : "videoAndText",
-          coverImage: b.cover_image || b.cover_image_url || undefined,
-          lectureVideoLink: b.video_url || undefined,
-          lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
-          hasPdfAttachments: Boolean(b.has_pdf_attachments),
-          pdfFiles: (b.pdf_attachments || []).map((p) => ({
-            id: String(p.id),
-            title: p.name || "PDF",
-            fileUrl: p.url,
-            fileType: "pdf" as const,
-            sizeInBytes: p.size,
+        lessonsData.lessons
+          .filter((b) => {
+            if (
+              parentCourseContext.educationalStageId &&
+              b.educational_stage_id &&
+              Number(b.educational_stage_id) !== Number(parentCourseContext.educationalStageId)
+            ) {
+              return false;
+            }
+            if (
+              parentCourseContext.subjectId &&
+              b.subject_id &&
+              Number(b.subject_id) !== Number(parentCourseContext.subjectId)
+            ) {
+              return false;
+            }
+            return true;
+          })
+          .map((b) => ({
+            id: String(b.id),
+            title: b.title?.[locale] || b.title?.ar || b.title?.en || "",
+            description: b.description?.[locale] || b.description?.ar || "",
+            writtenText: b.description?.[locale] || b.description?.ar || "",
+            type: b.type === "text_only" ? "text" : "videoAndText",
+            coverImage: b.cover_image || b.cover_image_url || undefined,
+            lectureVideoLink: b.video_url || undefined,
+            lessonCategory: b.classification === "standalone" ? "independent" : "course-dependent",
+            educational_stage_id: b.educational_stage_id || undefined,
+            subject_id: b.subject_id || undefined,
+            hasPdfAttachments: Boolean(b.has_pdf_attachments),
+            pdfFiles: (b.pdf_attachments || []).map((p) => ({
+              id: String(p.id),
+              title: p.name || "PDF",
+              fileUrl: p.url,
+              fileType: "pdf" as const,
+              sizeInBytes: p.size,
+            })),
+            hasImageAttachments: Boolean(b.has_explanatory_images),
+            imageFiles: (b.explanatory_images || []).map((img) => ({
+              id: String(img.id),
+              title: img.name || "Image",
+              fileUrl: img.url,
+              fileType: "image" as const,
+              sizeInBytes: img.size,
+            })),
+            isLinkedToExam: Boolean(b.has_exam),
+            linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
+            linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
+            isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
           })),
-          hasImageAttachments: Boolean(b.has_explanatory_images),
-          imageFiles: (b.explanatory_images || []).map((img) => ({
-            id: String(img.id),
-            title: img.name || "Image",
-            fileUrl: img.url,
-            fileType: "image" as const,
-            sizeInBytes: img.size,
-          })),
-          isLinkedToExam: Boolean(b.has_exam),
-          linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
-          linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
-          isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
-        })),
       );
     }
-  }, [lessonsData, locale]);
+  }, [lessonsData, locale, parentCourseContext]);
 
   const handleSaveInternalExam = () => {
     if (!examSelectedId || !examTargetLessonId) return;

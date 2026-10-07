@@ -59,7 +59,7 @@ export function StudentWalletTransactionsTable({
       return (
         <Badge
           variant="outline"
-          className="text-[11px] gap-1.5 py-1 px-2.5 bg-blue-500/10 text-blue-700 border-blue-200 dark:border-blue-900/50"
+          className="text-[11px] gap-1.5 py-1 px-2.5 bg-blue-500/10 text-blue-700 border-blue-200"
         >
           <ShoppingBag className="size-3" />
           <span>{label}</span>
@@ -71,7 +71,7 @@ export function StudentWalletTransactionsTable({
       return (
         <Badge
           variant="outline"
-          className="text-[11px] gap-1.5 py-1 px-2.5 bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:border-emerald-900/50"
+          className="text-[11px] gap-1.5 py-1 px-2.5 bg-emerald-500/10 text-emerald-700 border-emerald-200"
         >
           <ArrowDownRight className="size-3" />
           <span>{label}</span>
@@ -83,7 +83,7 @@ export function StudentWalletTransactionsTable({
       return (
         <Badge
           variant="outline"
-          className="text-[11px] gap-1.5 py-1 px-2.5 bg-teal-500/10 text-teal-700 border-teal-200 dark:border-teal-900/50"
+          className="text-[11px] gap-1.5 py-1 px-2.5 bg-teal-500/10 text-teal-700 border-teal-200"
         >
           <RotateCcw className="size-3" />
           <span>{label}</span>
@@ -95,7 +95,7 @@ export function StudentWalletTransactionsTable({
       return (
         <Badge
           variant="outline"
-          className="text-[11px] gap-1.5 py-1 px-2.5 bg-purple-500/10 text-purple-700 border-purple-200 dark:border-purple-900/50"
+          className="text-[11px] gap-1.5 py-1 px-2.5 bg-purple-500/10 text-purple-700 border-purple-200"
         >
           <Gift className="size-3" />
           <span>{label}</span>

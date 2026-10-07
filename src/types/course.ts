@@ -30,6 +30,8 @@ export interface Lesson {
   lectureVideoLink?: string;
   grade?: string;
   subject?: string;
+  educational_stage_id?: number;
+  subject_id?: number;
   teacherName?: string;
   teacherImage?: string;
 

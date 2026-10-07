@@ -92,6 +92,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     if (parentCourse) {
       setParentCourseContext({
         courseId,
+        educationalStageId: parentCourse.educational_stage_id,
+        subjectId: parentCourse.subject_id,
         grade:
           parentCourse.educational_stage?.name?.[locale] ||
           parentCourse.educational_stage?.name?.ar ||
@@ -277,11 +279,34 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   useEffect(() => {
     let isMounted = true;
     coursesService
-      .getCourses({ per_page: 50 })
+      .getCourses({
+        per_page: 50,
+        ...(parentCourse?.educational_stage_id
+          ? { educational_stage_id: parentCourse.educational_stage_id }
+          : {}),
+        ...(parentCourse?.subject_id ? { subject_id: parentCourse.subject_id } : {}),
+      })
       .then((res) => {
         if (!isMounted) return;
         const bList: Course[] = res.courses
-          .filter((c) => String(c.id) !== courseId)
+          .filter((c) => {
+            if (String(c.id) === courseId) return false;
+            if (
+              parentCourse?.educational_stage_id &&
+              c.educational_stage_id &&
+              Number(c.educational_stage_id) !== Number(parentCourse.educational_stage_id)
+            ) {
+              return false;
+            }
+            if (
+              parentCourse?.subject_id &&
+              c.subject_id &&
+              Number(c.subject_id) !== Number(parentCourse.subject_id)
+            ) {
+              return false;
+            }
+            return true;
+          })
           .map((c) => ({
             id: String(c.id),
             title: c.title?.[locale] || c.title?.ar || c.title?.en || "",
@@ -318,7 +343,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     return () => {
       isMounted = false;
     };
-  }, [locale, courseId]);
+  }, [locale, courseId, parentCourse]);
 
   // When source course is chosen, load its sections
   useEffect(() => {

@@ -28,30 +28,10 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import { getEmbedUrl } from "@/lib/video-utils";
 
 interface StudentLessonDetailsClientProps {
   lessonId: string;
-}
-
-function getEmbedUrl(url?: string | null): string | null {
-  if (!url) return null;
-  const trimmed = url.trim();
-  if (trimmed.includes("youtube.com/embed/")) return trimmed;
-  if (trimmed.includes("youtube.com/watch")) {
-    const videoId = trimmed.split("v=")[1]?.split("&")[0];
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : trimmed.replace("watch?v=", "embed/");
-  }
-  if (trimmed.includes("youtu.be/")) {
-    const videoId = trimmed.split("youtu.be/")[1]?.split("?")[0];
-    return videoId ? `https://www.youtube.com/embed/${videoId}` : trimmed;
-  }
-  if (trimmed.includes("vimeo.com/")) {
-    const videoId = trimmed.split("vimeo.com/")[1]?.split("?")[0];
-    return videoId ? `https://player.vimeo.com/video/${videoId}` : trimmed;
-  }
-  return null;
 }
 
 function formatFileSize(bytes: number): string {

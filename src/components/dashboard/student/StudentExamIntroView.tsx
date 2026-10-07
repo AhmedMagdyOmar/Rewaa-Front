@@ -215,7 +215,7 @@ export function StudentExamIntroView({
                   {t("currentAttemptLabel")}
                 </span>
                 <div className="flex flex-col items-end gap-0.5">
-                  <span className="font-bold text-purple-700 dark:text-purple-300">
+                  <span className="font-bold text-purple-700">
                     {t("currentAttempt", { current: currentAttempt, max: maxAttempts })}
                   </span>
                   {maxAttempts > 1 && (
@@ -240,7 +240,7 @@ export function StudentExamIntroView({
             </div>
 
             {isFinalAttempt && (
-              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-2">
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 flex items-center gap-2">
                 <AlertCircle className="size-4 shrink-0" />
                 <span>{t("finalAttemptWarning")}</span>
               </div>
