@@ -2895,6 +2895,7 @@
           "category": "Category",
           "questionsDuration": "Questions & Duration",
           "passingGrade": "Passing Grade",
+          "allowedAttempts": "Attempts",
           "score": "Score",
           "status": "Status",
           "completedDate": "Completion Date",
@@ -2906,6 +2907,8 @@
         "passingPercent": "{percent}%",
         "scoreDisplay": "{score} / {totalScore} ({percent}%)",
         "triesCount": "Attempt {current} of {max}",
+        "maxAttemptsCount": "{count, plural, =1 {1 Attempt} other {{count} Attempts}}",
+        "attemptProgress": "Attempt {used} of {max}",
         "statusPassed": "Passed",
         "statusFailed": "Needs Retake",
         "statusPendingReview": "Pending Review",
@@ -3010,6 +3013,10 @@
         "passingPercentage": "{percent}%",
         "triesAllowed": "Attempts Allowed",
         "triesCount": "{count, plural, =0 {No attempts} one {1 attempt} other {{count} attempts}}",
+        "currentAttemptLabel": "Current Attempt",
+        "currentAttempt": "Attempt {current} of {max}",
+        "remainingAttemptsCount": "{count, plural, =0 {No attempts remaining} one {1 attempt remaining} other {{count} attempts remaining}}",
+        "finalAttemptWarning": "Notice: This is your final allowed attempt for this exam.",
         "teacher": "Instructor"
       },
       "timerBar": {

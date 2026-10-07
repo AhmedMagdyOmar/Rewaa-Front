@@ -58,6 +58,13 @@ export function StudentExamIntroView({
 
   const canStart = exam.can_start !== false;
 
+  const maxAttempts = exam.max_attempts || 1;
+  const attemptsUsed = exam.attempts_used ?? 0;
+  const currentAttempt =
+    exam.action === "resume" ? attemptsUsed || 1 : Math.min(maxAttempts, attemptsUsed + 1);
+  const remainingAttempts = exam.remaining_attempts ?? Math.max(0, maxAttempts - attemptsUsed);
+  const isFinalAttempt = currentAttempt === maxAttempts && maxAttempts > 1;
+
   return (
     <div className="space-y-6 pb-12 w-full max-w-5xl mx-auto">
       {/* ── 1. Top Header with Standard Round Back Button ──────────────────── */}
@@ -94,10 +101,16 @@ export function StudentExamIntroView({
       {/* ── 2. Hero Card ──────────────────────────────────────────────────── */}
       <div className="rounded-2xl border border-primary/20 bg-linear-to-br from-primary/10 via-card to-background p-6 sm:p-8 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary mb-1">
-              <Sparkles className="size-3.5" />
-              <span>{t("title")}</span>
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2 flex-wrap mb-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary">
+                <Sparkles className="size-3.5" />
+                <span>{t("title")}</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 border border-purple-500/30 text-purple-700">
+                <RotateCcw className="size-3.5" />
+                <span>{t("currentAttempt", { current: currentAttempt, max: maxAttempts })}</span>
+              </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-foreground">{t("title")}</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">{t("subtitle")}</p>
@@ -199,11 +212,18 @@ export function StudentExamIntroView({
               <div className="flex justify-between items-center py-1.5 border-b border-border/40">
                 <span className="text-muted-foreground flex items-center gap-1.5">
                   <RotateCcw className="size-3.5 text-purple-600" />
-                  {t("triesAllowed")}
+                  {t("currentAttemptLabel")}
                 </span>
-                <span className="font-semibold text-foreground">
-                  {t("triesCount", { count: exam.max_attempts || 1 })}
-                </span>
+                <div className="flex flex-col items-end gap-0.5">
+                  <span className="font-bold text-purple-700 dark:text-purple-300">
+                    {t("currentAttempt", { current: currentAttempt, max: maxAttempts })}
+                  </span>
+                  {maxAttempts > 1 && (
+                    <span className="text-[11px] text-muted-foreground">
+                      {t("remainingAttemptsCount", { count: remainingAttempts })}
+                    </span>
+                  )}
+                </div>
               </div>
 
               {courseTitleStr && (
@@ -218,6 +238,13 @@ export function StudentExamIntroView({
                 </div>
               )}
             </div>
+
+            {isFinalAttempt && (
+              <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                <AlertCircle className="size-4 shrink-0" />
+                <span>{t("finalAttemptWarning")}</span>
+              </div>
+            )}
 
             <div className="pt-2">
               <Button

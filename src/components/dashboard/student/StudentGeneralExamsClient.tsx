@@ -346,6 +346,9 @@ export function StudentGeneralExamsClient() {
                     {tExams("table.columns.questionsDuration")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.allowedAttempts")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {tExams("table.columns.passingGrade")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
@@ -443,6 +446,16 @@ export function StudentGeneralExamsClient() {
                           </div>
                         </td>
 
+                        {/* Allowed Attempts */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                            <RotateCcw className="size-3.5 text-muted-foreground shrink-0" />
+                            <span>
+                              {tExams("table.maxAttemptsCount", { count: exam.max_attempts || 1 })}
+                            </span>
+                          </div>
+                        </td>
+
                         {/* Passing Grade */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
@@ -525,6 +538,9 @@ export function StudentGeneralExamsClient() {
                     {tExams("table.columns.subjectGrade")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                    {tExams("table.columns.allowedAttempts")}
+                  </th>
+                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {tExams("table.columns.score")}
                   </th>
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
@@ -541,7 +557,7 @@ export function StudentGeneralExamsClient() {
               <tbody>
                 {exams.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                         <CheckCircle2 className="size-12 text-muted-foreground/40 mb-3" />
                         <h3 className="text-base font-semibold text-foreground">
@@ -609,6 +625,19 @@ export function StudentGeneralExamsClient() {
                             {stageStr && (
                               <span className="text-xs text-muted-foreground">{stageStr}</span>
                             )}
+                          </div>
+                        </td>
+
+                        {/* Attempts Used / Max */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5 text-xs font-medium text-foreground">
+                            <RotateCcw className="size-3.5 text-muted-foreground shrink-0" />
+                            <span>
+                              {tExams("table.attemptProgress", {
+                                used: exam.attempts_used || 1,
+                                max: exam.max_attempts || 1,
+                              })}
+                            </span>
                           </div>
                         </td>
 

@@ -2896,6 +2896,7 @@
           "category": "النوع/التصنيف",
           "questionsDuration": "الأسئلة/المدة",
           "passingGrade": "درجة النجاح",
+          "allowedAttempts": "المحاولات",
           "score": "النتيجة/الدرجة",
           "status": "الحالة",
           "completedDate": "تاريخ الإنجاز",
@@ -2907,6 +2908,8 @@
         "passingPercent": "{percent}٪",
         "scoreDisplay": "{score} / {totalScore} ({percent}٪)",
         "triesCount": "المحاولة {current} من {max}",
+        "maxAttemptsCount": "{count, plural, =1 {محاولة واحدة} =2 {محاولتان} few {{count} محاولات} many {{count} محاولة} other {{count} محاولة}}",
+        "attemptProgress": "المحاولة {used} من {max}",
         "statusPassed": "ناجح",
         "statusFailed": "يحتاج إعادة",
         "statusPendingReview": "قيد المراجعة",
@@ -3011,6 +3014,10 @@
         "passingPercentage": "{percent}٪",
         "triesAllowed": "المحاولات المسموحة",
         "triesCount": "{count, plural, =0 {لا محاولات} zero {لا محاولات} one {محاولة واحدة} two {محاولتان} few {{count} محاولات} many {{count} محاولة} other {{count} محاولة}}",
+        "currentAttemptLabel": "المحاولة الحالية",
+        "currentAttempt": "المحاولة {current} من {max}",
+        "remainingAttemptsCount": "{count, plural, =0 {لا توجد محاولات متبقية} zero {لا توجد محاولات متبقية} one {متبقي محاولة واحدة} two {متبقي محاولتان} few {متبقي {count} محاولات} many {متبقي {count} محاولة} other {متبقي {count} محاولة}}",
+        "finalAttemptWarning": "تنبيه: هذه محاولتك الأخيرة المتاحة لهذا الامتحان.",
         "teacher": "المعلم"
       },
       "timerBar": {
