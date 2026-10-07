@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { Badge } from "@/components/ui/badge";
@@ -13,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
 import {
   Table,
   TableBody,
@@ -21,25 +21,24 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
-import type { AssistantItem, AssistantPermission } from "@/types/settings";
-import { adaptBackendAdminToAssistantItem } from "@/lib/adapters/settings-adapter";
 import {
   useCreateStaffAdmin,
   useDeleteStaffAdmin,
   useStaffAdminsList,
   useUpdateStaffAdmin,
 } from "@/hooks/use-settings";
-import { KeyRound, Loader2, Pencil, Plus, RotateCcw, Trash2, UserLock } from "lucide-react";
+import { adaptBackendAdminToAssistantItem } from "@/lib/adapters/settings-adapter";
+import type { AssistantItem, AssistantPermission } from "@/types/settings";
+import { KeyRound, Loader2, Pencil, Plus, Trash2, UserLock } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AssistantDialog } from "./assistant-dialog";
 
 export function AssistantsSection() {
   const t = useTranslations("settings.assistants");
 
-  const { data: backendAdmins, isLoading, refetch } = useStaffAdminsList("assistant");
+  const { data: backendAdmins, isLoading } = useStaffAdminsList("assistant");
   const createAssistantMutation = useCreateStaffAdmin();
   const updateAssistantMutation = useUpdateStaffAdmin();
   const deleteAssistantMutation = useDeleteStaffAdmin();
@@ -59,8 +58,6 @@ export function AssistantsSection() {
   );
   const [resetPasswordDialogOpen, setResetPasswordDialogOpen] = useState(false);
   const [newPassword, setNewPassword] = useState("");
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const handleOpenAdd = () => {
     setAssistantToEdit(null);
@@ -160,15 +157,6 @@ export function AssistantsSection() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={mounted && isLoading}
-            className="gap-1.5"
-          >
-            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>{t("refreshAssistants")}</span>
-          </Button>
           <Button onClick={handleOpenAdd} className="gap-1.5">
             <Plus className="size-4" />
             <span>{t("addAssistant")}</span>

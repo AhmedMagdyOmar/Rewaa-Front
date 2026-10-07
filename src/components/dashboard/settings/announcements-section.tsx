@@ -6,7 +6,6 @@ import Image from "next/image";
 import {
   Megaphone,
   Plus,
-  RotateCcw,
   MoreVertical,
   Eye,
   Pencil,
@@ -57,7 +56,7 @@ import { AnnouncementDetailsDialog } from "./announcement-details-dialog";
 export function AnnouncementsSection() {
   const t = useTranslations("settings.announcements");
 
-  const { data: backendAnnouncements, isLoading, refetch } = useAnnouncementsList();
+  const { data: backendAnnouncements, isLoading } = useAnnouncementsList();
   const createAnnouncementMutation = useCreateAnnouncement();
   const updateAnnouncementMutation = useUpdateAnnouncement();
   const deleteAnnouncementMutation = useDeleteAnnouncement();
@@ -217,15 +216,6 @@ export function AnnouncementsSection() {
 
         {/* Action Header Buttons */}
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isLoading}
-            className="gap-1.5"
-          >
-            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>{t("refreshAnnouncements")}</span>
-          </Button>
           <Button onClick={handleOpenAdd} className="gap-1.5">
             <Plus className="size-4" />
             <span>{t("addAnnouncement")}</span>

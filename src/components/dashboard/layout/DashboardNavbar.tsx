@@ -76,11 +76,18 @@ export function DashboardNavbar({
 
   const resolvedFullName = queryUser?.full_name ?? storeUser?.full_name ?? "";
 
+  const resolvedRole =
+    queryUser?.role ??
+    queryUser?.user_type ??
+    storeUser?.user_type ??
+    (isStudent ? "student" : "provider");
+
   const user: UserProfile | null =
     queryUser != null
       ? {
           ...queryUser,
-          role: queryUser.role ?? (isStudent ? "student" : "assistant"),
+          user_type: queryUser.user_type ?? storeUser?.user_type ?? null,
+          role: resolvedRole,
         }
       : storeUser
         ? {
@@ -89,13 +96,15 @@ export function DashboardNavbar({
             firstName: resolvedFullName.split(" ")[0] ?? "",
             lastName: resolvedFullName.split(" ").slice(1).join(" ") ?? "",
             full_name: storeUser.full_name,
-            role: storeUser.role === "student" ? "student" : "assistant",
+            user_type: storeUser.user_type ?? null,
+            role: resolvedRole,
             isVerified: true,
           }
         : initialProfileData
           ? {
               ...initialProfileData,
-              role: initialProfileData.role ?? (isStudent ? "student" : "assistant"),
+              user_type: initialProfileData.user_type ?? null,
+              role: initialProfileData.role ?? resolvedRole,
             }
           : null;
 

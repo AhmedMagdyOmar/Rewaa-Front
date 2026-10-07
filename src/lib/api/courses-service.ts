@@ -9,6 +9,7 @@ import type {
 export interface CourseFilterParams {
   search?: string;
   status?: string;
+  category_id?: number | string;
   educational_stage_id?: number | string;
   subject_id?: number | string;
   instructor_id?: number | string;

@@ -1,15 +1,6 @@
 "use client";
 
-import {
-  ArrowUpDown,
-  Edit2,
-  FileQuestion,
-  MoreVertical,
-  Plus,
-  RefreshCw,
-  Trash2,
-  X,
-} from "lucide-react";
+import { ArrowUpDown, Edit2, FileQuestion, MoreVertical, Plus, Trash2, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -18,6 +9,7 @@ import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,24 +23,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DebouncedSearchInput } from "@/components/ui/debounced-search-input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ContentPagination } from "../common/content-pagination";
-import { DeleteQuestionDialog } from "./delete-question-dialog";
 import {
   useDeleteQuestion,
   useProviderQuestionOptions,
   useProviderQuestions,
 } from "@/hooks/use-questions";
 import type { BackendQuestion } from "@/types/api-contracts";
+import { ContentPagination } from "../common/content-pagination";
+import { DeleteQuestionDialog } from "./delete-question-dialog";
 
 const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "bg-green-100 text-green-700 border-green-300/40",
   medium: "bg-amber-100 text-amber-700 border-amber-300/40",
   hard: "bg-red-100 text-red-700 border-red-300/40",
 };
-
-const emptySubscribe = () => () => {};
 
 export type QuestionSortOption = "latest" | "oldest" | "usage_desc" | "usage_asc";
 
@@ -60,12 +49,6 @@ export function ManageQuestionsClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const isMounted = React.useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
 
   // URL state
   const searchQuery = searchParams.get("search") || "";
@@ -103,12 +86,7 @@ export function ManageQuestionsClient() {
   );
 
   // Live Query from backend (Question Bank shows standalone master questions)
-  const {
-    data: questionsResponse,
-    isLoading,
-    isFetching,
-    refetch,
-  } = useProviderQuestions({
+  const { data: questionsResponse, isLoading } = useProviderQuestions({
     search: searchQuery || undefined,
     type: selectedType !== "all" ? selectedType : undefined,
     educational_stage_id: selectedGrade !== "all" ? selectedGrade : undefined,
@@ -205,17 +183,6 @@ export function ManageQuestionsClient() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isMounted && isFetching}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isMounted && isFetching ? "animate-spin" : ""}`} />
-            <span>تحديث</span>
-          </Button>
-
           <Button asChild size="default" className="gap-2 shadow-xs font-semibold shrink-0">
             <Link href={`/${locale}/dashboard/questions/new`}>
               <Plus className="h-4 w-4" />

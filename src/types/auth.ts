@@ -16,6 +16,7 @@ export interface UserProfile {
   status?: string;
   student_code?: string;
   courses_count?: number;
+  user_type?: string | null;
   provider_id?: number | null;
   createdAt?: string;
   updatedAt?: string;

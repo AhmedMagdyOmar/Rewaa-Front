@@ -30,12 +30,10 @@ interface CourseFiltersProps {
   isLoading?: boolean;
   searchQuery: string;
   activeTab: FilterTab;
+  categoryFilter?: string;
+  categories?: FilterOptionItem[];
   stageFilter?: string;
-  subjectFilter?: string;
-  instructorFilter?: string;
   stages?: FilterOptionItem[];
-  subjects?: FilterOptionItem[];
-  instructors?: FilterOptionItem[];
   sortBy: SortOption;
   totalCount: number;
   publishedCount: number;
@@ -43,9 +41,8 @@ interface CourseFiltersProps {
   scheduledCount: number;
   onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onTabChange: (tab: FilterTab) => void;
+  onCategoryChange?: (categoryId: string) => void;
   onStageChange?: (stageId: string) => void;
-  onSubjectChange?: (subjectId: string) => void;
-  onInstructorChange?: (instructorId: string) => void;
   onSortChange: (sort: SortOption) => void;
   onResetFilters?: () => void;
 }
@@ -54,12 +51,10 @@ export function CourseFilters({
   isLoading = false,
   searchQuery,
   activeTab,
+  categoryFilter = "all",
+  categories = [],
   stageFilter = "all",
-  subjectFilter = "all",
-  instructorFilter = "all",
   stages = [],
-  subjects = [],
-  instructors = [],
   sortBy,
   totalCount,
   publishedCount,
@@ -67,9 +62,8 @@ export function CourseFilters({
   scheduledCount,
   onSearchChange,
   onTabChange,
+  onCategoryChange,
   onStageChange,
-  onSubjectChange,
-  onInstructorChange,
   onSortChange,
   onResetFilters,
 }: CourseFiltersProps) {
@@ -95,8 +89,7 @@ export function CourseFilters({
     { value: "price-desc", label: t("sort.priceDesc") },
   ];
 
-  const hasExtraFilters =
-    stageFilter !== "all" || subjectFilter !== "all" || instructorFilter !== "all";
+  const hasExtraFilters = stageFilter !== "all" || categoryFilter !== "all";
 
   if (isLoading) {
     return <CourseFiltersSkeleton />;
@@ -114,6 +107,29 @@ export function CourseFilters({
       isFilterActiveCustom={hasExtraFilters}
       extraFilters={
         <div className="flex flex-wrap items-center gap-2">
+          {/* Category / Classification filter */}
+          {categories.length > 0 && onCategoryChange && (
+            <div className="w-36 sm:w-40">
+              <Select value={categoryFilter} onValueChange={onCategoryChange}>
+                <SelectTrigger className="h-9 text-xs bg-background">
+                  <SelectValue
+                    placeholder={t.has("filters.category") ? t("filters.category") : "تصنيف الدورة"}
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t.has("filters.allCategories") ? t("filters.allCategories") : "جميع التصنيفات"}
+                  </SelectItem>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={String(cat.id)}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Stage filter */}
           {stages.length > 0 && onStageChange && (
             <div className="w-36">
@@ -130,54 +146,6 @@ export function CourseFilters({
                   {stages.map((st) => (
                     <SelectItem key={st.id} value={String(st.id)}>
                       {st.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Subject filter */}
-          {subjects.length > 0 && onSubjectChange && (
-            <div className="w-36">
-              <Select value={subjectFilter} onValueChange={onSubjectChange}>
-                <SelectTrigger className="h-9 text-xs bg-background">
-                  <SelectValue
-                    placeholder={t.has("filters.subject") ? t("filters.subject") : "المادة"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {t.has("filters.allSubjects") ? t("filters.allSubjects") : "جميع المواد"}
-                  </SelectItem>
-                  {subjects.map((sub) => (
-                    <SelectItem key={sub.id} value={String(sub.id)}>
-                      {sub.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Instructor filter */}
-          {instructors.length > 0 && onInstructorChange && (
-            <div className="w-36">
-              <Select value={instructorFilter} onValueChange={onInstructorChange}>
-                <SelectTrigger className="h-9 text-xs bg-background">
-                  <SelectValue
-                    placeholder={t.has("filters.instructor") ? t("filters.instructor") : "المعلم"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {t.has("filters.allInstructors")
-                      ? t("filters.allInstructors")
-                      : "جميع المعلمين"}
-                  </SelectItem>
-                  {instructors.map((ins) => (
-                    <SelectItem key={ins.id} value={String(ins.id)}>
-                      {ins.name}
                     </SelectItem>
                   ))}
                 </SelectContent>

@@ -50,8 +50,15 @@ export function ProfileDropdown({
   const contactInfo = user.email || user.phone || "";
 
   // Localized role
+  const storeUser = useAuthStore((s) => s.user);
   const storeRole = useAuthStore((s) => s.role);
-  const rawRole = (user.role || (storeRole === "student" ? "student" : "") || "user").toLowerCase();
+  const rawRole = (
+    user.user_type ||
+    user.role ||
+    storeUser?.user_type ||
+    (storeRole === "student" ? "student" : "") ||
+    "user"
+  ).toLowerCase();
   const localizedRole =
     isAr && user.roleAr
       ? user.roleAr

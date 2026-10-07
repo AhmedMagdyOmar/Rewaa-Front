@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocalizedDateInput } from "@/components/ui/localized-date-input";
 import {
   Select,
   SelectContent,
@@ -147,15 +148,15 @@ export function EditCodeDialog({ open, onOpenChange, codeItem, onSubmit }: EditC
               <Label htmlFor="expiryDate" className="font-semibold">
                 {t("expiryDateLabel")} <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <LocalizedDateInput
                 id="expiryDate"
-                type="date"
                 value={expiryDate}
-                onChange={(e) => {
-                  setExpiryDate(e.target.value);
+                onChange={(val) => {
+                  setExpiryDate(val);
                   setErrors((prev) => ({ ...prev, expiryDate: false }));
                 }}
-                className={errors.expiryDate ? "border-destructive focus:ring-destructive" : ""}
+                error={Boolean(errors.expiryDate)}
+                required
               />
             </div>
           </div>

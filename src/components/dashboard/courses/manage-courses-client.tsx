@@ -16,19 +16,17 @@ export function ManageCoursesClient() {
   return (
     <div className="space-y-6">
       {/* Top Header Row */}
-      <ManageCoursesHeader onRefresh={manage.handleRefreshData} isFetching={manage.isFetching} />
+      <ManageCoursesHeader />
 
       {/* Filter and Controls Row */}
       <CourseFilters
         isLoading={manage.isLoadingOptions}
         searchQuery={filters.searchQuery}
         activeTab={filters.activeTab}
+        categoryFilter={filters.categoryFilter}
+        categories={manage.categoryOptions}
         stageFilter={filters.stageFilter}
-        subjectFilter={filters.subjectFilter}
-        instructorFilter={filters.instructorFilter}
         stages={manage.stageOptions}
-        subjects={manage.subjectOptions}
-        instructors={manage.instructorOptions}
         sortBy={filters.sortBy}
         totalCount={manage.statusCounts.all}
         publishedCount={manage.statusCounts.published}
@@ -36,9 +34,8 @@ export function ManageCoursesClient() {
         scheduledCount={manage.statusCounts.scheduled}
         onSearchChange={filters.handleSearchChange}
         onTabChange={filters.handleTabChange}
+        onCategoryChange={filters.handleCategoryChange}
         onStageChange={filters.handleStageChange}
-        onSubjectChange={filters.handleSubjectChange}
-        onInstructorChange={filters.handleInstructorChange}
         onSortChange={filters.handleSortChange}
         onResetFilters={filters.handleResetFilters}
       />

@@ -44,18 +44,11 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { RequestDetailsModal } from "./request-details-modal";
 
-const emptySubscribe = () => () => {};
-
 export function BillingRequestsClient() {
-  const isMounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage");
 
@@ -100,12 +93,7 @@ export function BillingRequestsClient() {
   };
 
   // Queries & Mutations
-  const {
-    data: paymentsData,
-    isLoading,
-    isFetching,
-    refetch,
-  } = usePaymentsList({
+  const { data: paymentsData, isLoading } = usePaymentsList({
     search: searchQuery.trim() || undefined,
     status: statusTab !== "all" ? statusTab : undefined,
     sort:
@@ -118,8 +106,6 @@ export function BillingRequestsClient() {
             : "latest",
     per_page: 50,
   });
-
-  const isSpinning = isMounted && (isLoading || isFetching);
 
   const approvePaymentMutation = useApprovePayment();
   const rejectPaymentMutation = useRejectPayment();
@@ -258,15 +244,6 @@ export function BillingRequestsClient() {
           <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            className="self-start sm:self-auto font-semibold"
-            disabled={isSpinning}
-          >
-            <RotateCcw className={`size-3.5 me-1.5 ${isSpinning ? "animate-spin" : ""}`} />
-            {locale === "ar" ? "تحديث البيانات" : "Refresh"}
-          </Button>
           <Button asChild variant="outline" className="font-semibold">
             <Link href={`/${locale}/dashboard/courses/codes`}>
               <Barcode className="size-3.5 me-1.5" />

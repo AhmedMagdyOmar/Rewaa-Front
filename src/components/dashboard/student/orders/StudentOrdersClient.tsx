@@ -36,15 +36,9 @@ export function StudentOrdersClient() {
   const tStatus = useTranslations("studentOrders.status");
   const tCommon = useTranslations("common");
 
-  const [mounted, setMounted] = React.useState(false);
   const [statusFilter, setStatusFilter] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
   const [debouncedSearch, setDebouncedSearch] = React.useState<string>("");
-
-  React.useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true);
-  }, []);
 
   React.useEffect(() => {
     const timer = setTimeout(() => {
@@ -53,7 +47,7 @@ export function StudentOrdersClient() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const { data, isLoading, isError, refetch, isFetching } = useStudentOrders({
+  const { data, isLoading, isError, refetch } = useStudentOrders({
     status: statusFilter === "all" ? undefined : (statusFilter as BackendOrderStatus),
     search: debouncedSearch.trim() || undefined,
   });
@@ -118,24 +112,13 @@ export function StudentOrdersClient() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={mounted ? isFetching : false}
-          className="gap-2 self-start sm:self-auto"
-        >
-          <RefreshCw className={`size-4 ${mounted && isFetching ? "animate-spin" : ""}`} />
-          {tCommon("refresh")}
-        </Button>
       </div>
 
       {/* Filter / Search Bar */}
       <Card className="border-border/60 shadow-xs">
         <CardContent className="p-4 flex flex-col sm:flex-row items-center gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <Input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}

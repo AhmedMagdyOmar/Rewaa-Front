@@ -13,6 +13,7 @@ export function useCourseUrlFilters() {
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as FilterTab) || "all";
   const stageFilter = searchParams.get("stage") || "all";
+  const categoryFilter = searchParams.get("category") || "all";
   const subjectFilter = searchParams.get("subject") || "all";
   const instructorFilter = searchParams.get("instructor") || "all";
   const sortBy = (searchParams.get("sort") as SortOption) || "date-newest";
@@ -28,6 +29,7 @@ export function useCourseUrlFilters() {
           value === "" ||
           (key === "tab" && value === "all") ||
           (key === "stage" && value === "all") ||
+          (key === "category" && value === "all") ||
           (key === "subject" && value === "all") ||
           (key === "instructor" && value === "all") ||
           (key === "sort" && value === "date-newest") ||
@@ -56,6 +58,10 @@ export function useCourseUrlFilters() {
     updateUrlParams({ stage: stageId === "all" ? null : stageId, page: 1 });
   };
 
+  const handleCategoryChange = (categoryId: string) => {
+    updateUrlParams({ category: categoryId === "all" ? null : categoryId, page: 1 });
+  };
+
   const handleSubjectChange = (subjectId: string) => {
     updateUrlParams({ subject: subjectId === "all" ? null : subjectId, page: 1 });
   };
@@ -77,6 +83,7 @@ export function useCourseUrlFilters() {
       search: null,
       tab: null,
       stage: null,
+      category: null,
       subject: null,
       instructor: null,
       sort: null,
@@ -88,6 +95,7 @@ export function useCourseUrlFilters() {
     searchQuery,
     activeTab,
     stageFilter,
+    categoryFilter,
     subjectFilter,
     instructorFilter,
     sortBy,
@@ -96,6 +104,7 @@ export function useCourseUrlFilters() {
     handleSearchChange,
     handleTabChange,
     handleStageChange,
+    handleCategoryChange,
     handleSubjectChange,
     handleInstructorChange,
     handleSortChange,

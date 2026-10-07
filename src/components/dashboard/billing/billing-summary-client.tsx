@@ -1,10 +1,15 @@
 "use client";
 
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { ArrowLeft, Calendar, Receipt } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
-import { useTranslations, useLocale } from "next-intl";
-import { ArrowLeft, RotateCcw, Receipt, Calendar } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import {
+  BillingPeriodStatCard,
+  BillingSummaryHighlights,
+} from "@/components/dashboard/billing/billing-metrics-cards";
+import { BillingPivotTable } from "@/components/dashboard/billing/billing-pivot-table";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -14,30 +19,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useFinanceSummary } from "@/hooks/use-billing";
-import type { FinancialMonthData, FinancialYearData } from "@/types/finance";
-import {
-  BillingPeriodStatCard,
-  BillingSummaryHighlights,
-} from "@/components/dashboard/billing/billing-metrics-cards";
-import { BillingPivotTable } from "@/components/dashboard/billing/billing-pivot-table";
 import { exportFinancialCsv, exportFinancialPdf, type SummaryMetrics } from "@/lib/export-finance";
-
-const emptySubscribe = () => () => {};
+import type { FinancialMonthData, FinancialYearData } from "@/types/finance";
 
 export function BillingSummaryClient() {
-  const isMounted = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
   const locale = useLocale();
   const t = useTranslations("financialSummary");
 
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const { data: summaryData, isLoading, isFetching, refetch } = useFinanceSummary(selectedYear);
-  const isSpinning = isMounted && (isLoading || isFetching);
+  const { data: summaryData, isLoading } = useFinanceSummary(selectedYear);
 
   const monthKeys = [
     "jan",
@@ -219,18 +211,6 @@ export function BillingSummaryClient() {
               <SelectItem value="2024">2024</SelectItem>
             </SelectContent>
           </Select>
-
-          {/* Refresh Data */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isSpinning}
-            className="h-9 text-xs font-semibold"
-          >
-            <RotateCcw className={`size-3.5 me-1.5 ${isSpinning ? "animate-spin" : ""}`} />
-            {locale === "ar" ? "تحديث البيانات" : "Refresh"}
-          </Button>
 
           {/* Link to /dashboard/billing */}
           <Button asChild size="sm" className="h-9 text-xs font-semibold">

@@ -10,7 +10,7 @@ import {
 import { StudentWalletBalanceCard } from "./StudentWalletBalanceCard";
 import { StudentWalletFilterBar, type WalletDirectionFilter } from "./StudentWalletFilterBar";
 import { StudentWalletTransactionsTable } from "./StudentWalletTransactionsTable";
-import { ChevronLeft, ChevronRight, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 export function StudentWalletClient() {
@@ -21,24 +21,15 @@ export function StudentWalletClient() {
   const perPage = 15;
 
   // 1. Fetch live balance
-  const {
-    data: walletData,
-    isLoading: isLoadingWallet,
-    refetch: refetchWallet,
-    isRefetching: isRefetchingWallet,
-  } = useStudentWebsiteWallet();
+  const { data: walletData, isLoading: isLoadingWallet } = useStudentWebsiteWallet();
 
   // 2. Fetch paginated ledger
-  const {
-    data: transactionsData,
-    isLoading: isLoadingTransactions,
-    refetch: refetchTransactions,
-    isRefetching: isRefetchingTransactions,
-  } = useStudentWebsiteWalletTransactions({
-    direction: directionFilter === "all" ? undefined : directionFilter,
-    page,
-    per_page: perPage,
-  });
+  const { data: transactionsData, isLoading: isLoadingTransactions } =
+    useStudentWebsiteWalletTransactions({
+      direction: directionFilter === "all" ? undefined : directionFilter,
+      page,
+      per_page: perPage,
+    });
 
   // 3. Unfiltered transactions for calculating quick metrics/counts
   const { data: allTransactionsData } = useStudentWebsiteWalletTransactions({
@@ -60,13 +51,6 @@ export function StudentWalletClient() {
     setPage(1);
   };
 
-  const handleRefresh = () => {
-    refetchWallet();
-    refetchTransactions();
-  };
-
-  const isRefreshing = isRefetchingWallet || isRefetchingTransactions;
-
   const totalPages = pagination?.last_page ?? 1;
   const totalItems = pagination?.total ?? currentTxList.length;
   const startItem = totalItems > 0 ? (page - 1) * perPage + 1 : 0;
@@ -82,17 +66,6 @@ export function StudentWalletClient() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="self-start sm:self-auto text-xs font-semibold gap-2 border-border/80"
-        >
-          <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
-          <span>{isRefreshing ? t("refreshing") : t("refresh")}</span>
-        </Button>
       </div>
 
       {/* Hero Balance & Quick Stats */}

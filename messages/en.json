@@ -369,7 +369,13 @@
       "titleDescLabel": "Name (Z-A)",
       "studentsDescLabel": "Most Enrolled",
       "priceAscLabel": "Price: Low to High",
-      "priceDescLabel": "Price: High to Low"
+      "priceDescLabel": "Price: High to Low",
+      "filters": {
+        "stage": "Educational Stage",
+        "allStages": "All Stages",
+        "category": "Classification",
+        "allCategories": "All Classifications"
+      }
     },
     "status": {
       "published": "Published",

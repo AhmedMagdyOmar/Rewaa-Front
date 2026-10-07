@@ -98,11 +98,7 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
 
   // Real backend queries
   const { data: backendCourse } = useProviderCourse(courseId);
-  const {
-    data: studentsResponse,
-    isLoading,
-    refetch,
-  } = useStudentsList({
+  const { data: studentsResponse, isLoading } = useStudentsList({
     course_id: courseId,
     search: searchQuery || undefined,
     gender: selectedGender !== "all" ? (selectedGender as "male" | "female") : undefined,
@@ -196,16 +192,6 @@ export function CourseStudentsClient({ courseId }: CourseStudentsClientProps) {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-3 self-end sm:self-auto">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="size-4" />
-            <span className="hidden sm:inline">{tGlobalStudents("refresh") || "تحديث"}</span>
-          </Button>
-
           <Button asChild size="sm" className="flex items-center gap-2">
             <Link href={`/${locale}/dashboard/students/new?courseId=${courseId}`}>
               <Plus className="size-4" />

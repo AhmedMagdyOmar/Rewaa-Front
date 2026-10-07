@@ -8,7 +8,6 @@ import {
   MoreVertical,
   Pencil,
   Plus,
-  RefreshCw,
   Trash2,
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
@@ -40,8 +39,6 @@ import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filte
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteExamDialog } from "./delete-exam-dialog";
 
-const emptySubscribe = () => () => {};
-
 export type ExamFilterTab = "all" | "published" | "draft" | "scheduled";
 export type ExamSortOption = "latest" | "oldest";
 
@@ -52,12 +49,6 @@ export function ManageExamsClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  const isMounted = React.useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
 
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
@@ -94,12 +85,7 @@ export function ManageExamsClient() {
   const { data: examOptions } = useProviderExamOptions();
 
   // Live Query from backend
-  const {
-    data: examsResponse,
-    isLoading,
-    isFetching,
-    refetch,
-  } = useProviderExams({
+  const { data: examsResponse, isLoading } = useProviderExams({
     search: searchQuery || undefined,
     status: activeTab !== "all" ? activeTab : undefined,
     course_id: courseFilter !== "all" ? courseFilter : undefined,
@@ -199,17 +185,6 @@ export function ManageExamsClient() {
           <p className="text-sm text-muted-foreground mt-1">{t("manageSubtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            disabled={isMounted && isFetching}
-            className="gap-2"
-          >
-            <RefreshCw className={`h-4 w-4 ${isMounted && isFetching ? "animate-spin" : ""}`} />
-            <span>{locale === "ar" ? "تحديث" : "Refresh"}</span>
-          </Button>
-
           <Button asChild size="default" className="gap-2 shadow-xs font-semibold shrink-0">
             <Link href={`/${locale}/dashboard/exams/new`}>
               <Plus className="h-4 w-4" />

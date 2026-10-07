@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Plus, RefreshCw } from "lucide-react";
+import { BookOpen, Plus } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import * as React from "react";
@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteLesson, useProviderLessons } from "@/hooks/use-lessons";
 import { getErrorMessage } from "@/lib/api-utils";
-import { cn } from "@/lib/utils";
 import { LessonClassification } from "@/types/api-contracts";
 import { Lesson } from "@/types/course";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
@@ -47,7 +46,7 @@ export function ManageLessonsClient() {
     activeTab === "course-linked" ? "course" : undefined;
   const sort = sortBy === "date-oldest" ? "oldest" : "latest";
 
-  const { data, isLoading, refetch, isRefetching } = useProviderLessons({
+  const { data, isLoading } = useProviderLessons({
     search: searchQuery.trim() || undefined,
     classification,
     course_id: courseId || undefined,
@@ -147,10 +146,6 @@ export function ManageLessonsClient() {
     }
   };
 
-  const handleRefresh = () => {
-    refetch();
-  };
-
   // Classification counts from backend
   const classificationCounts = data?.classification_counts;
 
@@ -190,16 +185,6 @@ export function ManageLessonsClient() {
           <p className="text-sm text-muted-foreground mt-1">{t("manageSubtitle")}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="default"
-            onClick={handleRefresh}
-            disabled={isRefetching}
-            className="gap-2 shadow-xs font-semibold"
-          >
-            <RefreshCw className={cn("h-4 w-4", isRefetching && "animate-spin")} />
-            <span>{locale === "ar" ? "تحديث" : "Refresh"}</span>
-          </Button>
           <Button asChild size="default" className="gap-2 shadow-sm font-semibold">
             <Link href={`/${locale}/dashboard/lessons/new`}>
               <Plus className="h-4 w-4" />

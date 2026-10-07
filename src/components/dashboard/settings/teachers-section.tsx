@@ -1,20 +1,7 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useState, useEffect } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import Image from "next/image";
-import { UserCheck, Plus, Pencil, Trash2, User, RotateCcw, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -24,14 +11,26 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { PhoneLink, WhatsAppIcon } from "@/components/ui/phone-link";
-import type { Teacher } from "@/types/settings";
-import { adaptBackendTeacherToTeacher } from "@/lib/adapters/settings-adapter";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   useCreateTeacher,
   useDeleteTeacher,
   useTeachersList,
   useUpdateTeacher,
 } from "@/hooks/use-settings";
+import { adaptBackendTeacherToTeacher } from "@/lib/adapters/settings-adapter";
+import type { Teacher } from "@/types/settings";
+import { Loader2, Pencil, Plus, Trash2, User, UserCheck } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import Image from "next/image";
+import { useState } from "react";
 import { toast } from "sonner";
 import { TeacherDialog } from "./teacher-dialog";
 
@@ -40,7 +39,7 @@ export function TeachersSection() {
   const tSubjects = useTranslations("courses.new.subjects");
   const locale = useLocale();
 
-  const { data: backendTeachers, isLoading, refetch } = useTeachersList();
+  const { data: backendTeachers, isLoading } = useTeachersList();
   const createTeacherMutation = useCreateTeacher();
   const updateTeacherMutation = useUpdateTeacher();
   const deleteTeacherMutation = useDeleteTeacher();
@@ -51,8 +50,6 @@ export function TeachersSection() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [teacherToEdit, setTeacherToEdit] = useState<Teacher | null>(null);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const formatSubject = (sub: string) => {
     if (!sub) return "";
@@ -143,15 +140,6 @@ export function TeachersSection() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={mounted && isLoading}
-            className="gap-1.5"
-          >
-            <RotateCcw className={`size-3.5 ${isLoading ? "animate-spin" : ""}`} />
-            <span>{t("refreshTeachers")}</span>
-          </Button>
           <Button onClick={handleOpenAdd} className="gap-1.5">
             <Plus className="size-4" />
             <span>{t("addTeacher")}</span>

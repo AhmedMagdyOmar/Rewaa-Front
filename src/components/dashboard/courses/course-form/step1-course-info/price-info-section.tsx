@@ -4,6 +4,7 @@ import { useTranslations } from "next-intl";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { Input } from "@/components/ui/input";
+import { LocalizedDateInput } from "@/components/ui/localized-date-input";
 import {
   Select,
   SelectContent,
@@ -142,11 +143,10 @@ export function PriceInfoSection({
             <label htmlFor="offer-start-date" className="text-sm font-medium text-foreground">
               {t("fields.offerStartDate")}
             </label>
-            <Input
+            <LocalizedDateInput
               id="offer-start-date"
-              type="date"
               value={offerStartDate}
-              onChange={(e) => onOfferStartDateChange(e.target.value)}
+              onChange={onOfferStartDateChange}
             />
           </div>
 
@@ -154,11 +154,10 @@ export function PriceInfoSection({
             <label htmlFor="offer-end-date" className="text-sm font-medium text-foreground">
               {t("fields.offerEndDate")}
             </label>
-            <Input
+            <LocalizedDateInput
               id="offer-end-date"
-              type="date"
               value={offerEndDate}
-              onChange={(e) => onOfferEndDateChange(e.target.value)}
+              onChange={onOfferEndDateChange}
             />
           </div>
         </div>

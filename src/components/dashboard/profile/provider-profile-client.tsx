@@ -29,14 +29,7 @@ export function ProviderProfileClient() {
   const locale = useLocale();
   const isAr = locale === "ar";
 
-  const {
-    data: profile,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isFetching,
-  } = useProviderProfileQuery();
+  const { data: profile, isLoading, isError, error, refetch } = useProviderProfileQuery();
 
   if (isLoading) {
     return (
@@ -102,17 +95,6 @@ export function ProviderProfileClient() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => refetch()}
-          disabled={isFetching}
-          className="gap-2 self-start sm:self-auto cursor-pointer"
-        >
-          <RefreshCw className={`size-4 ${isFetching ? "animate-spin" : ""}`} />
-          <span>{t("refreshData")}</span>
-        </Button>
       </div>
 
       {/* Hero Summary Card */}
@@ -158,9 +140,9 @@ export function ProviderProfileClient() {
                 </div>
 
                 {profile.phone && (
-                  <div className="flex items-center gap-1.5" dir="ltr">
+                  <div className="flex items-center gap-1.5">
                     <Phone className="size-3.5" />
-                    <span>
+                    <span dir="ltr">
                       {profile.phone_code ? `${profile.phone_code} ` : ""}
                       {profile.phone}
                     </span>

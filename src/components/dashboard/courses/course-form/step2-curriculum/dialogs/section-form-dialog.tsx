@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { LocalizedDateInput } from "@/components/ui/localized-date-input";
 import {
   Select,
   SelectContent,
@@ -131,12 +132,12 @@ export function SectionFormDialog({
                   {locale === "ar" ? "تاريخ النشر المجدول" : "Scheduled Publish Date"}{" "}
                   <span className="text-destructive">*</span>
                 </label>
-                <Input
+                <LocalizedDateInput
                   id="sec-schedule-date"
-                  type="date"
                   value={newSecScheduledDate}
-                  onChange={(e) => onScheduledDateChange(e.target.value)}
+                  onChange={onScheduledDateChange}
                   required
+                  error={Boolean(newSecScheduleDateError)}
                 />
               </div>
 

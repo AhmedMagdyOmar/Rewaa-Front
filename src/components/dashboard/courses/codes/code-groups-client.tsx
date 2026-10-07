@@ -94,11 +94,7 @@ export function CodeGroupsClient() {
   );
 
   // Queries
-  const {
-    data: rawGroupsData,
-    isRefetching: isGroupsRefetching,
-    refetch: refetchGroups,
-  } = useCodeGroupsList({
+  const { data: rawGroupsData } = useCodeGroupsList({
     search: searchQuery || undefined,
     course_id: selectedCourseFilter !== "all" ? selectedCourseFilter : undefined,
     sort: sortBy,
@@ -202,17 +198,6 @@ export function CodeGroupsClient() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Button
-            variant="outline"
-            onClick={() => refetchGroups()}
-            disabled={isGroupsRefetching}
-            title={t("refreshData")}
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className={`size-4 ${isGroupsRefetching ? "animate-spin" : ""}`} />
-            <span className="hidden md:inline">{t("refreshData")}</span>
-          </Button>
-
           <Button
             onClick={() => setIsAddDialogOpen(true)}
             className="gap-2 shadow-sm font-semibold"

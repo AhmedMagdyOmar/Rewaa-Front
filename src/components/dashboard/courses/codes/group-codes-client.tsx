@@ -124,12 +124,8 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
   );
 
   // Queries
-  const { data: rawGroup, refetch: refetchGroup } = useCodeGroupDetail(groupId);
-  const {
-    data: rawCodesData,
-    isRefetching: isCodesRefetching,
-    refetch: refetchCodes,
-  } = useGroupCodesList(groupId, {
+  const { data: rawGroup } = useCodeGroupDetail(groupId);
+  const { data: rawCodesData } = useGroupCodesList(groupId, {
     search: searchQuery || undefined,
     status: activeTab !== "all" ? activeTab : undefined,
     sort: sortBy,
@@ -273,12 +269,6 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
     updateUrlParams({ search: null, status: null, sort: null, page: 1 });
   };
 
-  // Refresh data from API
-  const handleRefresh = () => {
-    refetchGroup();
-    refetchCodes();
-  };
-
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-6 max-w-7xl mx-auto w-full">
       {/* ──────────────────────────────────────────────────────────────────────────────
@@ -303,17 +293,6 @@ export function GroupCodesClient({ courseId: _courseId, groupId }: GroupCodesCli
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Button
-            variant="outline"
-            onClick={handleRefresh}
-            disabled={isCodesRefetching}
-            title={t("refreshData")}
-            className="gap-2 text-muted-foreground hover:text-foreground"
-          >
-            <RotateCcw className={`size-4 ${isCodesRefetching ? "animate-spin" : ""}`} />
-            <span>{t("refreshData")}</span>
-          </Button>
-
           <Button
             variant="outline"
             onClick={() => setIsBatchDialogOpen(true)}

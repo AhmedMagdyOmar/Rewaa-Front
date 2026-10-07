@@ -47,10 +47,10 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
     data: coursesData,
     isLoading,
     isFetching,
-    refetch,
   } = useProviderCourses({
     search: filters.searchQuery.trim() || undefined,
     status: statusParam,
+    category_id: filters.categoryFilter !== "all" ? filters.categoryFilter : undefined,
     educational_stage_id: filters.stageFilter !== "all" ? filters.stageFilter : undefined,
     subject_id: filters.subjectFilter !== "all" ? filters.subjectFilter : undefined,
     instructor_id: filters.instructorFilter !== "all" ? filters.instructorFilter : undefined,
@@ -109,11 +109,6 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
     }
   };
 
-  const handleRefreshData = () => {
-    refetch();
-    toast.info(locale === "ar" ? "تم تحديث البيانات" : "Data refreshed");
-  };
-
   const handleCopyLink = (courseId: string) => {
     const link = `${window.location.origin}/${locale}/dashboard/courses/${courseId}/edit`;
     navigator.clipboard.writeText(link);
@@ -122,6 +117,13 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
   };
 
   // Filter option dropdowns
+  const categoryOptions = React.useMemo(() => {
+    return (optionsData?.categories || []).map((c) => ({
+      id: c.id,
+      name: c.name?.[locale] || c.name_label || c.name?.ar || c.name?.en || c.code || "",
+    }));
+  }, [optionsData, locale]);
+
   const stageOptions = React.useMemo(() => {
     return (optionsData?.educational_stages || []).map((s) => ({
       id: s.id,
@@ -153,12 +155,12 @@ export function useManageCourses({ filters, itemsPerPage = 9 }: UseManageCourses
     courseToDelete,
     setCourseToDelete,
     copiedId,
+    categoryOptions,
     stageOptions,
     subjectOptions,
     instructorOptions,
     handlePublishToggle,
     confirmDelete,
-    handleRefreshData,
     handleCopyLink,
   };
 }

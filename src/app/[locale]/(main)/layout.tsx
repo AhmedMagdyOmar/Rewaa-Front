@@ -61,7 +61,20 @@ export default async function MainLayout({
           <QueryProvider>
             <TooltipProvider>
               {children}
-              <Toaster />
+              <Toaster
+                position="top-right"
+                duration={4000}
+                richColors={false}
+                toastOptions={{
+                  classNames: {
+                    toast: "font-sans border shadow-lg text-sm rounded-xl overflow-hidden relative",
+                    success:
+                      "toast-success !bg-success !text-white !border-success/20 [&_[data-title]]:!text-white [&_[data-description]]:!text-white/90 [&_[data-icon]]:!text-white",
+                    error:
+                      "toast-error !bg-error !text-white !border-error/20 [&_[data-title]]:!text-white [&_[data-description]]:!text-white/90 [&_[data-icon]]:!text-white",
+                  },
+                }}
+              />
             </TooltipProvider>
           </QueryProvider>
         </NextIntlClientProvider>

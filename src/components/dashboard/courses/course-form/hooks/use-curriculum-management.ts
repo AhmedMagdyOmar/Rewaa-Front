@@ -618,35 +618,35 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           .map((img) => img.rawFile)
           .filter(Boolean) as File[];
 
-        const payload = {
-          classification: "course" as const,
-          course_id: Number(courseId),
-          course_section_id: Number(targetSecId),
-          type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
-            | "text_only"
-            | "video_and_text",
-          title: { ar: savedLesson.title, en: savedLesson.title },
-          description: savedLesson.description
-            ? { ar: savedLesson.description, en: savedLesson.description }
-            : undefined,
-          video_url: savedLesson.lectureVideoLink || undefined,
-          cover_image: savedLesson.coverImageFile || undefined,
-          remove_cover_image: savedLesson.removeCoverImage || undefined,
-          has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
-          pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
-          has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
-          explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
-          delete_media_ids:
-            savedLesson.deleteMediaIds && savedLesson.deleteMediaIds.length > 0
-              ? savedLesson.deleteMediaIds
-              : undefined,
-          has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
-          exam_id: lessonExamId,
-          requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
-          is_active: true,
-        };
-
         if (isExistingBackendLesson) {
+          const payload = {
+            classification: "course" as const,
+            course_id: Number(courseId),
+            course_section_id: Number(targetSecId),
+            type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
+              | "text_only"
+              | "video_and_text",
+            title: { ar: savedLesson.title, en: savedLesson.title },
+            description: savedLesson.description
+              ? { ar: savedLesson.description, en: savedLesson.description }
+              : undefined,
+            video_url: savedLesson.lectureVideoLink || undefined,
+            cover_image: savedLesson.coverImageFile || undefined,
+            remove_cover_image: savedLesson.removeCoverImage || undefined,
+            has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
+            pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
+            has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
+            explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
+            delete_media_ids:
+              savedLesson.deleteMediaIds && savedLesson.deleteMediaIds.length > 0
+                ? savedLesson.deleteMediaIds
+                : undefined,
+            has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
+            exam_id: lessonExamId,
+            requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+            is_active: true,
+          };
+
           const res = await updateLessonMutation.mutateAsync({
             id: savedLesson.id,
             data: payload,
@@ -661,7 +661,58 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           };
           toast.success(locale === "ar" ? "تم تحديث الدرس بنجاح" : "Lesson updated successfully");
         } else {
-          const res = await createLessonMutation.mutateAsync(payload);
+          // 1. Create Standalone Template Lesson in the Lesson Bank
+          const templatePayload = {
+            classification: "standalone" as const,
+            educational_stage_id: parentCourse?.educational_stage_id || undefined,
+            subject_id: parentCourse?.subject_id || undefined,
+            ...(lessonOptionsData?.requires_instructor_selection && parentCourse?.instructor_id
+              ? { instructor_id: parentCourse.instructor_id }
+              : {}),
+            type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
+              | "text_only"
+              | "video_and_text",
+            title: { ar: savedLesson.title, en: savedLesson.title },
+            description: savedLesson.description
+              ? { ar: savedLesson.description, en: savedLesson.description }
+              : undefined,
+            video_url: savedLesson.lectureVideoLink || undefined,
+            cover_image: savedLesson.coverImageFile || undefined,
+            has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
+            pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
+            has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
+            explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
+            has_exam: false,
+            requires_exam_pass_to_unlock_next_lesson: false,
+            is_active: true,
+          };
+
+          const templateRes = await createLessonMutation.mutateAsync(templatePayload);
+
+          // 2. Create Course Clone Lesson referencing the standalone template
+          const clonePayload = {
+            classification: "course" as const,
+            course_id: Number(courseId),
+            course_section_id: Number(targetSecId),
+            original_lesson_id: templateRes.id,
+            type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
+              | "text_only"
+              | "video_and_text",
+            title: { ar: savedLesson.title, en: savedLesson.title },
+            description: savedLesson.description
+              ? { ar: savedLesson.description, en: savedLesson.description }
+              : undefined,
+            video_url: savedLesson.lectureVideoLink || undefined,
+            cover_image: savedLesson.coverImageFile || undefined,
+            has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
+            has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
+            has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
+            exam_id: lessonExamId,
+            requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+            is_active: true,
+          };
+
+          const res = await createLessonMutation.mutateAsync(clonePayload);
           finalLesson = {
             ...savedLesson,
             id: String(res.id),

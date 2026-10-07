@@ -45,10 +45,10 @@ export default function SettingsPage() {
           {/* Teachers Section — admin only */}
           {isAdmin && <TeachersSection />}
 
-          {/* Grades and Subjects Row — visible to all, read-only for non-admins */}
+          {/* Grades and Subjects Row — visible to all (read-only) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <GradesSection isReadOnly={!isAdmin} />
-            <SubjectsSection isReadOnly={!isAdmin} />
+            <GradesSection />
+            <SubjectsSection />
           </div>
 
           {/* Assistants Section — admin only */}

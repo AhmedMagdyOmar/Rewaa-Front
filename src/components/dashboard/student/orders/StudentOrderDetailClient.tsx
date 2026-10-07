@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { StudentInvoiceModal } from "@/components/dashboard/students/student-invoice-modal";
@@ -49,16 +48,11 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
   const tCommon = useTranslations("common");
 
   const [selectedTab, setSelectedTab] = React.useState<PaymentTab>("wallet");
-  const [mounted, setMounted] = React.useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = React.useState(false);
   const [invoiceData, setInvoiceData] = React.useState<{
     student: Student;
     transaction: StudentTransaction;
   } | null>(null);
-
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Fetch live order details
   const {
@@ -66,7 +60,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
     isLoading: isOrderLoading,
     isError: isOrderError,
     refetch: refetchOrder,
-    isFetching: isOrderFetching,
   } = useStudentOrder(orderId);
 
   // Fetch payment accounts for manual bank transfer
@@ -252,17 +245,6 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
               {t("viewInvoice")}
             </Button>
           )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetchOrder()}
-            disabled={mounted ? isOrderFetching : false}
-            className="gap-2"
-          >
-            <RefreshCw className={`size-4 ${mounted && isOrderFetching ? "animate-spin" : ""}`} />
-            {tCommon("refresh")}
-          </Button>
         </div>
       </div>
 

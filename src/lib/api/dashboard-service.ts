@@ -9,10 +9,15 @@ export interface DashboardStudentStatistics {
 
 export interface DashboardContentStatistics {
   courses_count: number;
+  courses_today_count?: number;
   lessons_count: number;
+  lessons_today_count?: number;
   lectures_count: number;
+  lectures_today_count?: number;
   questions_count: number;
+  questions_today_count?: number;
   exams_count: number;
+  exams_today_count?: number;
 }
 
 export interface DashboardStageItem {

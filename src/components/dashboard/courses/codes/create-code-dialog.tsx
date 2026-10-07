@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { LocalizedDateInput } from "@/components/ui/localized-date-input";
 import { CodeGroup } from "@/types/code-group";
 import { ActivationCode } from "@/types/activation-code";
 
@@ -175,15 +176,15 @@ export function CreateCodeDialog({
               <Label htmlFor="createExpiryDate" className="font-semibold">
                 {t("expiryDateLabel")} <span className="text-destructive">*</span>
               </Label>
-              <Input
+              <LocalizedDateInput
                 id="createExpiryDate"
-                type="date"
                 value={expiryDate}
-                onChange={(e) => {
-                  setExpiryDate(e.target.value);
+                onChange={(val) => {
+                  setExpiryDate(val);
                   setErrors((prev) => ({ ...prev, expiryDate: false }));
                 }}
-                className={errors.expiryDate ? "border-destructive focus:ring-destructive" : ""}
+                error={Boolean(errors.expiryDate)}
+                required
               />
             </div>
           </div>

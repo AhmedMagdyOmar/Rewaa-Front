@@ -11,7 +11,6 @@ import {
   MapPin,
   MoreVertical,
   Plus,
-  RotateCcw,
   Trash2,
   UserCheck,
   Users,
@@ -115,7 +114,7 @@ export function ManageStudentsClient() {
   );
 
   // Queries and Mutations
-  const { data: optionsData, refetch: refetchOptions } = useStudentOptions();
+  const { data: optionsData } = useStudentOptions();
 
   const educationalStagesList = React.useMemo(() => {
     if (!optionsData?.educational_stages) return undefined;
@@ -135,12 +134,7 @@ export function ManageStudentsClient() {
     return matched ? matched.id : Number(selectedGrade) || undefined;
   }, [selectedGrade, optionsData, locale]);
 
-  const {
-    data: studentsData,
-    isLoading,
-    isRefetching,
-    refetch: refetchStudents,
-  } = useStudentsList({
+  const { data: studentsData, isLoading } = useStudentsList({
     search: searchQuery || undefined,
     country_id: selectedCountry !== "all" ? selectedCountry : undefined,
     governorate_id: selectedState !== "all" ? selectedState : undefined,
@@ -448,11 +442,6 @@ export function ManageStudentsClient() {
     });
   };
 
-  const handleRefresh = () => {
-    refetchStudents();
-    refetchOptions();
-  };
-
   const sortOptions = [
     { value: "date-newest", label: t("sort.dateNewest") },
     { value: "date-oldest", label: t("sort.dateOldest") },
@@ -479,17 +468,6 @@ export function ManageStudentsClient() {
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Button
-            variant="outline"
-            size="default"
-            onClick={handleRefresh}
-            disabled={isRefetching}
-            className="gap-2 shadow-xs font-semibold"
-          >
-            <RotateCcw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
-            <span>{t("refreshData")}</span>
-          </Button>
-
           <Button asChild size="default" className="gap-2 shadow-xs font-semibold">
             <Link href={`/${locale}/dashboard/students/new`}>
               <Plus className="h-4 w-4" />

@@ -35,7 +35,6 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
   const isAr = locale === "ar";
 
   const t = useTranslations("exams.submissions");
-  const tCommon = useTranslations("common");
 
   const [activeTab, setActiveTab] = React.useState<TabKey>("all");
   const [searchQuery, setSearchQuery] = React.useState("");
@@ -44,11 +43,7 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
 
   const { data: examData, isLoading: isExamLoading } = useProviderExam(examId || "");
 
-  const {
-    data: attemptsData,
-    isLoading: isAttemptsLoading,
-    refetch,
-  } = useProviderExamAttempts({
+  const { data: attemptsData, isLoading: isAttemptsLoading } = useProviderExamAttempts({
     ...(examId ? { exam_id: examId } : {}),
     ...(activeTab !== "all" ? { status: activeTab } : {}),
     page: currentPage,
@@ -108,17 +103,6 @@ export function ExamSubmissionsClient({ examId }: ExamSubmissionsClientProps) {
             </h1>
             <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
           </div>
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="cursor-pointer font-semibold shadow-2xs"
-          >
-            {tCommon("refresh") || "Refresh"}
-          </Button>
         </div>
       </div>
 

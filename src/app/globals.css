@@ -208,3 +208,38 @@
 .mdxeditor [class*="_placeholder_"] {
   font-size: 0.875rem !important;
 }
+
+/* Toast Progress / Countdown Loader Bar */
+@keyframes toastProgress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
+  }
+}
+
+[data-sonner-toast].toast-success {
+  position: relative;
+  overflow: hidden;
+}
+
+[data-sonner-toast].toast-success::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background-color: rgba(255, 255, 255, 0.45);
+  animation: toastProgress 4000ms linear forwards;
+  z-index: 10;
+}
+
+[dir="rtl"] [data-sonner-toast].toast-success::after {
+  left: auto;
+  right: 0;
+}
+
+[data-sonner-toast]:hover::after {
+  animation-play-state: paused;
+}
