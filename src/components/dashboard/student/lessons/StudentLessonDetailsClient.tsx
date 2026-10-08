@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
+import { PdfPreviewModal } from "@/components/ui/pdf-preview-modal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,6 +21,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Download,
+  Eye,
   FileSpreadsheet,
   FileText,
   GraduationCap,
@@ -63,6 +66,7 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
   const subjectName = getLocalized(lesson?.subject?.name);
   const stageName = getLocalized(lesson?.educational_stage?.name);
   const subjectAndStageText = [subjectName, stageName].filter(Boolean).join(" • ");
+  const [previewPdf, setPreviewPdf] = useState<{ url: string; title: string } | null>(null);
 
   const isVideoLesson = lesson?.type === "video_and_text" || lesson?.type === "video";
 
@@ -298,22 +302,42 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
                           </p>
                         </div>
                       </div>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-lg text-xs"
-                      >
-                        <a
-                          href={file.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download={file.file_name || file.name}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="default"
+                          size="sm"
+                          className="h-8 rounded-lg text-xs gap-1.5"
+                          onClick={() =>
+                            setPreviewPdf({
+                              url: file.url,
+                              title: file.name || file.file_name || "PDF Document",
+                            })
+                          }
                         >
-                          <Download className="size-3.5 me-1" />
-                          <span>{t("viewDetails.download") || "Download"}</span>
-                        </a>
-                      </Button>
+                          <Eye className="size-3.5" />
+                          <span>{t("viewDetails.preview") || (isAr ? "معاينة" : "Preview")}</span>
+                        </Button>
+
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="h-8 rounded-lg text-xs"
+                        >
+                          <a
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download={file.file_name || file.name}
+                          >
+                            <Download className="size-3.5 me-1" />
+                            <span className="sr-only sm:not-sr-only sm:inline">
+                              {t("viewDetails.download") || "Download"}
+                            </span>
+                          </a>
+                        </Button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -377,6 +401,13 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
           </Tabs>
         </DashboardCard>
       </div>
+
+      <PdfPreviewModal
+        isOpen={Boolean(previewPdf)}
+        onClose={() => setPreviewPdf(null)}
+        url={previewPdf?.url || null}
+        title={previewPdf?.title || null}
+      />
     </TooltipProvider>
   );
 }

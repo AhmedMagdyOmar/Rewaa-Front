@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
+import { PdfPreviewModal } from "@/components/ui/pdf-preview-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
@@ -15,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
+  Eye,
   FileCheck,
   FileSpreadsheet,
   FileText,
@@ -83,6 +86,7 @@ export function StudentCourseLessonView({
   const sectionExam = currentSection?.exam;
 
   const hasLinkedExam = Boolean(lessonExam || sectionExam);
+  const [previewPdf, setPreviewPdf] = useState<{ url: string; title: string } | null>(null);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -315,17 +319,37 @@ export function StudentCourseLessonView({
                           </div>
                         </div>
 
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="sm"
-                          className="gap-1.5 text-xs font-semibold shrink-0 mt-0.5"
-                        >
-                          <a href={file.url} download target="_blank" rel="noopener noreferrer">
-                            <Download className="size-3.5" />
-                            <span>{t("lesson.downloadFile")}</span>
-                          </a>
-                        </Button>
+                        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold"
+                            onClick={() =>
+                              setPreviewPdf({
+                                url: file.url,
+                                title: file.name || file.file_name || "PDF Document",
+                              })
+                            }
+                          >
+                            <Eye className="size-3.5" />
+                            <span>{locale === "ar" ? "معاينة" : "Preview"}</span>
+                          </Button>
+
+                          <Button
+                            asChild
+                            variant="outline"
+                            size="sm"
+                            className="gap-1.5 text-xs font-semibold"
+                          >
+                            <a href={file.url} download target="_blank" rel="noopener noreferrer">
+                              <Download className="size-3.5" />
+                              <span className="sr-only sm:not-sr-only sm:inline">
+                                {t("lesson.downloadFile")}
+                              </span>
+                            </a>
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -496,6 +520,13 @@ export function StudentCourseLessonView({
           )}
         </div>
       </div>
+
+      <PdfPreviewModal
+        isOpen={Boolean(previewPdf)}
+        onClose={() => setPreviewPdf(null)}
+        url={previewPdf?.url || null}
+        title={previewPdf?.title || null}
+      />
     </TooltipProvider>
   );
 }
