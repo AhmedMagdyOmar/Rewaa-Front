@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGradeExamAttempt, useProviderExamAttempt } from "@/hooks/use-exams";
 import { getErrorMessage } from "@/lib/api-utils";
+import { getOptionLetter } from "@/lib/utils";
 import { BackendExamAttemptQuestion } from "@/types/api-contracts";
 
 interface ExamGradingClientProps {
@@ -596,7 +597,8 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                       {/* Options / Choice Selected */}
                       {q.options && q.options.length > 0 && (
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                          {q.options.map((opt) => {
+                          {q.options.map((opt, optIdx) => {
+                            const letter = getOptionLetter(optIdx, locale);
                             const optText = isAr
                               ? opt.text.ar || opt.text.en
                               : opt.text.en || opt.text.ar;
@@ -606,7 +608,7 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                             return (
                               <div
                                 key={opt.id}
-                                className={`text-xs p-2.5 rounded-lg border flex items-center justify-between ${
+                                className={`text-xs p-2.5 rounded-lg border flex items-center justify-between gap-2 ${
                                   isSelected && isAnswerCorrect
                                     ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-700 font-semibold"
                                     : isSelected && !isAnswerCorrect
@@ -616,7 +618,12 @@ export function ExamGradingClient({ examId, attemptId }: ExamGradingClientProps)
                                         : "bg-background border-border/40 text-muted-foreground"
                                 }`}
                               >
-                                <span>{optText}</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <span className="size-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted border border-border/80 text-foreground/80">
+                                    {letter}
+                                  </span>
+                                  <span className="truncate">{optText}</span>
+                                </div>
                                 {isSelected && (
                                   <Badge variant="secondary" className="text-[10px]">
                                     {t("question.studentAnswer").replace(":", "")}

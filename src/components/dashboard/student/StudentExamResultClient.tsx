@@ -2,6 +2,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { getOptionLetter } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -271,12 +272,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     displayAttempt?.status === "pending_review" ||
     (!displayAttempt && exam.result_status === "pending_review");
 
-  const correctCount =
-    displayAttempt?.result_summary?.correct_answers_count ??
-    reviewQuestions.filter((q) => q.is_correct === true).length;
-  const wrongCount =
-    displayAttempt?.result_summary?.incorrect_answers_count ??
-    reviewQuestions.filter((q) => q.is_correct === false).length;
+  const correctCount = isPendingReview
+    ? 0
+    : (displayAttempt?.result_summary?.correct_answers_count ??
+      reviewQuestions.filter((q) => q.is_correct === true).length);
+  const wrongCount = isPendingReview
+    ? 0
+    : (displayAttempt?.result_summary?.incorrect_answers_count ??
+      reviewQuestions.filter((q) => q.is_correct === false).length);
   const totalScore = displayAttempt?.max_score ?? exam.adopted_result?.max_score ?? 100;
   const earnedScore = displayAttempt?.score ?? exam.adopted_result?.score ?? null;
   const percentage = displayAttempt?.percentage ?? exam.adopted_result?.percentage ?? null;
@@ -303,6 +306,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
   // Filtered Questions by Correct / Incorrect
   const filteredQuestions = reviewQuestions.filter((q) => {
+    if (isPendingReview) return true;
     if (filterType === "correct") return q.is_correct === true;
     if (filterType === "incorrect") return q.is_correct === false;
     return true;
@@ -605,51 +609,95 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           </div>
         </DashboardCard>
 
-        {/* Metric 3: Correct Questions Count */}
-        <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("kpi.questionsAccuracy")}
-            </span>
-            <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
-              <CheckCircle2 className="size-4" />
-            </div>
-          </div>
-          <div>
-            <p className="text-2xl font-black text-emerald-600">
-              {correctCount}{" "}
-              <span className="text-sm font-semibold text-muted-foreground">
-                / {reviewQuestions.length}
-              </span>
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {t("kpi.correctCount", { count: correctCount })}
-            </p>
-          </div>
-        </DashboardCard>
+        {isPendingReview ? (
+          <>
+            {/* Metric 3: Pending Review Status */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-amber-500/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isAr ? "حالة التصحيح" : "Grading Status"}
+                </span>
+                <div className="size-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center">
+                  <Clock className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-xl sm:text-2xl font-black text-amber-600">
+                  {t("statusPendingReview")}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {isAr ? "بانتظار مراجعة المعلم" : "Awaiting teacher review"}
+                </p>
+              </div>
+            </DashboardCard>
 
-        {/* Metric 4: Wrong Questions Count */}
-        <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-muted-foreground">
-              {t("filters.incorrect", { count: wrongCount })}
-            </span>
-            <div className="size-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
-              <XCircle className="size-4" />
-            </div>
-          </div>
-          <div>
-            <p className="text-2xl font-black text-rose-600">
-              {wrongCount}{" "}
-              <span className="text-sm font-semibold text-muted-foreground">
-                / {reviewQuestions.length}
-              </span>
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              {t("kpi.wrongCount", { count: wrongCount })}
-            </p>
-          </div>
-        </DashboardCard>
+            {/* Metric 4: Total Questions Under Review */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isAr ? "الأسئلة المسلمة" : "Submitted Questions"}
+                </span>
+                <div className="size-8 rounded-lg bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                  <FileQuestion className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-foreground">{reviewQuestions.length}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {isAr ? "سيتم إعلان النتيجة بعد التصحيح" : "Scores revealed after full grading"}
+                </p>
+              </div>
+            </DashboardCard>
+          </>
+        ) : (
+          <>
+            {/* Metric 3: Correct Questions Count */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("kpi.questionsAccuracy")}
+                </span>
+                <div className="size-8 rounded-lg bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                  <CheckCircle2 className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-emerald-600">
+                  {correctCount}{" "}
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    / {reviewQuestions.length}
+                  </span>
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {t("kpi.correctCount", { count: correctCount })}
+                </p>
+              </div>
+            </DashboardCard>
+
+            {/* Metric 4: Wrong Questions Count */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {t("filters.incorrect", { count: wrongCount })}
+                </span>
+                <div className="size-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
+                  <XCircle className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-rose-600">
+                  {wrongCount}{" "}
+                  <span className="text-sm font-semibold text-muted-foreground">
+                    / {reviewQuestions.length}
+                  </span>
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {t("kpi.wrongCount", { count: wrongCount })}
+                </p>
+              </div>
+            </DashboardCard>
+          </>
+        )}
       </div>
 
       {/* ── 4. Main 2-Column Grid (8 Cols Questions / 4 Cols Sidebar) ─────── */}
@@ -667,41 +715,43 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
 
             {/* Filter Toggle Buttons: All / Correct / Incorrect */}
-            <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">
-              <button
-                type="button"
-                onClick={() => setFilterType("all")}
-                className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
-                  filterType === "all"
-                    ? "bg-primary text-white shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("filters.all", { count: reviewQuestions.length })}
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterType("correct")}
-                className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
-                  filterType === "correct"
-                    ? "bg-emerald-600 text-white shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("filters.correct", { count: correctCount })}
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterType("incorrect")}
-                className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
-                  filterType === "incorrect"
-                    ? "bg-rose-600 text-white shadow-xs font-bold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t("filters.incorrect", { count: wrongCount })}
-              </button>
-            </div>
+            {!isPendingReview && (
+              <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setFilterType("all")}
+                  className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
+                    filterType === "all"
+                      ? "bg-primary text-white shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("filters.all", { count: reviewQuestions.length })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterType("correct")}
+                  className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
+                    filterType === "correct"
+                      ? "bg-emerald-600 text-white shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("filters.correct", { count: correctCount })}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilterType("incorrect")}
+                  className={`px-2.5 py-1.5 rounded-md transition-all cursor-pointer ${
+                    filterType === "incorrect"
+                      ? "bg-rose-600 text-white shadow-xs font-bold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t("filters.incorrect", { count: wrongCount })}
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Questions Stream */}
@@ -713,23 +763,27 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           ) : (
             <div className="space-y-4">
               {filteredQuestions.map((q: BackendStudentAttemptQuestion, index: number) => {
-                const isCorrect = q.is_correct === true;
-                const isIncorrect = q.is_correct === false;
-                const isQuestionPending = q.is_correct === null || q.is_correct === undefined;
+                const isCorrect = !isPendingReview && q.is_correct === true;
+                const isIncorrect = !isPendingReview && q.is_correct === false;
+                const isQuestionPending =
+                  isPendingReview || q.is_correct === null || q.is_correct === undefined;
                 const points = q.score || 5;
                 const earnedPoints = q.awarded_score ?? (isCorrect ? points : 0);
 
                 const questionTitle = getLocalizedString(q.title);
                 const questionBody = getLocalizedString(q.body);
-                const questionExplanation = getLocalizedString(q.explanation);
-                const modelAnswer = getLocalizedString(q.model_answer);
+                const questionExplanation = !isPendingReview
+                  ? getLocalizedString(q.explanation)
+                  : null;
+                const modelAnswer = !isPendingReview ? getLocalizedString(q.model_answer) : null;
 
                 const hasRevealedAnswers =
-                  q.options?.some(
+                  !isPendingReview &&
+                  (q.options?.some(
                     (opt) => opt.is_correct !== null && opt.is_correct !== undefined,
                   ) ||
-                  q.correct_answer !== null ||
-                  Boolean(modelAnswer);
+                    q.correct_answer !== null ||
+                    Boolean(modelAnswer));
 
                 return (
                   <DashboardCard
@@ -815,7 +869,8 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                     {q.type === "multiple_choice" && q.options && q.options.length > 0 && (
                       <div className="space-y-2 pt-2">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {q.options.map((opt) => {
+                          {q.options.map((opt, optIdx) => {
+                            const letter = getOptionLetter(optIdx, locale);
                             const optText = getLocalizedString(opt.text);
                             const isStudentSelection =
                               Number(q.submitted_answer) === Number(opt.id);
@@ -846,18 +901,21 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                                 className={`p-3 rounded-xl border text-xs flex items-center justify-between gap-2 transition-colors ${optionStyle}`}
                               >
                                 <div className="flex items-center gap-2 min-w-0">
+                                  <span className="size-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted border border-border/80 text-foreground/80">
+                                    {letter}
+                                  </span>
                                   {isStudentSelection ? (
                                     isCorrect ? (
                                       <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                     ) : isIncorrect ? (
                                       <XCircle className="size-4 text-rose-600 shrink-0" />
                                     ) : (
-                                      <span className="size-4 rounded-full bg-primary/20 border border-primary shrink-0" />
+                                      <span className="size-3.5 rounded-full bg-primary/20 border border-primary shrink-0" />
                                     )
                                   ) : hasRevealedAnswers && isCorrectOpt ? (
                                     <CheckCircle2 className="size-4 text-emerald-600 shrink-0" />
                                   ) : (
-                                    <span className="size-4 rounded-full border border-muted-foreground/30 shrink-0" />
+                                    <span className="size-3.5 rounded-full border border-muted-foreground/30 shrink-0" />
                                   )}
                                   <span className="truncate">{optText}</span>
                                 </div>

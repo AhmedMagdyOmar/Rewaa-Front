@@ -30,6 +30,7 @@ import { DashboardCard } from "../overview/dashboard-card";
 
 import { useProviderExam } from "@/hooks/use-exams";
 import { mapBackendExamToFrontend } from "@/lib/adapters/exam-adapters";
+import { getOptionLetter } from "@/lib/utils";
 import { QuestionDifficulty, QuestionKind } from "@/types/exam";
 
 interface ExamDetailsClientProps {
@@ -268,21 +269,30 @@ export function ExamDetailsClient({ examId }: ExamDetailsClientProps) {
                           {/* MCQ Options if present */}
                           {q.type === "mcq" && q.options && q.options.length > 0 && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                              {q.options.map((opt) => (
-                                <div
-                                  key={opt.id}
-                                  className={`p-2 rounded-md border text-xs flex items-center gap-2 ${
-                                    opt.id === q.modelAnswer
-                                      ? "bg-green-500/10 border-green-500/30 font-semibold"
-                                      : "bg-muted/30 border-border/40 text-foreground/80"
-                                  }`}
-                                >
-                                  {opt.id === q.modelAnswer && (
-                                    <CheckCircle2 className="size-3.5 text-green-600 shrink-0" />
-                                  )}
-                                  <span>{opt.text}</span>
-                                </div>
-                              ))}
+                              {q.options.map((opt, optIdx) => {
+                                const letter = getOptionLetter(optIdx, locale);
+                                const isCorrect = opt.id === q.modelAnswer;
+                                return (
+                                  <div
+                                    key={opt.id}
+                                    className={`p-2 rounded-md border text-xs flex items-center justify-between gap-2 ${
+                                      isCorrect
+                                        ? "bg-green-500/10 border-green-500/30 font-semibold"
+                                        : "bg-muted/30 border-border/40 text-foreground/80"
+                                    }`}
+                                  >
+                                    <div className="flex items-center gap-2 min-w-0">
+                                      <span className="size-5 rounded-md flex items-center justify-center text-[10px] font-bold shrink-0 bg-muted border border-border/80 text-foreground/80">
+                                        {letter}
+                                      </span>
+                                      <span className="truncate">{opt.text}</span>
+                                    </div>
+                                    {isCorrect && (
+                                      <CheckCircle2 className="size-3.5 text-green-600 shrink-0" />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
 

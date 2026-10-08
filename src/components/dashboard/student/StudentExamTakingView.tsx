@@ -1,6 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
+import { getOptionLetter } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -390,7 +391,7 @@ export function StudentExamTakingView({
                     {currentQ.options.map((opt, optIdx) => {
                       const isSelected =
                         currentAnswer === opt.id || Number(currentAnswer) === opt.id;
-                      const letter = String.fromCharCode(65 + optIdx); // A, B, C, D
+                      const letter = getOptionLetter(optIdx, locale);
                       const optText = getLocalizedString(opt.text);
 
                       return (

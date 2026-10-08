@@ -20,3 +20,46 @@ export const focusRing = [
   // outline color
   "outline-blue-500 dark:outline-blue-500",
 ];
+
+// Arabic Abjad sequence for question multiple choice options
+export const ARABIC_ABJAD_LETTERS = [
+  "أ",
+  "ب",
+  "ج",
+  "د",
+  "هـ",
+  "و",
+  "ز",
+  "ح",
+  "ط",
+  "ي",
+  "ك",
+  "ل",
+  "م",
+  "ن",
+  "س",
+  "ع",
+  "ف",
+  "ص",
+  "ق",
+  "ر",
+  "ش",
+  "ت",
+  "ث",
+  "خ",
+  "ذ",
+  "ض",
+  "ظ",
+  "غ",
+];
+
+/**
+ * Returns the option letter corresponding to the index based on locale.
+ * Uses Arabic Abjad (أ, ب, ج, د...) when locale is "ar", otherwise English alphabet (A, B, C, D...).
+ */
+export function getOptionLetter(index: number, locale: string = "ar"): string {
+  if (locale === "ar") {
+    return ARABIC_ABJAD_LETTERS[index] ?? String(index + 1);
+  }
+  return String.fromCharCode(65 + index); // A, B, C, D...
+}
