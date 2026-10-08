@@ -34,6 +34,21 @@
       "changeImage": "تغيير الصورة",
       "removeImage": "إزالة الصورة",
       "previewAlt": "معاينة الصورة"
+    },
+    "videoPlayer": {
+      "noVideo": "لا يوجد فيديو متاح",
+      "play": "تشغيل",
+      "pause": "إيقاف مؤقت",
+      "playVideo": "تشغيل الفيديو",
+      "seekBackward": "إرجاع {seconds} ثوانٍ",
+      "seekForward": "تقديم {seconds} ثوانٍ",
+      "mute": "كتم الصوت",
+      "unmute": "إلغاء كتم الصوت",
+      "playbackSpeed": "سرعة التشغيل",
+      "normalSpeed": "عادي (1x)",
+      "pip": "صورة داخل صورة",
+      "enterFullscreen": "ملء الشاشة",
+      "exitFullscreen": "الخروج من ملء الشاشة"
     }
   },
   "notFound": {

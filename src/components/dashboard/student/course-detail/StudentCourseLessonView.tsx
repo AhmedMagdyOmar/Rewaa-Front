@@ -3,15 +3,14 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import { BackendCourseContent, BackendStudentLessonDetail } from "@/types/api-contracts";
-import { getEmbedUrl } from "@/lib/video-utils";
 import {
   ArrowLeft,
-  ArrowRight,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -74,7 +73,6 @@ export function StudentCourseLessonView({
   const title = getLocalized(lesson.title, `Lesson ${lesson.position}`);
   const description = getLocalized(lesson.description);
   const isVideoLesson = Boolean(lesson.video_url);
-  const embedUrl = getEmbedUrl(lesson.video_url);
 
   const pdfAttachments = lesson.pdf_attachments || [];
   const explanatoryImages = lesson.explanatory_images || [];
@@ -133,29 +131,16 @@ export function StudentCourseLessonView({
         {isVideoLesson && (
           <div className="space-y-3">
             <div className="relative aspect-video w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-black/95 flex items-center justify-center border border-border/80 shadow-md">
-              {embedUrl ? (
-                <iframe
-                  src={embedUrl}
+              {lesson.video_url ? (
+                <CustomVideoPlayer
+                  url={lesson.video_url}
                   title={title}
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
+                  poster={lesson.explanatory_images?.[0]?.url}
                 />
               ) : (
                 <div className="text-center p-6 space-y-3 text-white">
                   <Video className="size-12 mx-auto text-primary animate-pulse" />
                   <p className="text-sm font-medium">{title}</p>
-                  {lesson.video_url && (
-                    <a
-                      href={lesson.video_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
-                    >
-                      <span>{t("overview.startFirstLesson")}</span>
-                      <ArrowRight className="size-3.5 rtl:rotate-180" />
-                    </a>
-                  )}
                 </div>
               )}
             </div>

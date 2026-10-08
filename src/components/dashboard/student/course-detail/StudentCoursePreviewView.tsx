@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,7 +22,6 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
-import { getEmbedUrl } from "@/lib/video-utils";
 import { StudentRedeemCodeDialog } from "../courses/StudentRedeemCodeDialog";
 
 interface StudentCoursePreviewViewProps {
@@ -74,7 +74,6 @@ export function StudentCoursePreviewView({
   };
 
   const showCover = Boolean(course.cover_image) && !imageError;
-  const embedUrl = getEmbedUrl(course.intro_video_url);
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -217,13 +216,11 @@ export function StudentCoursePreviewView({
             <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/80 shadow-md overflow-hidden p-5 sm:p-6 space-y-6">
               {/* 1. Video Preview or Cover Image */}
               <div className="relative aspect-video w-full rounded-xl sm:rounded-2xl overflow-hidden bg-muted border border-border/60 shadow-xs flex items-center justify-center">
-                {embedUrl ? (
-                  <iframe
-                    src={embedUrl}
+                {course.intro_video_url ? (
+                  <CustomVideoPlayer
+                    url={course.intro_video_url}
                     title={title || "Course Intro Video"}
-                    className="w-full h-full"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
+                    poster={course.cover_image || undefined}
                   />
                 ) : showCover ? (
                   <>

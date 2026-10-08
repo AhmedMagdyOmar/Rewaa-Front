@@ -3,6 +3,7 @@
 import { DashboardCard } from "@/components/dashboard/overview/dashboard-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -28,7 +29,6 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
-import { getEmbedUrl } from "@/lib/video-utils";
 
 interface StudentLessonDetailsClientProps {
   lessonId: string;
@@ -65,9 +65,6 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
   const subjectAndStageText = [subjectName, stageName].filter(Boolean).join(" • ");
 
   const isVideoLesson = lesson?.type === "video_and_text" || lesson?.type === "video";
-  const embedUrl = lesson?.video_url ? getEmbedUrl(lesson.video_url) : null;
-  const isDirectVideo =
-    lesson?.video_url && !embedUrl && /\.(mp4|webm|ogg)$/i.test(lesson.video_url);
 
   const handleToggleCompletion = () => {
     if (!lesson) return;
@@ -218,34 +215,11 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
         {/* Video Player (If video exists) */}
         {isVideoLesson && lesson.video_url && (
           <div className="relative w-full aspect-video bg-black rounded-2xl overflow-hidden shadow-md border border-border/40">
-            {embedUrl ? (
-              <iframe
-                src={embedUrl}
-                title={title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
-            ) : isDirectVideo ? (
-              <video
-                src={lesson.video_url}
-                controls
-                className="w-full h-full"
-                poster={lesson.cover_image || undefined}
-              />
-            ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center text-white/80 space-y-3">
-                <Video className="size-12 text-white/50" />
-                <p className="text-sm font-medium">
-                  {t("viewDetails.videoStreamLink") || "External Video Source"}
-                </p>
-                <Button asChild variant="outline" size="sm" className="rounded-xl text-white">
-                  <a href={lesson.video_url} target="_blank" rel="noopener noreferrer">
-                    {t("viewDetails.openVideoInNewTab") || "Open video in new tab"}
-                  </a>
-                </Button>
-              </div>
-            )}
+            <CustomVideoPlayer
+              url={lesson.video_url}
+              title={title}
+              poster={lesson.cover_image || undefined}
+            />
           </div>
         )}
 

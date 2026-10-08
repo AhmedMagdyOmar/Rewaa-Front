@@ -5,7 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { DashboardCard } from "../overview/dashboard-card";
 import { Course } from "@/types/course";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
-import { getEmbedUrl } from "@/lib/video-utils";
+import { CustomVideoPlayer } from "@/components/ui/custom-video-player";
 
 interface CourseOverviewProps {
   course: Course;
@@ -15,8 +15,6 @@ export function CourseOverview({ course }: CourseOverviewProps) {
   const t = useTranslations("courses");
   const locale = useLocale();
   const isRtl = locale === "ar";
-
-  const embedUrl = getEmbedUrl(course.previewVideoLink);
 
   return (
     <DashboardCard className="p-6 space-y-4">
@@ -35,29 +33,8 @@ export function CourseOverview({ course }: CourseOverviewProps) {
             <Video className="size-4 text-primary" />
             <span>{t("details.previewVideo")}</span>
           </div>
-          <div className="relative aspect-video w-full rounded-md overflow-hidden bg-black/90 flex items-center justify-center border">
-            {embedUrl ? (
-              <iframe
-                src={embedUrl}
-                title={course.title}
-                className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            ) : (
-              <div className="text-center p-6 space-y-3 text-white">
-                <Video className="size-12 mx-auto text-primary animate-pulse" />
-                <p className="text-sm font-medium">{course.title}</p>
-                <a
-                  href={course.previewVideoLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary/90 transition-colors"
-                >
-                  Open External Video
-                </a>
-              </div>
-            )}
+          <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black/90 flex items-center justify-center border border-border/40">
+            <CustomVideoPlayer url={course.previewVideoLink} title={course.title} />
           </div>
         </div>
       )}

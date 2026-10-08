@@ -34,6 +34,21 @@
       "changeImage": "Change Image",
       "removeImage": "Remove image",
       "previewAlt": "Image preview"
+    },
+    "videoPlayer": {
+      "noVideo": "No video available",
+      "play": "Play",
+      "pause": "Pause",
+      "playVideo": "Play video",
+      "seekBackward": "Seek backward {seconds}s",
+      "seekForward": "Seek forward {seconds}s",
+      "mute": "Mute",
+      "unmute": "Unmute",
+      "playbackSpeed": "Playback Speed",
+      "normalSpeed": "Normal (1x)",
+      "pip": "Picture in Picture",
+      "enterFullscreen": "Enter Fullscreen",
+      "exitFullscreen": "Exit Fullscreen"
     }
   },
   "notFound": {
