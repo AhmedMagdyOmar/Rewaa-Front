@@ -8,7 +8,9 @@ export interface UserProfile {
   lastNameAr?: string;
   role?: string;
   roleAr?: string;
-  avatarUrl?: string;
+  avatar_url?: string | null;
+  flag?: string | null;
+  avatarUrl?: string | null;
   isVerified?: boolean;
   emailVerified?: boolean;
   phone?: string | null;

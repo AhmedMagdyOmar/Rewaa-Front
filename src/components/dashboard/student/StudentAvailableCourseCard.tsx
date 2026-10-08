@@ -134,14 +134,27 @@ export function StudentAvailableCourseCard({
 
         {/* Teacher Info */}
         {course.instructor?.full_name && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate">
+          <Link
+            href={`/student-dashboard/teachers/${course.instructor.id}`}
+            className="inline-flex items-center gap-2 text-xs text-muted-foreground mb-3 truncate hover:text-primary transition-colors group/teacher w-fit max-w-full"
+          >
             <div className="relative size-5 rounded-full overflow-hidden bg-primary/10 border border-border/60 shrink-0 flex items-center justify-center">
-              <User className="size-3 text-primary/70" />
+              {course.instructor.avatar ? (
+                <Image
+                  src={course.instructor.avatar}
+                  alt={course.instructor.full_name}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
+              ) : (
+                <User className="size-3 text-primary/70" />
+              )}
             </div>
-            <span className="font-medium truncate text-foreground/80">
+            <span className="font-medium truncate text-foreground/80 group-hover/teacher:text-primary group-hover/teacher:underline">
               {course.instructor.full_name}
             </span>
-          </div>
+          </Link>
         )}
 
         {/* Info Row: Lessons count */}

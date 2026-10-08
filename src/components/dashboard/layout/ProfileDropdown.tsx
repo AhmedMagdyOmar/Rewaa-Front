@@ -70,7 +70,13 @@ export function ProfileDropdown({
   const isStudent = rawRole === "student";
   const profileHref = isStudent ? "/student-dashboard/profile" : "/dashboard/profile";
   const settingsHref = isStudent ? "/student-dashboard/settings" : "/dashboard/settings";
-  const effectiveAvatar = user.avatarUrl;
+  const effectiveAvatar =
+    user.avatar_url ||
+    user.flag ||
+    user.avatarUrl ||
+    storeUser?.avatar_url ||
+    storeUser?.avatarUrl ||
+    null;
 
   return (
     <DropdownMenu>

@@ -45,6 +45,7 @@ export function useUpdateStudentProfileMutation() {
             ...currentUser,
             full_name: updatedProfile.full_name,
             email: updatedProfile.email || currentUser.email,
+            avatar_url: updatedProfile.avatar_url ?? currentUser.avatar_url ?? null,
             avatarUrl: updatedProfile.avatar_url || currentUser.avatarUrl,
           },
           "student",

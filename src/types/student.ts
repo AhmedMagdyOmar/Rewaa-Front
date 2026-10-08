@@ -20,7 +20,9 @@ export interface Student {
   lastName: string;
   additionalName?: string;
   phoneNumber: string;
+  phoneCode?: string;
   parentPhoneNumber: string;
+  guardianPhoneCode?: string;
   gender: Gender;
   email: string;
   image?: string;

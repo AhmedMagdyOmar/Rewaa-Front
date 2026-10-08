@@ -12,6 +12,7 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PhoneInputWithCode, type PhoneCountryOption } from "@/components/ui/phone-input-with-code";
 import {
   Select,
   SelectContent,
@@ -33,7 +34,9 @@ interface StudentProfileFormData {
   fatherName: string;
   familyName: string;
   additionalName: string;
+  phoneCode: string;
   phoneNumber: string;
+  guardianPhoneCode: string;
   parentPhoneNumber: string;
   gender: Gender;
   email: string;
@@ -62,7 +65,9 @@ export function StudentProfileClient() {
     fatherName: "",
     familyName: "",
     additionalName: "",
+    phoneCode: "+20",
     phoneNumber: "",
+    guardianPhoneCode: "+20",
     parentPhoneNumber: "",
     gender: "male",
     email: "",
@@ -83,12 +88,22 @@ export function StudentProfileClient() {
   // Sync state when backend profile loads or is refreshed
   React.useEffect(() => {
     if (profileData) {
-      setFormData({
+      // Find country code from options if not set on profile
+      const matchedCountry = optionsData?.countries?.find(
+        (c) => String(c.id) === String(profileData.country_id),
+      );
+      const fallbackCode = matchedCountry?.country_code || "+20";
+
+      setFormData((prev) => ({
+        ...prev,
         firstName: profileData.first_name || "",
         fatherName: profileData.father_name || "",
         familyName: profileData.family_name || "",
         additionalName: profileData.additional_name || "",
+        phoneCode: profileData.phone_code || prev.phoneCode || fallbackCode,
         phoneNumber: profileData.phone || "",
+        guardianPhoneCode:
+          profileData.guardian_phone_code || prev.guardianPhoneCode || fallbackCode,
         parentPhoneNumber: profileData.guardian_phone || "",
         gender: (profileData.gender as Gender) || "male",
         email: profileData.email || "",
@@ -103,12 +118,29 @@ export function StudentProfileClient() {
         educationalStageId: profileData.educational_stage_id
           ? String(profileData.educational_stage_id)
           : "",
-      });
+      }));
     }
-  }, [profileData]);
+  }, [profileData, optionsData?.countries]);
 
   const handleChange = (field: string, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errorMsg) setErrorMsg(null);
+  };
+
+  const handleCountryChange = (countryId: string) => {
+    const selectedCountry = optionsData?.countries?.find((c) => String(c.id) === String(countryId));
+
+    setFormData((prev) => {
+      const nextCode = selectedCountry?.country_code || prev.phoneCode;
+      return {
+        ...prev,
+        countryId,
+        governorateId: "",
+        phoneCode: nextCode || prev.phoneCode,
+        guardianPhoneCode: nextCode || prev.guardianPhoneCode,
+      };
+    });
+
     if (errorMsg) setErrorMsg(null);
   };
 
@@ -121,7 +153,9 @@ export function StudentProfileClient() {
     if (
       !formData.firstName.trim() ||
       !formData.familyName.trim() ||
+      !formData.phoneCode.trim() ||
       !formData.phoneNumber.trim() ||
+      !formData.guardianPhoneCode.trim() ||
       !formData.parentPhoneNumber.trim() ||
       !formData.email.trim()
     ) {
@@ -142,6 +176,23 @@ export function StudentProfileClient() {
     return true;
   };
 
+  const countryPhoneOptions: PhoneCountryOption[] = React.useMemo(() => {
+    return (
+      optionsData?.countries?.map((c) => {
+        const countryName =
+          typeof c.name === "object"
+            ? c.name[locale as keyof typeof c.name] || Object.values(c.name)[0]
+            : String(c.name);
+        return {
+          id: c.id,
+          name: countryName,
+          country_code: c.country_code,
+          flag: c.flag,
+        };
+      }) || []
+    );
+  }, [optionsData?.countries, locale]);
+
   const isSubmitting = updateProfileMutation.isPending || updatePasswordMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -156,7 +207,9 @@ export function StudentProfileClient() {
         family_name: formData.familyName.trim(),
         additional_name: formData.additionalName.trim(),
         email: formData.email.trim(),
+        phone_code: formData.phoneCode.trim(),
         phone: formData.phoneNumber.trim(),
+        guardian_phone_code: formData.guardianPhoneCode.trim(),
         guardian_phone: formData.parentPhoneNumber.trim(),
         gender: formData.gender,
         country_id: formData.countryId ? Number(formData.countryId) : undefined,
@@ -193,7 +246,7 @@ export function StudentProfileClient() {
 
   if (isProfileLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );
@@ -307,12 +360,14 @@ export function StudentProfileClient() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="phoneNumber">{t("phoneNumberLabel")}</Label>
                 </div>
-                <Input
+                <PhoneInputWithCode
                   id="phoneNumber"
-                  value={formData.phoneNumber}
-                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                  phone={formData.phoneNumber}
+                  phoneCode={formData.phoneCode}
+                  onPhoneChange={(val) => handleChange("phoneNumber", val)}
+                  onPhoneCodeChange={(code) => handleChange("phoneCode", code)}
+                  countries={countryPhoneOptions}
                   required
-                  dir="ltr"
                 />
               </div>
 
@@ -321,12 +376,14 @@ export function StudentProfileClient() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="parentPhoneNumber">{t("parentPhoneNumberLabel")}</Label>
                 </div>
-                <Input
+                <PhoneInputWithCode
                   id="parentPhoneNumber"
-                  value={formData.parentPhoneNumber}
-                  onChange={(e) => handleChange("parentPhoneNumber", e.target.value)}
+                  phone={formData.parentPhoneNumber}
+                  phoneCode={formData.guardianPhoneCode}
+                  onPhoneChange={(val) => handleChange("parentPhoneNumber", val)}
+                  onPhoneCodeChange={(code) => handleChange("guardianPhoneCode", code)}
+                  countries={countryPhoneOptions}
                   required
-                  dir="ltr"
                 />
               </div>
 
@@ -373,13 +430,7 @@ export function StudentProfileClient() {
             {/* Country */}
             <div className="space-y-2">
               <Label htmlFor="countryId">{t("countryLabel")}</Label>
-              <Select
-                value={formData.countryId}
-                onValueChange={(val) => {
-                  handleChange("countryId", val);
-                  handleChange("governorateId", "");
-                }}
-              >
+              <Select value={formData.countryId} onValueChange={(val) => handleCountryChange(val)}>
                 <SelectTrigger id="countryId" className="bg-background">
                   <SelectValue placeholder={t("countryLabel")} />
                 </SelectTrigger>

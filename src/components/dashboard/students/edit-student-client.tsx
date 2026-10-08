@@ -48,6 +48,8 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
     return optionsData.countries.map((c) => ({
       id: c.id,
       name: c.name[locale] || c.name.ar || c.name.en || "",
+      country_code: c.country_code,
+      flag: c.flag,
     }));
   }, [optionsData, locale]);
 
@@ -113,9 +115,9 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
       father_name: data.middleName || undefined,
       family_name: data.lastName,
       additional_name: data.additionalName || undefined,
-      phone_code: "+20",
+      phone_code: data.phoneCode,
       phone: data.phoneNumber,
-      guardian_phone_code: "+20",
+      guardian_phone_code: data.guardianPhoneCode,
       guardian_phone: data.parentPhoneNumber,
       gender: data.gender,
       email: data.email,

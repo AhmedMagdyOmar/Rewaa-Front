@@ -2720,6 +2720,24 @@
       "discoverCourses": "Discover Courses",
       "bgAlt": "Hero background"
     },
+    "teachers": {
+      "title": "Our Teachers",
+      "subtitle": "Learn from expert teachers dedicated to your success",
+      "empty": "No teachers available at the moment.",
+      "scrollPrev": "Previous",
+      "scrollNext": "Next"
+    },
+    "teacherPage": {
+      "backToDashboard": "Back to Dashboard",
+      "backToExplore": "Back to Explore Courses",
+      "aboutTeacher": "About Teacher",
+      "coursesTitle": "Teacher's Courses",
+      "coursesSubtitle": "Explore and enroll in courses instructed by this teacher",
+      "totalCourses": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
+      "noBio": "No biography available for this teacher yet.",
+      "teacherNotFound": "Teacher not found or currently unavailable.",
+      "noCourses": "No available courses found for this teacher."
+    },
     "overview": {
       "title": "General Overview",
       "subtitle": "Track your learning progress, overall performance, and account statistics",
@@ -3095,6 +3113,18 @@
       "totalAvailable": "{count, plural, =0 {No courses} one {1 course} other {{count} courses}}",
       "searchPlaceholder": "Search by course, subject, grade, or teacher...",
       "clearFilters": "Clear Filters",
+      "filters": {
+        "allGrades": "All Educational Stages",
+        "allSubjects": "All Subjects",
+        "allClassifications": "All Classifications",
+        "gradeLabel": "Grade / Stage",
+        "subjectLabel": "Subject",
+        "classificationLabel": "Classification",
+        "generalClassification": "General",
+        "revisionClassification": "Revisions",
+        "secondaryClassification": "Secondary",
+        "preparatoryClassification": "Preparatory"
+      },
       "enrollButton": "Enroll Now",
       "lessonCount": "{count, plural, =0 {No lessons} one {1 lesson} other {{count} lessons}}",
       "duration": {

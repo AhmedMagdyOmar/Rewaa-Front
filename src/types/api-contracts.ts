@@ -994,6 +994,8 @@ export interface StudentsListResponse {
 export interface BackendStudentOptions {
   countries: Array<{
     id: number;
+    country_code?: string | null;
+    flag?: string | null;
     name: Record<string, string>;
   }>;
   governorates: Array<{
@@ -1491,9 +1493,11 @@ export interface AvailableCourse {
   title: Record<string, string>; // { ar: "...", en: "..." }
   description: Record<string, string>;
   cover_image: string | null;
+  category?: string | null;
+  category_label?: string | null;
   educational_stage: { id: number; name: Record<string, string> } | null;
   subject: { id: number; name: Record<string, string> } | null;
-  instructor: { id: number; full_name: string } | null;
+  instructor: { id: number; full_name: string; avatar?: string | null } | null;
   is_free: boolean;
   base_price: number;
   currency_code: string;
@@ -1514,9 +1518,10 @@ export interface AvailableCourse {
 export interface ExploreCoursesFilterParams {
   search?: string;
   sort?: string;
-  educational_stage_id?: number;
-  subject_id?: number;
-  instructor_id?: number;
+  educational_stage_id?: number | string;
+  subject_id?: number | string;
+  instructor_id?: number | string;
+  category?: string;
   page?: number;
   per_page?: number;
 }

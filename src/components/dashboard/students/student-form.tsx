@@ -12,6 +12,7 @@ import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CountrySelect, GovernorateSelect, LocationOption } from "@/components/ui/location-selects";
+import { PhoneInputWithCode } from "@/components/ui/phone-input-with-code";
 import {
   Select,
   SelectContent,
@@ -27,7 +28,9 @@ export interface StudentFormData {
   lastName: string;
   additionalName: string;
   phoneNumber: string;
+  phoneCode: string;
   parentPhoneNumber: string;
+  guardianPhoneCode: string;
   gender: Gender;
   email: string;
   image?: string;
@@ -103,13 +106,20 @@ export function StudentForm({
       initialState = match ? String(match.id) : initialData.state;
     }
 
+    const matchedInitialCountry = countries.find((c) => String(c.id) === String(initialCountry));
+    const initialPhoneCode = initialData?.phoneCode || matchedInitialCountry?.country_code || "+20";
+    const initialGuardianPhoneCode =
+      initialData?.guardianPhoneCode || matchedInitialCountry?.country_code || "+20";
+
     return {
       firstName: initialData?.firstName || "",
       middleName: initialData?.middleName || "",
       lastName: initialData?.lastName || "",
       additionalName: initialData?.additionalName || "",
       phoneNumber: initialData?.phoneNumber || "",
+      phoneCode: initialPhoneCode,
       parentPhoneNumber: initialData?.parentPhoneNumber || "",
+      guardianPhoneCode: initialGuardianPhoneCode,
       gender: initialData?.gender || "male",
       email: initialData?.email || "",
       image: initialData?.image || "",
@@ -145,13 +155,19 @@ export function StudentForm({
         initialState = match ? String(match.id) : initialData.state;
       }
 
-      setFormData({
+      const matchedCountry = countries.find((c) => String(c.id) === String(initialCountry));
+      const fallbackCode = matchedCountry?.country_code || "+20";
+
+      setFormData((prev) => ({
+        ...prev,
         firstName: initialData.firstName || "",
         middleName: initialData.middleName || "",
         lastName: initialData.lastName || "",
         additionalName: initialData.additionalName || "",
         phoneNumber: initialData.phoneNumber || "",
+        phoneCode: initialData.phoneCode || prev.phoneCode || fallbackCode,
         parentPhoneNumber: initialData.parentPhoneNumber || "",
+        guardianPhoneCode: initialData.guardianPhoneCode || prev.guardianPhoneCode || fallbackCode,
         gender: initialData.gender || "male",
         email: initialData.email || "",
         image: initialData.image || "",
@@ -162,13 +178,19 @@ export function StudentForm({
         grade: initialData.educationalStageId
           ? String(initialData.educationalStageId)
           : initialData.grade || "",
-      });
+      }));
     } else if (countries.length > 0) {
       setFormData((prev) => {
         if (!prev.country) {
+          const defaultCountryId = getDefaultCountryId(countries);
+          const defaultCountry = countries.find((c) => String(c.id) === String(defaultCountryId));
+          const defaultCode = defaultCountry?.country_code || "+20";
+
           return {
             ...prev,
-            country: getDefaultCountryId(countries),
+            country: defaultCountryId,
+            phoneCode: defaultCode,
+            guardianPhoneCode: defaultCode,
           };
         }
         return prev;
@@ -181,10 +203,15 @@ export function StudentForm({
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
   const handleCountryChange = (newCountryId: string) => {
+    const selectedCountry = countries.find((c) => String(c.id) === String(newCountryId));
+    const nextCode = selectedCountry?.country_code;
+
     setFormData((prev) => ({
       ...prev,
       country: newCountryId,
       state: "", // Reset state when country changes
+      phoneCode: nextCode || prev.phoneCode,
+      guardianPhoneCode: nextCode || prev.guardianPhoneCode,
     }));
     if (errorMsg) setErrorMsg(null);
   };
@@ -198,7 +225,9 @@ export function StudentForm({
     if (
       !formData.firstName.trim() ||
       !formData.lastName.trim() ||
+      !formData.phoneCode.trim() ||
       !formData.phoneNumber.trim() ||
+      !formData.guardianPhoneCode.trim() ||
       !formData.parentPhoneNumber.trim() ||
       !formData.email.trim() ||
       !formData.country.trim() ||
@@ -322,26 +351,30 @@ export function StudentForm({
             {/* Student Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">{tForm("phoneNumberLabel")}</Label>
-              <Input
+              <PhoneInputWithCode
                 id="phoneNumber"
+                phone={formData.phoneNumber}
+                phoneCode={formData.phoneCode}
+                onPhoneChange={(val) => handleChange("phoneNumber", val)}
+                onPhoneCodeChange={(code) => handleChange("phoneCode", code)}
+                countries={countries}
                 placeholder={tForm("phoneNumberPlaceholder")}
-                value={formData.phoneNumber}
-                onChange={(e) => handleChange("phoneNumber", e.target.value)}
                 required
-                dir="ltr"
               />
             </div>
 
             {/* Parent Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="parentPhoneNumber">{tForm("parentPhoneNumberLabel")}</Label>
-              <Input
+              <PhoneInputWithCode
                 id="parentPhoneNumber"
+                phone={formData.parentPhoneNumber}
+                phoneCode={formData.guardianPhoneCode}
+                onPhoneChange={(val) => handleChange("parentPhoneNumber", val)}
+                onPhoneCodeChange={(code) => handleChange("guardianPhoneCode", code)}
+                countries={countries}
                 placeholder={tForm("parentPhoneNumberPlaceholder")}
-                value={formData.parentPhoneNumber}
-                onChange={(e) => handleChange("parentPhoneNumber", e.target.value)}
                 required
-                dir="ltr"
               />
             </div>
 

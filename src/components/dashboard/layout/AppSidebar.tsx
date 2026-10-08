@@ -87,6 +87,7 @@ export function AppSidebar({
     queryUser != null
       ? {
           ...queryUser,
+          avatar_url: queryUser.avatar_url ?? queryUser.flag ?? storeUser?.avatar_url ?? null,
           user_type: queryUser.user_type ?? storeUser?.user_type ?? null,
           role: resolvedRole,
         }
@@ -97,6 +98,7 @@ export function AppSidebar({
             firstName: resolvedFullName.split(" ")[0] ?? "",
             lastName: resolvedFullName.split(" ").slice(1).join(" ") ?? "",
             full_name: storeUser.full_name,
+            avatar_url: storeUser.avatar_url ?? storeUser.avatarUrl ?? null,
             user_type: storeUser.user_type ?? null,
             role: resolvedRole,
             isVerified: true,

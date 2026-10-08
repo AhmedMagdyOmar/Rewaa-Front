@@ -11,12 +11,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useExploreCourses } from "@/hooks/use-explore-courses";
 import { Link } from "@/i18n/routing";
 import { ArrowLeft, BookOpen, KeyRound } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 import { StudentRedeemCodeDialog } from "./courses/StudentRedeemCodeDialog";
 
 export function StudentExploreCoursesClient() {
+  const locale = useLocale();
   const t = useTranslations("studentDashboard.exploreCoursesPage");
 
   const router = useRouter();
@@ -43,6 +44,9 @@ export function StudentExploreCoursesClient() {
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
   const sortBy = searchParams.get("sort") || defaultSort;
+  const gradeFilter = searchParams.get("grade") || null;
+  const subjectFilter = searchParams.get("subject") || null;
+  const categoryFilter = searchParams.get("category") || null;
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
   const updateUrlParams = React.useCallback(
@@ -52,6 +56,7 @@ export function StudentExploreCoursesClient() {
         if (
           value === null ||
           value === "" ||
+          value === "all" ||
           (key === "sort" && value === defaultSort) ||
           (key === "page" && value === 1)
         ) {
@@ -70,17 +75,51 @@ export function StudentExploreCoursesClient() {
   const { data, isLoading } = useExploreCourses({
     search: searchQuery || undefined,
     sort: sortBy || undefined,
+    educational_stage_id: gradeFilter ? Number(gradeFilter) : undefined,
+    subject_id: subjectFilter ? Number(subjectFilter) : undefined,
+    category: categoryFilter || undefined,
     page: currentPage,
     per_page: itemsPerPage,
   });
 
-  const courses = data?.courses || [];
+  const courses = React.useMemo(() => data?.courses ?? [], [data?.courses]);
   const pagination = data?.pagination;
   const totalItems = pagination?.total ?? courses.length;
   const totalPages = (pagination?.last_page ?? Math.ceil(totalItems / itemsPerPage)) || 1;
 
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = (safePage - 1) * itemsPerPage;
+
+  // Derive available filter options dynamically from current courses / metadata
+  const gradeOptions = React.useMemo(() => {
+    const map = new Map<string | number, string>();
+    courses.forEach((c) => {
+      if (c.educational_stage) {
+        const name =
+          c.educational_stage.name?.[locale] ??
+          c.educational_stage.name?.ar ??
+          c.educational_stage.name?.en ??
+          `Grade ${c.educational_stage.id}`;
+        map.set(c.educational_stage.id, name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [courses, locale]);
+
+  const subjectOptions = React.useMemo(() => {
+    const map = new Map<string | number, string>();
+    courses.forEach((c) => {
+      if (c.subject) {
+        const name =
+          c.subject.name?.[locale] ??
+          c.subject.name?.ar ??
+          c.subject.name?.en ??
+          `Subject ${c.subject.id}`;
+        map.set(c.subject.id, name);
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [courses, locale]);
 
   // Handlers
   const handleSearchChange = (search: string) => {
@@ -91,12 +130,31 @@ export function StudentExploreCoursesClient() {
     updateUrlParams({ sort, page: 1 });
   };
 
+  const handleGradeChange = (grade: string | null) => {
+    updateUrlParams({ grade, page: 1 });
+  };
+
+  const handleSubjectChange = (subject: string | null) => {
+    updateUrlParams({ subject, page: 1 });
+  };
+
+  const handleCategoryChange = (category: string | null) => {
+    updateUrlParams({ category, page: 1 });
+  };
+
   const handlePageChange = (page: number) => {
     updateUrlParams({ page });
   };
 
   const handleResetFilters = () => {
-    updateUrlParams({ search: null, sort: null, page: 1 });
+    updateUrlParams({
+      search: null,
+      sort: null,
+      grade: null,
+      subject: null,
+      category: null,
+      page: 1,
+    });
   };
 
   const showingText = t("pagination.showing", {
@@ -171,8 +229,16 @@ export function StudentExploreCoursesClient() {
         sortBy={sortBy}
         sortOptions={sortOptions}
         defaultSort={defaultSort}
+        selectedGradeId={gradeFilter}
+        selectedSubjectId={subjectFilter}
+        selectedCategory={categoryFilter}
+        grades={gradeOptions}
+        subjects={subjectOptions}
         onSearchChange={handleSearchChange}
         onSortChange={handleSortChange}
+        onGradeChange={handleGradeChange}
+        onSubjectChange={handleSubjectChange}
+        onCategoryChange={handleCategoryChange}
         onResetFilters={handleResetFilters}
       />
 

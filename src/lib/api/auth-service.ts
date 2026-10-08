@@ -41,6 +41,7 @@ export interface StudentLoginResponse {
     phone_code?: string;
     status?: string;
     courses_count?: number;
+    avatar_url?: string | null;
   };
   access_token: string;
   token_type: string;
@@ -135,6 +136,8 @@ export const authService = {
           full_name: s.full_name,
           email: s.email,
           role: "student",
+          avatar_url: s.avatar_url ?? null,
+          avatarUrl: s.avatar_url ?? null,
         },
         "student",
       );

@@ -107,8 +107,10 @@ export const studentProfileService = {
           if (value === undefined || value === null) return;
           if (key === "avatar" && value instanceof File) {
             formData.append("avatar", value);
-          } else if (key === "remove_avatar" && value) {
-            formData.append("remove_avatar", "1");
+          } else if (key === "remove_avatar") {
+            if (value) {
+              formData.append("remove_avatar", "1");
+            }
           } else {
             formData.append(key, String(value));
           }

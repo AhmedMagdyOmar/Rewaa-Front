@@ -119,6 +119,9 @@ export const queryKeys = {
     myCourses: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.all, "myCourses", filters ?? {}] as const,
     myCoursesOptions: () => [...queryKeys.student.all, "myCourses", "options"] as const,
+    teachers: () => [...queryKeys.student.all, "teachers"] as const,
+    teacher: (teacherId: number | string) =>
+      [...queryKeys.student.all, "teacher", teacherId] as const,
     exploreCourses: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.all, "exploreCourses", filters ?? {}] as const,
 

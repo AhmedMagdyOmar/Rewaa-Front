@@ -21,6 +21,8 @@ export interface LocationOption {
   id: number | string;
   name: string;
   countryId?: number | string;
+  country_code?: string | null;
+  flag?: string | null;
 }
 
 interface LocationSelectProps {
