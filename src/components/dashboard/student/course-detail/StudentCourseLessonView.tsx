@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -9,7 +8,7 @@ import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { PdfPreviewModal } from "@/components/ui/pdf-preview-modal";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
 import { BackendCourseContent, BackendStudentLessonDetail } from "@/types/api-contracts";
 import {
   ArrowLeft,
@@ -28,6 +27,8 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface StudentCourseLessonViewProps {
   lesson: BackendStudentLessonDetail;
@@ -66,6 +67,7 @@ export function StudentCourseLessonView({
 }: StudentCourseLessonViewProps) {
   const t = useTranslations("studentDashboard.courseDetails");
   const locale = useLocale();
+  const router = useRouter();
   const isRtl = locale === "ar";
 
   const getLocalized = (val?: Record<string, string> | null, fallback = "") => {
@@ -431,13 +433,21 @@ export function StudentCourseLessonView({
                       </div>
 
                       <Button
-                        asChild
-                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center"
+                        type="button"
+                        className="bg-amber-600 hover:bg-amber-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center cursor-pointer"
+                        onClick={() => {
+                          if (!isCompleted) {
+                            toast.error(
+                              t("lesson.videoNotFinished") ||
+                                "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
+                            );
+                            return;
+                          }
+                          router.push(`/student-dashboard/exams/${lessonExam.id}`);
+                        }}
                       >
-                        <Link href={`/student-dashboard/exams/${lessonExam.id}`}>
-                          <span>{t("lesson.takeLinkedExam")}</span>
-                          <FileCheck className="size-4 rtl:rotate-180" />
-                        </Link>
+                        <span>{t("lesson.takeLinkedExam")}</span>
+                        <FileCheck className="size-4 rtl:rotate-180" />
                       </Button>
                     </div>
                   )}
@@ -459,13 +469,24 @@ export function StudentCourseLessonView({
                       </div>
 
                       <Button
-                        asChild
-                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center"
+                        type="button"
+                        className="bg-blue-600 hover:bg-blue-700 text-white font-bold gap-2 shadow-xs shrink-0 self-end sm:self-center cursor-pointer"
+                        onClick={() => {
+                          const sectionIncomplete = currentSection?.lessons?.some(
+                            (l) => !l.is_completed,
+                          );
+                          if (sectionIncomplete) {
+                            toast.error(
+                              t("lesson.videoNotFinished") ||
+                                "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
+                            );
+                            return;
+                          }
+                          router.push(`/student-dashboard/exams/${sectionExam.id}`);
+                        }}
                       >
-                        <Link href={`/student-dashboard/exams/${sectionExam.id}`}>
-                          <span>{t("lesson.takeLinkedExam")}</span>
-                          <FileCheck className="size-4 rtl:rotate-180" />
-                        </Link>
+                        <span>{t("lesson.takeLinkedExam")}</span>
+                        <FileCheck className="size-4 rtl:rotate-180" />
                       </Button>
                     </div>
                   )}

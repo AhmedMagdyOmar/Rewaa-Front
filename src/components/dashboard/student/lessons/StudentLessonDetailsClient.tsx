@@ -14,8 +14,9 @@ import {
   useStudentStandaloneLessonDetail,
   useToggleStandaloneLessonCompletion,
 } from "@/hooks/use-student-lesson";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   ArrowLeft,
   ArrowRight,
@@ -47,6 +48,7 @@ function formatFileSize(bytes: number): string {
 
 export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsClientProps) {
   const locale = useLocale();
+  const router = useRouter();
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.lessonsPage");
 
@@ -389,11 +391,23 @@ export function StudentLessonDetailsClient({ lessonId }: StudentLessonDetailsCli
                       }) || `Passing score requirement: ${linkedExam.passing_percentage}%`}
                     </p>
                   </div>
-                  <Button asChild size="sm" className="rounded-xl text-xs gap-1.5 font-semibold">
-                    <Link href={`/student-dashboard/exams/${linkedExam.id}`}>
-                      <FileSpreadsheet className="size-3.5" />
-                      <span>{t("viewDetails.takeExam") || "Take Exam"}</span>
-                    </Link>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="rounded-xl text-xs gap-1.5 font-semibold cursor-pointer"
+                    onClick={() => {
+                      if (!lesson.is_completed) {
+                        toast.error(
+                          t("viewDetails.videoNotFinished") ||
+                            "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
+                        );
+                        return;
+                      }
+                      router.push(`/student-dashboard/exams/${linkedExam.id}`);
+                    }}
+                  >
+                    <FileSpreadsheet className="size-3.5" />
+                    <span>{t("viewDetails.takeExam") || "Take Exam"}</span>
                   </Button>
                 </div>
               </TabsContent>

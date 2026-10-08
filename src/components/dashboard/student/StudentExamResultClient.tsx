@@ -45,6 +45,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
+import { toast } from "sonner";
 import { DashboardCard } from "../overview/dashboard-card";
 import { StudentExamIntroView } from "./StudentExamIntroView";
 import { StudentExamTakingView } from "./StudentExamTakingView";
@@ -128,8 +129,19 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
       });
       setActiveAttemptId(resp.id);
       setActiveMode("taking");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to start exam attempt", err);
+      const apiErr = err as {
+        response?: { data?: { message?: string } };
+        message?: string;
+      };
+      const errorMessage =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        (locale === "ar"
+          ? "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان"
+          : "You must finish watching the video first to be able to enter the exam.");
+      toast.error(errorMessage);
     }
   };
 

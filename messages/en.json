@@ -2830,6 +2830,7 @@
         "download": "Download",
         "viewFullImage": "View full image",
         "takeExam": "Take Exam",
+        "videoNotFinished": "You must finish watching the video first to be able to enter the exam.",
         "examRequirementText": "Passing score requirement: {percent}%",
         "tabs": {
           "overview": "Lesson Content",
@@ -3141,6 +3142,7 @@
         "downloadFile": "Download",
         "fileSize": "{size}",
         "takeLinkedExam": "Go to Linked Exam",
+        "videoNotFinished": "You must finish watching the video first to be able to enter the exam.",
         "linkedExam": "Linked Exam",
         "nextLesson": "Next Lesson",
         "previousLesson": "Previous Lesson",

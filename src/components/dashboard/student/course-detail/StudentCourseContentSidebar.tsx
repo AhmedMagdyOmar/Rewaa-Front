@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Link } from "@/i18n/routing";
+import { useRouter } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import {
   BackendCourseContent,
@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import React from "react";
+import { toast } from "sonner";
 
 interface StudentCourseContentSidebarProps {
   content: BackendCourseContent;
@@ -58,6 +59,7 @@ export function StudentCourseContentSidebar({
   className,
 }: StudentCourseContentSidebarProps) {
   const locale = useLocale();
+  const router = useRouter();
   const t = useTranslations("studentDashboard.courseDetails");
 
   const sections = React.useMemo(() => content.sections || [], [content.sections]);
@@ -430,10 +432,27 @@ export function StudentCourseContentSidebar({
                         <div className="pt-1.5">
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <Link
-                                href={`/student-dashboard/exams/${sectionExam.id}`}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (isSectionLocked) {
+                                    onAttemptLockedLesson?.(section, sectionExam);
+                                    return;
+                                  }
+                                  const hasIncompleteLessons = sectionLessons.some(
+                                    (l) => !l.is_completed,
+                                  );
+                                  if (hasIncompleteLessons) {
+                                    toast.error(
+                                      t("lesson.videoNotFinished") ||
+                                        "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
+                                    );
+                                    return;
+                                  }
+                                  router.push(`/student-dashboard/exams/${sectionExam.id}`);
+                                }}
                                 className={cn(
-                                  "flex items-start justify-between p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-colors min-w-0 gap-2",
+                                  "w-full text-start flex items-start justify-between p-3 rounded-xl border text-xs sm:text-sm font-semibold transition-colors min-w-0 gap-2 cursor-pointer",
                                   isCurrentExamPassed
                                     ? "bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/30 text-emerald-800"
                                     : "bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-800",
@@ -462,7 +481,7 @@ export function StudentCourseContentSidebar({
                                     </Badge>
                                   )}
                                 </div>
-                              </Link>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" className="max-w-xs text-xs">
                               {sectionExamTitle}

@@ -2831,6 +2831,7 @@
         "download": "تحميل",
         "viewFullImage": "عرض الصورة كاملة",
         "takeExam": "بدء الاختبار",
+        "videoNotFinished": "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
         "examRequirementText": "نسبة النجاح المطلوبة: {percent}%",
         "tabs": {
           "overview": "محتوى الدرس",
@@ -3142,6 +3143,7 @@
         "downloadFile": "تحميل الملف",
         "fileSize": "{size}",
         "takeLinkedExam": "الانتقال للاختبار المرتبط",
+        "videoNotFinished": "ينبغي إنهاء مشاهدة الفيديو أولاً لتتمكن من دخول الامتحان",
         "linkedExam": "الاختبارات",
         "nextLesson": "الدرس التالي",
         "previousLesson": "الدرس السابق",
