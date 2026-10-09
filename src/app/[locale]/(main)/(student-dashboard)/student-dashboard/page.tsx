@@ -1,6 +1,7 @@
 "use client";
 
 import { StudentEnrolledCourses } from "@/components/dashboard/student/StudentEnrolledCourses";
+import { StudentGeneralOverview } from "@/components/dashboard/student/StudentGeneralOverview";
 import { StudentHeroCover } from "@/components/dashboard/student/StudentHeroCover";
 import { StudentHeroProfile } from "@/components/dashboard/student/StudentHeroProfile";
 import { StudentLatestCourses } from "@/components/dashboard/student/StudentLatestCourses";
@@ -22,10 +23,13 @@ export default function StudentDashboardPage() {
       {/* 3. Teachers Carousel Section */}
       <StudentTeachersSection />
 
-      {/* 4. Enrolled Courses */}
+      {/* 4. General Overview */}
+      <StudentGeneralOverview />
+
+      {/* 5. Enrolled Courses */}
       <StudentEnrolledCourses />
 
-      {/* 5. Explore / Latest Courses */}
+      {/* 6. Explore / Latest Courses */}
       <StudentLatestCourses />
     </div>
   );

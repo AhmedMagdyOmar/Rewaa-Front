@@ -167,11 +167,11 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
     courses.length === 0;
 
   // Teacher name initials
-  const nameParts = teacher?.name?.trim().split(/\s+/) || [];
+  const nameParts = teacher?.full_name?.trim().split(/\s+/).filter(Boolean) || [];
   const initials =
     nameParts.length >= 2
       ? `${nameParts[0].charAt(0)}${nameParts[1].charAt(0)}`
-      : teacher?.name?.slice(0, 2) || "";
+      : teacher?.full_name?.slice(0, 2) || "";
 
   return (
     <div className="space-y-8 w-full max-w-7xl mx-auto pb-10">
@@ -187,7 +187,7 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-              {teacher?.name || t("coursesTitle")}
+              {teacher?.full_name || t("coursesTitle")}
             </h1>
             <p className="text-xs sm:text-sm text-muted-foreground">{t("coursesSubtitle")}</p>
           </div>
@@ -241,7 +241,7 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
             ) : teacher?.avatar ? (
               <Image
                 src={teacher.avatar}
-                alt={teacher.name}
+                alt={teacher.full_name}
                 fill
                 sizes="160px"
                 className="object-cover"
@@ -265,7 +265,7 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
               <Skeleton className="h-8 w-48 mx-auto" />
             ) : teacher ? (
               <h2 className="text-2xl sm:text-3xl font-extrabold text-foreground tracking-tight">
-                {teacher.name}
+                {teacher.full_name}
               </h2>
             ) : null}
           </div>

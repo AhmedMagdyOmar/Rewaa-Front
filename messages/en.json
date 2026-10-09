@@ -2724,6 +2724,8 @@
       "title": "Our Teachers",
       "subtitle": "Learn from expert teachers dedicated to your success",
       "empty": "No teachers available at the moment.",
+      "emptyDescription": "Explore our available courses to discover experienced instructors and start learning.",
+      "exploreCourses": "Explore Courses",
       "scrollPrev": "Previous",
       "scrollNext": "Next"
     },

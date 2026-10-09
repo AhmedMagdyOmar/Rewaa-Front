@@ -2,11 +2,13 @@ import { api } from "@/lib/apiClient";
 
 export interface StudentTeacher {
   id: number | string;
-  name: string;
+  provider_id?: number | string;
+  full_name: string;
   avatar: string | null;
   bio?: string | null;
   subject: string | null;
   subjects?: string[];
+  courses_count?: number;
 }
 
 export interface StudentTeachersResponse {

@@ -6,6 +6,10 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 Do NOT run builds after every single change, only after big changes. For small changes, just run type-check and lint and any tests that are available.
 
+## Package Manager
+
+- This frontend repository strictly uses `pnpm` (not `npm` or `yarn`). Run scripts and tests via `pnpm` (e.g., `pnpm exec tsc --noEmit`, `pnpm test`).
+
 <!-- END:nextjs-agent-rules -->
 
 ## Arabic Pluralization Guidelines (جمع القلة وجمع الكثرة والتمييز)
