@@ -2715,9 +2715,12 @@
     "hero": {
       "welcome": "Welcome, {name}",
       "defaultStudentName": "Student",
-      "description": "Continue your learning journey and discover new lessons to grow today. You've made great progress this week!",
+      "description": "You're on the right track — study smarter, not harder",
+      "heading": "With you... all the way to your dream college",
+      "subheading": "Review + Solve = Top Scores",
+      "exams": "Exams",
       "contactUs": "Contact Us",
-      "discoverCourses": "Discover Courses",
+      "discoverCourses": "Explore Courses",
       "bgAlt": "Hero background"
     },
     "teachers": {

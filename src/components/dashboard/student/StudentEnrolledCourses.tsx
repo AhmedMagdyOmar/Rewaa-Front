@@ -48,30 +48,27 @@ export function StudentEnrolledCourses({ courses: propCourses }: StudentEnrolled
 
       {/* Courses List */}
       {isApiLoading && !propCourses ? (
-        <div className="grid grid-cols-1 gap-4">
-          {Array.from({ length: 2 }).map((_, idx) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, idx) => (
             <div
               key={idx}
-              className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 p-4 sm:p-5 rounded-2xl bg-card border border-border/60"
+              className="flex flex-col rounded-xl bg-card border border-border/60 overflow-hidden p-4 space-y-3"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
-                <Skeleton className="aspect-video sm:aspect-4/3 w-full sm:w-36 md:w-44 h-auto sm:h-28 rounded-xl" />
-                <div className="space-y-3 flex-1 w-full">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-3 w-full max-w-md" />
-                </div>
-              </div>
-              <Skeleton className="h-10 w-28 rounded-xl self-end md:self-center" />
+              <Skeleton className="aspect-video w-full rounded-lg" />
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="h-2 w-full mt-4" />
+              <Skeleton className="h-9 w-full rounded-lg mt-2" />
             </div>
           ))}
         </div>
       ) : hasCourses ? (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {apiCourses!.map((course, idx) => (
             <StudentEnrolledCourseCard
               key={course.course_id ?? course.enrollment_id ?? course.id ?? `course-${idx}`}
               course={course}
+              layout="grid"
             />
           ))}
         </div>

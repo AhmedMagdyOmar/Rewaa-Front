@@ -51,7 +51,6 @@ export function DashboardNavbar({
 }: DashboardNavbarProps = {}) {
   const pathname = usePathname();
   const t = useTranslations("nav");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const { toggleSidebar } = useSidebar();
 
@@ -143,7 +142,7 @@ export function DashboardNavbar({
             href={primaryHref}
             className="flex items-center text-primary hover:text-primary/90 transition-colors"
           >
-            <Logo brandName={tCommon("brandName")} brandNameClassName="text-inherit" />
+            <Logo />
           </Link>
           <Separator className="max-md:hidden h-8 my-auto" orientation="vertical" />
 

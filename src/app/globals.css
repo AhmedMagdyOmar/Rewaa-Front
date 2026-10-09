@@ -57,6 +57,8 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-amber-cta: var(--amber-cta);
+  --color-amber-cta-foreground: var(--amber-cta-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -97,6 +99,8 @@
   --border: #e5e5e5;
   --input: #e5e5e5;
   --ring: #007fff;
+  --amber-cta: #ffc703;
+  --amber-cta-foreground: #6e5400;
   --chart-1: #007fff;
   --chart-1-foreground: #ffffff;
   --chart-2: #0061a4;

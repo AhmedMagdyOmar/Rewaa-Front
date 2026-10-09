@@ -143,7 +143,7 @@ export function StudentReportView({
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-bold">
-              <LogoIcon width={24} height={28} />
+              <LogoIcon width={36} height={36} />
             </div>
             <div>
               <h2 className="text-xl font-black tracking-tight text-foreground">رواء | Rewaa</h2>

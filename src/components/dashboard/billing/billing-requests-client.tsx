@@ -153,6 +153,58 @@ export function BillingRequestsClient() {
   } | null>(null);
   const [isInvoiceModalOpen, setIsInvoiceModalOpen] = useState(false);
 
+  const handleViewInvoice = (payment: BackendPayment) => {
+    const studentName =
+      payment.full_name ||
+      payment.student?.full_name ||
+      [payment.student?.first_name, payment.student?.father_name, payment.student?.family_name]
+        .filter(Boolean)
+        .join(" ") ||
+      "Student";
+
+    const primaryItem = payment.order?.items?.[0];
+    const courseTitle =
+      primaryItem?.course_title?.[locale] ||
+      primaryItem?.course_title?.ar ||
+      primaryItem?.course_title?.en ||
+      payment.order?.order_number ||
+      "Course Subscription";
+
+    const studentPhone = payment.submitted_phone || payment.phone || payment.student?.phone || "";
+
+    const studentGrade =
+      primaryItem?.educational_stage_name?.[locale] ||
+      primaryItem?.educational_stage_name?.ar ||
+      payment.student?.educational_stage?.name?.[locale] ||
+      payment.student?.educational_stage?.name?.ar ||
+      "-";
+
+    const studentObj: Student = {
+      id: String(payment.student_id || payment.student?.id || payment.id),
+      firstName: studentName,
+      lastName: "",
+      phoneNumber: studentPhone,
+      parentPhoneNumber: studentPhone,
+      gender: "male",
+      email: payment.email || payment.student?.email || "student@example.com",
+      country: locale === "ar" ? "مصر" : "Egypt",
+      state: locale === "ar" ? "القاهرة" : "Cairo",
+      grade: studentGrade,
+    };
+
+    const transactionObj: StudentTransaction = {
+      id: String(payment.id),
+      studentId: String(payment.student_id),
+      type: "deposit",
+      amount: Number(payment.amount || 0),
+      notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${courseTitle}`,
+      createdAt: payment.created_at || new Date().toISOString(),
+    };
+
+    setGeneratedInvoiceData({ student: studentObj, transaction: transactionObj });
+    setIsInvoiceModalOpen(true);
+  };
+
   // Handle Accept / Reject actions
   const handleAccept = async (id: string | number) => {
     const targetPayment = payments.find((p) => String(p.id) === String(id));
@@ -161,61 +213,7 @@ export function BillingRequestsClient() {
     try {
       await approvePaymentMutation.mutateAsync(id);
       toast.success(t("approveSuccess"));
-
-      const studentName =
-        targetPayment.full_name ||
-        targetPayment.student?.full_name ||
-        [
-          targetPayment.student?.first_name,
-          targetPayment.student?.father_name,
-          targetPayment.student?.family_name,
-        ]
-          .filter(Boolean)
-          .join(" ") ||
-        "Student";
-
-      const primaryItem = targetPayment.order?.items?.[0];
-      const courseTitle =
-        primaryItem?.course_title?.[locale] ||
-        primaryItem?.course_title?.ar ||
-        primaryItem?.course_title?.en ||
-        targetPayment.order?.order_number ||
-        "Course Subscription";
-
-      const studentPhone =
-        targetPayment.submitted_phone || targetPayment.phone || targetPayment.student?.phone || "";
-
-      const studentGrade =
-        primaryItem?.educational_stage_name?.[locale] ||
-        primaryItem?.educational_stage_name?.ar ||
-        targetPayment.student?.educational_stage?.name?.[locale] ||
-        targetPayment.student?.educational_stage?.name?.ar ||
-        "-";
-
-      const studentObj: Student = {
-        id: String(targetPayment.student_id || targetPayment.student?.id || id),
-        firstName: studentName,
-        lastName: "",
-        phoneNumber: studentPhone,
-        parentPhoneNumber: studentPhone,
-        gender: "male",
-        email: targetPayment.email || targetPayment.student?.email || "student@example.com",
-        country: locale === "ar" ? "مصر" : "Egypt",
-        state: locale === "ar" ? "القاهرة" : "Cairo",
-        grade: studentGrade,
-      };
-
-      const transactionObj: StudentTransaction = {
-        id: String(targetPayment.id),
-        studentId: String(targetPayment.student_id),
-        type: "deposit",
-        amount: Number(targetPayment.amount || 0),
-        notes: `${locale === "ar" ? "اشتراك في دورة:" : "Course Subscription:"} ${courseTitle}`,
-        createdAt: targetPayment.created_at || new Date().toISOString(),
-      };
-
-      setGeneratedInvoiceData({ student: studentObj, transaction: transactionObj });
-      setIsInvoiceModalOpen(true);
+      handleViewInvoice(targetPayment);
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Failed to approve payment";
       toast.error(errorMsg);
@@ -545,7 +543,7 @@ export function BillingRequestsClient() {
                         </Badge>
                       </TableCell>
 
-                      <TableCell className="text-end">
+                      <TableCell className="text-start">
                         <Button
                           variant="ghost"
                           size="icon"
@@ -575,6 +573,7 @@ export function BillingRequestsClient() {
         onClose={() => setIsModalOpen(false)}
         onAccept={handleAccept}
         onReject={handleReject}
+        onViewInvoice={handleViewInvoice}
       />
 
       {/* Generated Printable Student Invoice Modal */}

@@ -1,5 +1,5 @@
 "use client";
-import { Logo } from "@/components/landing/layout/logo";
+import { Logo, LogoIcon } from "@/components/landing/layout/logo";
 import {
   Sidebar,
   SidebarContent,
@@ -43,7 +43,6 @@ export function AppSidebar({
   const locale = useLocale();
   const side = sideProp ?? (locale === "ar" ? "right" : "left");
   const t = useTranslations("nav");
-  const tCommon = useTranslations("common");
 
   // Role-aware profile & logout hooks
   const isStudent = variant === "student";
@@ -145,7 +144,11 @@ export function AppSidebar({
           className="hidden group-data-[collapsible=icon]:flex group/logo-trigger size-12 shrink-0 aspect-square p-0 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-all duration-200"
         >
           <div className="group-hover/logo-trigger:hidden flex items-center justify-center transition-transform duration-200">
-            <Logo logoOnly width={20} height={20} />
+            <Logo
+              logoSvg={<LogoIcon width={32} height={32} variant="white" />}
+              width={32}
+              height={32}
+            />
           </div>
           <PanelLeftIcon className="hidden group-hover/logo-trigger:inline-flex size-5 rtl:rotate-180 text-white" />
         </button>
@@ -154,7 +157,11 @@ export function AppSidebar({
             href={primaryLink.href}
             className="flex items-center text-white text-start overflow-hidden rounded-md p-2"
           >
-            <Logo brandName={tCommon("brandName")} width={20} height={20} />
+            <Logo
+              logoSvg={<LogoIcon width={48} height={48} variant="white" />}
+              width={48}
+              height={48}
+            />
           </Link>
           <SidebarTrigger className="hover:bg-white/10 text-white rounded-full size-8 [&_svg]:size-5" />
         </div>

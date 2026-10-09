@@ -35,6 +35,7 @@ interface RequestDetailsModalProps {
   onClose: () => void;
   onAccept: (id: string | number) => void;
   onReject: (id: string | number, reason: string) => void;
+  onViewInvoice?: (payment: BackendPayment) => void;
 }
 
 export function RequestDetailsModal({
@@ -43,6 +44,7 @@ export function RequestDetailsModal({
   onClose,
   onAccept,
   onReject,
+  onViewInvoice,
 }: RequestDetailsModalProps) {
   const locale = useLocale();
   const t = useTranslations("billingRequestsPage.modal");
@@ -423,7 +425,11 @@ export function RequestDetailsModal({
           {payment.status === "approved" && (
             <Button
               onClick={() => {
-                onAccept(payment.id);
+                if (onViewInvoice) {
+                  onViewInvoice(payment);
+                } else {
+                  onAccept(payment.id);
+                }
                 onClose();
               }}
               className="font-bold bg-primary hover:bg-primary/90 text-white"

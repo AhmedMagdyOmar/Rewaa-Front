@@ -1,11 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { getWhatsAppUrl } from "@/components/ui/phone-link";
 import { useStudentProfile } from "@/hooks/use-auth-queries";
-import { Link } from "@/i18n/routing";
 import { useAuthStore } from "@/lib/stores/auth-store";
-import { MessageCircle, Compass, User } from "lucide-react";
+import { User } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Image from "next/image";
 
@@ -19,9 +16,6 @@ export function StudentHeroProfile({ studentName: initialStudentName }: StudentH
   const storeUser = useAuthStore((s) => s.user);
   const { data: profileData } = useStudentProfile();
   const apiUser = profileData as Record<string, unknown> | undefined;
-
-  const whatsappPhone = "+201009876543";
-  const whatsappUrl = getWhatsAppUrl(whatsappPhone);
 
   const resolvedFullName =
     (apiUser?.full_name as string | undefined) ?? storeUser?.full_name ?? storeUser?.email ?? "";
@@ -71,38 +65,6 @@ export function StudentHeroProfile({ studentName: initialStudentName }: StudentH
               {t("description")}
             </p>
           </div>
-        </div>
-
-        {/* Right / End: Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2 self-stretch sm:self-auto justify-end">
-          <Button
-            asChild
-            variant="secondary"
-            size="sm"
-            className="rounded-lg px-3.5 py-1.5 text-xs font-semibold shadow-xs hover:bg-white/95 text-primary"
-          >
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5"
-            >
-              <MessageCircle className="size-4" />
-              <span>{t("contactUs")}</span>
-            </a>
-          </Button>
-
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="rounded-lg px-3.5 py-1.5 text-xs font-semibold bg-white/15 border-white/30 text-white hover:bg-white/25 hover:text-white"
-          >
-            <Link href="/student-dashboard/courses/explore" className="flex items-center gap-1.5">
-              <Compass className="size-4" />
-              <span>{t("discoverCourses")}</span>
-            </Link>
-          </Button>
         </div>
       </div>
     </section>

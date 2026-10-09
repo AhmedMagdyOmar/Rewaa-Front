@@ -40,7 +40,6 @@ interface NavbarProps extends LogoProps {
  * A responsive navigation bar component that supports branding, dynamic routes, and an action slot.
  *
  * @param {NavbarProps} props - The component props.
- * @param {string} [props.brandName="Brand"] - The name of your brand displayed in the logo.
  * @param {string} [props.logoImage] - Optional image URL for the brand logo.
  * @param {React.ReactNode} [props.logoSvg] - Optional SVG component for the brand logo.
  * @param {NavRoute[]} props.routes - An array of navigation links with 'to' and 'label' properties.
@@ -56,14 +55,7 @@ interface NavbarProps extends LogoProps {
  * ```
  */
 
-export function Navbar({
-  brandName = "Brand",
-  logoImage,
-  logoSvg,
-  routes,
-  actionSlot,
-  logoOnly,
-}: NavbarProps) {
+export function Navbar({ logoImage, logoSvg, routes, actionSlot }: NavbarProps) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
@@ -90,10 +82,8 @@ export function Navbar({
         {/* Brand Logo */}
         <Link href="/" className="flex items-center">
           <Logo
-            brandName={brandName}
             logoImage={logoImage}
             logoSvg={logoSvg}
-            logoOnly={logoOnly}
             className="transition-colors duration-300 text-foreground"
           />
         </Link>
@@ -142,13 +132,7 @@ export function Navbar({
             >
               <SheetTitle className="sr-only">Menu</SheetTitle>
               <div className="mb-8">
-                <Logo
-                  brandName={brandName}
-                  logoImage={logoImage}
-                  logoSvg={logoSvg}
-                  logoOnly={logoOnly}
-                  className="text-foreground"
-                />
+                <Logo logoImage={logoImage} logoSvg={logoSvg} className="text-foreground" />
               </div>
 
               <SheetDescription className="sr-only">Links to navigate the site.</SheetDescription>

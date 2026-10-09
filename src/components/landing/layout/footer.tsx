@@ -23,6 +23,10 @@ interface FooterProps extends LogoProps {
   socialLinks?: { label: string; href: string; iconSvg: string }[];
   /** An array of links for the bottom bar (e.g., Privacy Policy, Terms of Service) */
   bottomLinks?: { label: string; href: string; iconSvg?: string }[];
+  /**
+   * The name of your brand for the copyright notice and logo.
+   */
+  brandName?: string;
 }
 
 /**
@@ -67,7 +71,7 @@ export function Footer({
           {/* Brand & Info */}
           <div className="md:col-span-1 space-y-6">
             <div className="space-y-4">
-              <Logo brandName={brandName} logoImage={logoImage} logoSvg={logoSvg} />
+              <Logo logoImage={logoImage} logoSvg={logoSvg} />
               {description && (
                 <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
               )}

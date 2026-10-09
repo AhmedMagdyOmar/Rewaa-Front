@@ -18,7 +18,6 @@ export default async function LandingLayout({
 }>) {
   const { locale } = await params;
   const tNav = await getTranslations({ locale, namespace: "nav.landing" });
-  const tCommon = await getTranslations({ locale, namespace: "common" });
 
   const navRoutes = [] as {
     href: string;
@@ -29,7 +28,6 @@ export default async function LandingLayout({
     <>
       {/* Global Landing Navbar */}
       <Navbar
-        brandName={tCommon("brandName")}
         routes={navRoutes}
         actionSlot={
           <div className="flex items-center gap-2">
