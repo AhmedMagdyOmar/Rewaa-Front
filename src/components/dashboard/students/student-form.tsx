@@ -229,7 +229,6 @@ export function StudentForm({
       !formData.phoneNumber.trim() ||
       !formData.guardianPhoneCode.trim() ||
       !formData.parentPhoneNumber.trim() ||
-      !formData.email.trim() ||
       !formData.country.trim() ||
       !formData.state.trim() ||
       !formData.grade.trim()
@@ -404,7 +403,6 @@ export function StudentForm({
                 placeholder={tForm("emailPlaceholder")}
                 value={formData.email}
                 onChange={(e) => handleChange("email", e.target.value)}
-                required
                 dir="ltr"
               />
             </div>

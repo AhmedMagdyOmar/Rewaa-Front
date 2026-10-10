@@ -19,8 +19,8 @@ export function StudentTeachersSection() {
   const { data: teachers = [], isLoading } = useStudentTeachers();
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [canScrollStart, setCanScrollStart] = useState(false);
-  const [canScrollEnd, setCanScrollEnd] = useState(false);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
 
   const checkScroll = useCallback(() => {
     const el = scrollContainerRef.current;
@@ -30,20 +30,18 @@ export function StudentTeachersSection() {
     const maxScroll = scrollWidth - clientWidth;
 
     if (maxScroll <= 5) {
-      setCanScrollStart(false);
-      setCanScrollEnd(false);
+      setCanScrollPrev(false);
+      setCanScrollNext(false);
       return;
     }
 
-    if (isRtl) {
-      const positiveScrollLeft = Math.abs(scrollLeft);
-      setCanScrollStart(positiveScrollLeft > 5);
-      setCanScrollEnd(positiveScrollLeft < maxScroll - 5);
-    } else {
-      setCanScrollStart(scrollLeft > 5);
-      setCanScrollEnd(scrollLeft < maxScroll - 5);
-    }
-  }, [isRtl]);
+    const absScroll = Math.abs(scrollLeft);
+    const atStart = absScroll <= 5;
+    const atEnd = absScroll >= maxScroll - 5;
+
+    setCanScrollPrev(!atStart);
+    setCanScrollNext(!atEnd);
+  }, []);
 
   useEffect(() => {
     const el = scrollContainerRef.current;
@@ -67,16 +65,21 @@ export function StudentTeachersSection() {
 
     // Card width (approx 176px - 200px) + gap
     const scrollAmount = 240;
-    const sign = direction === "next" ? 1 : -1;
-    const actualSign = isRtl ? -sign : sign;
+    // In RTL: next moves left (-1), prev moves right (+1)
+    // In LTR: next moves right (+1), prev moves left (-1)
+    const factor = isRtl ? (direction === "next" ? -1 : 1) : direction === "next" ? 1 : -1;
 
     el.scrollBy({
-      left: actualSign * scrollAmount,
+      left: factor * scrollAmount,
       behavior: "smooth",
     });
   };
 
   const showControls = !isLoading && teachers.length > 0;
+
+  // In RTL, "prev" points right and "next" points left. In LTR, "prev" points left and "next" points right.
+  const PrevIcon = isRtl ? ChevronRight : ChevronLeft;
+  const NextIcon = isRtl ? ChevronLeft : ChevronRight;
 
   return (
     <section className="space-y-4 w-full">
@@ -96,28 +99,28 @@ export function StudentTeachersSection() {
 
         {/* Navigation Forward / Backward Buttons */}
         {showControls && (
-          <div className="flex items-center gap-2 rtl:flex-row-reverse">
+          <div className="flex items-center gap-2">
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="size-9 rounded-full border-border/80 hover:bg-accent disabled:opacity-35"
-              disabled={!canScrollStart}
+              className="size-9 rounded-full border-border/80 hover:bg-accent disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
+              disabled={!canScrollPrev}
               onClick={() => scroll("prev")}
               aria-label={t("scrollPrev")}
             >
-              <ChevronLeft className="size-5" />
+              <PrevIcon className="size-5" />
             </Button>
             <Button
               type="button"
               variant="outline"
               size="icon"
-              className="size-9 rounded-full border-border/80 hover:bg-accent disabled:opacity-35"
-              disabled={!canScrollEnd}
+              className="size-9 rounded-full border-border/80 hover:bg-accent disabled:opacity-35 cursor-pointer disabled:cursor-not-allowed"
+              disabled={!canScrollNext}
               onClick={() => scroll("next")}
               aria-label={t("scrollNext")}
             >
-              <ChevronRight className="size-5" />
+              <NextIcon className="size-5" />
             </Button>
           </div>
         )}
@@ -141,7 +144,7 @@ export function StudentTeachersSection() {
       ) : (
         <div
           ref={scrollContainerRef}
-          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto pb-3 pt-1 scrollbar-none snap-x snap-mandatory"
+          className="flex items-stretch gap-4 sm:gap-5 overflow-x-auto pb-3 pt-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden focus-visible:outline-hidden"
         >
           {isLoading
             ? Array.from({ length: 5 }).map((_, idx) => (

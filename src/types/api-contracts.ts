@@ -1020,7 +1020,7 @@ export interface StoreStudentData {
   guardian_phone_code?: string;
   guardian_phone: string;
   gender: BackendGender;
-  email: string;
+  email?: string;
   password?: string;
   password_confirmation?: string;
   country_id?: number;

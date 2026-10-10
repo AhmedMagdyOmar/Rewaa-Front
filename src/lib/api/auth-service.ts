@@ -5,6 +5,13 @@ import { useAuthStore } from "@/lib/stores/auth-store";
 export interface ProviderLoginCredentials {
   email: string;
   password: string;
+  token?: string;
+}
+
+export interface TeacherTokenValidationResponse {
+  valid: boolean;
+  email: string;
+  full_name: string;
 }
 
 export interface ProviderLoginResponse {
@@ -21,6 +28,44 @@ export interface ProviderLoginResponse {
   };
   access_token: string;
   token_type: string;
+}
+
+export interface StudentRegisterPayload {
+  first_name: string;
+  father_name?: string;
+  family_name: string;
+  additional_name?: string;
+  phone_code: string;
+  phone: string;
+  guardian_phone_code: string;
+  guardian_phone: string;
+  email?: string;
+  password: string;
+  password_confirmation: string;
+  gender: "male" | "female";
+  country_id: number;
+  governorate_id: number;
+  educational_stage_id: number;
+  provider_id?: number;
+}
+
+export interface RegisterOptionsResponse {
+  genders: Array<{ value: string; label: string }>;
+  countries: Array<{
+    id: number;
+    country_code: string | null;
+    flag: string | null;
+    name: Record<string, string>;
+  }>;
+  governorates: Array<{
+    id: number;
+    country_id: number;
+    name: Record<string, string>;
+  }>;
+  educational_stages: Array<{
+    id: number;
+    name: Record<string, string>;
+  }>;
 }
 
 export interface StudentLoginCredentials {
@@ -80,6 +125,17 @@ export const authService = {
     }
 
     return data;
+  },
+
+  /**
+   * Validate teacher invite token
+   */
+  async validateTeacherToken(token: string): Promise<TeacherTokenValidationResponse> {
+    const res = await api<TeacherTokenValidationResponse>({
+      url: `/api/dashboard/provider/auth/validate-token?token=${encodeURIComponent(token)}`,
+      method: "GET",
+    });
+    return res;
   },
 
   /**
@@ -163,6 +219,54 @@ export const authService = {
         document.cookie = `rewaa_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax`;
       }
     }
+  },
+
+  /**
+   * Student Website Portal Register
+   */
+  async studentRegister(payload: StudentRegisterPayload): Promise<StudentLoginResponse> {
+    const data = await api<StudentLoginResponse>({
+      url: "/api/website/auth/register",
+      method: "POST",
+      data: payload,
+    });
+
+    if (data?.access_token) {
+      authTokens.setToken(data.access_token, "student");
+      if (typeof document !== "undefined") {
+        document.cookie = `rewaa_role=student; path=/; SameSite=Lax`;
+        document.cookie = `rewaa_auth=${encodeURIComponent(data.access_token)}; path=/; SameSite=Lax`;
+      }
+      // Hydrate the Zustand auth store
+      const s = data.student;
+      useAuthStore.getState().setUser(
+        {
+          id: s.id,
+          full_name: s.full_name,
+          email: s.email,
+          role: "student",
+          avatar_url: s.avatar_url ?? null,
+          avatarUrl: s.avatar_url ?? null,
+        },
+        "student",
+      );
+    }
+
+    return data;
+  },
+
+  /**
+   * Public Registration Options (Countries, Governorates, Stages)
+   */
+  async getRegisterOptions(params?: {
+    country_id?: number;
+    provider_id?: number;
+  }): Promise<RegisterOptionsResponse> {
+    return api<RegisterOptionsResponse>({
+      url: "/api/website/auth/options",
+      method: "GET",
+      params,
+    });
   },
 
   /**

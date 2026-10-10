@@ -7,7 +7,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SidebarMenuButton } from "@/components/ui/sidebar";
-import { cn } from "@/lib/utils";
+import { cn, formatEgyptianPhone } from "@/lib/utils";
 import { UserProfile } from "@/types/auth";
 import { LogOut, Settings, User } from "lucide-react";
 import { Link } from "@/i18n/routing";
@@ -39,15 +39,16 @@ export function ProfileDropdown({
   const isAr = locale === "ar";
   const firstName = isAr && user.firstNameAr ? user.firstNameAr : user.firstName || "";
   const lastName = isAr && user.lastNameAr ? user.lastNameAr : user.lastName || "";
+  const formattedPhone = formatEgyptianPhone(user.phone);
   const fullName =
     user.full_name ||
     (firstName && lastName ? `${firstName} ${lastName}`.trim() : "") ||
     user.email ||
-    user.phone ||
+    formattedPhone ||
     "";
 
   // Contact info (email or phone)
-  const contactInfo = user.email || user.phone || "";
+  const contactInfo = user.email || formattedPhone || "";
 
   // Localized role
   const storeUser = useAuthStore((s) => s.user);

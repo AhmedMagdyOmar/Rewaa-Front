@@ -92,7 +92,7 @@ export function NewStudentClient() {
         guardian_phone_code: data.guardianPhoneCode,
         guardian_phone: data.parentPhoneNumber,
         gender: data.gender,
-        email: data.email,
+        email: data.email?.trim() || undefined,
         password,
         password_confirmation: passwordConfirmation,
         country_id: countryId,

@@ -25,11 +25,11 @@ export default async function AuthLayout({
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col lg:flex-row">
+    <div className="relative min-h-screen lg:h-screen lg:overflow-hidden flex flex-col lg:flex-row">
       <div className="absolute top-4 end-4 z-50 flex items-center gap-2">
         <LanguageSwitcher variant="dark" />
       </div>
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 min-h-screen lg:w-1/2">
+      <div className="flex-1 flex flex-col justify-start lg:justify-center items-center p-4 sm:p-8 sm:pt-32 min-h-screen lg:min-h-0 lg:h-full lg:overflow-y-auto lg:w-1/2 overscroll-contain">
         {children}
       </div>
       <AuthBanner />

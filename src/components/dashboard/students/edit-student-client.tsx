@@ -120,7 +120,7 @@ export function EditStudentClient({ studentId }: EditStudentClientProps) {
       guardian_phone_code: data.guardianPhoneCode,
       guardian_phone: data.parentPhoneNumber,
       gender: data.gender,
-      email: data.email,
+      email: data.email?.trim() || undefined,
       country_id: countryId,
       governorate_id: governorateId,
       educational_stage_id: stageId,

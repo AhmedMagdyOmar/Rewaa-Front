@@ -63,3 +63,24 @@ export function getOptionLetter(index: number, locale: string = "ar"): string {
   }
   return String.fromCharCode(65 + index); // A, B, C, D...
 }
+
+/**
+ * Formats Egyptian phone numbers to the local standard format (01xxxxxxxxx).
+ * Handles inputs with international prefix (+20, 0020, 20) or missing leading 0.
+ */
+export function formatEgyptianPhone(phone?: string | null): string {
+  if (!phone) return "";
+  const cleaned = phone.replace(/[\s\-\(\)]/g, "");
+
+  // Matches +201xxxxxxxxx, 00201xxxxxxxxx, 201xxxxxxxxx
+  if (/^(\+20|0020|20)(1[0125]\d{8})$/.test(cleaned)) {
+    return cleaned.replace(/^(\+20|0020|20)/, "0");
+  }
+
+  // If provided without leading 0 (e.g. 10xxxxxxxx -> 010xxxxxxxx)
+  if (/^1[0125]\d{8}$/.test(cleaned)) {
+    return `0${cleaned}`;
+  }
+
+  return cleaned;
+}
