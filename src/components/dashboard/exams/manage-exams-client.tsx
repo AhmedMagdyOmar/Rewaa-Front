@@ -244,6 +244,11 @@ export function ManageExamsClient() {
                   t("table.columns.title"),
                   t("table.columns.subjectGrade"),
                   t("table.columns.category"),
+                  t.has("table.columns.type")
+                    ? t("table.columns.type")
+                    : locale === "ar"
+                      ? "النوع / الدورة"
+                      : "Type / Course",
                   t("table.columns.questions"),
                   t("table.columns.students"),
                   locale === "ar" ? "عدد المحاولات" : "Attempts",
@@ -288,7 +293,7 @@ export function ManageExamsClient() {
                       key={exam.id}
                       className={`border-b border-border/40 hover:bg-accent/40 transition-colors ${rowBg}`}
                     >
-                      {/* ── Title ────────────────────────────────────────── */}
+                      {/* 1. Title */}
                       <td className="px-4 py-3 min-w-60 max-w-90">
                         <Link
                           href={`/${locale}/dashboard/exams/${exam.id}`}
@@ -314,7 +319,7 @@ export function ManageExamsClient() {
                         </Link>
                       </td>
 
-                      {/* ── Subject / Grade ───────────────────────────────── */}
+                      {/* 2. Subject / Grade */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex flex-col">
                           <span className="text-xs font-medium text-foreground/90">
@@ -324,16 +329,14 @@ export function ManageExamsClient() {
                         </div>
                       </td>
 
-                      {/* ── Category ─────────────────────────────────────── */}
+                      {/* 3. Category */}
                       <td className="px-4 py-3">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap bg-muted/60`}
-                        >
+                        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap bg-muted/60">
                           {exam.classification_label || formatCategory(exam.classification)}
                         </span>
                       </td>
 
-                      {/* ── Type ──────────────────────────────────── */}
+                      {/* 4. Type / Scope */}
                       <td className="px-4 py-3 min-w-44">
                         {exam.course ? (
                           <div className="flex flex-col gap-1">
@@ -377,28 +380,28 @@ export function ManageExamsClient() {
                         )}
                       </td>
 
-                      {/* ── Questions ─────────────────────────────────────── */}
+                      {/* 5. Questions */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
                           {t("table.questionsCount", { count: exam.questions_count || 0 })}
                         </span>
                       </td>
 
-                      {/* ── Students ──────────────────────────────────────── */}
+                      {/* 6. Students */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
                           {t("table.studentsCount", { count: exam.students_count || 0 })}
                         </span>
                       </td>
 
-                      {/* ── Attempts Count ─────────────────────────────────── */}
+                      {/* 7. Attempts Count */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
                           {exam.attempts_count ?? 0} {locale === "ar" ? "محاولة" : "attempts"}
                         </span>
                       </td>
 
-                      {/* ── Actions ───────────────────────────────────────── */}
+                      {/* 8. Actions */}
                       <td className="px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
