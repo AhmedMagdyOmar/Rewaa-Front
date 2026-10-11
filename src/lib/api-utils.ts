@@ -42,21 +42,37 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
     }
   }
 
+  const sanitize = (msg: string | null | undefined): string | null => {
+    if (!msg) return null;
+    // Hide raw database / SQL errors from user-facing toasts
+    if (
+      msg.includes("SQLSTATE") ||
+      msg.includes("Integrity constraint violation") ||
+      msg.includes("syntax error") ||
+      msg.includes("Duplicate entry") ||
+      msg.includes("Connection: mysql") ||
+      msg.includes("Connection: sqlite")
+    ) {
+      return "حدث خطأ غير متوقع أثناء معالجة الطلب، يرجى المحاولة مرة أخرى.";
+    }
+    return msg;
+  };
+
   // 2. Check apiMessage from Laravel ApiResponse or response.data.message
   if (axiosErr?.apiMessage) {
-    return axiosErr.apiMessage;
+    return sanitize(axiosErr.apiMessage);
   }
   if (typeof resData.message === "string" && resData.message) {
-    return resData.message;
+    return sanitize(resData.message);
   }
 
   // 3. Check generic API error payload
   const dtoErr = error as ApiErrorPayload;
   if (dtoErr?.message) {
     if (Array.isArray(dtoErr.message)) {
-      return dtoErr.message.join(", ");
+      return sanitize(dtoErr.message.join(", "));
     }
-    return dtoErr.message;
+    return sanitize(dtoErr.message);
   }
 
   // 4. Fallback data object - check if it contains an application-level error (4xx/5xx)
@@ -64,15 +80,15 @@ export function getErrorMessage(error: unknown, dataObj?: unknown): string | nul
   const status = data?.status || data?.statusCode;
   if (status && status >= 400 && data.data) {
     if (Array.isArray(data.data.message)) {
-      return data.data.message.join(", ");
+      return sanitize(data.data.message.join(", "));
     }
-    return data.data.message || "An error occurred";
+    return sanitize(data.data.message || "An error occurred");
   }
 
   // 5. Standard Error object (ignore generic Axios error messages like "Request failed with status code 422")
   if (error instanceof Error && error.message) {
     if (!error.message.includes("Request failed with status code")) {
-      return error.message;
+      return sanitize(error.message);
     }
   }
 

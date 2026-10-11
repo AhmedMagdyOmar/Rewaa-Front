@@ -2,6 +2,7 @@ import { api } from "@/lib/apiClient";
 import type {
   BackendLesson,
   BackendLessonOptions,
+  BulkStoreLessonData,
   LessonFilterParams,
   LessonListResponse,
   ReorderLessonsData,
@@ -151,6 +152,18 @@ export const lessonsService = {
       url: `/api/dashboard/provider/lessons/${id}`,
       method: "DELETE",
     });
+  },
+
+  /**
+   * Bulk import / create lessons into a course section
+   */
+  async bulkCreateLessons(data: BulkStoreLessonData): Promise<BackendLesson[]> {
+    const res = await api<{ lessons: BackendLesson[] }>({
+      url: "/api/dashboard/provider/lessons/bulk",
+      method: "POST",
+      data,
+    });
+    return res.lessons;
   },
 
   /**

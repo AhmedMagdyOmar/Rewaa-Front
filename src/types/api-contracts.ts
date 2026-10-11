@@ -431,6 +431,12 @@ export interface ReorderLessonsData {
   lesson_ids: number[];
 }
 
+export interface BulkStoreLessonData {
+  course_id: number;
+  course_section_id: number;
+  lesson_ids: number[];
+}
+
 // ─── Provider Exams & Question Bank DTOs ──────────────────────────────────────
 
 export type ExamStatus = "draft" | "scheduled" | "published";

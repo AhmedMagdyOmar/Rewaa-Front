@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/api/queryKeys";
 import { lessonsService } from "@/lib/api/lessons-service";
 import type {
+  BulkStoreLessonData,
   LessonFilterParams,
   ReorderLessonsData,
   StoreLessonData,
@@ -126,6 +127,27 @@ export function useReorderLessons() {
           queryKey: [...queryKeys.provider.courses.detail(variables.course_id), "content"],
         });
       }
+    },
+  });
+}
+
+/**
+ * Hook to bulk create / import lessons into a course section
+ */
+export function useBulkCreateLessons() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkStoreLessonData) => lessonsService.bulkCreateLessons(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.lessons.all() });
+      queryClient.invalidateQueries({ queryKey: ["provider", "lessons"] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.courses.sections(variables.course_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.provider.courses.detail(variables.course_id), "content"],
+      });
     },
   });
 }

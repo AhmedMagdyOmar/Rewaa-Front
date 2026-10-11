@@ -13,7 +13,7 @@ import { useDeleteLesson, useProviderLessons } from "@/hooks/use-lessons";
 import { getErrorMessage } from "@/lib/api-utils";
 import { LessonClassification } from "@/types/api-contracts";
 import { Lesson } from "@/types/course";
-import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
+import { ContentFilters, SortOptionItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteLessonDialog } from "./delete-lesson-dialog";
 import { LessonCard } from "./lesson-card";
@@ -146,23 +146,6 @@ export function ManageLessonsClient() {
     }
   };
 
-  // Classification counts from backend
-  const classificationCounts = data?.classification_counts;
-
-  // Filter tabs and sort options
-  const tabs: TabItem<LessonFilterTab>[] = [
-    {
-      value: "all",
-      label: t("tabs.all"),
-      count: classificationCounts?.all ?? totalItems ?? 0,
-    },
-    {
-      value: "course-linked",
-      label: t("tabs.courseLinked"),
-      count: classificationCounts?.course ?? 0,
-    },
-  ];
-
   const sortOptions: SortOptionItem<LessonSortOption>[] = [
     { value: "date-newest", label: t("sort.newest") },
     { value: "date-oldest", label: t("sort.oldest") },
@@ -199,7 +182,7 @@ export function ManageLessonsClient() {
         searchQuery={searchQuery}
         searchPlaceholder={t("searchPlaceholder")}
         activeTab={activeTab}
-        tabs={tabs}
+        tabs={[]}
         sortBy={sortBy}
         sortOptions={sortOptions}
         clearFiltersLabel={t("clearFilters")}
