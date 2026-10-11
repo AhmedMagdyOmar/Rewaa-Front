@@ -40,7 +40,7 @@ export function StudentCoursesClient() {
   const searchQuery = searchParams.get("search") || "";
   const sortBy = searchParams.get("sort") || defaultSort;
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
-  const itemsPerPage = 4;
+  const itemsPerPage = 12;
 
   const updateUrlParams = React.useCallback(
     (updates: Record<string, string | number | null>) => {
@@ -158,21 +158,22 @@ export function StudentCoursesClient() {
 
       {/* Courses List */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4">
-          {Array.from({ length: 4 }).map((_, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          {Array.from({ length: 8 }).map((_, index) => (
             <div
               key={index}
-              className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-5 p-4 sm:p-5 rounded-2xl bg-card border border-border/60"
+              className="flex flex-col bg-card rounded-xl border border-border/60 overflow-hidden shadow-xs"
             >
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 flex-1">
-                <Skeleton className="aspect-video sm:aspect-4/3 w-full sm:w-36 md:w-44 h-auto sm:h-28 rounded-xl" />
-                <div className="space-y-3 flex-1 w-full">
-                  <Skeleton className="h-5 w-3/4" />
-                  <Skeleton className="h-4 w-1/3" />
-                  <Skeleton className="h-3 w-full max-w-md" />
+              <Skeleton className="aspect-video w-full rounded-none" />
+              <div className="flex flex-col flex-1 p-4 space-y-3">
+                <Skeleton className="h-5 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="h-3 w-1/3" />
+                <div className="pt-2 space-y-1.5 mt-auto">
+                  <Skeleton className="h-2 w-full" />
                 </div>
+                <Skeleton className="h-9 w-full rounded-lg mt-3" />
               </div>
-              <Skeleton className="h-10 w-28 rounded-xl self-end md:self-center" />
             </div>
           ))}
         </div>
@@ -189,7 +190,7 @@ export function StudentCoursesClient() {
           <p className="text-sm text-muted-foreground mt-1 max-w-md">{t("empty.description")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
           {courses.map((course, idx) => (
             <StudentEnrolledCourseCard
               key={course.course_id ?? course.enrollment_id ?? course.id ?? `course-${idx}`}
