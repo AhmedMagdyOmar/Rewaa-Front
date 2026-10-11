@@ -598,12 +598,21 @@ export function LessonDialog({
                   onValueChange={setSelectedBankLessonIds}
                   label={locale === "ar" ? "اختر الدروس" : "Select Lessons"}
                   placeholder={locale === "ar" ? "اختر الدروس..." : "Select lessons..."}
-                  lessons={availableBankLessons.map((l) => ({ id: l.id, title: l.title }))}
+                  lessons={availableBankLessons.map((l) => ({
+                    id: l.id,
+                    title: l.title,
+                    type: l.type,
+                    hasExam: Boolean(l.isLinkedToExam || l.linkedExamId || l.linkedExamTitle),
+                    hasPdf: Boolean(l.hasPdfAttachments || (l.pdfFiles && l.pdfFiles.length > 0)),
+                    hasImage: Boolean(
+                      l.hasImageAttachments || (l.imageFiles && l.imageFiles.length > 0),
+                    ),
+                  }))}
                   required
                 />
               </div>
 
-              {/* Chosen Lessons List View with Plus Button for Exam */}
+              {/* Chosen Lessons List View with Plus Button for Exam and Remove Button */}
               {selectedBankLessonsList.length > 0 && (
                 <div className="space-y-3 p-4 rounded-xl border bg-muted/20">
                   <h4 className="text-sm font-bold text-foreground">
@@ -611,58 +620,89 @@ export function LessonDialog({
                     {selectedBankLessonsList.length})
                   </h4>
                   <div className="space-y-2 max-h-56 overflow-y-auto">
-                    {selectedBankLessonsList.map((les) => (
-                      <div
-                        key={les.id}
-                        className="flex items-center justify-between p-3 rounded-lg border bg-background"
-                      >
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <BookOpen className="size-4 text-primary shrink-0" />
-                            <span className="text-sm font-medium text-foreground truncate">
-                              {les.title}
-                            </span>
-                          </div>
-                          {(les.isLinkedToExam || les.linkedExamTitle) && (
-                            <div className="flex items-center gap-1.5 ms-6">
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 font-semibold"
-                              >
-                                <FileQuestion className="size-3 text-amber-600" />
-                                <span>
-                                  {les.linkedExamTitle ||
-                                    (locale === "ar" ? "امتحان مرتبط" : "Linked Exam")}
-                                </span>
-                              </Badge>
+                    {selectedBankLessonsList.map((les) => {
+                      const hasExam = Boolean(
+                        les.isLinkedToExam || les.linkedExamId || les.linkedExamTitle,
+                      );
+                      return (
+                        <div
+                          key={les.id}
+                          className="flex items-center justify-between p-3 rounded-lg border bg-background"
+                        >
+                          <div className="flex flex-col gap-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <BookOpen className="size-4 text-primary shrink-0" />
+                              <span className="text-sm font-medium text-foreground truncate">
+                                {les.title}
+                              </span>
                             </div>
-                          )}
+                            {hasExam && (
+                              <div className="flex items-center gap-1.5 ms-6">
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 gap-1 font-semibold"
+                                >
+                                  <FileQuestion className="size-3 text-amber-600" />
+                                  <span>
+                                    {les.linkedExamTitle ||
+                                      (locale === "ar" ? "امتحان مرتبط" : "Linked Exam")}
+                                  </span>
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {!hasExam && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon-xs"
+                                      className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 shrink-0"
+                                      onClick={() => {
+                                        setExamTargetLessonId(les.id);
+                                        setIsExamModalOpen(true);
+                                      }}
+                                    >
+                                      <Plus className="size-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    {locale === "ar"
+                                      ? "إضافة امتحان لهذا الدرس"
+                                      : "Add exam to this lesson"}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    className="h-7 w-7 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                    onClick={() => {
+                                      setSelectedBankLessonIds((prev) =>
+                                        prev.filter((id) => id !== les.id),
+                                      );
+                                    }}
+                                  >
+                                    <Trash2 className="size-3.5" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  {locale === "ar" ? "إزالة من القائمة" : "Remove from list"}
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </div>
                         </div>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon-xs"
-                                className="h-7 w-7 rounded-full text-primary hover:bg-primary/10 shrink-0"
-                                onClick={() => {
-                                  setExamTargetLessonId(les.id);
-                                  setIsExamModalOpen(true);
-                                }}
-                              >
-                                <Plus className="size-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {locale === "ar"
-                                ? "إضافة امتحان لهذا الدرس"
-                                : "Add exam to this lesson"}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               )}

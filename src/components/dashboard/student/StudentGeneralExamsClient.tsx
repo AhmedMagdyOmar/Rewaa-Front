@@ -140,7 +140,9 @@ export function StudentGeneralExamsClient() {
     return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
   };
 
-  const formatCategory = (cat: string) => {
+  const formatCategory = (cat?: string | null, catLabel?: string | null) => {
+    if (catLabel) return catLabel;
+    if (!cat) return "";
     const key = cat as Parameters<typeof tGeneralExamTypes.has>[0];
     return tGeneralExamTypes.has(`category.${key}` as Parameters<typeof tGeneralExamTypes.has>[0])
       ? tGeneralExamTypes(`category.${key}` as Parameters<typeof tGeneralExamTypes>[0])
@@ -428,7 +430,7 @@ export function StudentGeneralExamsClient() {
                         {/* Category */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
-                            {formatCategory(exam.classification)}
+                            {formatCategory(exam.classification, exam.classification_label)}
                           </span>
                         </td>
 

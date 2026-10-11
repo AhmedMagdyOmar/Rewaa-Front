@@ -1,6 +1,15 @@
 "use client";
 
-import { CheckIcon, ChevronDownIcon, User } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  FileQuestion,
+  FileText,
+  ImageIcon,
+  Plus,
+  User,
+  Video,
+} from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import * as React from "react";
 
@@ -15,6 +24,7 @@ import {
 } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { QuickAddDialog } from "@/components/ui/quick-add-dialog";
 import { coursesService } from "@/lib/api/courses-service";
 import { lessonsService } from "@/lib/api/lessons-service";
 import { cn } from "@/lib/utils";
@@ -27,9 +37,6 @@ const triggerBaseStyles = cn(
   "aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20",
   "[&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
 );
-
-import { Plus } from "lucide-react";
-import { QuickAddDialog } from "@/components/ui/quick-add-dialog";
 
 export interface ComboboxOption {
   value: string;
@@ -799,6 +806,15 @@ export function LessonSelect({
 }
 
 // --- Multi Lesson Select ---
+export interface MultiLessonOption {
+  id: string;
+  title: string;
+  type?: "videoAndText" | "text" | string;
+  hasExam?: boolean;
+  hasPdf?: boolean;
+  hasImage?: boolean;
+}
+
 export interface MultiLessonSelectProps {
   value: string[];
   onValueChange: (value: string[]) => void;
@@ -809,7 +825,7 @@ export interface MultiLessonSelectProps {
   id?: string;
   className?: string;
   triggerClassName?: string;
-  lessons?: Array<{ id: string; title: string }>;
+  lessons?: MultiLessonOption[];
   emptyLabel?: string;
   allowAdd?: boolean;
   onAddNewOption?: (name: string) => void | Promise<void>;
@@ -835,9 +851,7 @@ export function MultiLessonSelect({
   const t = useTranslations("common.quickAdd");
   const [open, setOpen] = React.useState(false);
   const [isAddOpen, setIsAddOpen] = React.useState(false);
-  const [internalLessons, setInternalLessons] = React.useState<
-    Array<{ id: string; title: string }>
-  >([]);
+  const [internalLessons, setInternalLessons] = React.useState<MultiLessonOption[]>([]);
 
   React.useEffect(() => {
     if (lessons) return;
@@ -854,7 +868,19 @@ export function MultiLessonSelect({
                 : locale === "ar"
                   ? l.title?.ar || l.title?.en || ""
                   : l.title?.en || l.title?.ar || "";
-            return { id: String(l.id), title: titleStr };
+            return {
+              id: String(l.id),
+              title: titleStr,
+              type: l.type === "text_only" ? "text" : "videoAndText",
+              hasExam: Boolean(l.has_exam || l.exam_id),
+              hasPdf: Boolean(
+                l.has_pdf_attachments || (l.pdf_attachments && l.pdf_attachments.length > 0),
+              ),
+              hasImage: Boolean(
+                l.has_explanatory_images ||
+                (l.explanatory_images && l.explanatory_images.length > 0),
+              ),
+            };
           }),
         );
       })
@@ -936,13 +962,13 @@ export function MultiLessonSelect({
           </PopoverTrigger>
 
           <PopoverContent
-            className="w-[--radix-popover-trigger-width] min-w-48 p-0"
+            className="w-[--radix-popover-trigger-width] min-w-56 p-0"
             align="start"
             dir={isRTL ? "rtl" : "ltr"}
           >
             <Command dir={isRTL ? "rtl" : "ltr"}>
-              <CommandInput placeholder="ابحث عن درس..." />
-              <CommandList>
+              <CommandInput placeholder={isRTL ? "ابحث عن درس..." : "Search lessons..."} />
+              <CommandList className="max-h-64">
                 <CommandEmpty>{emptyLabel}</CommandEmpty>
                 <CommandGroup>
                   {activeLessons.map((l) => {
@@ -953,14 +979,44 @@ export function MultiLessonSelect({
                         value={l.title}
                         onSelect={() => toggleOption(l.id)}
                         className={cn(
-                          "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-2 text-sm outline-hidden select-none",
-                          isRTL ? "pl-8 pr-1.5 text-right" : "pr-8 pl-1.5 text-left",
+                          "relative flex w-full cursor-pointer items-start justify-between gap-2 rounded-md py-2 text-sm outline-hidden select-none hover:bg-muted/50",
+                          isRTL ? "pl-8 pr-2.5 text-right" : "pr-8 pl-2.5 text-left",
                         )}
                       >
-                        <span className="flex-1 line-clamp-1">{l.title}</span>
+                        <div className="flex flex-col gap-1 min-w-0 flex-1">
+                          <span className="font-medium text-foreground line-clamp-1">
+                            {l.title}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
+                            {l.type === "videoAndText" && (
+                              <span className="inline-flex items-center gap-1 text-primary bg-primary/10 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                <Video className="size-3 shrink-0" />
+                                <span>{isRTL ? "فيديو" : "Video"}</span>
+                              </span>
+                            )}
+                            {l.hasExam && (
+                              <span className="inline-flex items-center gap-1 text-amber-600 bg-amber-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                <FileQuestion className="size-3 shrink-0" />
+                                <span>{isRTL ? "امتحان" : "Exam"}</span>
+                              </span>
+                            )}
+                            {l.hasPdf && (
+                              <span className="inline-flex items-center gap-1 text-rose-600 bg-rose-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                <FileText className="size-3 shrink-0" />
+                                <span>PDF</span>
+                              </span>
+                            )}
+                            {l.hasImage && (
+                              <span className="inline-flex items-center gap-1 text-blue-600 bg-blue-500/10 px-1.5 py-0.5 rounded text-[10px] font-medium">
+                                <ImageIcon className="size-3 shrink-0" />
+                                <span>{isRTL ? "صور" : "Images"}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
                         <span
                           className={cn(
-                            "pointer-events-none absolute flex size-4 items-center justify-center",
+                            "pointer-events-none absolute flex size-4 items-center justify-center top-2.5",
                             isRTL ? "left-2" : "right-2",
                           )}
                         >

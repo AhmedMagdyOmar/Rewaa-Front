@@ -49,7 +49,9 @@ export function StudentExamIntroView({
   const courseTitleStr = getLocalizedString(exam.course?.title);
   const teacherName = exam.instructor?.full_name;
 
-  const formatCategory = (cat: string) => {
+  const formatCategory = (cat?: string | null, catLabel?: string | null) => {
+    if (catLabel) return catLabel;
+    if (!cat) return "";
     const key = cat as Parameters<typeof tExams.has>[0];
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
       ? tExams(`category.${key}` as Parameters<typeof tExams>[0])
@@ -82,7 +84,7 @@ export function StudentExamIntroView({
                 {titleStr}
               </h1>
               <Badge variant="secondary" className="text-xs font-semibold">
-                {formatCategory(exam.classification)}
+                {formatCategory(exam.classification, exam.classification_label)}
               </Badge>
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">

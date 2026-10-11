@@ -134,7 +134,9 @@ export function StudentExamsClient() {
   const startIndex = (pagination.current_page - 1) * pagination.per_page;
 
   // Format helpers
-  const formatCategory = (cat: string) => {
+  const formatCategory = (cat?: string | null, catLabel?: string | null) => {
+    if (catLabel) return catLabel;
+    if (!cat) return "";
     const key = cat as Parameters<typeof tExams.has>[0];
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
       ? tExams(`category.${key}` as Parameters<typeof tExams>[0])
@@ -423,7 +425,7 @@ export function StudentExamsClient() {
                         {/* Category */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           <span className="inline-flex items-center rounded-full bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground/80">
-                            {formatCategory(exam.classification)}
+                            {formatCategory(exam.classification, exam.classification_label)}
                           </span>
                         </td>
 

@@ -198,7 +198,8 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     return field[locale] || field.ar || field.en || Object.values(field)[0] || "";
   };
 
-  const formatCategory = (cat?: string | null) => {
+  const formatCategory = (cat?: string | null, catLabel?: string | null) => {
+    if (catLabel) return catLabel;
     if (!cat) return "";
     const key = cat as Parameters<typeof tExams.has>[0];
     return tExams.has(`category.${key}` as Parameters<typeof tExams.has>[0])
@@ -1132,7 +1133,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 <div className="flex justify-between items-center py-1 border-b border-border/40">
                   <span className="text-muted-foreground">{t("sidebar.category")}</span>
                   <span className="font-semibold text-foreground">
-                    {formatCategory(exam.classification)}
+                    {formatCategory(exam.classification, exam.classification_label)}
                   </span>
                 </div>
               )}

@@ -151,12 +151,14 @@ export function ProfileDropdown({
             <span>{t("profile")}</span>
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href={settingsHref} className="cursor-pointer flex items-center">
-            <Settings className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-            <span>{t("settings")}</span>
-          </Link>
-        </DropdownMenuItem>
+        {!isStudent && (
+          <DropdownMenuItem asChild>
+            <Link href={settingsHref} className="cursor-pointer flex items-center">
+              <Settings className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+              <span>{t("settings")}</span>
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-red-600 focus:text-red-600 cursor-pointer flex items-center"
