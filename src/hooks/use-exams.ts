@@ -165,6 +165,21 @@ export function useExamSectionMutations(examId: number | string) {
 }
 
 /**
+ * Detach a question from an exam
+ */
+export function useDetachExamQuestion(examId: number | string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (questionId: number | string) => examsService.detachQuestion(examId, questionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.list() });
+    },
+  });
+}
+
+/**
  * Hook to fetch exam attempts for stats / review / submissions queue
  */
 export function useProviderExamAttempts(filters?: {

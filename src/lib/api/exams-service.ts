@@ -191,6 +191,16 @@ export const examsService = {
   },
 
   /**
+   * Question Management: Detach a question from an exam
+   */
+  async detachQuestion(examId: number | string, questionId: number | string): Promise<void> {
+    await api<void>({
+      url: `/api/dashboard/provider/exams/${examId}/questions/${questionId}`,
+      method: "DELETE",
+    });
+  },
+
+  /**
    * Student Attempts: Get attempts for an exam
    */
   async getExamAttempts(filters?: {

@@ -1,11 +1,15 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { useExamSectionMutations, useProviderExam, useProviderExams } from "@/hooks/use-exams";
+import {
+  useDetachExamQuestion,
+  useExamSectionMutations,
+  useProviderExam,
+  useProviderExams,
+} from "@/hooks/use-exams";
 import {
   useBulkCreateQuestions,
   useCreateQuestion,
-  useDeleteQuestion,
   useUpdateQuestion,
 } from "@/hooks/use-questions";
 import {
@@ -50,6 +54,8 @@ export function useExamSectionsManagement({
 
   // TanStack Query & Mutations
   const queryClient = useQueryClient();
+  const examIdNum = Number(examId);
+  const isBackendExamId = !Number.isNaN(examIdNum) && examIdNum > 0;
   const { data: fetchedBackendExam, isLoading: isExamLoading } = useProviderExam(examId);
   const { data: allExamsData } = useProviderExams({ per_page: 50 });
 
@@ -57,7 +63,7 @@ export function useExamSectionsManagement({
   const createQuestionMutation = useCreateQuestion();
   const bulkCreateQuestionsMutation = useBulkCreateQuestions();
   const updateQuestionMutation = useUpdateQuestion();
-  const deleteQuestionMutation = useDeleteQuestion();
+  const detachQuestionMutation = useDetachExamQuestion(examId);
 
   // All available exams for importing
   const allExams: Exam[] = (allExamsData?.exams || []).map((be) =>
@@ -278,8 +284,6 @@ export function useExamSectionsManagement({
     try {
       const sectionIdNum = Number(targetSecId);
       const validSectionId = !Number.isNaN(sectionIdNum) && sectionIdNum > 0 ? sectionIdNum : null;
-      const examIdNum = Number(examId);
-      const isBackendExamId = !Number.isNaN(examIdNum) && examIdNum > 0;
 
       const bankQuestions = questions.filter((q) => !q.id.startsWith("q-"));
       const newQuestions = questions.filter((q) => q.id.startsWith("q-"));
@@ -349,13 +353,22 @@ export function useExamSectionsManagement({
   };
 
   const handleDeleteQuestion = async (secId: string, qId: string) => {
-    if (!qId.startsWith("q-")) {
+    if (!qId.startsWith("q-") && isBackendExamId) {
       try {
-        await deleteQuestionMutation.mutateAsync(qId);
-        toast.success(locale === "ar" ? "تم إزالة السؤال بنجاح" : "Question removed successfully");
+        await detachQuestionMutation.mutateAsync(qId);
+        toast.success(
+          locale === "ar"
+            ? "تم إزالة السؤال من الامتحان بنجاح"
+            : "Question removed from exam successfully",
+        );
       } catch (err) {
         toast.error(
-          getErrorMessage(err, locale === "ar" ? "فشل إزالة السؤال" : "Failed to remove question"),
+          getErrorMessage(
+            err,
+            locale === "ar"
+              ? "فشل إزالة السؤال من الامتحان"
+              : "Failed to remove question from exam",
+          ),
         );
         return;
       }
@@ -407,7 +420,7 @@ export function useExamSectionsManagement({
     sectionMutations.deleteSection.isPending ||
     createQuestionMutation.isPending ||
     updateQuestionMutation.isPending ||
-    deleteQuestionMutation.isPending;
+    detachQuestionMutation.isPending;
 
   return {
     sections,
