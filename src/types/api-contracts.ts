@@ -795,6 +795,12 @@ export interface StoreQuestionData {
 
 export type UpdateQuestionData = Partial<StoreQuestionData>;
 
+export interface BulkStoreQuestionData {
+  exam_id: number;
+  exam_section_id?: number | null;
+  question_ids: number[];
+}
+
 export interface BackendExamAttemptQuestion {
   id: number;
   type: string;

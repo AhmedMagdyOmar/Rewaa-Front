@@ -2,6 +2,7 @@ import { api } from "@/lib/apiClient";
 import type {
   BackendQuestion,
   BackendQuestionOptions,
+  BulkStoreQuestionData,
   QuestionFilterParams,
   QuestionListResponse,
   StoreQuestionData,
@@ -85,6 +86,18 @@ export const questionsService = {
       url: `/api/dashboard/provider/questions/${id}`,
       method: "DELETE",
     });
+  },
+
+  /**
+   * Bulk import / assign questions into an exam section
+   */
+  async bulkCreateQuestions(data: BulkStoreQuestionData): Promise<BackendQuestion[]> {
+    const response = await api<{ questions: BackendQuestion[] }>({
+      url: `/api/dashboard/provider/questions/bulk`,
+      method: "POST",
+      data,
+    });
+    return response.questions;
   },
 
   /**

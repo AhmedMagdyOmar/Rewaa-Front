@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/api/queryKeys";
 import { questionsService } from "@/lib/api/questions-service";
 import type {
+  BulkStoreQuestionData,
   QuestionFilterParams,
   StoreQuestionData,
   UpdateQuestionData,
@@ -123,6 +124,27 @@ export function useReorderQuestions() {
           queryKey: queryKeys.provider.exams.detail(variables.examId),
         });
       }
+    },
+  });
+}
+
+/**
+ * Hook to bulk assign questions to an exam/section
+ */
+export function useBulkCreateQuestions() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: BulkStoreQuestionData) => questionsService.bulkCreateQuestions(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.questions.all() });
+      queryClient.invalidateQueries({ queryKey: ["provider", "questions"] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.exams.detail(variables.exam_id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...queryKeys.provider.exams.detail(variables.exam_id), "questions"],
+      });
     },
   });
 }

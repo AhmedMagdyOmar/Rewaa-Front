@@ -2,7 +2,12 @@
 "use client";
 
 import { useExamSectionMutations, useProviderExam, useProviderExams } from "@/hooks/use-exams";
-import { useCreateQuestion, useDeleteQuestion, useUpdateQuestion } from "@/hooks/use-questions";
+import {
+  useBulkCreateQuestions,
+  useCreateQuestion,
+  useDeleteQuestion,
+  useUpdateQuestion,
+} from "@/hooks/use-questions";
 import {
   mapBackendExamToFrontend,
   mapBackendQuestionToFrontend,
@@ -50,6 +55,7 @@ export function useExamSectionsManagement({
 
   const sectionMutations = useExamSectionMutations(examId);
   const createQuestionMutation = useCreateQuestion();
+  const bulkCreateQuestionsMutation = useBulkCreateQuestions();
   const updateQuestionMutation = useUpdateQuestion();
   const deleteQuestionMutation = useDeleteQuestion();
 
@@ -272,95 +278,65 @@ export function useExamSectionsManagement({
     try {
       const sectionIdNum = Number(targetSecId);
       const validSectionId = !Number.isNaN(sectionIdNum) && sectionIdNum > 0 ? sectionIdNum : null;
+      const examIdNum = Number(examId);
+      const isBackendExamId = !Number.isNaN(examIdNum) && examIdNum > 0;
 
-      // Process requests in concurrent chunks of 6 to avoid bursting the API rate limiter
-      const CHUNK_SIZE = 6;
+      const bankQuestions = questions.filter((q) => !q.id.startsWith("q-"));
+      const newQuestions = questions.filter((q) => q.id.startsWith("q-"));
+
       const savedQuestions: Question[] = [];
 
-      for (let i = 0; i < questions.length; i += CHUNK_SIZE) {
-        const chunk = questions.slice(i, i + CHUNK_SIZE);
-        const chunkResults = await Promise.all(
-          chunk.map(async (q) => {
-            if (!q.id.startsWith("q-")) {
-              // Existing bank question: build complete payload required by backend PUT validation
-              const payload: StoreQuestionData = {
-                title: { ar: q.questionName, en: q.questionName },
-                body: { ar: q.questionContent, en: q.questionContent },
-                type:
-                  q.type === "mcq"
-                    ? "multiple_choice"
-                    : q.type === "true/false"
-                      ? "true_false"
-                      : "essay",
-                difficulty: q.difficulty || "medium",
-                classification: mapFrontendKindToBackend(q.questionType),
-                score: Number(q.grade) || 1,
-                has_explanation: Boolean(q.hasAnswerExplanation),
-                is_active: true,
-                exam_assignments: [
-                  {
-                    exam_id: Number(examId),
-                    exam_section_id: validSectionId,
-                  },
-                ],
-              };
+      // Bulk assign existing bank questions in one shot
+      if (bankQuestions.length > 0) {
+        if (isBackendExamId) {
+          const questionIds = bankQuestions
+            .map((q) => Number(q.id))
+            .filter((id) => !Number.isNaN(id) && id > 0);
 
-              if (q.hasAnswerExplanation && q.answerExplanation) {
-                payload.explanation = {
-                  ar: q.answerExplanation,
-                  en: q.answerExplanation,
-                };
-              }
+          if (questionIds.length > 0) {
+            const res = await bulkCreateQuestionsMutation.mutateAsync({
+              exam_id: examIdNum,
+              exam_section_id: validSectionId,
+              question_ids: questionIds,
+            });
 
-              if (q.type === "text" && q.modelAnswer) {
-                payload.model_answer = {
-                  ar: q.modelAnswer,
-                  en: q.modelAnswer,
-                };
-              } else if (q.type === "true/false") {
-                payload.correct_answer = q.modelAnswer === "true";
-              } else if (q.type === "mcq" && q.options) {
-                payload.options = q.options.map((opt) => ({
-                  text: { ar: opt.text, en: opt.text },
-                  is_correct: opt.id === q.modelAnswer,
-                }));
-              }
+            const mappedAssigned = res.map((bq) => mapBackendQuestionToFrontend(bq, locale));
+            savedQuestions.push(...mappedAssigned);
+          }
+        } else {
+          // Local/draft state without backend exam ID yet
+          savedQuestions.push(...bankQuestions);
+        }
+      }
 
-              const updated = await updateQuestionMutation.mutateAsync({
-                id: q.id,
-                data: payload,
-              });
-              return mapBackendQuestionToFrontend(updated, locale);
-            } else {
-              // New question created in dialog
-              await handleSaveQuestion(q, targetSecId, true);
-              return q;
-            }
-          }),
-        );
-        savedQuestions.push(...chunkResults);
+      // Handle any newly drafted questions
+      for (const q of newQuestions) {
+        await handleSaveQuestion(q, targetSecId, true);
+        savedQuestions.push(q);
       }
 
       // Optimistically update local state with all new questions in the target section
       setSections((prev) =>
         prev.map((sec) => {
           if (sec.id === targetSecId) {
-            const newQuestions = [...sec.questions];
+            const newQuestionsList = [...sec.questions];
             for (const sq of savedQuestions) {
-              const existingIdx = newQuestions.findIndex((q) => q.id === sq.id);
+              const existingIdx = newQuestionsList.findIndex((q) => q.id === sq.id);
               if (existingIdx >= 0) {
-                newQuestions[existingIdx] = sq;
+                newQuestionsList[existingIdx] = sq;
               } else {
-                newQuestions.push(sq);
+                newQuestionsList.push(sq);
               }
             }
-            return { ...sec, questions: newQuestions };
+            return { ...sec, questions: newQuestionsList };
           }
           return sec;
         }),
       );
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+      if (isBackendExamId) {
+        await queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+      }
       setActiveDialog(null);
       setEditingQuestion(null);
       toast.success(locale === "ar" ? "تم إضافة الأسئلة بنجاح" : "Questions added successfully");
