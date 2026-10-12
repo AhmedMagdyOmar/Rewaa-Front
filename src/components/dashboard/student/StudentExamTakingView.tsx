@@ -1,7 +1,5 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import { getOptionLetter } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { MarkdownViewer } from "@/components/ui/markdown-viewer";
 import { useSaveExamAnswer } from "@/hooks/use-student-exams";
+import { getOptionLetter } from "@/lib/utils";
 import type {
   BackendStudentAttemptQuestion,
   BackendStudentExamAttempt,
@@ -24,7 +23,6 @@ import {
   ArrowRight,
   CheckCircle2,
   Flag,
-  Lightbulb,
   ListFilter,
   Loader2,
   Send,
@@ -72,7 +70,6 @@ export function StudentExamTakingView({
     return questions.filter((q) => q.is_flagged).map((q) => q.id);
   });
 
-  const [showHint, setShowHint] = React.useState(false);
   const [isSubmitModalOpen, setIsSubmitModalOpen] = React.useState(false);
 
   // Timer: Duration from server expires_at or duration_minutes
@@ -144,11 +141,6 @@ export function StudentExamTakingView({
   // Current Question
   const currentQ: BackendStudentAttemptQuestion | undefined =
     questions[currentIndex] || questions[0];
-
-  // Reset hint state when navigating questions
-  React.useEffect(() => {
-    setShowHint(false);
-  }, [currentIndex]);
 
   const getLocalizedString = (field?: Record<string, string> | null) => {
     if (!field) return "";
@@ -491,44 +483,6 @@ export function StudentExamTakingView({
                 />
               </div>
             )}
-
-            {/* Explanation / Hint Toggle if present */}
-            {currentQ.explanation && (
-              <div className="pt-2">
-                {showHint ? (
-                  <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-foreground space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-amber-700 flex items-center gap-1.5">
-                        <Lightbulb className="size-3.5" />
-                        <span>{t("question.hintTitle")}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => setShowHint(false)}
-                        className="text-[11px] text-muted-foreground hover:underline cursor-pointer"
-                      >
-                        {t("question.hideHint")}
-                      </button>
-                    </div>
-                    <p className="text-muted-foreground ps-5">
-                      {getLocalizedString(currentQ.explanation)}
-                    </p>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowHint(true)}
-                    className="text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-500/10 gap-1.5 h-8 px-2 cursor-pointer"
-                  >
-                    <Lightbulb className="size-3.5" />
-                    <span>{t("question.viewHint")}</span>
-                  </Button>
-                )}
-              </div>
-            )}
-
             {/* ── Actions Footer Toolbar ───────────────────────────────────── */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-border/60">
               {/* Previous Button */}
