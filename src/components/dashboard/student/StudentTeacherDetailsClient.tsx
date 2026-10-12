@@ -54,7 +54,6 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
   const searchQuery = searchParams.get("search") || "";
   const sortBy = searchParams.get("sort") || defaultSort;
   const gradeFilter = searchParams.get("grade") || null;
-  const subjectFilter = searchParams.get("subject") || null;
   const categoryFilter = searchParams.get("category") || null;
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
 
@@ -86,7 +85,6 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
     search: searchQuery || undefined,
     sort: sortBy || undefined,
     educational_stage_id: gradeFilter ? Number(gradeFilter) : undefined,
-    subject_id: subjectFilter ? Number(subjectFilter) : undefined,
     category: categoryFilter || undefined,
     page: currentPage,
     per_page: itemsPerPage,
@@ -116,26 +114,10 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [courses, locale]);
 
-  const subjectOptions = React.useMemo(() => {
-    const map = new Map<string | number, string>();
-    courses.forEach((c) => {
-      if (c.subject) {
-        const name =
-          c.subject.name?.[locale] ??
-          c.subject.name?.ar ??
-          c.subject.name?.en ??
-          `Subject ${c.subject.id}`;
-        map.set(c.subject.id, name);
-      }
-    });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [courses, locale]);
-
   // Handlers
   const handleSearchChange = (search: string) => updateUrlParams({ search, page: 1 });
   const handleSortChange = (sort: string) => updateUrlParams({ sort, page: 1 });
   const handleGradeChange = (grade: string | null) => updateUrlParams({ grade, page: 1 });
-  const handleSubjectChange = (subject: string | null) => updateUrlParams({ subject, page: 1 });
   const handleCategoryChange = (category: string | null) => updateUrlParams({ category, page: 1 });
   const handlePageChange = (page: number) => updateUrlParams({ page });
   const handleResetFilters = () =>
@@ -143,7 +125,6 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
       search: null,
       sort: null,
       grade: null,
-      subject: null,
       category: null,
       page: 1,
     });
@@ -156,15 +137,11 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
 
   const isSearchEmpty =
     !isCoursesLoading &&
-    Boolean(searchQuery || gradeFilter || subjectFilter || categoryFilter) &&
+    Boolean(searchQuery || gradeFilter || categoryFilter) &&
     courses.length === 0;
+
   const isInitialEmpty =
-    !isCoursesLoading &&
-    !searchQuery &&
-    !gradeFilter &&
-    !subjectFilter &&
-    !categoryFilter &&
-    courses.length === 0;
+    !isCoursesLoading && !searchQuery && !gradeFilter && !categoryFilter && courses.length === 0;
 
   // Teacher name initials
   const nameParts = teacher?.full_name?.trim().split(/\s+/).filter(Boolean) || [];
@@ -312,21 +289,18 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
           )}
         </div>
 
-        {/* Filter Toolbar with Grade, Subject, Classification, Search, Sort */}
+        {/* Filter Toolbar with Grade, Classification, Search, Sort */}
         <StudentCourseFilters
           searchQuery={searchQuery}
           sortBy={sortBy}
           sortOptions={sortOptions}
           defaultSort={defaultSort}
           selectedGradeId={gradeFilter}
-          selectedSubjectId={subjectFilter}
           selectedCategory={categoryFilter}
           grades={gradeOptions}
-          subjects={subjectOptions}
           onSearchChange={handleSearchChange}
           onSortChange={handleSortChange}
           onGradeChange={handleGradeChange}
-          onSubjectChange={handleSubjectChange}
           onCategoryChange={handleCategoryChange}
           onResetFilters={handleResetFilters}
         />
