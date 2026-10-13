@@ -147,12 +147,15 @@ export function LastBillingRequestsCard({ onSelectInvoice }: LastBillingRequests
   const formatPaymentMethod = (method?: string) => {
     if (!method) return locale === "ar" ? "أخرى" : "Other";
     const m = method.toLowerCase();
+    if (m === "student_wallet" || m === "wallet")
+      return locale === "ar" ? "محفظة الطالب" : "Student Wallet";
+    if (m === "manual_transfer" || m === "manual")
+      return locale === "ar" ? "تحويل يدوي" : "Manual Transfer";
     if (m.includes("insta")) return "InstaPay";
-    if (m.includes("voda") || m.includes("cash") || m.includes("wallet")) return "Vodafone Cash";
+    if (m.includes("voda") || m.includes("cash")) return "Vodafone Cash";
     if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
       return "Credit Card";
     if (m.includes("fawry")) return "Fawry";
-    if (m.includes("manual")) return locale === "ar" ? "تحويل يدوي" : "Manual Transfer";
     return method;
   };
 

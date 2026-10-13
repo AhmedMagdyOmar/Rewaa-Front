@@ -1160,9 +1160,12 @@ export type BackendOrderStatus =
   | string;
 export type BackendPaymentStatus = "pending" | "approved" | "rejected";
 export type BackendPaymentMethod =
+  | "student_wallet"
+  | "manual_transfer"
   | "instapay"
   | "vodafone_cash"
   | "bank"
+  | "bank_account"
   | "wallet"
   | "fawry"
   | "credit_card"

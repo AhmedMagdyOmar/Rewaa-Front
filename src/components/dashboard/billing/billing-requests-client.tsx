@@ -136,13 +136,13 @@ export function BillingRequestsClient() {
   const formatPaymentMethod = (method?: string) => {
     if (!method) return t("methods.other");
     const m = method.toLowerCase();
+    if (m === "student_wallet" || m === "wallet") return t("methods.student_wallet");
+    if (m === "manual_transfer" || m === "manual") return t("methods.manual_transfer");
     if (m.includes("insta")) return t("methods.instapay");
-    if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
-      return t("methods.vodafone_cash");
+    if (m.includes("voda") || m.includes("cash")) return t("methods.vodafone_cash");
     if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
       return t("methods.credit_card");
     if (m.includes("fawry")) return t("methods.fawry");
-    if (m.includes("manual")) return t("methods.manual");
     return method;
   };
 

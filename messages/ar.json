@@ -2048,6 +2048,8 @@
     "rejectSuccess": "تم رفض الطلب بنجاح",
     "methods": {
       "other": "أخرى",
+      "student_wallet": "محفظة الطالب",
+      "manual_transfer": "تحويل يدوي",
       "instapay": "إنستاباي",
       "vodafone_cash": "فودافون كاش",
       "credit_card": "بطاقة ائتمان",

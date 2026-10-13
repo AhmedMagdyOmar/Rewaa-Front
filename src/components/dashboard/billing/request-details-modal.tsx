@@ -115,13 +115,13 @@ export function RequestDetailsModal({
   const formatPaymentMethod = (method?: string) => {
     if (!method) return tMethods("other");
     const m = method.toLowerCase();
+    if (m === "student_wallet" || m === "wallet") return tMethods("student_wallet");
+    if (m === "manual_transfer" || m === "manual") return tMethods("manual_transfer");
     if (m.includes("insta")) return tMethods("instapay");
-    if (m.includes("voda") || m.includes("cash") || m.includes("wallet"))
-      return tMethods("vodafone_cash");
+    if (m.includes("voda") || m.includes("cash")) return tMethods("vodafone_cash");
     if (m.includes("card") || m.includes("credit") || m.includes("stripe") || m.includes("paymob"))
       return tMethods("credit_card");
     if (m.includes("fawry")) return tMethods("fawry");
-    if (m.includes("manual")) return tMethods("manual");
     return method;
   };
 

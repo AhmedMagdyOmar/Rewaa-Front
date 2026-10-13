@@ -2048,6 +2048,8 @@
     "rejectSuccess": "Payment rejected successfully",
     "methods": {
       "other": "Other",
+      "student_wallet": "Student Wallet",
+      "manual_transfer": "Manual Transfer",
       "instapay": "InstaPay",
       "vodafone_cash": "Vodafone Cash",
       "credit_card": "Credit Card",
