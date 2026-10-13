@@ -19,11 +19,15 @@ export function useStudentEnroll() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.myCourses() });
-      if (variables.course_ids.length === 1) {
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.exploreCourses() });
+      variables.course_ids.forEach((cId) => {
         queryClient.invalidateQueries({
-          queryKey: queryKeys.student.courseDetail(variables.course_ids[0]),
+          queryKey: queryKeys.student.courseDetail(cId),
         });
-      }
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseContent(cId),
+        });
+      });
     },
     onError: (error: unknown) => {
       const err = error as { apiMessage?: string; message?: string };

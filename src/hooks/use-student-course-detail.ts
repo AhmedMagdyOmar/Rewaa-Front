@@ -12,18 +12,14 @@ export function useStudentCourseDetail(courseId: string | number) {
   return useQuery({
     queryKey: queryKeys.student.courseDetail(courseId),
     queryFn: async () => {
+      // For student portal, try enrolled course first so full enrollment and curriculum status are loaded
       try {
+        const enrolledRes = await myCoursesService.getEnrolledCourse(courseId);
+        return enrolledRes.course;
+      } catch {
+        // If not enrolled or returns 404/403, fallback to available course preview endpoint
         const res = await exploreCoursesService.getAvailableCourse(courseId);
         return res.course;
-      } catch (err: unknown) {
-        // If not found in available courses (e.g. student is enrolled so available query returns 404 or backend redirects),
-        // try enrolled course details endpoint:
-        try {
-          const enrolledRes = await myCoursesService.getEnrolledCourse(courseId);
-          return enrolledRes.course;
-        } catch {
-          throw err;
-        }
       }
     },
     enabled: Boolean(courseId),

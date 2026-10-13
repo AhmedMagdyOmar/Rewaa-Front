@@ -34,14 +34,16 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     data: backendCourse,
     isLoading: isDetailsLoading,
     error: detailsError,
+    refetch: refetchCourseDetails,
   } = useStudentCourseDetail(courseId);
 
   // React Query for live course syllabus tree (only enabled when enrolled)
   const isEnrolled = Boolean(backendCourse?.is_enrolled);
-  const { data: backendContent, isLoading: isContentLoading } = useStudentCourseContent(
-    courseId,
-    isEnrolled,
-  );
+  const {
+    data: backendContent,
+    isLoading: isContentLoading,
+    refetch: refetchCourseContent,
+  } = useStudentCourseContent(courseId, isEnrolled);
 
   // React Query mutation for enrollment / checkout order creation
   const enrollMutation = useStudentEnroll();
@@ -96,13 +98,17 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     };
 
     enrollMutation.mutate(payload, {
-      onSuccess: (data) => {
+      onSuccess: async (data) => {
         if (data?.order?.status === "paid") {
           toast.success(tPreview("enrollSuccess"));
+          await refetchCourseDetails();
+          await refetchCourseContent();
         } else if (data?.order?.id) {
           router.push(`/student-dashboard/orders/${data.order.id}`);
         } else {
           toast.success(tPreview("enrollSuccess"));
+          await refetchCourseDetails();
+          await refetchCourseContent();
         }
       },
     });

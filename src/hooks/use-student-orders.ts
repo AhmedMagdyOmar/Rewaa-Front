@@ -53,12 +53,24 @@ export function usePayWithWallet(orderId: number | string) {
 
   return useMutation<BackendOrder, Error, PayWithWalletPayload>({
     mutationFn: (payload) => studentOrdersService.payWithWallet(orderId, payload),
-    onSuccess: () => {
+    onSuccess: (order) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.student.orderDetail(orderId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.orders() });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.wallet() });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.walletTransactions() });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.myCourses() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.exploreCourses() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
+      order?.items?.forEach((item) => {
+        if (item.course_id) {
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.student.courseDetail(item.course_id),
+          });
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.student.courseContent(item.course_id),
+          });
+        }
+      });
     },
   });
 }

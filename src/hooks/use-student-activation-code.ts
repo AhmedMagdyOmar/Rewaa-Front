@@ -21,6 +21,9 @@ export function useRedeemActivationCode() {
         queryClient.invalidateQueries({
           queryKey: queryKeys.student.courseDetail(data.course_id),
         });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseContent(data.course_id),
+        });
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.student.all });
     },
