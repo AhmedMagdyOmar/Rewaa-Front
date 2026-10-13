@@ -37,7 +37,7 @@ export default function LoginPage() {
       identifier: z
         .string()
         .min(1, tVal("phoneRequired"))
-        .regex(/^[0-9+\s-]{8,15}$/, tVal("invalidPhone")),
+        .refine((val) => !val || /^[0-9+\s-]{8,15}$/.test(val), tVal("invalidPhone")),
       password: z.string().min(1, tVal("passwordRequired")),
     });
   }, [tVal]);

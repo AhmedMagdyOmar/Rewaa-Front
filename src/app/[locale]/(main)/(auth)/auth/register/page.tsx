@@ -85,12 +85,12 @@ export default function StudentRegisterPage() {
           phone: z
             .string()
             .min(1, tVal("phoneRequired"))
-            .regex(/^[0-9+\s-]{8,15}$/, tVal("invalidPhone")),
+            .refine((val) => !val || /^[0-9+\s-]{8,15}$/.test(val), tVal("invalidPhone")),
           guardian_phone_code: z.string().default("+20"),
           guardian_phone: z
             .string()
             .min(1, tVal("phoneRequired"))
-            .regex(/^[0-9+\s-]{8,15}$/, tVal("invalidPhone")),
+            .refine((val) => !val || /^[0-9+\s-]{8,15}$/.test(val), tVal("invalidPhone")),
           gender: z.enum(["male", "female"]),
           country_id: z.string().min(1, tVal("required")),
           governorate_id: z.string().min(1, tVal("required")),

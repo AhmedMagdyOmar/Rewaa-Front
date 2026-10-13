@@ -98,11 +98,6 @@ export const studentNavConfig: NavConfig = {
       icon: Compass,
     },
     {
-      label: "generalLessons",
-      href: "/student-dashboard/lessons",
-      icon: Video,
-    },
-    {
       label: "Exams",
       href: "/student-dashboard/exams",
       icon: FileQuestion,
@@ -124,7 +119,6 @@ export const studentNavbarLinks = [
   { label: "Home", href: "/student-dashboard" },
   { label: "myCourses", href: "/student-dashboard/courses" },
   { label: "exploreCourses", href: "/student-dashboard/courses/explore" },
-  { label: "generalLessons", href: "/student-dashboard/lessons" },
   { label: "Exams", href: "/student-dashboard/exams" },
   { label: "wallet", href: "/student-dashboard/wallet" },
   { label: "orders", href: "/student-dashboard/orders" },
