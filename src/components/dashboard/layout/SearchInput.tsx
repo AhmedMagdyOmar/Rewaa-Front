@@ -89,7 +89,13 @@ export function SearchDialog({
               key={item.href}
               value={item.label}
               onSelect={() => {
-                runCommand(() => router.push(item.href));
+                runCommand(() => {
+                  if (item.isExternal || item.href.startsWith("http")) {
+                    window.open(item.href, "_blank", "noopener,noreferrer");
+                  } else {
+                    router.push(item.href);
+                  }
+                });
               }}
             >
               <item.icon className="mr-2 h-4 w-4" />

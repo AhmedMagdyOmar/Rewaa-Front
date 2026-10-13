@@ -51,6 +51,7 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}
             NEXT_PUBLIC_LANDING_URL=${{ secrets.NEXT_PUBLIC_LANDING_URL }}
+            NEXT_PUBLIC_SUPPORT_WHATSAPP=${{ secrets.NEXT_PUBLIC_SUPPORT_WHATSAPP }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

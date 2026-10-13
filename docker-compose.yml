@@ -6,6 +6,7 @@ services:
       args:
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
         - NEXT_PUBLIC_LANDING_URL=${NEXT_PUBLIC_LANDING_URL}
+        - NEXT_PUBLIC_SUPPORT_WHATSAPP=${NEXT_PUBLIC_SUPPORT_WHATSAPP}
     container_name: nextjs-template-app
     ports:
       - "3005:3000"

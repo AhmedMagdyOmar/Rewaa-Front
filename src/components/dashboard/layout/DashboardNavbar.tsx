@@ -150,18 +150,32 @@ export function DashboardNavbar({
           {links && links.length > 0 && (
             <nav className="hidden md:flex items-center gap-1 md:gap-2 h-16">
               {links.map((link) => {
+                const isExternal =
+                  (link as { isExternal?: boolean }).isExternal || link.href.startsWith("http");
                 const isActive = pathname === link.href;
+                const linkClass = cn(
+                  "relative flex items-center h-full px-3 text-sm font-medium transition-colors border-b-2 hover:border-primary hover:text-primary",
+                  isActive
+                    ? "border-primary text-primary font-semibold"
+                    : "border-transparent text-muted-foreground",
+                );
+
+                if (isExternal) {
+                  return (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={linkClass}
+                    >
+                      {getNavLabel(link.label)}
+                    </a>
+                  );
+                }
+
                 return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={cn(
-                      "relative flex items-center h-full px-3 text-sm font-medium transition-colors border-b-2 hover:border-primary hover:text-primary",
-                      isActive
-                        ? "border-primary text-primary font-semibold"
-                        : "border-transparent text-muted-foreground",
-                    )}
-                  >
+                  <Link key={link.href} href={link.href} className={linkClass}>
                     {getNavLabel(link.label)}
                   </Link>
                 );

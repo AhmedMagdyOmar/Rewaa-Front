@@ -4,18 +4,23 @@ import {
   BookOpen,
   Users,
   CreditCard,
-  Settings,
   FileQuestion,
   HelpCircle,
   LucideIcon,
   Compass,
   ShoppingBag,
+  MessageCircle,
 } from "lucide-react";
+import { getWhatsAppUrl } from "@/components/ui/phone-link";
+
+export const SUPPORT_WHATSAPP_PHONE = process.env.NEXT_PUBLIC_SUPPORT_WHATSAPP || "+201009876543";
+export const SUPPORT_WHATSAPP_URL = getWhatsAppUrl(SUPPORT_WHATSAPP_PHONE);
 
 export interface NavItem {
   label: string;
   href: string;
   icon: LucideIcon;
+  isExternal?: boolean;
 }
 
 export interface NavConfig {
@@ -68,9 +73,10 @@ export const navConfig: NavConfig = {
       icon: CreditCard,
     },
     {
-      label: "Settings",
-      href: "/dashboard/settings",
-      icon: Settings,
+      label: "contactUs",
+      href: SUPPORT_WHATSAPP_URL,
+      icon: MessageCircle,
+      isExternal: true,
     },
   ],
 };
@@ -112,6 +118,12 @@ export const studentNavConfig: NavConfig = {
       href: "/student-dashboard/orders",
       icon: ShoppingBag,
     },
+    {
+      label: "contactUs",
+      href: SUPPORT_WHATSAPP_URL,
+      icon: MessageCircle,
+      isExternal: true,
+    },
   ],
 };
 
@@ -122,4 +134,5 @@ export const studentNavbarLinks = [
   { label: "Exams", href: "/student-dashboard/exams" },
   { label: "wallet", href: "/student-dashboard/wallet" },
   { label: "orders", href: "/student-dashboard/orders" },
+  { label: "contactUs", href: SUPPORT_WHATSAPP_URL, isExternal: true },
 ];

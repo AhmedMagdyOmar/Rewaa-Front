@@ -9,12 +9,13 @@ import {
 import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { cn, formatEgyptianPhone } from "@/lib/utils";
 import { UserProfile } from "@/types/auth";
-import { LogOut, Settings, User } from "lucide-react";
+import { LogOut, MessageCircle, User } from "lucide-react";
 import { Link } from "@/i18n/routing";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
 import { useAuthStore } from "@/lib/stores/auth-store";
+import { SUPPORT_WHATSAPP_URL } from "@/config/nav-config";
 
 interface ProfileDropdownProps {
   user: UserProfile;
@@ -70,7 +71,6 @@ export function ProfileDropdown({
   const isLight = variant === "light";
   const isStudent = rawRole === "student";
   const profileHref = isStudent ? "/student-dashboard/profile" : "/dashboard/profile";
-  const settingsHref = isStudent ? "/student-dashboard/settings" : "/dashboard/settings";
   const effectiveAvatar =
     user.avatar_url ||
     user.flag ||
@@ -151,14 +151,17 @@ export function ProfileDropdown({
             <span>{t("profile")}</span>
           </Link>
         </DropdownMenuItem>
-        {!isStudent && (
-          <DropdownMenuItem asChild>
-            <Link href={settingsHref} className="cursor-pointer flex items-center">
-              <Settings className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
-              <span>{t("settings")}</span>
-            </Link>
-          </DropdownMenuItem>
-        )}
+        <DropdownMenuItem asChild>
+          <a
+            href={SUPPORT_WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="cursor-pointer flex items-center"
+          >
+            <MessageCircle className="mr-2 h-4 w-4 rtl:ml-2 rtl:mr-0" />
+            <span>{t("contactUs")}</span>
+          </a>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-red-600 focus:text-red-600 cursor-pointer flex items-center"

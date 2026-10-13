@@ -185,12 +185,26 @@ export function AppSidebar({
                         : "text-inactive-gray hover:bg-primary hover:text-white",
                     )}
                   >
-                    <Link href={item.href} className="flex items-center justify-center">
-                      <item.icon className="size-5 shrink-0 text-current transition-colors" />
-                      <span className="group-data-[collapsible=icon]:hidden">
-                        {translatedLabel}
-                      </span>
-                    </Link>
+                    {item.isExternal ? (
+                      <a
+                        href={item.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center"
+                      >
+                        <item.icon className="size-5 shrink-0 text-current transition-colors" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {translatedLabel}
+                        </span>
+                      </a>
+                    ) : (
+                      <Link href={item.href} className="flex items-center justify-center">
+                        <item.icon className="size-5 shrink-0 text-current transition-colors" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          {translatedLabel}
+                        </span>
+                      </Link>
+                    )}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               );
