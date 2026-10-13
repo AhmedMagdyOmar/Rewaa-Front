@@ -157,27 +157,27 @@ export function ManageStudentsClient() {
   const [balanceStudent, setBalanceStudent] = React.useState<Student | null>(null);
   const [reportStudent, setReportStudent] = React.useState<Student | null>(null);
 
-  const availableCountries: string[] = React.useMemo(() => {
+  const availableCountries = React.useMemo(() => {
     if (optionsData?.countries) {
-      return optionsData.countries.map((c) => c.name[locale] || c.name.ar || c.name.en || "");
+      return optionsData.countries.map((c) => ({
+        id: String(c.id),
+        name: c.name[locale] || c.name.ar || c.name.en || "",
+      }));
     }
-    const set = new Set<string>();
-    students.forEach((s) => s.country && set.add(s.country));
-    return Array.from(set);
-  }, [optionsData, students, locale]);
+    return [];
+  }, [optionsData, locale]);
 
-  const availableStates: string[] = React.useMemo(() => {
-    if (optionsData?.governorates) {
-      return optionsData.governorates.map((g) => g.name[locale] || g.name.ar || g.name.en || "");
-    }
-    const set = new Set<string>();
-    students.forEach((s) => {
-      if (selectedCountry === "all" || s.country === selectedCountry) {
-        if (s.state) set.add(s.state);
-      }
-    });
-    return Array.from(set);
-  }, [optionsData, students, selectedCountry, locale]);
+  const availableStates = optionsData?.governorates
+    ? optionsData.governorates
+        .filter((g) => {
+          if (selectedCountry === "all") return true;
+          return String(g.country_id) === String(selectedCountry);
+        })
+        .map((g) => ({
+          id: String(g.id),
+          name: g.name[locale] || g.name.ar || g.name.en || "",
+        }))
+    : [];
 
   // Safe Grade Formatter
   const formatGrade = React.useCallback(
@@ -190,57 +190,9 @@ export function ManageStudentsClient() {
     [tGrades],
   );
 
-  // Filter Logic
-  const filteredStudents = React.useMemo(() => {
-    return students.filter((student) => {
-      if (selectedGrade !== "all" && student.grade !== selectedGrade) {
-        return false;
-      }
-
-      if (selectedCountry !== "all" && student.country !== selectedCountry) {
-        return false;
-      }
-
-      if (selectedState !== "all" && student.state !== selectedState) {
-        return false;
-      }
-
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const fullName = [
-          student.firstName,
-          student.middleName,
-          student.lastName,
-          student.additionalName,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-
-        const matchesName = fullName.includes(query);
-        const matchesEmail = student.email.toLowerCase().includes(query);
-        const matchesPhone = student.phoneNumber.toLowerCase().includes(query);
-        const matchesParentPhone = (student.parentPhoneNumber || "").toLowerCase().includes(query);
-        const matchesId = student.id.toLowerCase().includes(query);
-        const matchesCountry = (student.country || "").toLowerCase().includes(query);
-        const matchesState = (student.state || "").toLowerCase().includes(query);
-
-        if (
-          !matchesName &&
-          !matchesEmail &&
-          !matchesPhone &&
-          !matchesParentPhone &&
-          !matchesId &&
-          !matchesCountry &&
-          !matchesState
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [students, selectedGrade, selectedCountry, selectedState, searchQuery]);
+  // Filter Logic: Server already handles search, country_id, governorate_id, educational_stage_id.
+  // We keep students as is so pagination and counts remain accurate.
+  const filteredStudents = students;
 
   // Sort Logic
   const sortedStudents = React.useMemo(() => {
@@ -548,8 +500,8 @@ export function ManageStudentsClient() {
             <SelectContent>
               <SelectItem value="all">{t("allCountries")}</SelectItem>
               {availableCountries.map((c) => (
-                <SelectItem key={c} value={c}>
-                  {c}
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -566,8 +518,8 @@ export function ManageStudentsClient() {
             <SelectContent>
               <SelectItem value="all">{t("allStates")}</SelectItem>
               {availableStates.map((st) => (
-                <SelectItem key={st} value={st}>
-                  {st}
+                <SelectItem key={st.id} value={st.id}>
+                  {st.name}
                 </SelectItem>
               ))}
             </SelectContent>
