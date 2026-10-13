@@ -926,6 +926,7 @@
         "title": "العنوان",
         "subjectGrade": "المادة/المرحلة",
         "category": "الفئة",
+        "courseLesson": "الدورة / الدرس",
         "questions": "الأسئلة",
         "students": "الطلاب",
         "questionsStudents": "الأسئلة/الطلاب",

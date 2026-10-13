@@ -926,6 +926,7 @@
         "title": "Title",
         "subjectGrade": "Subject & Grade",
         "category": "Category",
+        "courseLesson": "Course / Lesson",
         "questions": "Questions",
         "students": "Students",
         "questionsStudents": "Questions & Students",

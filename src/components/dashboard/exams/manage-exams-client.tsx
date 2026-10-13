@@ -244,11 +244,11 @@ export function ManageExamsClient() {
                   t("table.columns.title"),
                   t("table.columns.subjectGrade"),
                   t("table.columns.category"),
-                  t.has("table.columns.type")
-                    ? t("table.columns.type")
+                  t.has("table.columns.courseLesson")
+                    ? t("table.columns.courseLesson")
                     : locale === "ar"
-                      ? "النوع / الدورة"
-                      : "Type / Course",
+                      ? "الدورة / الدرس"
+                      : "Course / Lesson",
                   t("table.columns.questions"),
                   t("table.columns.students"),
                   locale === "ar" ? "عدد المحاولات" : "Attempts",
@@ -303,7 +303,12 @@ export function ManageExamsClient() {
                           <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-relaxed">
                             {examTitle}
                           </p>
-                          {exam.lesson ? (
+                          {exam.course && exam.lesson ? (
+                            <p className="text-[11px] text-muted-foreground line-clamp-1">
+                              {exam.course.title?.[locale] || exam.course.title?.ar} /{" "}
+                              {exam.lesson.title?.[locale] || exam.lesson.title?.ar}
+                            </p>
+                          ) : exam.lesson ? (
                             <p className="text-[11px] text-muted-foreground line-clamp-1">
                               {exam.lesson.title?.[locale] || exam.lesson.title?.ar}
                             </p>
@@ -336,9 +341,28 @@ export function ManageExamsClient() {
                         </span>
                       </td>
 
-                      {/* 4. Type / Scope */}
+                      {/* 4. Course / Lesson */}
                       <td className="px-4 py-3 min-w-44">
-                        {exam.course ? (
+                        {exam.course && exam.lesson ? (
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/90 flex-wrap">
+                              <Link
+                                href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
+                                className="font-semibold text-primary hover:underline underline-offset-2 flex items-center gap-1 shrink-0"
+                              >
+                                <ExternalLink className="h-3 w-3 shrink-0" />
+                                <span>{exam.course.title[locale] || exam.course.title.ar}</span>
+                              </Link>
+                              <span className="text-muted-foreground/60 select-none">/</span>
+                              <Link
+                                href={`/${locale}/dashboard/lessons/${exam.lesson_id}/edit`}
+                                className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 line-clamp-1"
+                              >
+                                {exam.lesson.title[locale] || exam.lesson.title.ar}
+                              </Link>
+                            </div>
+                          </div>
+                        ) : exam.course ? (
                           <div className="flex flex-col gap-1">
                             <Link
                               href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
