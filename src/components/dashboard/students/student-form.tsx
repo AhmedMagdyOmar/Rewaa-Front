@@ -11,8 +11,7 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CountrySelect, GovernorateSelect, LocationOption } from "@/components/ui/location-selects";
-import { PhoneInputWithCode } from "@/components/ui/phone-input-with-code";
+import { GovernorateSelect, LocationOption } from "@/components/ui/location-selects";
 import {
   Select,
   SelectContent,
@@ -32,7 +31,7 @@ export interface StudentFormData {
   parentPhoneNumber: string;
   guardianPhoneCode: string;
   gender: Gender;
-  email: string;
+  email?: string;
   image?: string;
   imageFile?: File | null;
   removeAvatar?: boolean;
@@ -202,20 +201,6 @@ export function StudentForm({
   const [showPassword, setShowPassword] = React.useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
 
-  const handleCountryChange = (newCountryId: string) => {
-    const selectedCountry = countries.find((c) => String(c.id) === String(newCountryId));
-    const nextCode = selectedCountry?.country_code;
-
-    setFormData((prev) => ({
-      ...prev,
-      country: newCountryId,
-      state: "", // Reset state when country changes
-      phoneCode: nextCode || prev.phoneCode,
-      guardianPhoneCode: nextCode || prev.guardianPhoneCode,
-    }));
-    if (errorMsg) setErrorMsg(null);
-  };
-
   const handleChange = (field: keyof StudentFormData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     if (errorMsg) setErrorMsg(null);
@@ -350,14 +335,14 @@ export function StudentForm({
             {/* Student Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="phoneNumber">{tForm("phoneNumberLabel")}</Label>
-              <PhoneInputWithCode
+              <Input
                 id="phoneNumber"
-                phone={formData.phoneNumber}
-                phoneCode={formData.phoneCode}
-                onPhoneChange={(val) => handleChange("phoneNumber", val)}
-                onPhoneCodeChange={(code) => handleChange("phoneCode", code)}
-                countries={countries}
+                type="tel"
+                value={formData.phoneNumber}
+                onChange={(e) => handleChange("phoneNumber", e.target.value)}
                 placeholder={tForm("phoneNumberPlaceholder")}
+                className="font-mono"
+                dir="ltr"
                 required
               />
             </div>
@@ -365,14 +350,14 @@ export function StudentForm({
             {/* Parent Phone Number */}
             <div className="space-y-2">
               <Label htmlFor="parentPhoneNumber">{tForm("parentPhoneNumberLabel")}</Label>
-              <PhoneInputWithCode
+              <Input
                 id="parentPhoneNumber"
-                phone={formData.parentPhoneNumber}
-                phoneCode={formData.guardianPhoneCode}
-                onPhoneChange={(val) => handleChange("parentPhoneNumber", val)}
-                onPhoneCodeChange={(code) => handleChange("guardianPhoneCode", code)}
-                countries={countries}
+                type="tel"
+                value={formData.parentPhoneNumber}
+                onChange={(e) => handleChange("parentPhoneNumber", e.target.value)}
                 placeholder={tForm("parentPhoneNumberPlaceholder")}
+                className="font-mono"
+                dir="ltr"
                 required
               />
             </div>
@@ -392,19 +377,6 @@ export function StudentForm({
                   <SelectItem value="female">{tForm("genderFemale")}</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* Email Address */}
-            <div className="space-y-2">
-              <Label htmlFor="email">{tForm("emailLabel")}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder={tForm("emailPlaceholder")}
-                value={formData.email}
-                onChange={(e) => handleChange("email", e.target.value)}
-                dir="ltr"
-              />
             </div>
           </div>
         </div>
@@ -476,31 +448,17 @@ export function StudentForm({
         icon={MapPin}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Country */}
-          <CountrySelect
-            id="country"
-            label={tForm("countryLabel")}
-            placeholder={tForm("selectCountry")}
-            searchPlaceholder={tForm("searchCountry")}
-            emptyLabel={tForm("noCountryFound")}
-            value={formData.country}
-            onValueChange={handleCountryChange}
-            countries={countries}
-            required
-          />
-
           {/* State / Governorate */}
           <GovernorateSelect
             id="state"
             label={tForm("stateLabel")}
-            placeholder={formData.country ? tForm("selectState") : tForm("selectCountryFirst")}
+            placeholder={tForm("selectState")}
             searchPlaceholder={tForm("searchState")}
             emptyLabel={tForm("noStateFound")}
             value={formData.state}
             onValueChange={(val) => handleChange("state", val)}
             governorates={governorates}
             countryId={formData.country}
-            disabled={!formData.country}
             required
           />
 

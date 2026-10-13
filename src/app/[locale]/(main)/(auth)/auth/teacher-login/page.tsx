@@ -103,14 +103,14 @@ function TeacherLoginForm() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <Card className="w-full relative border-none shadow-none ring-0">
+    <div className="w-full max-w-md my-auto">
+      <Card className="w-full relative bg-white text-foreground rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
         {isSubmitting && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px] rounded-lg animate-in fade-in">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px] rounded-2xl animate-in fade-in">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
-        <CardHeader className="text-center pb-4">
+        <CardHeader className="text-center pb-4 pt-6">
           <CardTitle className="text-3xl font-bold tracking-tight">{t("title")}</CardTitle>
           <CardDescription>{t("subtitle")}</CardDescription>
         </CardHeader>

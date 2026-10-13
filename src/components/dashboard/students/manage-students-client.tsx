@@ -81,7 +81,6 @@ export function ManageStudentsClient() {
   // URL query state
   const searchQuery = searchParams.get("search") || "";
   const selectedGrade = searchParams.get("grade") || "all";
-  const selectedCountry = searchParams.get("country") || "all";
   const selectedState = searchParams.get("state") || "all";
   const sortBy = (searchParams.get("sort") as StudentSortOption) || "date-newest";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
@@ -136,7 +135,6 @@ export function ManageStudentsClient() {
 
   const { data: studentsData, isLoading } = useStudentsList({
     search: searchQuery || undefined,
-    country_id: selectedCountry !== "all" ? selectedCountry : undefined,
     governorate_id: selectedState !== "all" ? selectedState : undefined,
     educational_stage_id: selectedStageId,
     per_page: itemsPerPage,
@@ -157,26 +155,11 @@ export function ManageStudentsClient() {
   const [balanceStudent, setBalanceStudent] = React.useState<Student | null>(null);
   const [reportStudent, setReportStudent] = React.useState<Student | null>(null);
 
-  const availableCountries = React.useMemo(() => {
-    if (optionsData?.countries) {
-      return optionsData.countries.map((c) => ({
-        id: String(c.id),
-        name: c.name[locale] || c.name.ar || c.name.en || "",
-      }));
-    }
-    return [];
-  }, [optionsData, locale]);
-
   const availableStates = optionsData?.governorates
-    ? optionsData.governorates
-        .filter((g) => {
-          if (selectedCountry === "all") return true;
-          return String(g.country_id) === String(selectedCountry);
-        })
-        .map((g) => ({
-          id: String(g.id),
-          name: g.name[locale] || g.name.ar || g.name.en || "",
-        }))
+    ? optionsData.governorates.map((g) => ({
+        id: String(g.id),
+        name: g.name[locale] || g.name.ar || g.name.en || "",
+      }))
     : [];
 
   // Safe Grade Formatter
@@ -239,7 +222,6 @@ export function ManageStudentsClient() {
   const isFilterActive =
     searchQuery.trim() !== "" ||
     selectedGrade !== "all" ||
-    selectedCountry !== "all" ||
     selectedState !== "all" ||
     sortBy !== "date-newest";
 
@@ -476,7 +458,7 @@ export function ManageStudentsClient() {
         </div>
 
         {/* Filter Dropdowns Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-border/40">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-border/40">
           {/* Grade Filter */}
           <GradeSelect
             value={selectedGrade}
@@ -488,24 +470,6 @@ export function ManageStudentsClient() {
             triggerClassName="bg-background h-9 text-xs w-full"
             className="w-full"
           />
-
-          {/* Country Filter */}
-          <Select
-            value={selectedCountry}
-            onValueChange={(val) => updateUrlParams({ country: val, state: "all", page: 1 })}
-          >
-            <SelectTrigger className="bg-background h-9 text-xs">
-              <SelectValue placeholder={t("allCountries")} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("allCountries")}</SelectItem>
-              {availableCountries.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
 
           {/* Governorate / State Filter */}
           <Select
@@ -655,14 +619,11 @@ export function ManageStudentsClient() {
                         </TooltipProvider>
                       </td>
 
-                      {/* Governorate / Country */}
+                      {/* Governorate */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1.5 text-xs text-foreground">
                           <MapPin className="size-3.5 text-muted-foreground shrink-0" />
-                          <span>
-                            {student.state}
-                            {student.country ? `, ${student.country}` : ""}
-                          </span>
+                          <span>{student.state}</span>
                         </div>
                       </td>
 

@@ -12,7 +12,6 @@ import { FormSectionCard } from "@/components/ui/form-section-card";
 import { ImageUploadField } from "@/components/ui/image-upload-field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PhoneInputWithCode, type PhoneCountryOption } from "@/components/ui/phone-input-with-code";
 import {
   Select,
   SelectContent,
@@ -39,7 +38,7 @@ interface StudentProfileFormData {
   guardianPhoneCode: string;
   parentPhoneNumber: string;
   gender: Gender;
-  email: string;
+  email?: string;
   image: string;
   avatarFile?: File | null;
   removeAvatar?: boolean;
@@ -127,23 +126,6 @@ export function StudentProfileClient() {
     if (errorMsg) setErrorMsg(null);
   };
 
-  const handleCountryChange = (countryId: string) => {
-    const selectedCountry = optionsData?.countries?.find((c) => String(c.id) === String(countryId));
-
-    setFormData((prev) => {
-      const nextCode = selectedCountry?.country_code || prev.phoneCode;
-      return {
-        ...prev,
-        countryId,
-        governorateId: "",
-        phoneCode: nextCode || prev.phoneCode,
-        guardianPhoneCode: nextCode || prev.guardianPhoneCode,
-      };
-    });
-
-    if (errorMsg) setErrorMsg(null);
-  };
-
   const handleReset = () => {
     refetch();
     setErrorMsg(null);
@@ -153,11 +135,8 @@ export function StudentProfileClient() {
     if (
       !formData.firstName.trim() ||
       !formData.familyName.trim() ||
-      !formData.phoneCode.trim() ||
       !formData.phoneNumber.trim() ||
-      !formData.guardianPhoneCode.trim() ||
-      !formData.parentPhoneNumber.trim() ||
-      !formData.email.trim()
+      !formData.parentPhoneNumber.trim()
     ) {
       setErrorMsg(t("requiredFieldsError"));
       return false;
@@ -176,23 +155,6 @@ export function StudentProfileClient() {
     return true;
   };
 
-  const countryPhoneOptions: PhoneCountryOption[] = React.useMemo(() => {
-    return (
-      optionsData?.countries?.map((c) => {
-        const countryName =
-          typeof c.name === "object"
-            ? c.name[locale as keyof typeof c.name] || Object.values(c.name)[0]
-            : String(c.name);
-        return {
-          id: c.id,
-          name: countryName,
-          country_code: c.country_code,
-          flag: c.flag,
-        };
-      }) || []
-    );
-  }, [optionsData?.countries, locale]);
-
   const isSubmitting = updateProfileMutation.isPending || updatePasswordMutation.isPending;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -206,10 +168,9 @@ export function StudentProfileClient() {
         father_name: formData.fatherName.trim(),
         family_name: formData.familyName.trim(),
         additional_name: formData.additionalName.trim(),
-        email: formData.email.trim(),
-        phone_code: formData.phoneCode.trim(),
+        phone_code: "+20",
         phone: formData.phoneNumber.trim(),
-        guardian_phone_code: formData.guardianPhoneCode.trim(),
+        guardian_phone_code: "+20",
         guardian_phone: formData.parentPhoneNumber.trim(),
         gender: formData.gender,
         country_id: formData.countryId ? Number(formData.countryId) : undefined,
@@ -360,13 +321,14 @@ export function StudentProfileClient() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="phoneNumber">{t("phoneNumberLabel")}</Label>
                 </div>
-                <PhoneInputWithCode
+                <Input
                   id="phoneNumber"
-                  phone={formData.phoneNumber}
-                  phoneCode={formData.phoneCode}
-                  onPhoneChange={(val) => handleChange("phoneNumber", val)}
-                  onPhoneCodeChange={(code) => handleChange("phoneCode", code)}
-                  countries={countryPhoneOptions}
+                  type="tel"
+                  value={formData.phoneNumber}
+                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
+                  placeholder={t("phoneNumberPlaceholder")}
+                  className="font-mono"
+                  dir="ltr"
                   required
                 />
               </div>
@@ -376,13 +338,14 @@ export function StudentProfileClient() {
                 <div className="flex items-center justify-between">
                   <Label htmlFor="parentPhoneNumber">{t("parentPhoneNumberLabel")}</Label>
                 </div>
-                <PhoneInputWithCode
+                <Input
                   id="parentPhoneNumber"
-                  phone={formData.parentPhoneNumber}
-                  phoneCode={formData.guardianPhoneCode}
-                  onPhoneChange={(val) => handleChange("parentPhoneNumber", val)}
-                  onPhoneCodeChange={(code) => handleChange("guardianPhoneCode", code)}
-                  countries={countryPhoneOptions}
+                  type="tel"
+                  value={formData.parentPhoneNumber}
+                  onChange={(e) => handleChange("parentPhoneNumber", e.target.value)}
+                  placeholder={t("parentPhoneNumberPlaceholder")}
+                  className="font-mono"
+                  dir="ltr"
                   required
                 />
               </div>
@@ -403,19 +366,6 @@ export function StudentProfileClient() {
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Email Address */}
-              <div className="space-y-2">
-                <Label htmlFor="email">{t("emailLabel")}</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  required
-                  dir="ltr"
-                />
-              </div>
             </div>
           </div>
         </FormSectionCard>
@@ -427,58 +377,28 @@ export function StudentProfileClient() {
           icon={MapPin}
         >
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Country */}
-            <div className="space-y-2">
-              <Label htmlFor="countryId">{t("countryLabel")}</Label>
-              <Select value={formData.countryId} onValueChange={(val) => handleCountryChange(val)}>
-                <SelectTrigger id="countryId" className="bg-background">
-                  <SelectValue placeholder={t("countryLabel")} />
-                </SelectTrigger>
-                <SelectContent>
-                  {optionsData?.countries?.map((c) => {
-                    const countryName =
-                      typeof c.name === "object"
-                        ? c.name[locale as keyof typeof c.name] || Object.values(c.name)[0]
-                        : String(c.name);
-                    return (
-                      <SelectItem key={c.id} value={String(c.id)}>
-                        {countryName}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* State / Governorate */}
             <div className="space-y-2">
               <Label htmlFor="governorateId">{t("stateLabel")}</Label>
               <Select
                 value={formData.governorateId}
                 onValueChange={(val) => handleChange("governorateId", val)}
-                disabled={!formData.countryId}
               >
                 <SelectTrigger id="governorateId" className="bg-background">
                   <SelectValue placeholder={t("stateLabel")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {optionsData?.governorates
-                    ?.filter((g) =>
-                      formData.countryId
-                        ? String(g.country_id) === String(formData.countryId)
-                        : true,
-                    )
-                    .map((g) => {
-                      const govName =
-                        typeof g.name === "object"
-                          ? g.name[locale as keyof typeof g.name] || Object.values(g.name)[0]
-                          : String(g.name);
-                      return (
-                        <SelectItem key={g.id} value={String(g.id)}>
-                          {govName}
-                        </SelectItem>
-                      );
-                    })}
+                  {optionsData?.governorates?.map((g) => {
+                    const govName =
+                      typeof g.name === "object"
+                        ? g.name[locale as keyof typeof g.name] || Object.values(g.name)[0]
+                        : String(g.name);
+                    return (
+                      <SelectItem key={g.id} value={String(g.id)}>
+                        {govName}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

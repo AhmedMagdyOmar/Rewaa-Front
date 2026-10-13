@@ -75,9 +75,9 @@ export default function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="w-full max-w-md">
-        <Card className="w-full border-none shadow-none ring-0">
-          <CardHeader className="text-center">
+      <div className="w-full max-w-md my-auto">
+        <Card className="w-full bg-white text-foreground rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
+          <CardHeader className="text-center pt-6">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
               <AlertCircle className="h-6 w-6" />
             </div>
@@ -88,7 +88,7 @@ export default function ResetPasswordPage() {
               {t("resetPassword.invalidToken")}
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-col gap-3">
+          <CardContent className="flex flex-col gap-3 pb-6">
             <Button asChild className="w-full">
               <Link href="/auth/forgot-password">{t("resetPassword.requestNewLink")}</Link>
             </Button>
@@ -102,15 +102,15 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="w-full max-w-md">
-      <Card className="w-full relative border-none shadow-none ring-0">
+    <div className="w-full max-w-md my-auto">
+      <Card className="w-full relative bg-white text-foreground rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
         {isPending && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px] rounded-lg animate-in fade-in">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/50 backdrop-blur-[1px] rounded-2xl animate-in fade-in">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         )}
 
-        <CardHeader className="text-center">
+        <CardHeader className="text-center pt-6">
           <CardTitle className="text-3xl font-bold tracking-tight">
             {t("resetPassword.title")}
           </CardTitle>

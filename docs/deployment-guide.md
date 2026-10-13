@@ -309,12 +309,13 @@ Navigate to your repository on GitHub:
 
 Add the following 4 secrets:
 
-| Secret Name           | Value                             | Description                                                             |
-| --------------------- | --------------------------------- | ----------------------------------------------------------------------- |
-| `DROPLET_HOST`        | `164.92.xxx.xxx`                  | Public IP address of your server                                        |
-| `DROPLET_USER`        | `root`                            | SSH user (or deploy user)                                               |
-| `DROPLET_SSH_KEY`     | Contents of`github_actions_rewaa` | **Private** SSH key (starts with `-----BEGIN OPENSSH PRIVATE KEY-----`) |
-| `NEXT_PUBLIC_API_URL` | `https://api.yourdomain.com`      | Production backend API endpoint                                         |
+| Secret Name               | Value                             | Description                                                             |
+| ------------------------- | --------------------------------- | ----------------------------------------------------------------------- |
+| `DROPLET_HOST`            | `164.92.xxx.xxx`                  | Public IP address of your server                                        |
+| `DROPLET_USER`            | `root`                            | SSH user (or deploy user)                                               |
+| `DROPLET_SSH_KEY`         | Contents of`github_actions_rewaa` | **Private** SSH key (starts with `-----BEGIN OPENSSH PRIVATE KEY-----`) |
+| `NEXT_PUBLIC_API_URL`     | `https://api.yourdomain.com`      | Production backend API endpoint                                         |
+| `NEXT_PUBLIC_LANDING_URL` | `https://yourdomain.com`          | Landing page URL (defaults to `/`)                                      |
 
 _(Optional: Add `DROPLET_SSH_PORT` if your SSH port is not 22)._
 

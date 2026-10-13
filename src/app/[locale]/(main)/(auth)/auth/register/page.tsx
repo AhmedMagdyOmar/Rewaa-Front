@@ -3,7 +3,7 @@
 
 import { Link, useRouter } from "@/i18n/routing";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2, Eye, EyeOff, Loader2, Mail } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PhoneCountryOption, PhoneInputWithCode } from "@/components/ui/phone-input-with-code";
 import {
   Select,
   SelectContent,
@@ -35,7 +34,6 @@ interface FormState {
   phone: string;
   guardian_phone_code: string;
   guardian_phone: string;
-  email: string;
   gender: "male" | "female";
   country_id: string;
   governorate_id: string;
@@ -61,7 +59,6 @@ export default function StudentRegisterPage() {
     phone: "",
     guardian_phone_code: "+20",
     guardian_phone: "",
-    email: "",
     gender: "male",
     country_id: "",
     governorate_id: "",
@@ -94,13 +91,6 @@ export default function StudentRegisterPage() {
             .string()
             .min(1, tVal("phoneRequired"))
             .regex(/^[0-9+\s-]{8,15}$/, tVal("invalidPhone")),
-          email: z
-            .string()
-            .trim()
-            .refine((val) => val === "" || z.string().email().safeParse(val).success, {
-              message: tVal("invalidEmail"),
-            })
-            .optional(),
           gender: z.enum(["male", "female"]),
           country_id: z.string().min(1, tVal("required")),
           governorate_id: z.string().min(1, tVal("required")),
@@ -192,11 +182,10 @@ export default function StudentRegisterPage() {
       father_name: formData.father_name.trim() || undefined,
       family_name: formData.family_name.trim(),
       additional_name: formData.additional_name.trim() || undefined,
-      phone_code: formData.phone_code,
+      phone_code: "+20",
       phone: formData.phone.trim(),
-      guardian_phone_code: formData.guardian_phone_code,
+      guardian_phone_code: "+20",
       guardian_phone: formData.guardian_phone.trim(),
-      email: formData.email.trim() || undefined,
       gender: formData.gender,
       country_id: Number(formData.country_id),
       governorate_id: Number(formData.governorate_id),
@@ -248,22 +237,11 @@ export default function StudentRegisterPage() {
     [locale],
   );
 
-  const countries = optionsData?.countries;
-  const countryOptions: PhoneCountryOption[] = useMemo(() => {
-    if (!countries) return [];
-    return countries.map((c) => ({
-      id: c.id,
-      name: getLocalizedName(c.name),
-      country_code: c.country_code,
-      flag: c.flag,
-    }));
-  }, [countries, getLocalizedName]);
-
   return (
-    <div className="w-full max-w-2xl py-6 my-auto">
-      <Card className="w-full relative shadow-sm border bg-card">
+    <div className="w-full max-w-2xl py-2 sm:py-3 my-auto">
+      <Card className="w-full relative bg-white text-foreground rounded-2xl shadow-2xl border border-white/20 overflow-hidden">
         {isSubmitting && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-lg animate-in fade-in">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-background/60 backdrop-blur-[2px] rounded-2xl animate-in fade-in">
             <div className="flex flex-col items-center gap-3">
               <Loader2 className="h-10 w-10 animate-spin text-primary" />
               <p className="text-sm font-semibold text-foreground">{t("submitText")}...</p>
@@ -271,24 +249,24 @@ export default function StudentRegisterPage() {
           </div>
         )}
 
-        <CardHeader className="text-center pb-4">
+        <CardHeader className="text-center pb-2 pt-6 sm:pt-8">
           <CardTitle className="text-2xl sm:text-3xl font-bold tracking-tight">
             {t("title")}
           </CardTitle>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="px-4 sm:px-6 pb-4">
           {errorMessage && (
-            <Alert variant="destructive" className="mb-6">
+            <Alert variant="destructive" className="mb-4">
               <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
 
-          <form onSubmit={onSubmit} className="space-y-6">
+          <form onSubmit={onSubmit} className="space-y-4">
             {/* Section 1: Personal Info */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
                   <Label htmlFor="first_name">
                     {t("firstNameLabel")} <span className="text-destructive">*</span>
                   </Label>
@@ -304,7 +282,7 @@ export default function StudentRegisterPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="father_name">{t("fatherNameLabel")}</Label>
                   <Input
                     id="father_name"
@@ -317,7 +295,7 @@ export default function StudentRegisterPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="family_name">
                     {t("lastNameLabel")} <span className="text-destructive">*</span>
                   </Label>
@@ -333,7 +311,7 @@ export default function StudentRegisterPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="additional_name">{t("additionalNameLabel")}</Label>
                   <Input
                     id="additional_name"
@@ -349,75 +327,55 @@ export default function StudentRegisterPage() {
             </div>
 
             {/* Section 2: Contact Details & Gender */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2 sm:col-span-2">
-                  <Label htmlFor="email">{t("emailLabel")}</Label>
-                  <div className="relative">
-                    <Mail className="absolute start-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => handleChange("email", e.target.value)}
-                      placeholder={t("emailPlaceholder")}
-                      className={`ps-9 ${fieldErrors.email ? "border-destructive" : ""}`}
-                    />
-                  </div>
-                  {fieldErrors.email && (
-                    <p className="text-xs text-destructive">{fieldErrors.email}</p>
-                  )}
-                </div>
-
-                <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
                   <Label htmlFor="phone">
                     {t("phoneLabel")} <span className="text-destructive">*</span>
                   </Label>
-                  <PhoneInputWithCode
+                  <Input
                     id="phone"
-                    phone={formData.phone}
-                    phoneCode={formData.phone_code}
-                    onPhoneChange={(val) => handleChange("phone", val)}
-                    onPhoneCodeChange={(val) => handleChange("phone_code", val)}
-                    countries={countryOptions}
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleChange("phone", e.target.value)}
                     disabled={isSubmitting}
                     required
                     placeholder={t("phonePlaceholder")}
-                    className={fieldErrors.phone ? "[&>input]:border-destructive" : ""}
+                    className={`font-mono ${fieldErrors.phone ? "border-destructive" : ""}`}
+                    dir="ltr"
                   />
                   {fieldErrors.phone && (
                     <p className="text-xs text-destructive">{fieldErrors.phone}</p>
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="guardian_phone">
                     {t("guardianPhoneLabel")} <span className="text-destructive">*</span>
                   </Label>
-                  <PhoneInputWithCode
+                  <Input
                     id="guardian_phone"
-                    phone={formData.guardian_phone}
-                    phoneCode={formData.guardian_phone_code}
-                    onPhoneChange={(val) => handleChange("guardian_phone", val)}
-                    onPhoneCodeChange={(val) => handleChange("guardian_phone_code", val)}
-                    countries={countryOptions}
+                    type="tel"
+                    value={formData.guardian_phone}
+                    onChange={(e) => handleChange("guardian_phone", e.target.value)}
                     disabled={isSubmitting}
                     required
                     placeholder={t("guardianPhonePlaceholder")}
-                    className={fieldErrors.guardian_phone ? "[&>input]:border-destructive" : ""}
+                    className={`font-mono ${fieldErrors.guardian_phone ? "border-destructive" : ""}`}
+                    dir="ltr"
                   />
                   {fieldErrors.guardian_phone && (
                     <p className="text-xs text-destructive">{fieldErrors.guardian_phone}</p>
                   )}
                 </div>
 
-                <div className="space-y-2 sm:col-span-2">
+                <div className="space-y-1.5 sm:col-span-2">
                   <Label>{t("genderLabel")}</Label>
                   <div className="grid grid-cols-2 gap-3">
                     <Button
                       type="button"
                       variant={formData.gender === "male" ? "default" : "outline"}
-                      className={`w-full justify-center h-10 ${
+                      className={`w-full justify-center h-9 ${
                         formData.gender === "male" ? "shadow-sm font-semibold" : ""
                       }`}
                       onClick={() => handleChange("gender", "male")}
@@ -427,7 +385,7 @@ export default function StudentRegisterPage() {
                     <Button
                       type="button"
                       variant={formData.gender === "female" ? "default" : "outline"}
-                      className={`w-full justify-center h-10 ${
+                      className={`w-full justify-center h-9 ${
                         formData.gender === "female" ? "shadow-sm font-semibold" : ""
                       }`}
                       onClick={() => handleChange("gender", "female")}
@@ -443,56 +401,23 @@ export default function StudentRegisterPage() {
             </div>
 
             {/* Section 3: Academic Stage & Location */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Country */}
-                <div className="space-y-2">
-                  <Label htmlFor="country_id">
-                    {t("countryLabel")} <span className="text-destructive">*</span>
-                  </Label>
-                  <Select
-                    value={formData.country_id}
-                    onValueChange={(val) => handleChange("country_id", val)}
-                    disabled={isLoadingOptions}
-                  >
-                    <SelectTrigger
-                      id="country_id"
-                      className={fieldErrors.country_id ? "border-destructive" : ""}
-                    >
-                      <SelectValue placeholder={t("selectCountry")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {optionsData?.countries?.map((country) => (
-                        <SelectItem key={country.id} value={String(country.id)}>
-                          {getLocalizedName(country.name)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {fieldErrors.country_id && (
-                    <p className="text-xs text-destructive">{fieldErrors.country_id}</p>
-                  )}
-                </div>
-
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Governorate */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="governorate_id">
                     {t("governorateLabel")} <span className="text-destructive">*</span>
                   </Label>
                   <Select
                     value={formData.governorate_id}
                     onValueChange={(val) => handleChange("governorate_id", val)}
-                    disabled={isLoadingOptions || !formData.country_id}
+                    disabled={isLoadingOptions}
                   >
                     <SelectTrigger
                       id="governorate_id"
                       className={fieldErrors.governorate_id ? "border-destructive" : ""}
                     >
-                      <SelectValue
-                        placeholder={
-                          formData.country_id ? t("selectGovernorate") : t("selectCountryFirst")
-                        }
-                      />
+                      <SelectValue placeholder={t("selectGovernorate")} />
                     </SelectTrigger>
                     <SelectContent>
                       {optionsData?.governorates?.map((gov) => (
@@ -508,7 +433,7 @@ export default function StudentRegisterPage() {
                 </div>
 
                 {/* Educational Stage */}
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="educational_stage_id">
                     {t("stageLabel")} <span className="text-destructive">*</span>
                   </Label>
@@ -539,9 +464,9 @@ export default function StudentRegisterPage() {
             </div>
 
             {/* Section 4: Password & Security */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5">
                   <Label htmlFor="password">
                     {t("passwordLabel")} <span className="text-destructive">*</span>
                   </Label>
@@ -568,7 +493,7 @@ export default function StudentRegisterPage() {
                   )}
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   <Label htmlFor="password_confirmation">
                     {t("confirmPasswordLabel")} <span className="text-destructive">*</span>
                   </Label>
@@ -618,17 +543,17 @@ export default function StudentRegisterPage() {
             {/* Submit Button */}
             <Button
               type="submit"
-              className="w-full h-11 text-base font-semibold gap-2 shadow-sm"
+              className="w-full h-10 text-sm font-semibold gap-2 shadow-sm"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   <span>{t("submitText")}...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 className="h-5 w-5" />
+                  <CheckCircle2 className="h-4 w-4" />
                   <span>{t("submitText")}</span>
                 </>
               )}
@@ -636,7 +561,7 @@ export default function StudentRegisterPage() {
           </form>
         </CardContent>
 
-        <CardFooter className="justify-center border-t bg-muted/20 py-4 text-center">
+        <CardFooter className="justify-center border-t bg-muted/20 py-3 text-center">
           <p className="text-sm text-muted-foreground">
             {t("alreadyHaveAccount")}{" "}
             <Link

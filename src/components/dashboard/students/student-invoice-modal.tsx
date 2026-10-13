@@ -148,9 +148,7 @@ export function StudentInvoiceModal({
                   {student.phoneNumber}
                 </PhoneLink>
               </div>
-              <p className="text-muted-foreground">
-                {student.country} - {student.state}
-              </p>
+              <p className="text-muted-foreground">{student.state}</p>
             </div>
 
             <div className="space-y-1 text-end">
@@ -160,7 +158,6 @@ export function StudentInvoiceModal({
               <p className="font-semibold text-foreground">
                 {tModal(`types.${transaction.type}` as Parameters<typeof tModal>[0])}
               </p>
-              <p className="text-muted-foreground">{student.email}</p>
               <Badge
                 variant="outline"
                 className={`mt-1 font-bold ${

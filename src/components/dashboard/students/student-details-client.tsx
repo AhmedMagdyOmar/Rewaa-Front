@@ -12,7 +12,6 @@ import {
   FileCheck2,
   FileText,
   GraduationCap,
-  Mail,
   MapPin,
   MessageSquare,
   UserCheck,
@@ -417,7 +416,7 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <MapPin className="size-3.5 text-muted-foreground" />
-                  {student.country} - {student.state}
+                  {student.state}
                 </span>
               </p>
 
@@ -446,10 +445,6 @@ export function StudentDetailsClient({ studentId }: StudentDetailsClientProps) {
                     <span dir="ltr">{student.parentPhoneNumber}</span>
                   </PhoneLink>
                 )}
-                <span className="flex items-center gap-1">
-                  <Mail className="size-3 text-muted-foreground" />
-                  {student.email}
-                </span>
               </div>
             </div>
           </div>
