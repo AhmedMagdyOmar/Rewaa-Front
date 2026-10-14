@@ -31,6 +31,7 @@ export function formatDate(date: Date | string | number, options: FormatDateOpti
     }
 
     const formatOptions: Intl.DateTimeFormatOptions = {
+      calendar: "gregory",
       dateStyle,
       ...(includeTime ? { timeStyle } : {}),
     };

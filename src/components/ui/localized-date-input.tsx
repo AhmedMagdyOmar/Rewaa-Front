@@ -41,9 +41,10 @@ export function LocalizedDateInput({
     if (!year || !month || !day) return value;
 
     const date = new Date(year, month - 1, day);
-    const formatLocale = locale.startsWith("ar") ? "ar-EG-u-nu-latn" : "en-GB";
+    const formatLocale = locale.startsWith("ar") ? "ar-EG-u-ca-gregory-nu-latn" : "en-GB";
 
     return new Intl.DateTimeFormat(formatLocale, {
+      calendar: "gregory",
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
@@ -74,7 +75,7 @@ export function LocalizedDateInput({
         id={id}
         name={name}
         type="date"
-        lang={locale}
+        lang={locale.startsWith("ar") ? "ar-EG-u-ca-gregory-nu-latn" : "en-GB"}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         onClick={(e) => {
