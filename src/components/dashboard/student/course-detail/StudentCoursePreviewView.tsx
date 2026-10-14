@@ -273,17 +273,31 @@ export function StudentCoursePreviewView({
                 </div>
               </div>
 
-              {/* 3. CTA Button: Full Width "Enroll in Course" */}
-              <Button
-                type="button"
-                size="lg"
-                onClick={() => onEnroll(course.id)}
-                disabled={isEnrolling}
-                className="w-full font-bold text-base py-6 rounded-xl shadow-md cursor-pointer gap-2"
-              >
-                <Sparkles className="size-4.5 fill-current" />
-                <span>{isEnrolling ? t("enrolling") : t("enrollInCourse")}</span>
-              </Button>
+              {/* 3. CTA Button: Full Width "Enroll in Course" or "Under Review" */}
+              {course.has_pending_order ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled
+                  className="w-full font-bold text-base py-6 rounded-xl shadow-md gap-2 bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30 cursor-not-allowed opacity-90"
+                >
+                  <Clock className="size-5 shrink-0 animate-pulse text-amber-500" />
+                  <span>
+                    {locale === "ar" ? "طلب الاشتراك قيد المراجعة" : "Enrollment Under Review"}
+                  </span>
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={() => onEnroll(course.id)}
+                  disabled={isEnrolling}
+                  className="w-full font-bold text-base py-6 rounded-xl shadow-md cursor-pointer gap-2"
+                >
+                  <Sparkles className="size-4.5 fill-current" />
+                  <span>{isEnrolling ? t("enrolling") : t("enrollInCourse")}</span>
+                </Button>
+              )}
 
               {/* Activation Code Prompt */}
               <div className="text-center pt-1">

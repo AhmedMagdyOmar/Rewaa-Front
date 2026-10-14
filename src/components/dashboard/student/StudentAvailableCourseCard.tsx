@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import type { AvailableCourse } from "@/types/api-contracts";
-import { BookOpen, Calendar, Tag, User } from "lucide-react";
+import { BookOpen, Calendar, Clock, Tag, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
@@ -12,12 +12,14 @@ interface StudentAvailableCourseCardProps {
   course: AvailableCourse;
   enrollHref?: string;
   isEnrolled?: boolean;
+  hasPendingOrder?: boolean;
 }
 
 export function StudentAvailableCourseCard({
   course,
   enrollHref,
   isEnrolled = false,
+  hasPendingOrder = false,
 }: StudentAvailableCourseCardProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
@@ -177,16 +179,33 @@ export function StudentAvailableCourseCard({
         <div className="flex items-center justify-between gap-3 mt-4 pt-1">
           <Button
             asChild
-            variant={isEnrolled ? "outline" : "default"}
+            variant={
+              isEnrolled
+                ? "outline"
+                : hasPendingOrder || course.has_pending_order
+                  ? "secondary"
+                  : "default"
+            }
             size="sm"
             className={
               isEnrolled
                 ? "w-full font-bold text-sm py-3.5! cursor-pointer border border-primary! text-primary hover:text-primary"
-                : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
+                : hasPendingOrder || course.has_pending_order
+                  ? "flex-1 font-bold text-sm py-3.5! cursor-pointer bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
+                  : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
             }
           >
             <Link href={targetEnrollHref}>
-              {isEnrolled ? tStudent("goToCourse") : tStudent("enrollNow")}
+              {isEnrolled ? (
+                tStudent("goToCourse")
+              ) : hasPendingOrder || course.has_pending_order ? (
+                <span className="flex items-center justify-center gap-1.5">
+                  <Clock className="size-4 shrink-0 animate-pulse text-amber-500" />
+                  <span>{tStudent("underReview")}</span>
+                </span>
+              ) : (
+                tStudent("enrollNow")
+              )}
             </Link>
           </Button>
           {!isEnrolled && (

@@ -12,6 +12,7 @@ import {
   Barcode,
   BookOpen,
   Calendar,
+  Clock,
   MoreVertical,
   Pencil,
   Tag,
@@ -33,6 +34,7 @@ interface CourseCardProps {
   mode?: "dashboard" | "student";
   enrollHref?: string;
   isEnrolled?: boolean;
+  hasPendingOrder?: boolean;
 }
 
 export function CourseCard({
@@ -44,6 +46,7 @@ export function CourseCard({
   mode = "dashboard",
   enrollHref,
   isEnrolled = false,
+  hasPendingOrder = false,
 }: CourseCardProps) {
   const locale = useLocale();
   const isAr = locale === "ar";
@@ -282,16 +285,33 @@ export function CourseCard({
           <div className="flex items-center justify-between gap-3 mt-4 pt-1">
             <Button
               asChild
-              variant={isEnrolled ? "outline" : "default"}
+              variant={
+                isEnrolled
+                  ? "outline"
+                  : hasPendingOrder || course.hasPendingOrder
+                    ? "secondary"
+                    : "default"
+              }
               size="sm"
               className={
                 isEnrolled
                   ? "w-full font-bold text-sm py-3.5! cursor-pointer border border-primary! text-primary hover:text-primary"
-                  : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
+                  : hasPendingOrder || course.hasPendingOrder
+                    ? "flex-1 font-bold text-sm py-3.5! cursor-pointer bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
+                    : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
               }
             >
               <Link href={enrollHref || `/student-dashboard/courses/${course.id}`}>
-                {isEnrolled ? tStudent("goToCourse") : tStudent("enrollNow")}
+                {isEnrolled ? (
+                  tStudent("goToCourse")
+                ) : hasPendingOrder || course.hasPendingOrder ? (
+                  <span className="flex items-center justify-center gap-1.5">
+                    <Clock className="size-4 shrink-0 animate-pulse text-amber-500" />
+                    <span>{tStudent("underReview")}</span>
+                  </span>
+                ) : (
+                  tStudent("enrollNow")
+                )}
               </Link>
             </Button>
             {!isEnrolled && (

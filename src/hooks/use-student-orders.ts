@@ -30,7 +30,8 @@ export function useStudentOrder(orderId: number | string | undefined) {
     queryKey: queryKeys.student.orderDetail(orderId!),
     queryFn: () => studentOrdersService.getOrder(orderId!),
     enabled: !!orderId,
-    staleTime: 30 * 1000,
+    staleTime: 10 * 1000,
+    refetchOnMount: "always",
   });
 }
 
@@ -83,9 +84,29 @@ export function useSubmitManualPayment(orderId: number | string) {
 
   return useMutation<SubmitManualPaymentResponse, Error, SubmitManualPaymentPayload>({
     mutationFn: (payload) => studentOrdersService.submitManualPayment(orderId, payload),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      // Immediately update orderDetail cache so navigating to it shows "under_review" without needing a refresh
+      queryClient.setQueryData<BackendOrder | undefined>(
+        queryKeys.student.orderDetail(orderId),
+        (oldOrder) => {
+          if (!oldOrder) return oldOrder;
+          const updatedPayments = oldOrder.payments ? [...oldOrder.payments] : [];
+          if (response?.payment) {
+            updatedPayments.unshift(response.payment);
+          }
+          return {
+            ...oldOrder,
+            status: "under_review",
+            payments: updatedPayments,
+          };
+        },
+      );
+
+      // Invalidate to trigger background re-sync
       queryClient.invalidateQueries({ queryKey: queryKeys.student.orderDetail(orderId) });
       queryClient.invalidateQueries({ queryKey: queryKeys.student.orders() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.student.exploreCourses() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.website.courses() });
     },
   });
 }

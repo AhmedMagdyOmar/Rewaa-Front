@@ -1505,6 +1505,7 @@ export interface MyCoursesOptions {
 export interface AvailableCourse {
   id: number;
   is_enrolled: boolean; // always false — backend filters enrolled courses out
+  has_pending_order?: boolean;
   title: Record<string, string>; // { ar: "...", en: "..." }
   description: Record<string, string>;
   cover_image: string | null;
@@ -1568,6 +1569,7 @@ export interface BackendStudentCourseDetails {
   sections_count: number;
   lessons_count: number;
   is_enrolled: boolean;
+  has_pending_order?: boolean;
   is_free: boolean;
   base_price: number;
   final_price: number;

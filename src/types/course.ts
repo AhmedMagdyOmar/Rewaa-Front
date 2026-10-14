@@ -138,6 +138,7 @@ export interface Course {
   totalRatingsCount?: number;
   durationHours?: number;
   badge?: CourseBadge;
+  hasPendingOrder?: boolean;
   scheduledPublishDate?: string;
   progressPercentage?: number;
   completedLessons?: number;

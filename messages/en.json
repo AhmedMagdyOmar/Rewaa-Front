@@ -3200,6 +3200,7 @@
       "viewAll": "View All",
       "enrollNow": "Enroll Now",
       "goToCourse": "Go to Course",
+      "underReview": "Under Review",
       "empty": "No new courses available at the moment."
     },
     "courseDetails": {
@@ -3615,9 +3616,14 @@
       "badge": "Payment Confirmed",
       "title": "You're All Set! 🎉",
       "subtitle": "Your payment has been processed successfully. Get ready to start your learning journey!",
+      "pendingBadge": "Under Review",
+      "pendingTitle": "Payment request & receipt received successfully! ⏳",
+      "pendingSubtitle": "Your request is currently under review and verification by our support team. The course will be activated and you will be notified as soon as the transfer is confirmed.",
       "nextSteps": "What's next?",
       "goToCourses": "Go to My Courses",
       "goToHome": "Back to Home",
+      "viewOrderDetail": "View Order Details",
+      "viewAllOrders": "My Orders List",
       "viewOrdersPrefix": "You can also check your order history in",
       "viewOrdersLink": "My Orders"
     }

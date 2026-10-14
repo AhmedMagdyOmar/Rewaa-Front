@@ -9,6 +9,12 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
+import { Suspense } from "react";
+
 export default function PaymentSuccessPage() {
-  return <PaymentSuccessClient />;
+  return (
+    <Suspense fallback={<div className="min-h-[70vh]" />}>
+      <PaymentSuccessClient />
+    </Suspense>
+  );
 }

@@ -126,7 +126,9 @@ export function StudentManualPaymentForm({
       },
       {
         onSuccess: () => {
-          router.push("/student-dashboard/orders/payment-success");
+          router.push(
+            `/student-dashboard/orders/payment-success?status=pending&order_id=${order.id}`,
+          );
         },
         onError: (err: unknown) => {
           const message = getErrorMessage(err) || t("errorToast");
