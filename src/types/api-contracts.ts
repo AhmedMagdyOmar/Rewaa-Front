@@ -1155,6 +1155,7 @@ export type BackendOrderStatus =
   | "under_review"
   | "paid"
   | "partially_paid"
+  | "rejected"
   | "cancelled"
   | "refunded"
   | string;

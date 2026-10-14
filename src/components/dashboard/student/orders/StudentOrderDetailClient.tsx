@@ -109,6 +109,13 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
             {tStatus("under_review")}
           </Badge>
         );
+      case "rejected":
+        return (
+          <Badge className="bg-destructive/15 text-destructive border-destructive/30 gap-1.5 font-medium">
+            <XCircle className="size-3.5" />
+            {tStatus("rejected")}
+          </Badge>
+        );
       case "cancelled":
         return (
           <Badge className="bg-destructive/15 text-destructive border-destructive/30 gap-1.5 font-medium">
@@ -161,7 +168,10 @@ export function StudentOrderDetailClient({ orderId }: StudentOrderDetailClientPr
     );
   }
 
-  const isPending = order.status === "awaiting_payment" || order.status === "pending";
+  const isPending =
+    order.status === "awaiting_payment" ||
+    order.status === "pending" ||
+    order.status === "rejected";
   const isPaid = order.status === "paid";
   const isUnderReview = order.status === "under_review";
   const latestPayment =

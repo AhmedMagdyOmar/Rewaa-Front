@@ -84,6 +84,13 @@ export function StudentOrdersClient() {
             {tStatus("under_review")}
           </Badge>
         );
+      case "rejected":
+        return (
+          <Badge className="bg-destructive/15 text-destructive border-destructive/30 gap-1.5 font-medium">
+            <XCircle className="size-3.5" />
+            {tStatus("rejected")}
+          </Badge>
+        );
       case "cancelled":
         return (
           <Badge className="bg-destructive/15 text-destructive border-destructive/30 gap-1.5 font-medium">
@@ -138,6 +145,7 @@ export function StudentOrdersClient() {
                 <SelectItem value="awaiting_payment">{tStatus("awaiting_payment")}</SelectItem>
                 <SelectItem value="under_review">{tStatus("under_review")}</SelectItem>
                 <SelectItem value="paid">{tStatus("paid")}</SelectItem>
+                <SelectItem value="rejected">{tStatus("rejected")}</SelectItem>
                 <SelectItem value="cancelled">{tStatus("cancelled")}</SelectItem>
               </SelectContent>
             </Select>
