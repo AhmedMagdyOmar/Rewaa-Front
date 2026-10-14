@@ -108,13 +108,18 @@ export const billingService = {
   // Payments / Billing Requests
   async getPayments(params?: PaymentFilterParams): Promise<PaymentsListResponse> {
     const res = await api<
-      | { payments: BackendPayment[]; pagination: ApiPaginationMeta }
+      | {
+          payments: BackendPayment[];
+          pagination: ApiPaginationMeta;
+          status_counts?: PaymentsListResponse["status_counts"];
+        }
       | {
           data: BackendPayment[];
           current_page: number;
           last_page: number;
           per_page: number;
           total: number;
+          status_counts?: PaymentsListResponse["status_counts"];
         }
       | BackendPayment[]
     >({
@@ -139,6 +144,7 @@ export const billingService = {
       return {
         payments: res.payments,
         pagination: res.pagination,
+        status_counts: res.status_counts,
       };
     }
 
@@ -150,6 +156,8 @@ export const billingService = {
         per_page: res.per_page ?? 10,
         total: res.total ?? 0,
       },
+      status_counts: (res as { status_counts?: PaymentsListResponse["status_counts"] })
+        .status_counts,
     };
   },
 

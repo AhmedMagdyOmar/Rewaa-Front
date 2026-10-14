@@ -1302,9 +1302,18 @@ export interface OrdersListResponse {
   pagination: ApiPaginationMeta;
 }
 
+export interface BackendPaymentStatusCounts {
+  total_amount: string | number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  approved_total: string | number;
+}
+
 export interface PaymentsListResponse {
   payments: BackendPayment[];
   pagination: ApiPaginationMeta;
+  status_counts?: BackendPaymentStatusCounts;
 }
 
 // -------------------------------------------------------------

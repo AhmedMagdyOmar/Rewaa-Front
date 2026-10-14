@@ -118,19 +118,39 @@ export function BillingRequestsClient() {
   const [selectedPayment, setSelectedPayment] = useState<BackendPayment | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Compute stat counts from payments list
+  // Compute stat counts from backend status_counts or filtered payments list
   const stats = useMemo(() => {
-    const totalPayments = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
-    const pendingCount = payments.filter((p) => p.status === "pending").length;
-    const acceptedCount = payments.filter((p) => p.status === "approved").length;
-    const rejectedCount = payments.filter((p) => p.status === "rejected").length;
+    const backendCounts = paymentsData?.status_counts;
+
+    const totalPayments =
+      backendCounts?.approved_total !== undefined
+        ? Number(backendCounts.approved_total)
+        : payments
+            .filter((p) => p.status === "approved")
+            .reduce((sum, p) => sum + Number(p.amount || 0), 0);
+
+    const pendingCount =
+      backendCounts?.pending !== undefined
+        ? backendCounts.pending
+        : payments.filter((p) => p.status === "pending").length;
+
+    const acceptedCount =
+      backendCounts?.approved !== undefined
+        ? backendCounts.approved
+        : payments.filter((p) => p.status === "approved").length;
+
+    const rejectedCount =
+      backendCounts?.rejected !== undefined
+        ? backendCounts.rejected
+        : payments.filter((p) => p.status === "rejected").length;
+
     return {
       totalPayments,
       pendingCount,
       acceptedCount,
       rejectedCount,
     };
-  }, [payments]);
+  }, [payments, paymentsData?.status_counts]);
 
   // Format payment method helper
   const formatPaymentMethod = (method?: string) => {
