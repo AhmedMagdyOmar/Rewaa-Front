@@ -2,7 +2,6 @@
 "use client";
 
 import {
-  ComboboxSelect,
   ExamSelect,
   GradeSelect,
   SubjectSelect,
@@ -33,7 +32,6 @@ import {
   FileText,
   GraduationCap,
   ImageIcon,
-  Layers,
   Loader2,
   Trash2,
   Upload,
@@ -95,10 +93,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [grade, setGrade] = useState("");
   const [subject, setSubject] = useState("");
   const [instructorId, setInstructorId] = useState("");
-
-  // Optional Course Dependent Info
-  const [selectedCourseId, setSelectedCourseId] = useState<string>("");
-  const [selectedSectionId, setSelectedSectionId] = useState<string>("");
 
   // Active Status
   const [isActive, setIsActive] = useState<boolean>(true);
@@ -192,24 +186,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     }
   }, [optionsData, initialLessonId, grade, subject, instructorId]);
 
-  // When selectedCourseId changes, adjust default selectedSectionId
-  const courses = optionsData?.courses;
-  const currentCourseSections = useMemo(() => {
-    if (!selectedCourseId || !courses) return [];
-    const course = courses.find((c) => String(c.id) === selectedCourseId);
-    return course?.sections || [];
-  }, [selectedCourseId, courses]);
-
-  useEffect(() => {
-    if (selectedCourseId && currentCourseSections.length > 0) {
-      if (!currentCourseSections.some((s) => String(s.id) === selectedSectionId)) {
-        setSelectedSectionId(String(currentCourseSections[0].id));
-      }
-    } else if (!selectedCourseId) {
-      setSelectedSectionId("");
-    }
-  }, [selectedCourseId, currentCourseSections, selectedSectionId]);
-
   // Populate existing lesson on edit
   useEffect(() => {
     if (!initialLesson) return;
@@ -235,13 +211,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     setCoverImage(initialLesson.cover_image || initialLesson.cover_image_url || "");
     setCoverImageFile(null);
     setRemoveCoverImage(false);
-
-    if (initialLesson.course_id) {
-      setSelectedCourseId(String(initialLesson.course_id));
-    }
-    if (initialLesson.course_section_id) {
-      setSelectedSectionId(String(initialLesson.course_section_id));
-    }
 
     if (initialLesson.educational_stage_id) {
       setGrade(String(initialLesson.educational_stage_id));
@@ -369,15 +338,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       return;
     }
 
-    if (selectedCourseId && !selectedSectionId) {
-      setFormError(
-        locale === "ar"
-          ? "يرجى اختيار القسم التابع للدورة المحددة"
-          : "Please select the section for the chosen course",
-      );
-      return;
-    }
-
     if (isLinkedToExam && !linkedExamId) {
       setFormError(
         locale === "ar"
@@ -394,12 +354,11 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       const hasExamFlag = Boolean(isLinkedToExam && linkedExamId);
       const examIdValue = hasExamFlag ? Number(linkedExamId) : null;
       const passToUnlockFlag = Boolean(hasExamFlag && isRequiredPassExam);
-      const isCourseLinked = Boolean(selectedCourseId);
 
       if (initialLessonId) {
-        // Update Lesson
+        // Update Lesson Template
         const updateData: UpdateLessonData = {
-          classification: isCourseLinked ? "course" : "standalone",
+          classification: "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
@@ -417,18 +376,12 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
           explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
           delete_media_ids: deleteMediaIds.length > 0 ? deleteMediaIds : undefined,
+          educational_stage_id: Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1),
+          subject_id: Number(subject) || (optionsData?.subjects[0]?.id ?? 1),
         };
 
-        if (isCourseLinked) {
-          updateData.course_id = Number(selectedCourseId);
-          updateData.course_section_id = Number(selectedSectionId);
-        } else {
-          updateData.educational_stage_id =
-            Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
-          updateData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
-          if (optionsData?.requires_instructor_selection && instructorId) {
-            updateData.instructor_id = Number(instructorId);
-          }
+        if (optionsData?.requires_instructor_selection && instructorId) {
+          updateData.instructor_id = Number(instructorId);
         }
 
         await updateMutation.mutateAsync({
@@ -438,9 +391,9 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
 
         toast.success(locale === "ar" ? "تم تعديل الدرس بنجاح" : "Lesson updated successfully");
       } else {
-        // Create Lesson
+        // Create Lesson Template
         const createData: StoreLessonData = {
-          classification: isCourseLinked ? "course" : "standalone",
+          classification: "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
@@ -456,18 +409,12 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           cover_image: coverImageFile || undefined,
           pdf_files: newPdfFiles,
           explanatory_images: newImageFiles,
+          educational_stage_id: Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1),
+          subject_id: Number(subject) || (optionsData?.subjects[0]?.id ?? 1),
         };
 
-        if (isCourseLinked) {
-          createData.course_id = Number(selectedCourseId);
-          createData.course_section_id = Number(selectedSectionId);
-        } else {
-          createData.educational_stage_id =
-            Number(grade) || (optionsData?.educational_stages[0]?.id ?? 1);
-          createData.subject_id = Number(subject) || (optionsData?.subjects[0]?.id ?? 1);
-          if (optionsData?.requires_instructor_selection && instructorId) {
-            createData.instructor_id = Number(instructorId);
-          }
+        if (optionsData?.requires_instructor_selection && instructorId) {
+          createData.instructor_id = Number(instructorId);
         }
 
         await createMutation.mutateAsync(createData);
@@ -537,22 +484,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       locale === "ar"
         ? s.name.ar || s.name.en || String(s.id)
         : s.name.en || s.name.ar || String(s.id),
-  }));
-
-  const courseOptions = (optionsData?.courses || []).map((c) => ({
-    value: String(c.id),
-    label:
-      locale === "ar"
-        ? c.title.ar || c.title.en || String(c.id)
-        : c.title.en || c.title.ar || String(c.id),
-  }));
-
-  const sectionOptions = currentCourseSections.map((s) => ({
-    value: String(s.id),
-    label:
-      locale === "ar"
-        ? s.title.ar || s.title.en || String(s.id)
-        : s.title.en || s.title.ar || String(s.id),
   }));
 
   return (
@@ -746,64 +677,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
             teachers={optionsData?.instructors || []}
             disabled={isLoadingOptions || optionsData?.requires_instructor_selection === false}
           />
-        </FormSectionCard>
-
-        {/* 5. COURSE & SECTION (OPTIONAL) */}
-        <FormSectionCard
-          title={locale === "ar" ? "ربط بدورة تدريبية (اختياري)" : "Link to Course (Optional)"}
-          description={
-            locale === "ar"
-              ? "يمكنك ربط هذا الدرس بدورة وقسم محددين، أو تركه كدرس مستقل"
-              : "You can optionally link this lesson to a course and section, or leave it standalone"
-          }
-          icon={Layers}
-          contentClassName="space-y-4"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <ComboboxSelect
-                id="course-select"
-                label={locale === "ar" ? "الدورة التابع لها" : "Parent Course"}
-                value={selectedCourseId}
-                onValueChange={(val) => {
-                  setSelectedCourseId(val);
-                  setSelectedSectionId("");
-                }}
-                options={courseOptions}
-                placeholder={
-                  locale === "ar" ? "اختر دورة (اختياري)..." : "Select a course (optional)..."
-                }
-                emptyLabel={locale === "ar" ? "لا توجد دورات" : "No courses found"}
-                disabled={isLoadingOptions}
-              />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <ComboboxSelect
-                id="section-select"
-                label={locale === "ar" ? "القسم / الفصل" : "Section / Unit"}
-                value={selectedSectionId}
-                onValueChange={setSelectedSectionId}
-                options={sectionOptions}
-                placeholder={
-                  !selectedCourseId
-                    ? locale === "ar"
-                      ? "اختر دورة أولاً..."
-                      : "Select course first..."
-                    : locale === "ar"
-                      ? "اختر قسماً..."
-                      : "Select a section..."
-                }
-                emptyLabel={
-                  locale === "ar" ? "لا توجد أقسام في هذه الدورة" : "No sections in this course"
-                }
-                disabled={
-                  isLoadingOptions || !selectedCourseId || currentCourseSections.length === 0
-                }
-                required={Boolean(selectedCourseId)}
-              />
-            </div>
-          </div>
         </FormSectionCard>
 
         {/* 5. ATTACHMENTS & EXAMS */}

@@ -1689,9 +1689,9 @@
       "viewCourse": "View Course"
     },
     "new": {
-      "title": "Create Standalone Lesson",
-      "editTitle": "Edit Standalone Lesson",
-      "subtitle": "Configure independent or course-linked lesson details, video, attachments, and exams.",
+      "title": "Create Lesson Template",
+      "editTitle": "Edit Lesson Template",
+      "subtitle": "Configure lesson template details, video, attachments, and exams to link to courses later.",
       "selectCourse": "Select Parent Course",
       "selectCoursePlaceholder": "Choose a course to link this lesson to...",
       "selectSection": "Select Section",
