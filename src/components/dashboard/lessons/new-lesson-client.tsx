@@ -1,12 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
-import {
-  ExamSelect,
-  GradeSelect,
-  SubjectSelect,
-  TeacherSelect,
-} from "@/components/ui/academic-selects";
+import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
 import { FormSectionCard } from "@/components/ui/form-section-card";
@@ -22,7 +17,6 @@ import {
 import { cn } from "@/lib/utils";
 import type { StoreLessonData, UpdateLessonData } from "@/types/api-contracts";
 import type { LessonType } from "@/types/course";
-import type { Exam } from "@/types/exam";
 import {
   AlertCircle,
   ArrowLeft,
@@ -41,7 +35,7 @@ import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 interface AttachmentItem {
@@ -108,68 +102,8 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   // Deleted media IDs tracking (for update in backend Spatie MediaLibrary)
   const [deleteMediaIds, setDeleteMediaIds] = useState<number[]>([]);
 
-  // Exam Linking State
-  const [isLinkedToExam, setIsLinkedToExam] = useState(false);
-  const [linkedExamId, setLinkedExamId] = useState("");
-  const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
-
   // Top level submit error
   const [formError, setFormError] = useState<string | null>(null);
-
-  // Available Exams mapped for ExamSelect (filtered by grade and subject)
-  const exams = optionsData?.exams;
-  const availableExams: Exam[] = useMemo(() => {
-    if (!exams) return [];
-    return exams
-      .filter((e) => {
-        // Always include currently selected linked exam so it remains visible on edit
-        if (linkedExamId && String(e.id) === String(linkedExamId)) {
-          return true;
-        }
-
-        if (grade && String(e.educational_stage_id) !== String(grade)) return false;
-        if (subject && String(e.subject_id) !== String(subject)) return false;
-        if (
-          optionsData?.requires_instructor_selection &&
-          instructorId &&
-          String(e.instructor_id) !== String(instructorId)
-        ) {
-          return false;
-        }
-        return true;
-      })
-      .map((e) => ({
-        id: String(e.id),
-        title: e.title?.[locale] || e.title?.ar || e.title?.en || "",
-        description: "",
-        subject: String(e.subject_id),
-        grade: String(e.educational_stage_id),
-        teacherName: "",
-        category: "test",
-        examType: e.course_id ? "course-dependent" : "independent",
-        courseId: e.course_id ? String(e.course_id) : undefined,
-        passingPercentage: e.passing_percentage,
-        triesAllowed: 1,
-        durationMinutes: 60,
-        showModelAnswers: true,
-        randomizeQuestionsOrder: false,
-        randomizeMCQChoices: false,
-        examSections: [],
-        numberOfQuestions: e.questions_count ?? 0,
-        numberOfStudents: 0,
-        successRate: 0,
-        timesUsed: 0,
-        createdAt: new Date().toISOString(),
-      }));
-  }, [
-    exams,
-    locale,
-    linkedExamId,
-    grade,
-    subject,
-    instructorId,
-    optionsData?.requires_instructor_selection,
-  ]);
 
   // Set default academic dropdowns when options load (for new lesson)
   useEffect(() => {
@@ -252,11 +186,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         })),
       );
     }
-
-    // Exam linking
-    setIsLinkedToExam(Boolean(initialLesson.has_exam));
-    setLinkedExamId(initialLesson.exam_id ? String(initialLesson.exam_id) : "");
-    setIsRequiredPassExam(Boolean(initialLesson.requires_exam_pass_to_unlock_next_lesson));
   }, [initialLesson, locale]);
 
   // File handlers
@@ -338,22 +267,15 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
       return;
     }
 
-    if (isLinkedToExam && !linkedExamId) {
-      setFormError(
-        locale === "ar"
-          ? "يرجى اختيار الامتحان المرتبط بهذا الدرس أو إلغاء تفعيل ربط الامتحان"
-          : "Please select an exam or disable the exam link toggle",
-      );
-      return;
-    }
-
     try {
       const newPdfFiles = pdfFiles.map((p) => p.file).filter(Boolean) as File[];
       const newImageFiles = imageFiles.map((i) => i.file).filter(Boolean) as File[];
 
-      const hasExamFlag = Boolean(isLinkedToExam && linkedExamId);
-      const examIdValue = hasExamFlag ? Number(linkedExamId) : null;
-      const passToUnlockFlag = Boolean(hasExamFlag && isRequiredPassExam);
+      // TODO: [Backend Pending] Exam linking has been removed from standalone lesson creation.
+      // Standalone lessons can no longer be linked to exams. Exams can only be linked from within a course.
+      const hasExamFlag = false;
+      const examIdValue = null;
+      const passToUnlockFlag = false;
 
       if (initialLessonId) {
         // Update Lesson Template
@@ -806,51 +728,6 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
                     {tDialog("noExplanatoryImages")}
                   </p>
                 )}
-              </div>
-            )}
-          </FormToggleSetting>
-
-          {/* Exam Linking Setting */}
-          <FormToggleSetting
-            id="standalone-exam-toggle"
-            title={tDialog("isLinkedToExam")}
-            subtitle={tDialog("isLinkedToExamSubtitle")}
-            checked={isLinkedToExam}
-            onCheckedChange={setIsLinkedToExam}
-          >
-            {isLinkedToExam && (
-              <div className="space-y-3 pt-1">
-                <ExamSelect
-                  id="standalone-exam-select"
-                  value={linkedExamId}
-                  onValueChange={setLinkedExamId}
-                  label={tDialog("selectExam")}
-                  placeholder={tDialog("selectExam")}
-                  required={isLinkedToExam}
-                  exams={availableExams}
-                  emptyLabel={
-                    locale === "ar"
-                      ? "لا توجد امتحانات مطابقة للمرحلة والمادة"
-                      : "No matching exams"
-                  }
-                />
-
-                {availableExams.length === 0 && (
-                  <p className="text-xs text-amber-600 bg-amber-500/10 p-2.5 rounded-lg border border-amber-500/20">
-                    {locale === "ar"
-                      ? "لا توجد امتحانات متاحة تطابق المرحلة الدراسية والمادة المحددة. يمكنك إنشاء امتحان أولاً من قسم إدارة الامتحانات."
-                      : "No exams match the selected stage and subject. Please create an exam in the Exams section first."}
-                  </p>
-                )}
-
-                <FormToggleSetting
-                  id="standalone-pass-exam-toggle"
-                  title={tDialog("isRequiredPassExam")}
-                  subtitle={tDialog("isRequiredPassExamSubtitle")}
-                  checked={isRequiredPassExam}
-                  onCheckedChange={setIsRequiredPassExam}
-                  className="mt-2"
-                />
               </div>
             )}
           </FormToggleSetting>
