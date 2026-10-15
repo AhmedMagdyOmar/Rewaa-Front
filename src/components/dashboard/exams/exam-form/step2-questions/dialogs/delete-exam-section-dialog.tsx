@@ -28,7 +28,6 @@ export function DeleteExamSectionDialog({
   onConfirm,
   onCancel,
 }: DeleteExamSectionDialogProps) {
-  const tForm = useTranslations("exams.form");
   const tStep2 = useTranslations("exams.step2");
 
   if (!section) return null;
@@ -44,16 +43,16 @@ export function DeleteExamSectionDialog({
             <DialogTitle>{tStep2("deleteSectionDialog.title")}</DialogTitle>
           </div>
           <DialogDescription>
-            {tStep2("deleteSectionDialog.subtitle", { title: section.title })}
+            {tStep2("deleteSectionDialog.description", { title: section.title })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
           <Button variant="outline" type="button" onClick={onCancel}>
-            {tForm("actions.cancel")}
+            {tStep2("deleteSectionDialog.cancel")}
           </Button>
           <Button variant="destructive" type="button" onClick={onConfirm} className="gap-1.5">
             <Trash2 className="size-4" />
-            <span>{tForm("actions.delete")}</span>
+            <span>{tStep2("deleteSectionDialog.confirm")}</span>
           </Button>
         </DialogFooter>
       </DialogContent>

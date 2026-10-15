@@ -1091,6 +1091,7 @@
       "deleteSectionDialog": {
         "title": "Delete Exam Section",
         "description": "Are you sure you want to delete section \"{title}\" along with all its questions? This action cannot be undone.",
+        "subtitle": "Are you sure you want to delete section \"{title}\" along with all its questions? This action cannot be undone.",
         "cancel": "Cancel",
         "confirm": "Delete Section"
       },
