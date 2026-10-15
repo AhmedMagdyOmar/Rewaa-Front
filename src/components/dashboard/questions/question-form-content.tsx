@@ -66,7 +66,7 @@ export interface QuestionFormContentProps {
       subjectId?: number;
       instructorId?: number;
     },
-  ) => void;
+  ) => Promise<void> | void;
   onCancel?: () => void;
   submitLabel?: string;
   cancelLabel?: string;
@@ -237,6 +237,16 @@ export function QuestionFormContent({
     return (sections || []).map((s) => ({ value: s.id, label: s.title }));
   }, [sections]);
 
+  const mcqLabels = React.useMemo(
+    () => ({
+      mcqChoicesLabel: t("mcqChoicesLabel"),
+      addChoice: t("addChoice"),
+      markAsCorrect: t("markAsCorrect"),
+      choicePlaceholder: t("choicePlaceholder"),
+    }),
+    [t],
+  );
+
   // Requirements & Answers
   const [modelAnswer, setModelAnswer] = React.useState(initialQuestion?.modelAnswer || "");
   const [options, setOptions] = React.useState<MCQOption[]>(
@@ -245,9 +255,14 @@ export function QuestionFormContent({
       { id: "opt-2", text: "" },
     ],
   );
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  // Track the ID of the loaded initial question so parent re-renders don't reset in-progress edits
+  const loadedQuestionIdRef = React.useRef<string | null>(initialQuestion?.id || null);
 
   React.useEffect(() => {
-    if (initialQuestion) {
+    if (initialQuestion && initialQuestion.id !== loadedQuestionIdRef.current) {
+      loadedQuestionIdRef.current = initialQuestion.id;
       setType(initialQuestion.type);
       setQuestionName(initialQuestion.questionName);
       setQuestionContent(initialQuestion.questionContent);
@@ -263,22 +278,26 @@ export function QuestionFormContent({
           { id: "opt-2", text: "" },
         ],
       );
+    } else if (!initialQuestion && loadedQuestionIdRef.current !== null) {
+      loadedQuestionIdRef.current = null;
     }
   }, [initialQuestion]);
 
-  const handleAddOption = () => {
+  const handleAddOption = React.useCallback(() => {
     setOptions((prev) => [...prev, { id: `opt-${Date.now()}`, text: "" }]);
-  };
+  }, []);
 
-  const handleUpdateOption = (id: string, text: string) => {
+  const handleUpdateOption = React.useCallback((id: string, text: string) => {
     setOptions((prev) => prev.map((o) => (o.id === id ? { ...o, text } : o)));
-  };
+  }, []);
 
-  const handleDeleteOption = (id: string) => {
-    if (options.length <= 2) return;
-    setOptions((prev) => prev.filter((o) => o.id !== id));
-    if (modelAnswer === id) setModelAnswer("");
-  };
+  const handleDeleteOption = React.useCallback((id: string) => {
+    setOptions((prev) => {
+      if (prev.length <= 2) return prev;
+      return prev.filter((o) => o.id !== id);
+    });
+    setModelAnswer((prev) => (prev === id ? "" : prev));
+  }, []);
 
   const resetFormForNext = () => {
     setQuestionName("");
@@ -333,7 +352,7 @@ export function QuestionFormContent({
   };
 
   const handleSaveInternal = async (keepOpen: boolean = false) => {
-    if (!validateForm()) return;
+    if (!validateForm() || isSubmitting) return;
 
     const questionData: Question = {
       id: initialQuestion?.id || `q-${Date.now()}`,
@@ -350,9 +369,10 @@ export function QuestionFormContent({
       options: type === "mcq" ? options : undefined,
     };
 
+    setIsSubmitting(true);
     try {
       const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
-      onSave(questionData, sectionId || undefined, keepOpen, {
+      await onSave(questionData, sectionId || undefined, keepOpen, {
         grade: selectedStageId,
         subject: selectedSubjId,
         teacherName: selectedInstId,
@@ -366,6 +386,8 @@ export function QuestionFormContent({
       }
     } catch {
       // If saving fails (e.g. backend error), do NOT reset the form so the user can fix the issue.
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -662,12 +684,7 @@ export function QuestionFormContent({
             onAddOption={handleAddOption}
             onUpdateOption={handleUpdateOption}
             onDeleteOption={handleDeleteOption}
-            labels={{
-              mcqChoicesLabel: t("mcqChoicesLabel"),
-              addChoice: t("addChoice"),
-              markAsCorrect: t("markAsCorrect"),
-              choicePlaceholder: t("choicePlaceholder"),
-            }}
+            labels={mcqLabels}
           />
         )}
 
@@ -687,13 +704,18 @@ export function QuestionFormContent({
       {/* Action Buttons Bar */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/60">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
             {cancelLabel || t("actions.cancel")}
           </Button>
         )}
 
         {showSaveAndAddAnother && (
-          <Button type="button" variant="outline" onClick={() => handleSaveInternal(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => handleSaveInternal(true)}
+            disabled={isSubmitting}
+          >
             {t("actions.saveAndAddAnother")}
           </Button>
         )}
@@ -701,6 +723,7 @@ export function QuestionFormContent({
         <Button
           type="button"
           onClick={() => handleSaveInternal(false)}
+          disabled={isSubmitting}
           className="font-semibold min-w-32"
         >
           {submitLabel || (initialQuestion ? t("actions.saveChanges") : t("actions.saveQuestion"))}

@@ -237,6 +237,25 @@ export function useExamSectionsManagement({
         }));
       }
 
+      // Optimistically update local sections state immediately so UI never reverts while waiting for server
+      setSections((prev) =>
+        prev.map((sec) => {
+          if (sec.id === targetSecId) {
+            const existingIdx = sec.questions.findIndex((q) => q.id === savedQuestion.id);
+            if (existingIdx >= 0) {
+              const updated = [...sec.questions];
+              updated[existingIdx] = savedQuestion;
+              return { ...sec, questions: updated };
+            }
+            return { ...sec, questions: [...sec.questions, savedQuestion] };
+          }
+          return {
+            ...sec,
+            questions: sec.questions.filter((q) => q.id !== savedQuestion.id),
+          };
+        }),
+      );
+
       let syncedQuestion = savedQuestion;
       if (!savedQuestion.id.startsWith("q-")) {
         const updated = await updateQuestionMutation.mutateAsync({
@@ -277,6 +296,7 @@ export function useExamSectionsManagement({
       toast.error(
         getErrorMessage(err, locale === "ar" ? "فشل حفظ السؤال" : "Failed to save question"),
       );
+      throw err;
     }
   };
 

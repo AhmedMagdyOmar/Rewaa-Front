@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import * as React from "react";
 import { toast } from "sonner";
 
 import { QuestionFormContent } from "@/components/dashboard/questions/question-form-content";
@@ -176,6 +177,7 @@ export function EditQuestionClient({ questionId }: EditQuestionClientProps) {
       {/* Main Question Form Card Container */}
       <div className="bg-card border border-border/60 rounded-2xl p-6 shadow-xs space-y-6">
         <QuestionFormContent
+          key={question.id}
           initialQuestion={mappedInitialQuestion}
           initialEducationalStageId={question.educational_stage_id}
           initialSubjectId={question.subject_id}

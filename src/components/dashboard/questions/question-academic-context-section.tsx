@@ -1,3 +1,4 @@
+import * as React from "react";
 import { GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { FormSectionCard } from "@/components/ui/form-section-card";
@@ -23,7 +24,7 @@ interface QuestionAcademicContextSectionProps {
   tNew: (key: string) => string;
 }
 
-export function QuestionAcademicContextSection({
+export const QuestionAcademicContextSection = React.memo(function QuestionAcademicContextSection({
   allowEditableAcademicProps = false,
   selectedStageId,
   onStageChange,
@@ -118,4 +119,4 @@ export function QuestionAcademicContextSection({
       )}
     </FormSectionCard>
   );
-}
+});

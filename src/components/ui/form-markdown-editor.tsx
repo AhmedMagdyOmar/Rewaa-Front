@@ -22,7 +22,7 @@ export interface FormMarkdownEditorProps {
   contentEditableClassName?: string;
 }
 
-export function FormMarkdownEditor({
+export const FormMarkdownEditor = React.memo(function FormMarkdownEditor({
   value,
   onChange,
   placeholder,
@@ -38,4 +38,4 @@ export function FormMarkdownEditor({
       contentEditableClassName={contentEditableClassName}
     />
   );
-}
+});

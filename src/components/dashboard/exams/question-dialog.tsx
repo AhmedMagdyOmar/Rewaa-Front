@@ -51,7 +51,7 @@ interface QuestionDialogProps {
   examSubject?: string;
   examTeacherName?: string;
   isSectionLocked?: boolean;
-  onSave: (question: Question, sectionId: string, keepOpen?: boolean) => void;
+  onSave: (question: Question, sectionId: string, keepOpen?: boolean) => Promise<void> | void;
   onSaveMany?: (questions: Question[], sectionId: string) => Promise<void> | void;
 }
 
@@ -117,8 +117,8 @@ export function QuestionDialog({
     prevOpenRef.current = open;
   }, [open, initialSectionId, sections]);
 
-  const handleSaveInternal = (question: Question, sectionId?: string, keepOpen?: boolean) => {
-    onSave(question, sectionId || sections[0]?.id || "", keepOpen);
+  const handleSaveInternal = async (question: Question, sectionId?: string, keepOpen?: boolean) => {
+    await onSave(question, sectionId || sections[0]?.id || "", keepOpen);
     if (!keepOpen) {
       onOpenChange(false);
     }
