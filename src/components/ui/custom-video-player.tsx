@@ -31,7 +31,6 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
 
 export interface CustomVideoPlayerProps {
@@ -53,20 +52,18 @@ export function CustomVideoPlayer({
   onEnded,
   onTimeUpdate,
 }: CustomVideoPlayerProps) {
-  const t = useTranslations("common.videoPlayer");
-
   if (!url) {
     return (
       <div
         className={cn(
-          "w-full aspect-video rounded-xl bg-card/60 border border-border/50 flex flex-col items-center justify-center text-muted-foreground gap-2 p-4 text-center",
+          "w-full aspect-video rounded-xl bg-slate-900/60 border border-slate-700/50 flex flex-col items-center justify-center text-slate-400 gap-2 p-4 text-center",
           className,
         )}
       >
-        <div className="w-12 h-12 rounded-full bg-muted/40 flex items-center justify-center">
-          <Play className="w-5 h-5 text-muted-foreground/60 ml-0.5" />
+        <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center">
+          <Play className="w-5 h-5 text-slate-400 ml-0.5" />
         </div>
-        <p className="text-sm font-medium">{t("noVideo")}</p>
+        <p className="text-sm font-medium">لا يوجد فيديو متاح</p>
       </div>
     );
   }
@@ -74,7 +71,7 @@ export function CustomVideoPlayer({
   return (
     <div
       className={cn(
-        "relative w-full aspect-video rounded-xl overflow-hidden bg-black/90 shadow-lg border border-border/40 group/player select-none",
+        "relative w-full aspect-video rounded-xl overflow-hidden bg-black/95 shadow-lg border border-slate-800 group/player select-none",
         className,
       )}
       dir="ltr"
@@ -88,15 +85,9 @@ export function CustomVideoPlayer({
         onTimeUpdate={(detail) => onTimeUpdate?.(detail.currentTime)}
         className="w-full h-full object-contain relative flex items-center justify-center font-sans text-white ring-0 outline-none"
       >
-        <MediaProvider className="w-full h-full">
-          {poster && (
-            <Poster
-              src={poster}
-              alt={title || "Video thumbnail"}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          )}
-        </MediaProvider>
+        <MediaProvider className="w-full h-full"></MediaProvider>
+        <StartCover poster={poster} title={title} />
+
         {/* Center Play/Pause Overlay Button (shows on pause / hover) */}
         <CenterPlayOverlay />
         {/* Click to Play/Pause (Desktop Only) */}
@@ -109,7 +100,6 @@ export function CustomVideoPlayer({
 }
 
 function PlayerControls() {
-  const t = useTranslations("common.videoPlayer");
   const isPaused = useMediaState("paused");
   const isMuted = useMediaState("muted");
   const isFullscreen = useMediaState("fullscreen");
@@ -141,7 +131,7 @@ function PlayerControls() {
           {/* Play / Pause */}
           <PlayButton
             className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
-            aria-label={isPaused ? t("play") : t("pause")}
+            aria-label={isPaused ? "تشغيل" : "إيقاف مؤقت"}
           >
             {isPaused ? (
               <Play className="w-4 h-4 fill-white text-white ml-0.5" />
@@ -154,7 +144,7 @@ function PlayerControls() {
           <SeekButton
             seconds={-10}
             className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
-            title={t("seekBackward", { seconds: 10 })}
+            title="إرجاع 10 ثوانٍ"
           >
             <SeekBackward className="w-4 h-4" />
           </SeekButton>
@@ -163,7 +153,7 @@ function PlayerControls() {
           <SeekButton
             seconds={10}
             className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
-            title={t("seekForward", { seconds: 10 })}
+            title="تقديم 10 ثوانٍ"
           >
             <SeekForward className="w-4 h-4" />
           </SeekButton>
@@ -172,7 +162,7 @@ function PlayerControls() {
           <div className="flex items-center group/volume">
             <MuteButton
               className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
-              aria-label={isMuted ? t("unmute") : t("mute")}
+              aria-label={isMuted ? "إلغاء كتم الصوت" : "كتم الصوت"}
             >
               {isMuted ? (
                 <VolumeX className="w-4 h-4 text-red-400" />
@@ -183,10 +173,8 @@ function PlayerControls() {
             <div className="hidden sm:flex w-0 group-hover/volume:w-16 overflow-hidden transition-all duration-200 items-center">
               <VolumeSlider.Root className="relative flex h-6 w-14 cursor-pointer items-center touch-none outline-none">
                 <VolumeSlider.Track className="relative h-1 w-full rounded-full bg-white/20">
-                  {/* Add w-[var(--slider-fill)] */}
                   <VolumeSlider.TrackFill className="absolute h-full w-(--slider-fill) rounded-full bg-primary" />
                 </VolumeSlider.Track>
-                {/* Add left-[var(--slider-fill)] */}
                 <VolumeSlider.Thumb className="absolute top-1/2 left-(--slider-fill) -translate-y-1/2 -translate-x-1/2 h-2.5 w-2.5 rounded-full bg-white shadow" />
               </VolumeSlider.Root>
             </div>
@@ -210,7 +198,7 @@ function PlayerControls() {
           {/* Fullscreen */}
           <FullscreenButton
             className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
-            aria-label={isFullscreen ? t("exitFullscreen") : t("enterFullscreen")}
+            aria-label={isFullscreen ? "الخروج من ملء الشاشة" : "ملء الشاشة"}
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </FullscreenButton>
@@ -221,7 +209,6 @@ function PlayerControls() {
 }
 
 function CenterPlayOverlay() {
-  const t = useTranslations("common.videoPlayer");
   const isPaused = useMediaState("paused");
   const remote = useMediaRemote();
 
@@ -231,8 +218,8 @@ function CenterPlayOverlay() {
     <button
       type="button"
       onClick={() => remote.play()}
-      aria-label={t("playVideo")}
-      className="absolute left-1/2 top-1/2 z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary/90 text-primary-foreground shadow-2xl backdrop-blur-sm transition-transform hover:scale-110 hover:bg-primary active:scale-95"
+      aria-label="تشغيل الفيديو"
+      className="absolute left-1/2 top-1/2 z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary/90 text-white shadow-2xl backdrop-blur-sm transition-transform hover:scale-110 hover:bg-primary active:scale-95"
     >
       <Play className="ml-0.5 h-6 w-6 fill-current" />
     </button>
@@ -240,7 +227,6 @@ function CenterPlayOverlay() {
 }
 
 function PlaybackSpeedMenu({ onOpenChange }: { onOpenChange?: (open: boolean) => void }) {
-  const t = useTranslations("common.videoPlayer");
   const playbackRate = useMediaState("playbackRate");
   const remote = useMediaRemote();
   const [open, setOpen] = useState(false);
@@ -272,7 +258,7 @@ function PlaybackSpeedMenu({ onOpenChange }: { onOpenChange?: (open: boolean) =>
         onClick={() => setOpen((o) => !o)}
         aria-haspopup="menu"
         aria-expanded={open}
-        title={t("playbackSpeed")}
+        title="سرعة التشغيل"
         className="flex h-8 px-2 items-center gap-1 rounded-lg text-xs font-medium hover:bg-white/15 active:scale-95 transition"
       >
         <span>{playbackRate}x</span>
@@ -282,10 +268,11 @@ function PlaybackSpeedMenu({ onOpenChange }: { onOpenChange?: (open: boolean) =>
       {open && (
         <div
           role="menu"
-          className="absolute bottom-full right-0 mb-2 z-50 min-w-32 rounded-xl bg-card/95 backdrop-blur-md p-1 text-card-foreground shadow-2xl border border-border/60"
+          className="absolute bottom-full right-0 mb-2 z-50 min-w-32 rounded-xl bg-slate-900/95 backdrop-blur-md p-1 text-white shadow-2xl border border-slate-700/80"
+          dir="rtl"
         >
-          <div className="px-2 py-1 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-            {t("playbackSpeed")}
+          <div className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+            سرعة التشغيل
           </div>
           {rates.map((rate) => (
             <button
@@ -297,9 +284,9 @@ function PlaybackSpeedMenu({ onOpenChange }: { onOpenChange?: (open: boolean) =>
                 remote.changePlaybackRate(rate);
                 setOpen(false);
               }}
-              className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors"
+              className="flex w-full items-center justify-between px-2.5 py-1.5 text-xs rounded-lg hover:bg-white/10 transition-colors text-right"
             >
-              <span>{rate === 1 ? t("normalSpeed") : `${rate}x`}</span>
+              <span>{rate === 1 ? "عادي (1x)" : `${rate}x`}</span>
               {playbackRate === rate && <Check className="w-3.5 h-3.5 text-primary" />}
             </button>
           ))}
@@ -340,7 +327,6 @@ function PlayerGestures() {
 }
 
 function PipButton() {
-  const t = useTranslations("common.videoPlayer");
   const remote = useMediaRemote();
   const canPip = useMediaState("canPictureInPicture");
   const isPip = useMediaState("pictureInPicture");
@@ -355,11 +341,29 @@ function PipButton() {
           ? remote.exitPictureInPicture(e.nativeEvent)
           : remote.enterPictureInPicture(e.nativeEvent)
       }
-      title={t("pip")}
-      aria-label={t("pip")}
+      title="صورة داخل صورة"
+      aria-label="صورة داخل صورة"
       className="hidden sm:flex h-8 w-8 items-center justify-center rounded-lg hover:bg-white/15 active:scale-95 transition"
     >
       <PictureInPicture className="w-4 h-4" />
     </button>
+  );
+}
+
+function StartCover({ poster, title }: { poster?: string; title?: string }) {
+  const started = useMediaState("started");
+
+  if (started) return null;
+
+  return (
+    <div className="absolute inset-0 z-[5] bg-black pointer-events-none">
+      {poster && (
+        <Poster
+          src={poster}
+          alt={title || "Video thumbnail"}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
+    </div>
   );
 }
