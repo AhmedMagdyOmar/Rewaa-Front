@@ -147,6 +147,8 @@ export function LastBillingRequestsCard({ onSelectInvoice }: LastBillingRequests
   const formatPaymentMethod = (method?: string) => {
     if (!method) return locale === "ar" ? "أخرى" : "Other";
     const m = method.toLowerCase();
+    if (m === "activation_code" || m.includes("activation"))
+      return locale === "ar" ? "كود تفعيل" : "Activation Code";
     if (m === "student_wallet" || m === "wallet")
       return locale === "ar" ? "محفظة الطالب" : "Student Wallet";
     if (m === "manual_transfer" || m === "manual")

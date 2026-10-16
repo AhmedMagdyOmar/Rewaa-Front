@@ -115,6 +115,7 @@ export function RequestDetailsModal({
   const formatPaymentMethod = (method?: string) => {
     if (!method) return tMethods("other");
     const m = method.toLowerCase();
+    if (m === "activation_code" || m.includes("activation")) return tMethods("activation_code");
     if (m === "student_wallet" || m === "wallet") return tMethods("student_wallet");
     if (m === "manual_transfer" || m === "manual") return tMethods("manual_transfer");
     if (m.includes("insta")) return tMethods("instapay");

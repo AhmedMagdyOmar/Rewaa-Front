@@ -1094,8 +1094,9 @@ export interface BackendActivationCodeGroup {
     id: number;
     title: Record<string, string>;
   } | null;
-  price: number | string;
-  quantity: number;
+  price?: number | string;
+  code_price?: number | string;
+  quantity?: number;
   total_codes?: number;
   available_codes?: number;
   sold_codes?: number;
@@ -1162,6 +1163,7 @@ export type BackendOrderStatus =
 export type BackendPaymentStatus = "pending" | "approved" | "rejected";
 export type BackendPaymentMethod =
   | "student_wallet"
+  | "activation_code"
   | "manual_transfer"
   | "instapay"
   | "vodafone_cash"

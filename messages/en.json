@@ -2050,6 +2050,7 @@
     "rejectSuccess": "Payment rejected successfully",
     "methods": {
       "other": "Other",
+      "activation_code": "Activation Code",
       "student_wallet": "Student Wallet",
       "manual_transfer": "Manual Transfer",
       "instapay": "InstaPay",

@@ -14,7 +14,7 @@ export function adaptBackendCodeGroupToUI(
     id: String(group.id),
     courseId: String(group.course_id),
     courseTitle,
-    price: Number(group.price || 0),
+    price: Number(group.code_price ?? group.price ?? 0),
     totalCodes: group.total_codes ?? group.quantity ?? 0,
     availableCodes: group.available_codes ?? 0,
     soldCodes: group.sold_codes ?? 0,

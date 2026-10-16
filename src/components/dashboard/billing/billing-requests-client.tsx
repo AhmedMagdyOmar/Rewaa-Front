@@ -156,6 +156,7 @@ export function BillingRequestsClient() {
   const formatPaymentMethod = (method?: string) => {
     if (!method) return t("methods.other");
     const m = method.toLowerCase();
+    if (m === "activation_code" || m.includes("activation")) return t("methods.activation_code");
     if (m === "student_wallet" || m === "wallet") return t("methods.student_wallet");
     if (m === "manual_transfer" || m === "manual") return t("methods.manual_transfer");
     if (m.includes("insta")) return t("methods.instapay");
