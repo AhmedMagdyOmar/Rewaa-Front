@@ -418,6 +418,42 @@ export function LessonDialog({
     }
     setImageFiles((prev) => prev.filter((i) => i.id !== id));
   };
+  const handleTogglePdfAttachments = (val: boolean) => {
+    setHasPdfAttachments(val);
+    if (!val) {
+      setPdfError(null);
+      const existingIds = pdfFiles
+        .filter((p) => p.isExisting && !isNaN(Number(p.id)))
+        .map((p) => Number(p.id));
+      if (existingIds.length > 0) {
+        setDeleteMediaIds((prev) => [...prev, ...existingIds]);
+      }
+      pdfFiles.forEach((p) => {
+        if (p.fileUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.fileUrl);
+        }
+      });
+      setPdfFiles([]);
+    }
+  };
+
+  const handleToggleImageAttachments = (val: boolean) => {
+    setHasImageAttachments(val);
+    if (!val) {
+      const existingIds = imageFiles
+        .filter((i) => i.isExisting && !isNaN(Number(i.id)))
+        .map((i) => Number(i.id));
+      if (existingIds.length > 0) {
+        setDeleteMediaIds((prev) => [...prev, ...existingIds]);
+      }
+      imageFiles.forEach((i) => {
+        if (i.fileUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(i.fileUrl);
+        }
+      });
+      setImageFiles([]);
+    }
+  };
 
   // Save submit handler with validation
   const handleSubmit = async (e: React.FormEvent) => {
@@ -891,10 +927,7 @@ export function LessonDialog({
                   title={t("hasPdfAttachments")}
                   subtitle={t("hasPdfAttachmentsSubtitle")}
                   checked={hasPdfAttachments}
-                  onCheckedChange={(val) => {
-                    setHasPdfAttachments(val);
-                    if (!val) setPdfError(null);
-                  }}
+                  onCheckedChange={handleTogglePdfAttachments}
                 >
                   {hasPdfAttachments && (
                     <div className="space-y-3 pt-1">
@@ -959,7 +992,7 @@ export function LessonDialog({
                   title={t("hasImageAttachments")}
                   subtitle={t("hasImageAttachmentsSubtitle")}
                   checked={hasImageAttachments}
-                  onCheckedChange={setHasImageAttachments}
+                  onCheckedChange={handleToggleImageAttachments}
                 >
                   {hasImageAttachments && (
                     <div className="space-y-3 pt-1">

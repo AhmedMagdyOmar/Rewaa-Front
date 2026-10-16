@@ -236,6 +236,43 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     setImageFiles((prev) => prev.filter((i) => i.id !== id));
   };
 
+  const handleTogglePdfAttachments = (val: boolean) => {
+    setHasPdfAttachments(val);
+    if (!val) {
+      setPdfError(null);
+      const existingIds = pdfFiles
+        .filter((p) => p.isExisting && !isNaN(Number(p.id)))
+        .map((p) => Number(p.id));
+      if (existingIds.length > 0) {
+        setDeleteMediaIds((prev) => [...prev, ...existingIds]);
+      }
+      pdfFiles.forEach((p) => {
+        if (p.fileUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(p.fileUrl);
+        }
+      });
+      setPdfFiles([]);
+    }
+  };
+
+  const handleToggleImageAttachments = (val: boolean) => {
+    setHasImageAttachments(val);
+    if (!val) {
+      const existingIds = imageFiles
+        .filter((i) => i.isExisting && !isNaN(Number(i.id)))
+        .map((i) => Number(i.id));
+      if (existingIds.length > 0) {
+        setDeleteMediaIds((prev) => [...prev, ...existingIds]);
+      }
+      imageFiles.forEach((i) => {
+        if (i.fileUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(i.fileUrl);
+        }
+      });
+      setImageFiles([]);
+    }
+  };
+
   // Form submit handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -614,10 +651,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
             title={tDialog("hasPdfAttachments")}
             subtitle={tDialog("hasPdfAttachmentsSubtitle")}
             checked={hasPdfAttachments}
-            onCheckedChange={(val) => {
-              setHasPdfAttachments(val);
-              if (!val) setPdfError(null);
-            }}
+            onCheckedChange={handleTogglePdfAttachments}
           >
             {hasPdfAttachments && (
               <div className="space-y-3 pt-1">
@@ -680,7 +714,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
             title={tDialog("hasImageAttachments")}
             subtitle={tDialog("hasImageAttachmentsSubtitle")}
             checked={hasImageAttachments}
-            onCheckedChange={setHasImageAttachments}
+            onCheckedChange={handleToggleImageAttachments}
           >
             {hasImageAttachments && (
               <div className="space-y-3 pt-1">

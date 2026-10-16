@@ -564,7 +564,12 @@ export function QuestionFormContent({
           title={t("hasExplanationTitle")}
           subtitle={t("hasExplanationSubtitle")}
           checked={hasAnswerExplanation}
-          onCheckedChange={setHasAnswerExplanation}
+          onCheckedChange={(val) => {
+            setHasAnswerExplanation(val);
+            if (!val) {
+              setAnswerExplanation("");
+            }
+          }}
         />
 
         {hasAnswerExplanation && (
