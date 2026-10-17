@@ -2812,6 +2812,9 @@
       "continue": "Continue",
       "progress": "Progress",
       "accessEnds": "Access ends: {date}",
+      "accessExpired": "Access ended: {date}",
+      "expired": "Expired",
+      "renew": "Renew Access",
       "noExpiry": "Unlimited Access",
       "empty": "You have not enrolled in any courses yet."
     },
@@ -3259,6 +3262,12 @@
         "takeExamCta": "Take Required Exam to Unlock",
         "close": "Close",
         "prerequisiteExam": "Required Exam:"
+      },
+      "expired": {
+        "badge": "Subscription Expired",
+        "title": "Your course access has expired",
+        "description": "Your access period for this course has ended. To continue watching lessons and accessing course content, please renew your subscription.",
+        "renewButton": "Renew Subscription Now"
       }
     },
     "coursePreview": {

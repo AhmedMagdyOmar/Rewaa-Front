@@ -9,6 +9,7 @@ import { BookOpen, Calendar, Play, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
+import { cn } from "@/lib/utils";
 
 export interface StudentEnrolledCourseCardProps {
   course: BackendMyCourse | Course;
@@ -85,6 +86,24 @@ export function StudentEnrolledCourseCard({
     backendCourse?.access_ends_at ??
     accessEndDate ??
     legacyCourse?.offerEndDate;
+
+  const isExpired = React.useSyncExternalStore(
+    (onStoreChange) => {
+      if (!rawEndDate) return () => {};
+      const end = new Date(rawEndDate).getTime();
+      if (isNaN(end)) return () => {};
+      const remainingMs = end - Date.now();
+      if (remainingMs <= 0) return () => {};
+      const timer = setTimeout(onStoreChange, remainingMs);
+      return () => clearTimeout(timer);
+    },
+    () => {
+      if (!rawEndDate) return false;
+      const end = new Date(rawEndDate).getTime();
+      return !isNaN(end) && end <= Date.now();
+    },
+    () => false,
+  );
 
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return null;
@@ -163,9 +182,18 @@ export function StudentEnrolledCourseCard({
               {formattedDate && (
                 <>
                   {instructorName && <span className="text-border hidden sm:inline">•</span>}
-                  <div className="flex items-center gap-1.5 text-muted-foreground/90">
-                    <Calendar className="size-3.5 text-primary/70 shrink-0" />
-                    <span>{t("accessEnds", { date: formattedDate })}</span>
+                  <div
+                    className={cn(
+                      "flex items-center gap-1.5",
+                      isExpired ? "text-destructive font-medium" : "text-muted-foreground/90",
+                    )}
+                  >
+                    <Calendar className="size-3.5 shrink-0 opacity-80" />
+                    <span>
+                      {isExpired
+                        ? t("accessExpired", { date: formattedDate })
+                        : t("accessEnds", { date: formattedDate })}
+                    </span>
                   </div>
                 </>
               )}
@@ -182,9 +210,14 @@ export function StudentEnrolledCourseCard({
         </div>
 
         <div className="flex items-center justify-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-border/50 self-end md:self-center">
-          <Button asChild size="default" className="font-semibold gap-2 shadow-xs shrink-0 px-5">
+          <Button
+            asChild
+            size="default"
+            variant={isExpired ? "destructive" : "default"}
+            className="font-semibold gap-2 shadow-xs shrink-0 px-5"
+          >
             <Link href={courseTargetUrl}>
-              <span>{t("continue")}</span>
+              <span>{isExpired ? t("renew") : t("continue")}</span>
               <Play className="size-3.5 fill-current rtl:rotate-180" />
             </Link>
           </Button>
@@ -222,12 +255,19 @@ export function StudentEnrolledCourseCard({
           </span>
         </div>
 
-        {/* Access End Date Strip at bottom of image if available */}
+        {/* Expired / Active End Date Strip at bottom of image if available */}
         {formattedDate && (
-          <div className="absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 bg-black/60 backdrop-blur-xs text-white">
+          <div
+            className={cn(
+              "absolute bottom-0 inset-x-0 flex items-center gap-1.5 px-3 py-1.5 backdrop-blur-xs text-white",
+              isExpired ? "bg-destructive/85 font-semibold" : "bg-black/60",
+            )}
+          >
             <Calendar className="h-3 w-3 shrink-0 opacity-80" />
             <span className="text-[10px] font-medium truncate">
-              {t("accessEnds", { date: formattedDate })}
+              {isExpired
+                ? t("accessExpired", { date: formattedDate })
+                : t("accessEnds", { date: formattedDate })}
             </span>
           </div>
         )}
@@ -322,12 +362,12 @@ export function StudentEnrolledCourseCard({
         <div className="mt-4 pt-1">
           <Button
             asChild
-            variant="default"
+            variant={isExpired ? "destructive" : "default"}
             size="sm"
             className="w-full font-bold text-sm py-3.5! cursor-pointer shadow-xs gap-1.5"
           >
             <Link href={courseTargetUrl}>
-              <span>{t("continue")}</span>
+              <span>{isExpired ? t("renew") : t("continue")}</span>
               <Play className="size-3.5 fill-current rtl:rotate-180" />
             </Link>
           </Button>

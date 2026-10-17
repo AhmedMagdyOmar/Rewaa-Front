@@ -28,6 +28,7 @@ interface StudentCourseDetailClientProps {
 export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClientProps) {
   const locale = useLocale();
   const tPreview = useTranslations("studentDashboard.coursePreview");
+  const tDetails = useTranslations("studentDashboard.courseDetails");
 
   // React Query for live backend course details
   const {
@@ -37,13 +38,47 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     refetch: refetchCourseDetails,
   } = useStudentCourseDetail(courseId);
 
-  // React Query for live course syllabus tree (only enabled when enrolled)
+  // Active enrollment & expiration state
   const isEnrolled = Boolean(backendCourse?.is_enrolled);
+  const expiresAt = backendCourse?.enrollment?.expires_at;
+
+  // Track real-time expiration without requiring manual page reload
+  const [isExpiredLocally, setIsExpiredLocally] = React.useState(() => {
+    if (!expiresAt) return false;
+    const expiryTime = new Date(expiresAt).getTime();
+    return !isNaN(expiryTime) && expiryTime <= Date.now();
+  });
+
+  React.useEffect(() => {
+    if (!isEnrolled || !expiresAt) {
+      return;
+    }
+
+    const expiryTime = new Date(expiresAt).getTime();
+    if (isNaN(expiryTime)) return;
+
+    const remainingMs = expiryTime - Date.now();
+    if (remainingMs <= 0) {
+      return;
+    }
+
+    // Set a timer to trigger exactly when validity runs out
+    const timer = setTimeout(() => {
+      setIsExpiredLocally(true);
+      toast.error(tDetails("expired.title") || "Course access expired");
+      refetchCourseDetails();
+    }, remainingMs);
+
+    return () => clearTimeout(timer);
+  }, [isEnrolled, expiresAt, refetchCourseDetails, tDetails]);
+
+  // React Query for live course syllabus tree (only enabled when enrolled and not expired)
+  const isCurrentlyActive = isEnrolled && !isExpiredLocally;
   const {
     data: backendContent,
     isLoading: isContentLoading,
     refetch: refetchCourseContent,
-  } = useStudentCourseContent(courseId, isEnrolled);
+  } = useStudentCourseContent(courseId, isCurrentlyActive);
 
   // React Query mutation for enrollment / checkout order creation
   const enrollMutation = useStudentEnroll();
@@ -58,17 +93,17 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
 
   // Force refetch on mount to ensure fresh unlocked status if coming back from an exam
   React.useEffect(() => {
-    if (isEnrolled) {
+    if (isCurrentlyActive) {
       refetchCourseContent();
       refetchCourseDetails();
     }
-  }, [isEnrolled, refetchCourseContent, refetchCourseDetails]);
+  }, [isCurrentlyActive, refetchCourseContent, refetchCourseDetails]);
 
   // React Query for active selected lesson
   const { data: activeLesson, isLoading: isLessonLoading } = useStudentLessonDetail(
     courseId,
     selectedLessonId,
-    Boolean(selectedLessonId && isEnrolled),
+    Boolean(selectedLessonId && isCurrentlyActive),
   );
 
   // Mutation to toggle lesson completion
@@ -180,14 +215,31 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
     );
   }
 
-  // If backend found the course and student is NOT enrolled → render preview
-  if (backendCourse && !backendCourse.is_enrolled) {
+  // If backend found the course and student is NOT enrolled OR access has expired → render preview / renewal
+  if (backendCourse && (!backendCourse.is_enrolled || isExpiredLocally)) {
     return (
-      <StudentCoursePreviewView
-        course={backendCourse}
-        onEnroll={handleEnroll}
-        isEnrolling={enrollMutation.isPending}
-      />
+      <div className="space-y-6">
+        {isExpiredLocally && (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 p-5 text-destructive flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <h3 className="font-bold text-base md:text-lg">{tDetails("expired.title")}</h3>
+              <p className="text-sm opacity-90">{tDetails("expired.description")}</p>
+            </div>
+            <button
+              onClick={() => handleEnroll(backendCourse.id)}
+              disabled={enrollMutation.isPending}
+              className="inline-flex items-center justify-center whitespace-nowrap rounded-xl bg-destructive text-destructive-foreground px-5 py-2.5 text-sm font-semibold shadow hover:bg-destructive/90 transition-colors shrink-0 disabled:opacity-50"
+            >
+              {tDetails("expired.renewButton")}
+            </button>
+          </div>
+        )}
+        <StudentCoursePreviewView
+          course={backendCourse}
+          onEnroll={handleEnroll}
+          isEnrolling={enrollMutation.isPending}
+        />
+      </div>
     );
   }
 
