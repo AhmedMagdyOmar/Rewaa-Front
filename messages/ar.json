@@ -3170,10 +3170,9 @@
         "gradeLabel": "الصف الدراسي",
         "subjectLabel": "المادة الدراسية",
         "classificationLabel": "التصنيف",
-        "generalClassification": "عام",
+        "workshopsClassification": "ورش وتدريبات",
         "revisionClassification": "مراجعات",
-        "secondaryClassification": "ثانوي",
-        "preparatoryClassification": "إعدادي"
+        "importantTopicsClassification": "موضوعات هامة"
       },
       "enrollButton": "اشترك الآن",
       "lessonCount": "{count, plural, =0 {لا دروس} zero {لا دروس} one {درس واحد} two {درسان} few {{count} دروس} many {{count} درساً} other {{count} درس}}",

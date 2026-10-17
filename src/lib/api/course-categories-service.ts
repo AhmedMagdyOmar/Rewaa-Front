@@ -17,6 +17,16 @@ export const courseCategoriesService = {
   },
 
   /**
+   * Get all public active course categories for students and website visitors
+   */
+  async getPublicCourseCategories(): Promise<CourseCategoryListResponse> {
+    return api<CourseCategoryListResponse>({
+      url: "/api/general/course-categories",
+      method: "GET",
+    });
+  },
+
+  /**
    * Create a new custom course category for current provider
    */
   async createCourseCategory(

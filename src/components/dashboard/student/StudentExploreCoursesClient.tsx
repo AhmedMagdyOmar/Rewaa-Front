@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/student/StudentCourseFilters";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePublicCourseCategories } from "@/hooks/use-courses";
 import { useExploreCourses } from "@/hooks/use-explore-courses";
 import { Link } from "@/i18n/routing";
 import { ArrowLeft, BookOpen, KeyRound } from "lucide-react";
@@ -82,6 +83,8 @@ export function StudentExploreCoursesClient() {
     per_page: itemsPerPage,
   });
 
+  const { data: categoriesData } = usePublicCourseCategories();
+
   const courses = React.useMemo(() => data?.courses ?? [], [data?.courses]);
   const pagination = data?.pagination;
   const totalItems = pagination?.total ?? courses.length;
@@ -120,6 +123,14 @@ export function StudentExploreCoursesClient() {
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [courses, locale]);
+
+  const categoryOptions = React.useMemo(() => {
+    const list = categoriesData?.categories ?? [];
+    return list.map((cat) => ({
+      id: cat.code,
+      name: cat.name?.[locale] ?? cat.name?.ar ?? cat.name?.en ?? cat.name_label ?? cat.code,
+    }));
+  }, [categoriesData?.categories, locale]);
 
   // Handlers
   const handleSearchChange = (search: string) => {
@@ -234,6 +245,7 @@ export function StudentExploreCoursesClient() {
         selectedCategory={categoryFilter}
         grades={gradeOptions}
         subjects={subjectOptions}
+        categories={categoryOptions}
         onSearchChange={handleSearchChange}
         onSortChange={handleSortChange}
         onGradeChange={handleGradeChange}

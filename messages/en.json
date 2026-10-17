@@ -3169,10 +3169,9 @@
         "gradeLabel": "Grade / Stage",
         "subjectLabel": "Subject",
         "classificationLabel": "Classification",
-        "generalClassification": "General",
+        "workshopsClassification": "Workshops & Training",
         "revisionClassification": "Revisions",
-        "secondaryClassification": "Secondary",
-        "preparatoryClassification": "Preparatory"
+        "importantTopicsClassification": "Important Topics"
       },
       "enrollButton": "Enroll Now",
       "lessonCount": "{count, plural, =0 {No lessons} one {1 lesson} other {{count} lessons}}",

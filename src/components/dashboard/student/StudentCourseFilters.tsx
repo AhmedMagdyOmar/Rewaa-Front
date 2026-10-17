@@ -211,15 +211,14 @@ export function StudentCourseFilters({
                     ))
                   ) : (
                     <>
-                      <SelectItem value="general">{t("filters.generalClassification")}</SelectItem>
-                      <SelectItem value="revision">
+                      <SelectItem value="workshops_training">
+                        {t("filters.workshopsClassification")}
+                      </SelectItem>
+                      <SelectItem value="revisions">
                         {t("filters.revisionClassification")}
                       </SelectItem>
-                      <SelectItem value="secondary">
-                        {t("filters.secondaryClassification")}
-                      </SelectItem>
-                      <SelectItem value="preparatory">
-                        {t("filters.preparatoryClassification")}
+                      <SelectItem value="important_topics">
+                        {t("filters.importantTopicsClassification")}
                       </SelectItem>
                     </>
                   )}

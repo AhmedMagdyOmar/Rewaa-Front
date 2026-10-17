@@ -8,6 +8,7 @@ import {
 } from "@/components/dashboard/student/StudentCourseFilters";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { usePublicCourseCategories } from "@/hooks/use-courses";
 import { useExploreCourses } from "@/hooks/use-explore-courses";
 import { useStudentTeacher } from "@/hooks/use-student-teachers";
 import { Link } from "@/i18n/routing";
@@ -90,6 +91,8 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
     per_page: itemsPerPage,
   });
 
+  const { data: categoriesData } = usePublicCourseCategories();
+
   const courses = React.useMemo(() => data?.courses ?? [], [data?.courses]);
   const pagination = data?.pagination;
   const totalItems = pagination?.total ?? courses.length;
@@ -113,6 +116,14 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
     });
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [courses, locale]);
+
+  const categoryOptions = React.useMemo(() => {
+    const list = categoriesData?.categories ?? [];
+    return list.map((cat) => ({
+      id: cat.code,
+      name: cat.name?.[locale] ?? cat.name?.ar ?? cat.name?.en ?? cat.name_label ?? cat.code,
+    }));
+  }, [categoriesData?.categories, locale]);
 
   // Handlers
   const handleSearchChange = (search: string) => updateUrlParams({ search, page: 1 });
@@ -298,6 +309,7 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
           selectedGradeId={gradeFilter}
           selectedCategory={categoryFilter}
           grades={gradeOptions}
+          categories={categoryOptions}
           onSearchChange={handleSearchChange}
           onSortChange={handleSortChange}
           onGradeChange={handleGradeChange}

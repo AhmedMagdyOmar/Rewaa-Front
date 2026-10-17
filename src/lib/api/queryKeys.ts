@@ -171,6 +171,7 @@ export const queryKeys = {
       [...queryKeys.website.all, "governorates", { countryId }] as const,
     authOptions: (countryId?: number | string) =>
       [...queryKeys.website.all, "authOptions", { countryId }] as const,
+    courseCategories: () => [...queryKeys.website.all, "courseCategories"] as const,
     page: (slug: string) => [...queryKeys.website.all, "page", slug] as const,
   },
 };

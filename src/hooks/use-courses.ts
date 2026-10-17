@@ -261,6 +261,19 @@ export function useCourseCategories() {
 }
 
 /**
+ * Hook to fetch public course categories (for students / general explore)
+ */
+export function usePublicCourseCategories() {
+  return useQuery({
+    queryKey: queryKeys.website.courseCategories(),
+    queryFn: () =>
+      import("@/lib/api/course-categories-service").then((m) =>
+        m.courseCategoriesService.getPublicCourseCategories(),
+      ),
+  });
+}
+
+/**
  * Hook to create a new course category
  */
 export function useCreateCourseCategory() {
