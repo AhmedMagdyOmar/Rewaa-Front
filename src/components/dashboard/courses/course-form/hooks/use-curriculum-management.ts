@@ -717,6 +717,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           const templateRes = await createLessonMutation.mutateAsync(templatePayload);
 
           // 2. Create Course Clone Lesson referencing the standalone template
+          // Note: Do not re-upload cover_image, pdfs, or explanatory images;
+          // the backend automatically copies/attaches them from the original_lesson_id template.
           const clonePayload = {
             classification: "course" as const,
             course_id: Number(courseId),
@@ -730,7 +732,6 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               ? { ar: savedLesson.description, en: savedLesson.description }
               : undefined,
             video_url: savedLesson.lectureVideoLink || undefined,
-            cover_image: savedLesson.coverImageFile || undefined,
             has_pdf_attachments: Boolean(savedLesson.hasPdfAttachments),
             has_explanatory_images: Boolean(savedLesson.hasImageAttachments),
             has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),

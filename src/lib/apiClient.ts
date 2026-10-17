@@ -13,6 +13,7 @@ export interface CustomAxiosError extends AxiosError {
  */
 export const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000",
+  timeout: 120000, // 120s timeout for media uploads and slow networks
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json",
@@ -96,6 +97,14 @@ axiosInstance.interceptors.response.use(
   },
   async (error: AxiosError) => {
     const customError: CustomAxiosError = error;
+
+    if (error.code === "ECONNABORTED" || error.message?.includes("timeout")) {
+      const isArabic = typeof window !== "undefined" && document.documentElement.lang !== "en";
+      customError.apiMessage = isArabic
+        ? "استغرقت العملية وقتاً طويلاً وتوقفت (انتهت مهلة الطلب). يرجى التحقق من اتصال الإنترنت أو تقليل حجم الملف والمحاولة مجدداً."
+        : "The request timed out. Please check your internet connection or use a smaller file and try again.";
+      return Promise.reject(customError);
+    }
 
     if (error.response) {
       const { status, data } = error.response;

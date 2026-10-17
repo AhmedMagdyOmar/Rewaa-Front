@@ -105,7 +105,6 @@ export const lessonsService = {
       url: "/api/dashboard/provider/lessons",
       method: "POST",
       data: payload,
-      headers: payload instanceof FormData ? { "Content-Type": "multipart/form-data" } : undefined,
     });
     return res.lesson;
   },
