@@ -14,5 +14,7 @@ export function useStudentCourseContent(courseId: string | number, enabled: bool
       return res.content;
     },
     enabled: Boolean(courseId) && enabled,
+    refetchOnMount: "always",
+    staleTime: 0,
   });
 }

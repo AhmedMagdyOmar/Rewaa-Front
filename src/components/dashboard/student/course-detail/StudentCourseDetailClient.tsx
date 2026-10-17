@@ -56,6 +56,14 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   }>({ section: null });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
 
+  // Force refetch on mount to ensure fresh unlocked status if coming back from an exam
+  React.useEffect(() => {
+    if (isEnrolled) {
+      refetchCourseContent();
+      refetchCourseDetails();
+    }
+  }, [isEnrolled, refetchCourseContent, refetchCourseDetails]);
+
   // React Query for active selected lesson
   const { data: activeLesson, isLoading: isLessonLoading } = useStudentLessonDetail(
     courseId,

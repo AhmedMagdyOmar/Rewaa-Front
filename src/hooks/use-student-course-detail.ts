@@ -23,5 +23,6 @@ export function useStudentCourseDetail(courseId: string | number) {
       }
     },
     enabled: Boolean(courseId),
+    refetchOnMount: "always",
   });
 }

@@ -165,6 +165,16 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
       });
       setActiveAttemptId(resp.id);
       setActiveMode("review");
+
+      // Invalidate course queries immediately so if the student navigates back to course, it is unlocked
+      if (exam?.course?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseContent(exam.course.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseDetail(exam.course.id),
+        });
+      }
     } catch (err: unknown) {
       console.error("Failed to submit exam attempt", err);
 
@@ -175,6 +185,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
         });
         queryClient.invalidateQueries({
           queryKey: queryKeys.student.examResult(exam.id),
+        });
+      }
+      if (exam?.course?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseContent(exam.course.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.courseDetail(exam.course.id),
         });
       }
       queryClient.invalidateQueries({
@@ -519,7 +537,19 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               size="sm"
               className="rounded-xl text-xs font-semibold gap-1.5 h-9"
             >
-              <Link href={`/student-dashboard/courses/${exam.course.id}`}>
+              <Link
+                href={`/student-dashboard/courses/${exam.course.id}`}
+                onClick={() => {
+                  if (exam.course?.id) {
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.student.courseContent(exam.course.id),
+                    });
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.student.courseDetail(exam.course.id),
+                    });
+                  }
+                }}
+              >
                 <BookOpen className="size-3.5" />
                 <span>{t("sidebar.courseButton")}</span>
               </Link>
@@ -591,6 +621,34 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                   ? t("hero.passedSubtitle")
                   : t("hero.failedSubtitle")}
             </p>
+
+            {isPassed && exam.course?.id && (
+              <div className="pt-2">
+                <Button
+                  asChild
+                  className="rounded-xl text-xs sm:text-sm font-bold gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                >
+                  <Link
+                    href={`/student-dashboard/courses/${exam.course.id}`}
+                    onClick={() => {
+                      if (exam.course?.id) {
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.student.courseContent(exam.course.id),
+                        });
+                        queryClient.invalidateQueries({
+                          queryKey: queryKeys.student.courseDetail(exam.course.id),
+                        });
+                      }
+                    }}
+                  >
+                    <BookOpen className="size-4" />
+                    <span>
+                      {isAr ? "متابعة دراسة محتوى الدورة الآن" : "Continue Course Learning Now"}
+                    </span>
+                  </Link>
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Right Hero Score Badge */}
