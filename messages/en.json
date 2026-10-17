@@ -3100,6 +3100,9 @@
         "currentAttempt": "Attempt {current} of {max}",
         "remainingAttemptsCount": "{count, plural, =0 {No attempts remaining} one {1 attempt remaining} other {{count} attempts remaining}}",
         "finalAttemptWarning": "Notice: This is your final allowed attempt for this exam.",
+        "maxAttemptsReachedNotice": "You have exhausted all allowed attempts for this exam ({maxAttemptsText}). You cannot retake this exam.",
+        "maxAttemptsAllowedText": "{count, plural, =1 {Allowed: 1 attempt only} other {Allowed: {count} attempts only}}",
+        "viewResultButton": "View Exam Result",
         "teacher": "Instructor"
       },
       "timerBar": {

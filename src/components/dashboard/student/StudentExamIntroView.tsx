@@ -58,14 +58,18 @@ export function StudentExamIntroView({
       : cat;
   };
 
-  const canStart = exam.can_start !== false;
-
   const maxAttempts = exam.max_attempts || 1;
   const attemptsUsed = exam.attempts_used ?? 0;
   const currentAttempt =
     exam.action === "resume" ? attemptsUsed || 1 : Math.min(maxAttempts, attemptsUsed + 1);
   const remainingAttempts = exam.remaining_attempts ?? Math.max(0, maxAttempts - attemptsUsed);
-  const isFinalAttempt = currentAttempt === maxAttempts && maxAttempts > 1;
+  const isFinalAttempt = currentAttempt === maxAttempts && maxAttempts > 1 && remainingAttempts > 0;
+  const isAttemptsExhausted =
+    remainingAttempts === 0 ||
+    exam.start_block_reason === "maximum_attempts_reached" ||
+    (attemptsUsed >= maxAttempts && exam.action !== "resume");
+  const canStart = exam.can_start !== false && !isAttemptsExhausted;
+  const maxAttemptsText = t("maxAttemptsAllowedText", { count: maxAttempts });
 
   return (
     <div className="space-y-6 pb-12 w-full max-w-5xl mx-auto">
@@ -111,31 +115,74 @@ export function StudentExamIntroView({
               </div>
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/15 border border-purple-500/30 text-purple-700">
                 <RotateCcw className="size-3.5" />
-                <span>{t("currentAttempt", { current: currentAttempt, max: maxAttempts })}</span>
+                <span>
+                  {isAttemptsExhausted
+                    ? tGlobal("sidebar.retakeUnavailable") || t("triesCount", { count: 0 })
+                    : t("currentAttempt", { current: currentAttempt, max: maxAttempts })}
+                </span>
               </div>
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-foreground">{t("title")}</h2>
             <p className="text-xs sm:text-sm text-muted-foreground">{t("subtitle")}</p>
           </div>
 
-          <Button
-            onClick={onStartExam}
-            disabled={!canStart || isStarting}
-            size="lg"
-            className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto cursor-pointer disabled:opacity-50"
-          >
-            {isStarting ? (
-              <Loader2 className="size-4 animate-spin" />
+          {isAttemptsExhausted ? (
+            exam.adopted_result ? (
+              <Button
+                asChild
+                size="lg"
+                className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-secondary hover:bg-secondary/80 text-foreground border border-border shadow-sm self-start sm:self-auto cursor-pointer"
+              >
+                <Link href={`/student-dashboard/exams/${exam.id}`}>
+                  <FileCheck2 className="size-4" />
+                  <span>{t("viewResultButton")}</span>
+                </Link>
+              </Button>
             ) : (
-              <Play className="size-4 fill-current rtl:rotate-180" />
-            )}
-            <span>
-              {exam.action === "resume"
-                ? tExams("actions.resume") || t("startExamButton")
-                : t("startExamButton")}
-            </span>
-          </Button>
+              <Button
+                disabled
+                size="lg"
+                className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-muted text-muted-foreground self-start sm:self-auto cursor-not-allowed opacity-75"
+              >
+                <AlertCircle className="size-4" />
+                <span>{tGlobal("sidebar.retakeUnavailable")}</span>
+              </Button>
+            )
+          ) : (
+            <Button
+              onClick={onStartExam}
+              disabled={!canStart || isStarting}
+              size="lg"
+              className="rounded-xl font-bold gap-2 text-sm sm:text-base h-12 px-6 bg-primary hover:bg-primary/90 text-white shadow-md self-start sm:self-auto cursor-pointer disabled:opacity-50"
+            >
+              {isStarting ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Play className="size-4 fill-current rtl:rotate-180" />
+              )}
+              <span>
+                {exam.action === "resume"
+                  ? tExams("actions.resume") || t("startExamButton")
+                  : t("startExamButton")}
+              </span>
+            </Button>
+          )}
         </div>
+
+        {/* Banner for exhausted attempts */}
+        {isAttemptsExhausted && (
+          <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive flex items-start gap-3">
+            <AlertCircle className="size-5 shrink-0 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-sm font-bold">
+                {t("maxAttemptsReachedNotice", { maxAttemptsText })}
+              </p>
+              <p className="text-xs opacity-90">
+                {t("triesAllowed")}: {maxAttemptsText}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── 3. Grid: Details & Guidelines ─────────────────────────────────── */}
@@ -249,22 +296,44 @@ export function StudentExamIntroView({
             )}
 
             <div className="pt-2">
-              <Button
-                onClick={onStartExam}
-                disabled={!canStart || isStarting}
-                className="w-full rounded-xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs cursor-pointer disabled:opacity-50"
-              >
-                {isStarting ? (
-                  <Loader2 className="size-3.5 animate-spin" />
+              {isAttemptsExhausted ? (
+                exam.adopted_result ? (
+                  <Button
+                    asChild
+                    className="w-full rounded-xl font-bold gap-2 bg-secondary hover:bg-secondary/80 text-foreground border border-border shadow-xs cursor-pointer"
+                  >
+                    <Link href={`/student-dashboard/exams/${exam.id}`}>
+                      <FileCheck2 className="size-3.5" />
+                      <span>{t("viewResultButton")}</span>
+                    </Link>
+                  </Button>
                 ) : (
-                  <Play className="size-3.5 fill-current rtl:rotate-180" />
-                )}
-                <span>
-                  {exam.action === "resume"
-                    ? tExams("actions.resume") || t("startExamButton")
-                    : t("startExamButton")}
-                </span>
-              </Button>
+                  <Button
+                    disabled
+                    className="w-full rounded-xl font-bold gap-2 bg-muted text-muted-foreground opacity-75 cursor-not-allowed shadow-none"
+                  >
+                    <AlertCircle className="size-3.5" />
+                    <span>{tGlobal("sidebar.retakeUnavailable")}</span>
+                  </Button>
+                )
+              ) : (
+                <Button
+                  onClick={onStartExam}
+                  disabled={!canStart || isStarting}
+                  className="w-full rounded-xl font-bold gap-2 bg-primary hover:bg-primary/90 text-white shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  {isStarting ? (
+                    <Loader2 className="size-3.5 animate-spin" />
+                  ) : (
+                    <Play className="size-3.5 fill-current rtl:rotate-180" />
+                  )}
+                  <span>
+                    {exam.action === "resume"
+                      ? tExams("actions.resume") || t("startExamButton")
+                      : t("startExamButton")}
+                  </span>
+                </Button>
+              )}
             </div>
           </DashboardCard>
         </div>

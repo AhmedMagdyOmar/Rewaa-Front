@@ -28,6 +28,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@/i18n/routing";
 import type { BackendStudentAttemptQuestion } from "@/types/api-contracts";
 import {
+  AlertCircle,
   ArrowLeft,
   Award,
   BookOpen,
@@ -361,8 +362,18 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     return true;
   });
 
+  const maxAttempts = exam.max_attempts || 1;
+  const attemptsUsed = exam.attempts_used ?? (displayAttempt?.attempt_number || 1);
+  const remainingAttempts =
+    exam.remaining_attempts ??
+    displayAttempt?.remaining_attempts ??
+    Math.max(0, maxAttempts - attemptsUsed);
+
   const canRetry = Boolean(
-    displayAttempt?.can_retry || ((exam.remaining_attempts ?? 0) > 0 && exam.can_start),
+    remainingAttempts > 0 &&
+    exam.can_start !== false &&
+    exam.start_block_reason !== "maximum_attempts_reached" &&
+    (displayAttempt?.can_retry ?? true),
   );
 
   return (
@@ -515,7 +526,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </Button>
           )}
 
-          {canRetry && (
+          {canRetry ? (
             <Button
               onClick={handleRetakeExam}
               disabled={startAttemptMutation.isPending}
@@ -529,6 +540,13 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               )}
               <span>{t("sidebar.retakeButton")}</span>
             </Button>
+          ) : (
+            !isPendingReview && (
+              <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-muted/60 text-muted-foreground border border-border/60">
+                <AlertCircle className="size-3.5 text-muted-foreground" />
+                <span>{t("sidebar.retakeUnavailable")}</span>
+              </div>
+            )
           )}
         </div>
       </div>
