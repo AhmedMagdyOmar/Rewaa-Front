@@ -23,6 +23,8 @@ import {
   useSubmitExamAttempt,
   useSubmitExamComplaint,
 } from "@/hooks/use-student-exams";
+import { queryKeys } from "@/lib/api/queryKeys";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "@/i18n/routing";
 import type { BackendStudentAttemptQuestion } from "@/types/api-contracts";
 import {
@@ -146,6 +148,8 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     }
   };
 
+  const queryClient = useQueryClient();
+
   // Submit exam handler
   const handleSubmitExam = async (answers: Array<{ question_id: number; answer?: unknown }>) => {
     const attemptIdToSubmit = activeAttemptId || exam?.current_attempt_id;
@@ -160,8 +164,49 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
       });
       setActiveAttemptId(resp.id);
       setActiveMode("review");
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to submit exam attempt", err);
+
+      // Invalidate queries so fresh state and latest attempt result are fetched
+      if (exam?.id) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.examDetail(exam.id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.student.examResult(exam.id),
+        });
+      }
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.attemptDetail(attemptIdToSubmit),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.student.exams(),
+      });
+
+      // Switch to review mode automatically so student is never trapped in the active exam view
+      setActiveAttemptId(attemptIdToSubmit);
+      setActiveMode("review");
+
+      const errorMsg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message || "";
+      if (
+        errorMsg.includes("expired") ||
+        errorMsg.includes("already been submitted") ||
+        errorMsg.includes("انتهى")
+      ) {
+        toast.info(
+          locale === "ar"
+            ? "انتهى وقت الامتحان، وتم تسليم إجاباتك تلقائياً."
+            : "The exam time has ended and your answers have been submitted automatically.",
+        );
+      } else {
+        toast.error(
+          errorMsg ||
+            (locale === "ar"
+              ? "تعذر إرسال الامتحان، يرجى المحاولة مرة أخرى."
+              : "Failed to submit exam attempt."),
+        );
+      }
     }
   };
 

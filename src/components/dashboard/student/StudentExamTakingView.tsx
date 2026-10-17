@@ -114,6 +114,7 @@ export function StudentExamTakingView({
   const triggerAutoSubmit = React.useCallback(() => {
     if (hasAutoSubmittedRef.current || isSubmitting) return;
     hasAutoSubmittedRef.current = true;
+    setIsSubmitModalOpen(false);
     onSubmitExam(buildSubmitPayload(answersRef.current));
   }, [buildSubmitPayload, onSubmitExam, isSubmitting]);
 
@@ -128,7 +129,9 @@ export function StudentExamTakingView({
       setSecondsRemaining((prev) => {
         if (prev <= 1) {
           clearInterval(timer);
-          triggerAutoSubmit();
+          setTimeout(() => {
+            triggerAutoSubmit();
+          }, 0);
           return 0;
         }
         return prev - 1;
