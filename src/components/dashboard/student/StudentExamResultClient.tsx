@@ -317,15 +317,18 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
   const isPendingReview =
     displayAttempt?.status === "pending_review" ||
     (!displayAttempt && exam.result_status === "pending_review");
+  const showCorrectAnswers = displayAttempt?.show_correct_answers ?? true;
 
-  const correctCount = isPendingReview
-    ? 0
-    : (displayAttempt?.result_summary?.correct_answers_count ??
-      reviewQuestions.filter((q) => q.is_correct === true).length);
-  const wrongCount = isPendingReview
-    ? 0
-    : (displayAttempt?.result_summary?.incorrect_answers_count ??
-      reviewQuestions.filter((q) => q.is_correct === false).length);
+  const correctCount =
+    isPendingReview || !showCorrectAnswers
+      ? 0
+      : (displayAttempt?.result_summary?.correct_answers_count ??
+        reviewQuestions.filter((q) => q.is_correct === true).length);
+  const wrongCount =
+    isPendingReview || !showCorrectAnswers
+      ? 0
+      : (displayAttempt?.result_summary?.incorrect_answers_count ??
+        reviewQuestions.filter((q) => q.is_correct === false).length);
   const totalScore = displayAttempt?.max_score ?? exam.adopted_result?.max_score ?? 100;
   const earnedScore = displayAttempt?.score ?? exam.adopted_result?.score ?? null;
   const percentage = displayAttempt?.percentage ?? exam.adopted_result?.percentage ?? null;
@@ -352,7 +355,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
   // Filtered Questions by Correct / Incorrect
   const filteredQuestions = reviewQuestions.filter((q) => {
-    if (isPendingReview) return true;
+    if (isPendingReview || !showCorrectAnswers) return true;
     if (filterType === "correct") return q.is_correct === true;
     if (filterType === "incorrect") return q.is_correct === false;
     return true;
@@ -695,6 +698,46 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               </div>
             </DashboardCard>
           </>
+        ) : !showCorrectAnswers ? (
+          <>
+            {/* Metric 3: Total Questions (neutral) */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isAr ? "إجمالي الأسئلة" : "Total Questions"}
+                </span>
+                <div className="size-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
+                  <FileQuestion className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-2xl font-black text-foreground">{reviewQuestions.length}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {isAr ? "تم تسليم الامتحان بنجاح" : "Exam submitted successfully"}
+                </p>
+              </div>
+            </DashboardCard>
+
+            {/* Metric 4: Answers Hidden Notice */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-muted-foreground/30 transition-colors">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-muted-foreground">
+                  {isAr ? "مراجعة الإجابات" : "Answers Review"}
+                </span>
+                <div className="size-8 rounded-lg bg-muted text-muted-foreground flex items-center justify-center">
+                  <CheckCircle2 className="size-4" />
+                </div>
+              </div>
+              <div>
+                <p className="text-base font-bold text-muted-foreground">
+                  {isAr ? "غير مفعلة" : "Disabled"}
+                </p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  {isAr ? "تم حجب الإجابات النموذجية" : "Model answers are hidden"}
+                </p>
+              </div>
+            </DashboardCard>
+          </>
         ) : (
           <>
             {/* Metric 3: Correct Questions Count */}
@@ -761,7 +804,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
 
             {/* Filter Toggle Buttons: All / Correct / Incorrect */}
-            {!isPendingReview && (
+            {!isPendingReview && showCorrectAnswers && (
               <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">
                 <button
                   type="button"
@@ -825,6 +868,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
                 const hasRevealedAnswers =
                   !isPendingReview &&
+                  showCorrectAnswers &&
                   (q.options?.some(
                     (opt) => opt.is_correct !== null && opt.is_correct !== undefined,
                   ) ||
@@ -835,27 +879,33 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                   <DashboardCard
                     key={q.id}
                     className={`p-5 space-y-4 border transition-all ${
-                      isCorrect
-                        ? "border-emerald-500/30 bg-card hover:border-emerald-500/50"
-                        : isIncorrect
-                          ? "border-rose-500/30 bg-card hover:border-rose-500/50"
-                          : "border-amber-500/30 bg-card hover:border-amber-500/50"
+                      !showCorrectAnswers
+                        ? "border-border/60 bg-card hover:border-primary/40"
+                        : isCorrect
+                          ? "border-emerald-500/30 bg-card hover:border-emerald-500/50"
+                          : isIncorrect
+                            ? "border-rose-500/30 bg-card hover:border-rose-500/50"
+                            : "border-amber-500/30 bg-card hover:border-amber-500/50"
                     }`}
                   >
                     {/* Question Header Bar */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-3">
                       <div className="flex items-center gap-2 flex-wrap">
-                        {/* Correct / Incorrect / Pending Indicator Badge */}
+                        {/* Indicator Badge: Correct / Incorrect / Neutral / Pending */}
                         <div
                           className={`size-6 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
-                            isCorrect
-                              ? "bg-emerald-500/15 text-emerald-700"
-                              : isIncorrect
-                                ? "bg-rose-500/15 text-rose-700"
-                                : "bg-amber-500/15 text-amber-700"
+                            !showCorrectAnswers
+                              ? "bg-primary/10 text-primary"
+                              : isCorrect
+                                ? "bg-emerald-500/15 text-emerald-700"
+                                : isIncorrect
+                                  ? "bg-rose-500/15 text-rose-700"
+                                  : "bg-amber-500/15 text-amber-700"
                           }`}
                         >
-                          {isCorrect ? (
+                          {!showCorrectAnswers ? (
+                            <FileQuestion className="size-3.5" />
+                          ) : isCorrect ? (
                             <Check className="size-3.5" />
                           ) : isIncorrect ? (
                             <X className="size-3.5" />
@@ -888,14 +938,16 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                         <Badge
                           variant="outline"
                           className={`text-xs font-bold ${
-                            isCorrect
-                              ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
-                              : isIncorrect
-                                ? "bg-rose-500/10 text-rose-700 border-rose-500/30"
-                                : "bg-amber-500/10 text-amber-700 border-amber-500/30"
+                            !showCorrectAnswers
+                              ? "bg-muted text-foreground border-border/60"
+                              : isCorrect
+                                ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
+                                : isIncorrect
+                                  ? "bg-rose-500/10 text-rose-700 border-rose-500/30"
+                                  : "bg-amber-500/10 text-amber-700 border-amber-500/30"
                           }`}
                         >
-                          {isQuestionPending
+                          {!showCorrectAnswers || isQuestionPending
                             ? `${points} ${isAr ? "درجة" : "pts"}`
                             : t("questions.earnedPoints", {
                                 earned: earnedPoints,
@@ -1082,16 +1134,20 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                         {/* Student Submitted Answer */}
                         <div
                           className={`p-3 rounded-xl border space-y-1 ${
-                            isCorrect
-                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-900"
-                              : isIncorrect
-                                ? "bg-rose-500/10 border-rose-500/30 text-rose-900"
-                                : "bg-amber-500/10 border-amber-500/30 text-amber-900"
+                            !showCorrectAnswers
+                              ? "bg-muted/30 border-border/60 text-foreground"
+                              : isCorrect
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-900"
+                                : isIncorrect
+                                  ? "bg-rose-500/10 border-rose-500/30 text-rose-900"
+                                  : "bg-amber-500/10 border-amber-500/30 text-amber-900"
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <span className="font-bold flex items-center gap-1.5">
-                              {isCorrect ? (
+                              {!showCorrectAnswers ? (
+                                <FileQuestion className="size-3.5 text-primary" />
+                              ) : isCorrect ? (
                                 <CheckCircle2 className="size-3.5 text-emerald-600" />
                               ) : isIncorrect ? (
                                 <XCircle className="size-3.5 text-rose-600" />
@@ -1101,11 +1157,15 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                               <span>{t("questions.yourAnswer")}</span>
                             </span>
                             <span className="text-[10px] font-bold uppercase">
-                              {isQuestionPending
-                                ? t("statusPendingReview")
-                                : isCorrect
-                                  ? t("statusPassed")
-                                  : t("statusFailed")}
+                              {!showCorrectAnswers
+                                ? isAr
+                                  ? "تم الإرسال"
+                                  : "Submitted"
+                                : isQuestionPending
+                                  ? t("statusPendingReview")
+                                  : isCorrect
+                                    ? t("statusPassed")
+                                    : t("statusFailed")}
                             </span>
                           </div>
                           <p className="font-medium pt-0.5">

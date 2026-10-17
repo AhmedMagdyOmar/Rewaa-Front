@@ -547,7 +547,7 @@ export function adaptBackendExamAttemptToExam(
     triesAllowed: 1,
     durationMinutes: attempt.duration_minutes || 0,
     passingPercentage,
-    showModelAnswers: false,
+    showModelAnswers: attempt.show_correct_answers ?? false,
     randomizeQuestionsOrder: false,
     randomizeMCQChoices: false,
     examSections: [],

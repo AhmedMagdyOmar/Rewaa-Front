@@ -855,6 +855,7 @@ export interface BackendExamAttempt {
   percentage?: number | null;
   passing_percentage?: number | null;
   is_passed?: boolean | null;
+  show_correct_answers?: boolean;
   result_summary?: {
     questions_count: number;
     correct_answers_count: number;
@@ -1889,10 +1890,11 @@ export interface BackendStudentExamAttempt {
   is_passed?: boolean | null;
   is_best_attempt?: boolean;
   adopted_result?: BackendStudentExamAdoptedResult | null;
+  show_correct_answers?: boolean;
   result_summary?: {
     questions_count: number;
-    correct_answers_count: number;
-    incorrect_answers_count: number;
+    correct_answers_count: number | null;
+    incorrect_answers_count: number | null;
     pending_review_count: number;
   } | null;
   section_performance: BackendStudentAttemptSectionPerformance[];
