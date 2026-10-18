@@ -23,6 +23,7 @@ import {
   BookOpen,
   CheckCircle2,
   ChevronRight,
+  Clock,
   FileSpreadsheet,
   FileText,
   Lock,
@@ -367,16 +368,30 @@ export function StudentCourseContentSidebar({
                                     ) : (
                                       <FileText className="size-4 shrink-0 text-blue-500 mt-0.5" />
                                     )}
-                                    <span
-                                      className={cn(
-                                        "text-xs sm:text-sm leading-snug",
-                                        isCompleted &&
-                                          !isSelected &&
-                                          "line-through text-muted-foreground opacity-80",
+                                    <div className="flex flex-col gap-0.5 min-w-0">
+                                      <span
+                                        className={cn(
+                                          "text-xs sm:text-sm leading-snug",
+                                          isCompleted &&
+                                            !isSelected &&
+                                            "line-through text-muted-foreground opacity-80",
+                                        )}
+                                      >
+                                        {lessonTitle}
+                                      </span>
+                                      {Boolean(
+                                        lesson.duration_in_minutes &&
+                                        lesson.duration_in_minutes > 0,
+                                      ) && (
+                                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/80 font-normal">
+                                          <Clock className="size-3 text-muted-foreground/70" />
+                                          <span>
+                                            {lesson.duration_in_minutes}{" "}
+                                            {locale === "ar" ? "دقيقة" : "min"}
+                                          </span>
+                                        </span>
                                       )}
-                                    >
-                                      {lessonTitle}
-                                    </span>
+                                    </div>
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs text-xs">

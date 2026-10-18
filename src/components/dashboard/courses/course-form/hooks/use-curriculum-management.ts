@@ -682,7 +682,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             data: payload,
           });
           finalLesson = {
-            ...savedLesson,
+            ...finalLesson,
             id: String(res.id),
             lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,
@@ -761,7 +761,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           }
 
           finalLesson = {
-            ...savedLesson,
+            ...finalLesson,
             id: String(res.id),
             lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,

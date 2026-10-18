@@ -39,6 +39,10 @@ export function adaptBackendCourseToCourse(backend: BackendCourse, locale: strin
     period: backend.subscription_period || "monthly",
     date: backend.created_at ? backend.created_at.split(" ")[0] : "",
     numberOfLessons: backend.lessons_count || 0,
+    duration_in_minutes: backend.duration_in_minutes || 0,
+    durationHours: backend.duration_in_minutes
+      ? Number((backend.duration_in_minutes / 60).toFixed(1))
+      : undefined,
     price: Number(backend.final_price ?? backend.base_price) || 0,
     isFree: Boolean(backend.is_free),
     currency: backend.currency_code || "EGP",

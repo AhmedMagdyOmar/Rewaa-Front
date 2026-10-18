@@ -172,6 +172,7 @@ export interface BackendCourse {
   title: Record<string, string>;
   description?: Record<string, string>;
   intro_video_url?: string | null;
+  duration_in_minutes?: number;
   cover_image?: string | null;
   category?: string | null;
   category_label?: string | null;
@@ -300,6 +301,7 @@ export interface BackendLesson {
   } | null;
   type: LessonTypeBackend;
   type_label?: string;
+  duration_in_minutes?: number;
   title: Record<string, string>;
   description?: Record<string, string>;
   video_url?: string | null;
@@ -403,6 +405,7 @@ export interface StoreLessonData {
   subject_id?: number;
   instructor_id?: number;
   type: LessonTypeBackend;
+  duration_in_minutes?: number;
   title: { ar: string; en?: string };
   description?: { ar?: string; en?: string };
   video_url?: string;
@@ -1587,6 +1590,7 @@ export interface BackendStudentCourseDetails {
   title: Record<string, string>;
   description: Record<string, string>;
   intro_video_url?: string | null;
+  duration_in_minutes?: number;
   cover_image: string | null;
   educational_stage: { id: number; name: Record<string, string> } | null;
   subject: { id: number; name: Record<string, string> } | null;
@@ -1646,6 +1650,7 @@ export interface BackendCourseContentSectionLesson {
   id: number;
   title: Record<string, string>;
   type: string;
+  duration_in_minutes?: number;
   position: number;
   is_locked: boolean;
   is_completed: boolean;

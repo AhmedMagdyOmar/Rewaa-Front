@@ -525,6 +525,8 @@
       "examSuccessRate": "Exam Success Rate",
       "noSections": "No sections added to this course yet.",
       "linkedExamBadge": "Linked Section Exam",
+      "editExam": "Edit Exam",
+      "viewExam": "View Exam",
       "requiredPassBadge": "Required Exam Pass for Next Section",
       "questionsCount": "{count, plural, =1 {1 Question} other {{count} Questions}}",
       "passingScore": "Passing Score: {score}%",
@@ -670,6 +672,9 @@
         "noLessons": "No lessons added to this section yet.",
         "pdfsBadge": "PDFs ({count})",
         "examLinkedBadge": "Exam Linked",
+        "editExam": "Edit Exam",
+        "viewExam": "View Exam",
+        "editExamQuestions": "Edit Exam Questions & Settings",
         "scheduledBadge": "Scheduled",
         "addSectionDialog": {
           "title": "Add New Section",

@@ -32,11 +32,14 @@ import { Exam } from "@/types/exam";
 import {
   AlertCircle,
   BookOpen,
+  Clock,
+  ExternalLink,
   FileCheck,
   FileQuestion,
   FileText,
   ImageIcon,
   Loader2,
+  Pencil,
   Plus,
   Sparkles,
   Trash2,
@@ -99,6 +102,7 @@ export function LessonDialog({
   const [type, setType] = useState<LessonType>("videoAndText");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [durationInMinutes, setDurationInMinutes] = useState<number | string>("");
   const [lectureVideoLink, setLectureVideoLink] = useState("");
   const [videoLinkError, setVideoLinkError] = useState<string | null>(null);
   const [coverImage, setCoverImage] = useState<string>("");
@@ -300,6 +304,14 @@ export function LessonDialog({
         setType(initialLesson.type || (lessonVideo ? "videoAndText" : "text"));
         setTitle(initialLesson.title || "");
         setDescription(initialLesson.description || initialLesson.writtenText || "");
+        setDurationInMinutes(
+          initialLesson.duration_in_minutes !== undefined &&
+            initialLesson.duration_in_minutes !== null
+            ? initialLesson.duration_in_minutes
+            : typeof initialLesson.duration === "number"
+              ? initialLesson.duration
+              : "",
+        );
         setLectureVideoLink(lessonVideo);
         setCoverImage(
           initialLesson.coverImage ||
@@ -346,6 +358,7 @@ export function LessonDialog({
         setType("videoAndText");
         setTitle("");
         setDescription("");
+        setDurationInMinutes("");
         setLectureVideoLink("");
         setVideoLinkError(null);
         setCoverImage("");
@@ -516,6 +529,14 @@ export function LessonDialog({
       type,
       title: title.trim(),
       description: description.trim(),
+      duration_in_minutes:
+        durationInMinutes !== "" && !isNaN(Number(durationInMinutes))
+          ? Number(durationInMinutes)
+          : 0,
+      duration:
+        durationInMinutes !== "" && !isNaN(Number(durationInMinutes))
+          ? Number(durationInMinutes)
+          : 0,
       writtenText: description.trim(),
       lectureVideoLink: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
       coverImage: coverImage.trim() || undefined,
@@ -830,17 +851,41 @@ export function LessonDialog({
                 </div>
 
                 {/* Title */}
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="les-title-input" className="text-sm font-medium text-foreground">
-                    {t("lessonTitle")} <span className="text-destructive">*</span>
-                  </label>
-                  <Input
-                    id="les-title-input"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder={t("lessonTitlePlaceholder")}
-                    required={activeTab === "create"}
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="md:col-span-2 flex flex-col gap-2">
+                    <label
+                      htmlFor="les-title-input"
+                      className="text-sm font-medium text-foreground"
+                    >
+                      {t("lessonTitle")} <span className="text-destructive">*</span>
+                    </label>
+                    <Input
+                      id="les-title-input"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder={t("lessonTitlePlaceholder")}
+                      required={activeTab === "create"}
+                    />
+                  </div>
+
+                  {/* Duration in Minutes */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      htmlFor="les-duration-input"
+                      className="text-sm font-medium text-foreground flex items-center gap-1.5"
+                    >
+                      <Clock className="size-3.5 text-primary" />
+                      {locale === "ar" ? "مدة الدرس (بالدقائق)" : "Duration (minutes)"}
+                    </label>
+                    <Input
+                      id="les-duration-input"
+                      type="number"
+                      min="0"
+                      value={durationInMinutes}
+                      onChange={(e) => setDurationInMinutes(e.target.value)}
+                      placeholder={locale === "ar" ? "مثال: 15" : "e.g. 15"}
+                    />
+                  </div>
                 </div>
 
                 {/* Description (Markdown) */}
@@ -1087,6 +1132,31 @@ export function LessonDialog({
                             : "All available exams are already linked to other sections or lessons (an exam can only be linked once)."}
                         </p>
                       ) : null}
+
+                      {Boolean(
+                        initialLesson?.linkedExamId && initialLesson.linkedExamId === linkedExamId,
+                      ) && (
+                        <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800">
+                          <span className="font-medium flex items-center gap-1.5">
+                            <FileQuestion className="size-3.5 text-amber-600" />
+                            {locale === "ar"
+                              ? "الامتحان المرتبط محدد حالياً"
+                              : "Exam is currently linked"}
+                          </span>
+                          <a
+                            href={`/${locale}/dashboard/exams/${linkedExamId}/edit`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                          >
+                            <Pencil className="size-3" />
+                            <span>
+                              {locale === "ar" ? "تعديل محتوى الامتحان" : "Edit Exam Content"}
+                            </span>
+                            <ExternalLink className="size-2.5 opacity-60" />
+                          </a>
+                        </div>
+                      )}
 
                       {/* Toggle Have to pass exam */}
                       <FormToggleSetting

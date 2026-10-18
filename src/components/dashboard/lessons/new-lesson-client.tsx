@@ -22,6 +22,7 @@ import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
+  Clock,
   FileCheck,
   FileText,
   GraduationCap,
@@ -76,6 +77,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [type, setType] = useState<LessonType>("videoAndText");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [durationInMinutes, setDurationInMinutes] = useState<number | string>("");
   const [lectureVideoLink, setLectureVideoLink] = useState("");
 
   // Cover Image
@@ -140,6 +142,11 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
 
     setTitle(titleStr);
     setDescription(descStr || "");
+    setDurationInMinutes(
+      initialLesson.duration_in_minutes !== undefined && initialLesson.duration_in_minutes !== null
+        ? initialLesson.duration_in_minutes
+        : "",
+    );
     setType(initialLesson.type === "text_only" ? "text" : "videoAndText");
     setLectureVideoLink(initialLesson.video_url || "");
     setCoverImage(initialLesson.cover_image || initialLesson.cover_image_url || "");
@@ -319,6 +326,10 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         const updateData: UpdateLessonData = {
           classification: "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
+          duration_in_minutes:
+            durationInMinutes !== "" && !isNaN(Number(durationInMinutes))
+              ? Number(durationInMinutes)
+              : 0,
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
             ? { ar: description.trim(), en: description.trim() }
@@ -354,6 +365,10 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
         const createData: StoreLessonData = {
           classification: "standalone",
           type: type === "videoAndText" ? "video_and_text" : "text_only",
+          duration_in_minutes:
+            durationInMinutes !== "" && !isNaN(Number(durationInMinutes))
+              ? Number(durationInMinutes)
+              : 0,
           title: { ar: title.trim(), en: title.trim() },
           description: description.trim()
             ? { ar: description.trim(), en: description.trim() }
@@ -525,17 +540,38 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           icon={BookOpen}
           contentClassName="space-y-4"
         >
-          <div className="flex flex-col gap-2">
-            <label htmlFor="standalone-les-title" className="text-sm font-medium text-foreground">
-              {tDialog("lessonTitle")} <span className="text-destructive">*</span>
-            </label>
-            <Input
-              id="standalone-les-title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder={tDialog("lessonTitlePlaceholder")}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2 flex flex-col gap-2">
+              <label htmlFor="standalone-les-title" className="text-sm font-medium text-foreground">
+                {tDialog("lessonTitle")} <span className="text-destructive">*</span>
+              </label>
+              <Input
+                id="standalone-les-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder={tDialog("lessonTitlePlaceholder")}
+                required
+              />
+            </div>
+
+            {/* Duration in Minutes */}
+            <div className="flex flex-col gap-2">
+              <label
+                htmlFor="standalone-les-duration"
+                className="text-sm font-medium text-foreground flex items-center gap-1.5"
+              >
+                <Clock className="size-3.5 text-primary" />
+                {locale === "ar" ? "مدة الدرس (بالدقائق)" : "Duration (minutes)"}
+              </label>
+              <Input
+                id="standalone-les-duration"
+                type="number"
+                min="0"
+                value={durationInMinutes}
+                onChange={(e) => setDurationInMinutes(e.target.value)}
+                placeholder={locale === "ar" ? "مثال: 15" : "e.g. 15"}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col gap-2">

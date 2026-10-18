@@ -24,16 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDeleteExam, useProviderExamOptions, useProviderExams } from "@/hooks/use-exams";
+import { useDeleteExam, useProviderExams } from "@/hooks/use-exams";
 import type { BackendExam } from "@/types/api-contracts";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
@@ -54,7 +47,6 @@ export function ManageExamsClient() {
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as ExamFilterTab) || "public";
   const sortBy = (searchParams.get("sort") as ExamSortOption) || "latest";
-  const courseFilter = searchParams.get("course_id") || "all";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 12;
 
@@ -81,9 +73,6 @@ export function ManageExamsClient() {
     [searchParams, pathname, router],
   );
 
-  // Fetch exam options (for courses list)
-  const { data: examOptions } = useProviderExamOptions();
-
   // Query params according to the active tab:
   // Public tab: is_public = true
   // Course Templates tab: is_template = true
@@ -92,12 +81,11 @@ export function ManageExamsClient() {
       search: searchQuery || undefined,
       is_public: activeTab === "public" ? true : undefined,
       is_template: activeTab === "templates" ? true : undefined,
-      course_id: activeTab === "public" && courseFilter !== "all" ? courseFilter : undefined,
       sort: sortBy,
       page: currentPage,
       per_page: itemsPerPage,
     };
-  }, [searchQuery, activeTab, courseFilter, sortBy, currentPage, itemsPerPage]);
+  }, [searchQuery, activeTab, sortBy, currentPage, itemsPerPage]);
 
   // Live Query from backend
   const { data: examsResponse, isLoading } = useProviderExams(queryFilters);
@@ -118,9 +106,6 @@ export function ManageExamsClient() {
   const handleTabChange = (tab: ExamFilterTab) => updateUrlParams({ tab, page: 1 });
 
   const handleSortChange = (sort: ExamSortOption) => updateUrlParams({ sort, page: 1 });
-
-  const handleCourseChange = (courseId: string) =>
-    updateUrlParams({ course_id: courseId, page: 1 });
 
   const handlePageChange = (page: number) => updateUrlParams({ page });
 
@@ -194,8 +179,6 @@ export function ManageExamsClient() {
     </tr>
   );
 
-  const availableCourses = examOptions?.courses || [];
-
   return (
     <div className="space-y-6">
       {/* ── Top Header ─────────────────────────────────────────────────────── */}
@@ -227,28 +210,6 @@ export function ManageExamsClient() {
         defaultTab="public"
         defaultSort="latest"
         clearFiltersLabel={t("clearFilters")}
-        isFilterActiveCustom={courseFilter !== "all"}
-        extraFilters={
-          availableCourses.length > 0 ? (
-            <div className="w-48">
-              <Select value={courseFilter} onValueChange={handleCourseChange}>
-                <SelectTrigger className="h-9 text-xs bg-background">
-                  <SelectValue placeholder={locale === "ar" ? "جميع الدورات" : "All courses"} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">
-                    {locale === "ar" ? "جميع الدورات" : "All courses"}
-                  </SelectItem>
-                  {availableCourses.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)}>
-                      {c.title?.[locale] || c.title?.ar || c.title?.en || `Course #${c.id}`}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : undefined
-        }
         onSearchChange={handleSearchChange}
         onTabChange={handleTabChange}
         onSortChange={handleSortChange}
@@ -267,11 +228,6 @@ export function ManageExamsClient() {
                       t("table.columns.title"),
                       t("table.columns.subjectGrade"),
                       t("table.columns.category"),
-                      t.has("table.columns.courseLesson")
-                        ? t("table.columns.courseLesson")
-                        : locale === "ar"
-                          ? "الدورة / الدرس"
-                          : "Course / Lesson",
                       t("table.columns.questions"),
                       t("table.columns.students"),
                       locale === "ar" ? "عدد المحاولات" : "Attempts",
@@ -281,6 +237,11 @@ export function ManageExamsClient() {
                       t("table.columns.title"),
                       t("table.columns.subjectGrade"),
                       t("table.columns.category"),
+                      t.has("table.columns.courseLesson")
+                        ? t("table.columns.courseLesson")
+                        : locale === "ar"
+                          ? "الدورة / الدرس"
+                          : "Course / Lesson",
                       t("table.columns.questions"),
                       locale === "ar" ? "مدة الامتحان" : "Duration",
                       t("table.columns.actions"),
@@ -301,7 +262,7 @@ export function ManageExamsClient() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : exams.length === 0 ? (
                 <tr>
-                  <td colSpan={activeTab === "public" ? 8 : 6}>
+                  <td colSpan={7}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <FileQuestion className="h-12 w-12 text-muted-foreground/40 mb-3" />
                       <h3 className="text-base font-semibold text-foreground">
@@ -360,8 +321,8 @@ export function ManageExamsClient() {
                         </span>
                       </td>
 
-                      {/* 4. Course / Lesson (Only in Public Tab) */}
-                      {activeTab === "public" && (
+                      {/* 4. Course / Lesson (Only in Course Exams / Templates Tab) */}
+                      {activeTab === "templates" && (
                         <td className="px-4 py-3 min-w-44">
                           {exam.course && exam.lesson ? (
                             <div className="flex flex-col gap-1">

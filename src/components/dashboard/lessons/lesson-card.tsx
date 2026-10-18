@@ -13,6 +13,7 @@ import { Lesson } from "@/types/course";
 import {
   BookOpen,
   CheckCircle2,
+  Clock,
   ExternalLink,
   FileCheck,
   FileText,
@@ -215,6 +216,21 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
         {/* 3. METADATA PILLS ROW (Numeric pills only) */}
         <div className="flex flex-wrap items-center gap-1.5 pt-2">
           <TooltipProvider delayDuration={200}>
+            {/* Lesson Duration Pill */}
+            {lesson.duration_in_minutes || lesson.duration ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 bg-primary/10 text-primary border border-primary/20 px-2 py-1 rounded-md text-xs font-semibold cursor-default">
+                    <Clock className="h-3 w-3" />
+                    <span>
+                      {lesson.duration_in_minutes || lesson.duration} {isAr ? "دقيقة" : "min"}
+                    </span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="top">{isAr ? "مدة الدرس" : "Lesson Duration"}</TooltipContent>
+              </Tooltip>
+            ) : null}
+
             {pdfCount > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>

@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, FileText, Pencil, Video } from "lucide-react";
+import { BookOpen, Clock, ExternalLink, FileText, Pencil, Video } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import {
@@ -25,14 +25,34 @@ export function CourseSections({ course }: CourseSectionsProps) {
   const totalLessons = course.sections.reduce((acc, s) => acc + s.lessons.length, 0);
   const totalExams = course.sections.reduce((acc, s) => acc + (s.isLinkedToExam ? 1 : 0), 0);
 
+  const totalDurationMinutes =
+    course.duration_in_minutes ||
+    course.sections.reduce((acc, s) => {
+      return (
+        acc +
+        s.lessons.reduce((lAcc, l) => lAcc + (Number(l.duration_in_minutes || l.duration) || 0), 0)
+      );
+    }, 0);
+
   return (
     <DashboardCard className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold text-foreground">{t("details.sectionsAndContent")}</h2>
-        <div className="text-xs text-muted-foreground font-medium">
-          {t("details.totalSections", { count: totalSections })} •{" "}
-          {t("details.totalLessons", { count: totalLessons })} •{" "}
-          {t("details.totalExams", { count: totalExams })}
+        <div className="text-xs text-muted-foreground font-medium flex items-center gap-1.5 flex-wrap">
+          <span>{t("details.totalSections", { count: totalSections })} •</span>
+          <span>{t("details.totalLessons", { count: totalLessons })} •</span>
+          <span>{t("details.totalExams", { count: totalExams })}</span>
+          {totalDurationMinutes > 0 && (
+            <>
+              <span>•</span>
+              <span className="text-primary font-semibold inline-flex items-center gap-1">
+                <Clock className="size-3" />
+                {totalDurationMinutes >= 60
+                  ? `${(totalDurationMinutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hrs"}`
+                  : `${totalDurationMinutes} ${locale === "ar" ? "دقيقة إجمالية" : "total mins"}`}
+              </span>
+            </>
+          )}
         </div>
       </div>
 
@@ -112,13 +132,41 @@ export function CourseSections({ course }: CourseSectionsProps) {
                       )}
 
                       {lesson.isLinkedToExam && (
+                        <div className="flex items-center gap-1">
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          >
+                            {t("details.linkedExamBadge")}
+                          </Badge>
+                          {lesson.linkedExamId && (
+                            <Link
+                              href={`/${locale}/dashboard/exams/${lesson.linkedExamId}/edit`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30 transition-colors"
+                              title={t("details.editExam")}
+                            >
+                              <Pencil className="size-2.5" />
+                              <span>{t("details.editExam")}</span>
+                              <ExternalLink className="size-2 opacity-60" />
+                            </Link>
+                          )}
+                        </div>
+                      )}
+
+                      {lesson.duration_in_minutes || lesson.duration ? (
                         <Badge
                           variant="outline"
-                          className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          className="text-[10px] bg-primary/10 text-primary border-primary/20 gap-1 font-medium"
                         >
-                          {t("details.linkedExamBadge")}
+                          <Clock className="size-3" />
+                          <span>
+                            {lesson.duration_in_minutes || lesson.duration}{" "}
+                            {locale === "ar" ? "دقيقة" : "min"}
+                          </span>
                         </Badge>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0 ms-auto sm:ms-0">
@@ -147,7 +195,7 @@ export function CourseSections({ course }: CourseSectionsProps) {
 
                 {/* Section Exam FK reference */}
                 {section.isLinkedToExam && section.linkedExamId && (
-                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20">
+                  <div className="p-3 rounded-lg bg-primary/5 border border-primary/20 flex items-center justify-between">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                       <FileText className="size-4" />
                       <Link
@@ -157,6 +205,16 @@ export function CourseSections({ course }: CourseSectionsProps) {
                         {t("details.linkedExamBadge")} #{section.linkedExamId}
                       </Link>
                     </div>
+                    <Link
+                      href={`/${locale}/dashboard/exams/${section.linkedExamId}/edit`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+                    >
+                      <Pencil className="size-3" />
+                      <span>{t("details.editExam")}</span>
+                      <ExternalLink className="size-2.5 opacity-60" />
+                    </Link>
                   </div>
                 )}
               </AccordionContent>

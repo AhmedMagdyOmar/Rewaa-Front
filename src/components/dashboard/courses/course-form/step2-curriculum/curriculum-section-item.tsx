@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,9 +11,11 @@ import { Exam } from "@/types/exam";
 import {
   Check,
   Edit2,
+  ExternalLink,
   FileQuestion,
   FileText as FileTextIcon,
   Paperclip,
+  Pencil,
   Plus as PlusIcon,
   Trash2,
   Video as VideoIcon,
@@ -190,13 +193,28 @@ export function CurriculumSectionItem({
                 )}
 
                 {les.isLinkedToExam && (
-                  <Badge
-                    variant="outline"
-                    className="text-[10px] font-medium bg-amber-500/10 text-amber-600 border-amber-500/20 flex items-center gap-1"
-                  >
-                    <FileQuestion className="size-3 shrink-0" />
-                    <span>{t("step2.examLinkedBadge")}</span>
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Badge
+                      variant="outline"
+                      className="text-[10px] font-medium bg-amber-500/10 text-amber-600 border-amber-500/20 flex items-center gap-1"
+                    >
+                      <FileQuestion className="size-3 shrink-0" />
+                      <span>{t("step2.examLinkedBadge")}</span>
+                    </Badge>
+                    {les.linkedExamId && (
+                      <Link
+                        href={`/${locale}/dashboard/exams/${les.linkedExamId}/edit`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-md border border-amber-500/30 transition-colors"
+                        title={t("step2.editExamQuestions")}
+                      >
+                        <Pencil className="size-3" />
+                        <span>{t("step2.editExam")}</span>
+                        <ExternalLink className="size-2.5 opacity-60" />
+                      </Link>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -225,7 +243,7 @@ export function CurriculumSectionItem({
 
           {/* Linked Exam item under lessons */}
           {section.isLinkedToExam && section.linkedExamId && (
-            <div className="flex items-center justify-between text-xs py-1.5 px-3 rounded-lg bg-warning/10 border border-warning/20">
+            <div className="flex items-center justify-between text-xs py-2 px-3 rounded-lg bg-warning/10 border border-warning/20">
               <span className="font-medium text-warning flex items-center gap-2">
                 <FileQuestion className="size-3.5 text-warning" />
                 {t("step2.addSectionDialog.isLinkedToExam")}:{" "}
@@ -233,6 +251,16 @@ export function CurriculumSectionItem({
                   section.linkedExamTitle ||
                   `#${section.linkedExamId}`}
               </span>
+              <Link
+                href={`/${locale}/dashboard/exams/${section.linkedExamId}/edit`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold text-warning hover:underline"
+              >
+                <Pencil className="size-3" />
+                <span>{t("step2.editExam")}</span>
+                <ExternalLink className="size-2.5 opacity-60" />
+              </Link>
             </div>
           )}
         </div>

@@ -525,6 +525,8 @@
       "examSuccessRate": "نسبة النجاح في الامتحانات",
       "noSections": "لا توجد أقسام مضافة لهذه الدورة بعد.",
       "linkedExamBadge": "مرتبط بامتحان قسم",
+      "editExam": "تعديل الامتحان",
+      "viewExam": "عرض الامتحان",
       "requiredPassBadge": "اجتياز الإجبار للانتقال للقسم التالي",
       "questionsCount": "{count, plural, =0 {لا أسئلة} zero {لا أسئلة} one {سؤال واحد} two {سؤالين} few {{count} أسئلة} many {{count} سؤالاً} other {{count} سؤال}}",
       "passingScore": "درجة النجاح: {score}%",
@@ -670,6 +672,9 @@
         "noLessons": "لم يتم إضافة دروس في هذا القسم بعد.",
         "pdfsBadge": "ملفات ({count})",
         "examLinkedBadge": "مرتبط بامتحان",
+        "editExam": "تعديل الامتحان",
+        "viewExam": "عرض الامتحان",
+        "editExamQuestions": "تعديل أسئلة وإعدادات الامتحان",
         "scheduledBadge": "مجدول",
         "addSectionDialog": {
           "title": "إضافة قسم جديد",

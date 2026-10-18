@@ -18,6 +18,8 @@ export interface LessonAttachment {
 export interface Lesson {
   id: string;
   type?: LessonType;
+  duration_in_minutes?: number;
+  duration?: number | string;
   title: string;
   description?: string;
   coverImage?: string;
@@ -137,6 +139,7 @@ export interface Course {
   averageRating?: number;
   totalRatingsCount?: number;
   durationHours?: number;
+  duration_in_minutes?: number;
   badge?: CourseBadge;
   hasPendingOrder?: boolean;
   scheduledPublishDate?: string;

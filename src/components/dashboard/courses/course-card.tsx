@@ -270,6 +270,23 @@ export function CourseCard({
                 {t("card.lessonsShort", { count: course.numberOfLessons })}
               </span>
             </div>
+
+            {/* 3. Total Duration */}
+            {course.duration_in_minutes || course.durationHours ? (
+              <div
+                className="flex items-center gap-1.5 truncate"
+                title={locale === "ar" ? "مدة الدورة" : "Course Duration"}
+              >
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="truncate font-medium">
+                  {course.duration_in_minutes && course.duration_in_minutes >= 60
+                    ? `${(course.duration_in_minutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
+                    : course.duration_in_minutes
+                      ? `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة" : "min"}`
+                      : `${course.durationHours} ${locale === "ar" ? "ساعة" : "hr"}`}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           {/* 3. Formatted Price (only for dashboard mode to avoid duplicate in student mode) */}

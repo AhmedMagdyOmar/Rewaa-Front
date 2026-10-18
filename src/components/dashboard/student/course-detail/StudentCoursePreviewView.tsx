@@ -333,11 +333,26 @@ export function StudentCoursePreviewView({
                     </li>
                   )}
 
+                  {/* Total Duration */}
+                  {typeof course.duration_in_minutes === "number" &&
+                    course.duration_in_minutes > 0 && (
+                      <li className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 shrink-0">
+                          <Clock className="size-4" />
+                        </div>
+                        <span className="font-medium">
+                          {course.duration_in_minutes >= 60
+                            ? `${(course.duration_in_minutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hours"}`
+                            : `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة إجمالية" : "total minutes"}`}
+                        </span>
+                      </li>
+                    )}
+
                   {/* Number of Sections */}
                   {course.sections_count > 0 && (
                     <li className="flex items-center gap-3">
                       <div className="p-2 rounded-lg bg-purple-500/10 text-purple-600 shrink-0">
-                        <Clock className="size-4" />
+                        <BookOpen className="size-4" />
                       </div>
                       <span className="font-medium">
                         {tCourses("details.totalSections", { count: course.sections_count })}

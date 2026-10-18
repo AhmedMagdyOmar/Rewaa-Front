@@ -23,6 +23,7 @@ import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { ExamSelect } from "@/components/ui/academic-selects";
 import { CourseSection, LessonPublishStatus } from "@/types/course";
 import { Exam } from "@/types/exam";
+import { ExternalLink, FileQuestion, Pencil } from "lucide-react";
 
 interface SectionFormDialogProps {
   open: boolean;
@@ -184,6 +185,27 @@ export function SectionFormDialog({
                     : "No exams found for this stage and subject yet. You can create an exam from the Exams section."}
                 </p>
               ) : null}
+
+              {Boolean(
+                editingSection?.linkedExamId && editingSection.linkedExamId === newSecLinkedExamId,
+              ) && (
+                <div className="flex items-center justify-between p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-800">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <FileQuestion className="size-3.5 text-amber-600" />
+                    {locale === "ar" ? "الامتحان المرتبط محدد حالياً" : "Exam is currently linked"}
+                  </span>
+                  <a
+                    href={`/${locale}/dashboard/exams/${newSecLinkedExamId}/edit`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
+                  >
+                    <Pencil className="size-3" />
+                    <span>{locale === "ar" ? "تعديل محتوى الامتحان" : "Edit Exam Content"}</span>
+                    <ExternalLink className="size-2.5 opacity-60" />
+                  </a>
+                </div>
+              )}
             </div>
           )}
 
