@@ -571,6 +571,7 @@ export interface BackendExam {
   students_count: number;
   attempts_count: number;
   success_rate?: number;
+  average_score?: number | null;
   created_at?: string;
   updated_at?: string;
 }

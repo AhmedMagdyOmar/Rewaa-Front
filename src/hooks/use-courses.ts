@@ -147,6 +147,17 @@ export function useCourseSections(courseId?: number | string) {
 }
 
 /**
+ * Hook to fetch course exams
+ */
+export function useCourseExams(courseId?: number | string) {
+  return useQuery({
+    queryKey: queryKeys.provider.courses.exams(courseId || ""),
+    queryFn: () => coursesService.getCourseExams(courseId!),
+    enabled: Boolean(courseId),
+  });
+}
+
+/**
  * Hook to create a section within a course
  */
 export function useCreateCourseSection() {

@@ -4,6 +4,8 @@ import * as React from "react";
 import { CourseFilters } from "./course-filters";
 import { CoursePagination } from "./course-pagination";
 import { DeleteCourseDialog } from "./delete-course-dialog";
+import { CourseExamsDialog } from "./course-exams-dialog";
+import { Course } from "@/types/course";
 import { useCourseUrlFilters } from "./manage-courses/hooks/use-course-url-filters";
 import { useManageCourses } from "./manage-courses/hooks/use-manage-courses";
 import { ManageCoursesHeader } from "./manage-courses/components/manage-courses-header";
@@ -12,6 +14,7 @@ import { CoursesGrid } from "./manage-courses/components/courses-grid";
 export function ManageCoursesClient() {
   const filters = useCourseUrlFilters();
   const manage = useManageCourses({ filters, itemsPerPage: 9 });
+  const [courseForExams, setCourseForExams] = React.useState<Course | null>(null);
 
   return (
     <div className="space-y-6">
@@ -48,6 +51,7 @@ export function ManageCoursesClient() {
         onPublishToggle={manage.handlePublishToggle}
         onCopyLink={manage.handleCopyLink}
         onDeleteRequest={manage.setCourseToDelete}
+        onOpenExamStats={(course) => setCourseForExams(course)}
       />
 
       {/* Pagination Controls */}
@@ -65,6 +69,13 @@ export function ManageCoursesClient() {
         courseToDelete={manage.courseToDelete}
         onClose={() => manage.setCourseToDelete(null)}
         onConfirm={manage.confirmDelete}
+      />
+
+      {/* Course Exams Statistics Dialog */}
+      <CourseExamsDialog
+        course={courseForExams}
+        open={!!courseForExams}
+        onOpenChange={(open) => !open && setCourseForExams(null)}
       />
     </div>
   );

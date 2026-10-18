@@ -12,6 +12,7 @@ interface CoursesGridProps {
   onPublishToggle: (courseId: string) => void;
   onCopyLink: (courseId: string) => void;
   onDeleteRequest: (course: Course) => void;
+  onOpenExamStats?: (course: Course) => void;
 }
 
 export function CoursesGrid({
@@ -21,6 +22,7 @@ export function CoursesGrid({
   onPublishToggle,
   onCopyLink,
   onDeleteRequest,
+  onOpenExamStats,
 }: CoursesGridProps) {
   if (isLoading) {
     return <CoursesGridSkeleton />;
@@ -40,6 +42,7 @@ export function CoursesGrid({
           onPublishToggle={onPublishToggle}
           onCopyLink={onCopyLink}
           onDeleteRequest={onDeleteRequest}
+          onOpenExamStats={onOpenExamStats}
         />
       ))}
     </div>

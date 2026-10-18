@@ -10,6 +10,7 @@ import {
 import { Course } from "@/types/course";
 import {
   Barcode,
+  BarChart3,
   BookOpen,
   Calendar,
   Clock,
@@ -31,6 +32,7 @@ interface CourseCardProps {
   onPublishToggle?: (courseId: string) => void;
   onCopyLink?: (courseId: string) => void;
   onDeleteRequest?: (course: Course) => void;
+  onOpenExamStats?: (course: Course) => void;
   mode?: "dashboard" | "student";
   enrollHref?: string;
   isEnrolled?: boolean;
@@ -43,6 +45,7 @@ export function CourseCard({
   onPublishToggle,
   onCopyLink: _onCopyLink,
   onDeleteRequest,
+  onOpenExamStats,
   mode = "dashboard",
   enrollHref,
   isEnrolled = false,
@@ -416,6 +419,13 @@ export function CourseCard({
                         <Barcode className="h-4 w-4" />
                         <span>{t("card.viewActivationCodes")}</span>
                       </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => onOpenExamStats?.(course)}
+                      className="flex items-center gap-2 cursor-pointer"
+                    >
+                      <BarChart3 className="h-4 w-4 text-primary" />
+                      <span>{t("card.examStats")}</span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={() => onDeleteRequest?.(course)}

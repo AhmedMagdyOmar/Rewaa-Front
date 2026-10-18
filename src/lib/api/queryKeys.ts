@@ -32,6 +32,8 @@ export const queryKeys = {
       categories: () => [...queryKeys.provider.courses.all(), "categories"] as const,
       sections: (courseId: number | string) =>
         [...queryKeys.provider.courses.detail(courseId), "sections"] as const,
+      exams: (courseId: number | string) =>
+        [...queryKeys.provider.courses.detail(courseId), "exams"] as const,
     },
 
     // Lessons & Templates

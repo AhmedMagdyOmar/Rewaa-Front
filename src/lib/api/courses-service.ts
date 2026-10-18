@@ -3,6 +3,7 @@ import type {
   BackendCourse,
   BackendCourseOptions,
   BackendCourseSection,
+  BackendExam,
   CourseListResponse,
 } from "@/types/api-contracts";
 
@@ -271,5 +272,16 @@ export const coursesService = {
       data: { section_ids: sectionIds },
     });
     return res.sections;
+  },
+
+  /**
+   * Course Exams
+   */
+  async getCourseExams(courseId: number | string): Promise<BackendExam[]> {
+    const res = await api<{ exams: BackendExam[] }>({
+      url: `/api/dashboard/provider/courses/${courseId}/exams`,
+      method: "GET",
+    });
+    return res.exams;
   },
 };
