@@ -136,6 +136,7 @@ export interface BackendLessonItem {
   scheduled_publish_at?: string | null;
   position?: number;
   views_count?: number;
+  duration_in_minutes?: number;
   has_pdf_attachments?: boolean;
   pdf_attachments?: Array<{
     id: number;
@@ -1499,6 +1500,7 @@ export interface BackendMyCourse {
   currency_code?: string | null;
   lessons_count?: number;
   sections_count?: number;
+  duration_in_minutes?: number;
   created_at?: string;
   starts_at?: string | null;
   expires_at?: string | null;
@@ -1554,6 +1556,7 @@ export interface AvailableCourse {
   final_price: number;
   has_limited_access: boolean;
   access_duration_days: number | null;
+  duration_in_minutes?: number;
   sections_count: number;
   lessons_count: number;
   published_at: string | null;
@@ -1702,6 +1705,7 @@ export interface BackendStudentLessonDetail {
   title: Record<string, string>;
   description: Record<string, string>;
   type: string; // "video_and_text" | "text_only"
+  duration_in_minutes?: number;
   video_url: string | null;
   cover_image: string | null;
   position?: number;

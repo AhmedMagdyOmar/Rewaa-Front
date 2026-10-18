@@ -5,11 +5,11 @@ import { Progress } from "@/components/ui/progress";
 import { Link } from "@/i18n/routing";
 import type { BackendMyCourse } from "@/types/api-contracts";
 import type { Course } from "@/types/course";
-import { BookOpen, Calendar, Play, User } from "lucide-react";
+import { BookOpen, Calendar, Clock, Play, User } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 
 export interface StudentEnrolledCourseCardProps {
   course: BackendMyCourse | Course;
@@ -124,6 +124,7 @@ export function StudentEnrolledCourseCard({
   const showImage = Boolean(rawCoverImage) && !imageError;
   const courseTargetUrl = `/student-dashboard/courses/${courseId}`;
   const lessonsCount = backendCourse?.lessons_count ?? backendCourse?.progress?.total_lessons;
+  const durationMinutes = backendCourse?.duration_in_minutes ?? legacyCourse?.duration_in_minutes;
 
   // Render Horizontal Row Card (for list views / backwards compatibility)
   if (layout === "row") {
@@ -194,6 +195,16 @@ export function StudentEnrolledCourseCard({
                         ? t("accessExpired", { date: formattedDate })
                         : t("accessEnds", { date: formattedDate })}
                     </span>
+                  </div>
+                </>
+              )}
+
+              {Boolean(durationMinutes && durationMinutes > 0) && (
+                <>
+                  <span className="text-border hidden sm:inline">•</span>
+                  <div className="flex items-center gap-1.5 text-muted-foreground/90 font-medium">
+                    <Clock className="size-3.5 shrink-0 text-primary" />
+                    <span>{formatDuration(durationMinutes, locale)}</span>
                   </div>
                 </>
               )}
@@ -337,14 +348,30 @@ export function StudentEnrolledCourseCard({
           </div>
         )}
 
-        {/* Info Row: Lessons count (if available) */}
-        {lessonsCount !== undefined && lessonsCount > 0 && (
+        {/* Info Row: Lessons count & Total Duration (if available) */}
+        {((lessonsCount !== undefined && lessonsCount > 0) ||
+          Boolean(durationMinutes && durationMinutes > 0)) && (
           <div className="mt-auto pt-2 pb-2 border-t border-border/40 flex flex-row items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5 truncate">
-              <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-              <span className="truncate font-medium">
-                {tCourses("card.lessonsShort", { count: lessonsCount })}
-              </span>
+            <div className="flex items-center gap-3">
+              {lessonsCount !== undefined && lessonsCount > 0 && (
+                <div className="flex items-center gap-1.5 truncate">
+                  <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="truncate font-medium">
+                    {tCourses("card.lessonsShort", { count: lessonsCount })}
+                  </span>
+                </div>
+              )}
+              {Boolean(durationMinutes && durationMinutes > 0) && (
+                <div
+                  className="flex items-center gap-1.5 truncate"
+                  title={isAr ? "مدة الدورة" : "Course Duration"}
+                >
+                  <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                  <span className="truncate font-medium">
+                    {formatDuration(durationMinutes, locale)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}

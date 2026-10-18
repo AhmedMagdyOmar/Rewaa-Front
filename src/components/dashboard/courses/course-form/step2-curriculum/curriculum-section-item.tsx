@@ -10,6 +10,7 @@ import { CourseSection, Lesson } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
   Check,
+  Clock,
   Edit2,
   ExternalLink,
   FileQuestion,
@@ -98,6 +99,35 @@ export function CurriculumSectionItem({
               {t("step2.pleaseAddExamBadge")}
             </span>
           )}
+
+          {/* Section Lessons Count & Total Duration */}
+          {(() => {
+            const secDuration = section.lessons.reduce(
+              (acc, l) => acc + (Number(l.duration_in_minutes || l.duration) || 0),
+              0,
+            );
+            if (section.lessons.length === 0 && secDuration === 0) return null;
+            return (
+              <span className="text-xs font-medium text-muted-foreground flex items-center gap-1.5 ms-1">
+                <span>
+                  {section.lessons.length} {locale === "ar" ? "درس" : "lessons"}
+                </span>
+                {secDuration > 0 && (
+                  <>
+                    <span>•</span>
+                    <span className="inline-flex items-center gap-1 text-primary">
+                      <Clock className="size-3" />
+                      <span>
+                        {secDuration >= 60
+                          ? `${(secDuration / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
+                          : `${secDuration} ${locale === "ar" ? "دقيقة" : "min"}`}
+                      </span>
+                    </span>
+                  </>
+                )}
+              </span>
+            );
+          })()}
         </div>
 
         {/* Section Header Action Buttons */}
@@ -215,6 +245,18 @@ export function CurriculumSectionItem({
                       </Link>
                     )}
                   </div>
+                )}
+
+                {Boolean(les.duration_in_minutes || les.duration) && (
+                  <Badge
+                    variant="outline"
+                    className="text-[10px] bg-primary/10 text-primary border-primary/20 gap-1 font-medium"
+                  >
+                    <Clock className="size-3" />
+                    <span>
+                      {les.duration_in_minutes || les.duration} {locale === "ar" ? "دقيقة" : "min"}
+                    </span>
+                  </Badge>
                 )}
               </div>
 

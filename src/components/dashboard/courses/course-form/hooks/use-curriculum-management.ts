@@ -258,6 +258,9 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
           linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
           isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
+          duration_in_minutes:
+            typeof l.duration_in_minutes === "number" ? l.duration_in_minutes : 0,
+          duration: typeof l.duration_in_minutes === "number" ? l.duration_in_minutes : 0,
         }));
 
         return {
@@ -648,6 +651,17 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           .map((img) => img.rawFile)
           .filter(Boolean) as File[];
 
+        const lessonDuration =
+          savedLesson.duration_in_minutes !== undefined &&
+          savedLesson.duration_in_minutes !== null &&
+          !isNaN(Number(savedLesson.duration_in_minutes))
+            ? Number(savedLesson.duration_in_minutes)
+            : savedLesson.duration !== undefined &&
+                savedLesson.duration !== null &&
+                !isNaN(Number(savedLesson.duration))
+              ? Number(savedLesson.duration)
+              : 0;
+
         if (isExistingBackendLesson) {
           const payload = {
             classification: "course" as const,
@@ -656,6 +670,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
               | "text_only"
               | "video_and_text",
+            duration_in_minutes: lessonDuration,
             title: { ar: savedLesson.title, en: savedLesson.title },
             description: savedLesson.description
               ? { ar: savedLesson.description, en: savedLesson.description }
@@ -684,6 +699,14 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           finalLesson = {
             ...finalLesson,
             id: String(res.id),
+            duration_in_minutes:
+              typeof res.duration_in_minutes === "number"
+                ? res.duration_in_minutes
+                : lessonDuration,
+            duration:
+              typeof res.duration_in_minutes === "number"
+                ? res.duration_in_minutes
+                : lessonDuration,
             lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,
             coverImageFile: null,
@@ -702,6 +725,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
               | "text_only"
               | "video_and_text",
+            duration_in_minutes: lessonDuration,
             title: { ar: savedLesson.title, en: savedLesson.title },
             description: savedLesson.description
               ? { ar: savedLesson.description, en: savedLesson.description }
@@ -730,6 +754,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             type: (savedLesson.type === "text" ? "text_only" : "video_and_text") as
               | "text_only"
               | "video_and_text",
+            duration_in_minutes: lessonDuration,
             title: { ar: savedLesson.title, en: savedLesson.title },
             description: savedLesson.description
               ? { ar: savedLesson.description, en: savedLesson.description }
@@ -763,6 +788,14 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           finalLesson = {
             ...finalLesson,
             id: String(res.id),
+            duration_in_minutes:
+              typeof res.duration_in_minutes === "number"
+                ? res.duration_in_minutes
+                : lessonDuration,
+            duration:
+              typeof res.duration_in_minutes === "number"
+                ? res.duration_in_minutes
+                : lessonDuration,
             lectureVideoLink: res.video_url || undefined,
             coverImage: res.cover_image || res.cover_image_url || undefined,
             coverImageFile: null,
@@ -869,6 +902,9 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
             linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
             isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
+            duration_in_minutes:
+              typeof b.duration_in_minutes === "number" ? b.duration_in_minutes : 0,
+            duration: typeof b.duration_in_minutes === "number" ? b.duration_in_minutes : 0,
           }));
 
           toast.success(
@@ -1005,6 +1041,14 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 course_section_id: Number(createdSection.id),
                 original_lesson_id: !Number.isNaN(Number(l.id)) ? Number(l.id) : undefined,
                 type: l.type === "text" ? "text_only" : "video_and_text",
+                duration_in_minutes:
+                  l.duration_in_minutes !== undefined &&
+                  l.duration_in_minutes !== null &&
+                  !isNaN(Number(l.duration_in_minutes))
+                    ? Number(l.duration_in_minutes)
+                    : l.duration !== undefined && l.duration !== null && !isNaN(Number(l.duration))
+                      ? Number(l.duration)
+                      : 0,
                 title: { ar: l.title, en: l.title },
                 description: l.description ? { ar: l.description, en: l.description } : undefined,
                 video_url: l.lectureVideoLink || undefined,

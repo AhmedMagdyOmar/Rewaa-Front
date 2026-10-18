@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Download,
   Eye,
   FileCheck,
@@ -112,6 +113,17 @@ export function StudentCourseLessonView({
                 <Badge variant="outline" className="text-[11px] font-semibold">
                   {isVideoLesson ? t("itemTypes.video") : t("itemTypes.reading")}
                 </Badge>
+                {Boolean(lesson.duration_in_minutes && lesson.duration_in_minutes > 0) && (
+                  <Badge
+                    variant="outline"
+                    className="text-[11px] font-semibold gap-1 text-primary border-primary/30 bg-primary/5"
+                  >
+                    <Clock className="size-3" />
+                    <span>
+                      {lesson.duration_in_minutes} {locale === "ar" ? "دقيقة" : "min"}
+                    </span>
+                  </Badge>
+                )}
                 {isCompleted && (
                   <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 gap-1 text-[11px]">
                     <CheckCircle2 className="size-3" />

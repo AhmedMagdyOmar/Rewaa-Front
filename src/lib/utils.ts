@@ -84,3 +84,32 @@ export function formatEgyptianPhone(phone?: string | null): string {
 
   return cleaned;
 }
+
+/**
+ * Formats duration in minutes into a concise string (e.g., "45 min" / "45 دقيقة", "2.5 hrs" / "2.5 ساعة").
+ */
+export function formatDuration(minutes?: number | null, locale: string = "ar"): string {
+  if (!minutes || minutes <= 0) return "";
+  if (minutes < 60) {
+    return locale === "ar" ? `${minutes} دقيقة` : `${minutes} min`;
+  }
+  const hours = Number((minutes / 60).toFixed(1));
+  return locale === "ar" ? `${hours} ساعة` : `${hours} hrs`;
+}
+
+/**
+ * Formats duration in minutes into detailed hours and minutes (e.g., "2 hr 15 min" / "2 ساعة و 15 دقيقة").
+ */
+export function formatDurationDetail(minutes?: number | null, locale: string = "ar"): string {
+  if (!minutes || minutes <= 0) return "";
+  const hrs = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+
+  if (hrs > 0 && mins > 0) {
+    return locale === "ar" ? `${hrs} ساعة و ${mins} دقيقة` : `${hrs} hr ${mins} min`;
+  }
+  if (hrs > 0) {
+    return locale === "ar" ? `${hrs} ساعة` : `${hrs} hr`;
+  }
+  return locale === "ar" ? `${mins} دقيقة` : `${mins} min`;
+}

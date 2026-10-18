@@ -161,7 +161,7 @@ export function StudentAvailableCourseCard({
 
         {/* Info Row: Lessons count */}
         <div className="mt-auto pt-3 border-t border-border/40 flex flex-row gap-1 justify-between text-xs text-muted-foreground">
-          <div className="flex flex-row gap-3">
+          <div className="flex flex-row items-center gap-3">
             {/* Number of Lessons */}
             <div
               className="flex items-center gap-1.5 truncate"
@@ -172,6 +172,21 @@ export function StudentAvailableCourseCard({
                 {tCourses("card.lessonsShort", { count: course.lessons_count })}
               </span>
             </div>
+
+            {/* Total Duration */}
+            {Boolean(course.duration_in_minutes && course.duration_in_minutes > 0) && (
+              <div
+                className="flex items-center gap-1.5 truncate"
+                title={locale === "ar" ? "مدة الدورة" : "Course Duration"}
+              >
+                <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
+                <span className="truncate font-medium">
+                  {course.duration_in_minutes! >= 60
+                    ? `${(course.duration_in_minutes! / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
+                    : `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة" : "min"}`}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

@@ -232,6 +232,11 @@ export function StudentCourseContentSidebar({
                 const isCurrentExamPassed = sectionExam?.is_passed ?? false;
                 const sectionExamTitle = getLocalized(sectionExam?.title, t("lesson.linkedExam"));
 
+                const sectionDurationMinutes = sectionLessons.reduce(
+                  (acc, l) => acc + (Number(l.duration_in_minutes) || 0),
+                  0,
+                );
+
                 return (
                   <AccordionItem
                     key={section.id || `section-${sIdx}`}
@@ -276,6 +281,19 @@ export function StudentCourseContentSidebar({
                             {sectionCompletedCount}/{sectionLessonsCount}{" "}
                             {t("lessonsCount", { count: sectionLessonsCount })}
                           </span>
+                          {sectionDurationMinutes > 0 && (
+                            <>
+                              <span>•</span>
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="size-3 text-muted-foreground/80" />
+                                <span>
+                                  {sectionDurationMinutes >= 60
+                                    ? `${(sectionDurationMinutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
+                                    : `${sectionDurationMinutes} ${locale === "ar" ? "دقيقة" : "min"}`}
+                                </span>
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </AccordionTrigger>

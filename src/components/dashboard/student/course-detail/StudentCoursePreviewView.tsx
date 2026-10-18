@@ -186,7 +186,7 @@ export function StudentCoursePreviewView({
                     <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-xl space-y-2">
                       <div className="font-semibold text-foreground">
                         {course.sections_count > 0 || course.lessons_count > 0 ? (
-                          <div className="flex items-center justify-center gap-4 text-sm">
+                          <div className="flex items-center justify-center gap-3 text-sm flex-wrap">
                             <span>
                               {tCourses("details.totalSections", { count: course.sections_count })}
                             </span>
@@ -194,6 +194,21 @@ export function StudentCoursePreviewView({
                             <span>
                               {tCourses("details.totalLessons", { count: course.lessons_count })}
                             </span>
+                            {Boolean(
+                              course.duration_in_minutes && course.duration_in_minutes > 0,
+                            ) && (
+                              <>
+                                <span>•</span>
+                                <span className="inline-flex items-center gap-1.5 text-primary">
+                                  <Clock className="size-3.5" />
+                                  <span>
+                                    {course.duration_in_minutes! >= 60
+                                      ? `${(course.duration_in_minutes! / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hours"}`
+                                      : `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة إجمالية" : "total minutes"}`}
+                                  </span>
+                                </span>
+                              </>
+                            )}
                           </div>
                         ) : (
                           tCourses("details.noSections")
