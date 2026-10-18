@@ -2968,8 +2968,19 @@
       "viewGeneralExams": "عرض الامتحانات العامة",
       "searchPlaceholder": "بحث باسم الامتحان أو الدورة أو المادة أو المعلم...",
       "clearFilters": "مسح الفلاتر",
+      "scopeTabs": {
+        "general": "الامتحانات العامة",
+        "course": "امتحانات الدورات"
+      },
+      "filters": {
+        "allSubjects": "كل المواد",
+        "allCourses": "كل الدورات",
+        "subject": "المادة",
+        "course": "الدورة"
+      },
       "tabs": {
         "required": "الامتحانات المطلوبة",
+        "available": "الامتحانات المتاحة",
         "completed": "الامتحانات المكتملة"
       },
       "totalRequired": "{count, plural, =0 {لا امتحانات مطلوبة} zero {لا امتحانات مطلوبة} one {امتحان واحد مطلوب} two {امتحانين مطلوبين} few {{count} امتحانات مطلوبة} many {{count} امتحاناً مطلوباً} other {{count} امتحان مطلوب}}",

@@ -11,8 +11,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useStudentExams } from "@/hooks/use-student-exams";
+import { useMyCourses } from "@/hooks/use-my-courses";
+import { useStudentExams, useStudentGeneralExams } from "@/hooks/use-student-exams";
 import { Link } from "@/i18n/routing";
 import type { BackendStudentExam } from "@/types/api-contracts";
 import {
@@ -23,6 +31,7 @@ import {
   Clock,
   FileCheck2,
   FileQuestion,
+  Layers,
   RotateCcw,
   Search,
   Timer,
@@ -33,6 +42,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import * as React from "react";
 
+export type StudentExamScope = "general" | "course";
 export type StudentExamTab = "required" | "completed";
 export type StudentExamSortOption =
   | "latest"
@@ -61,16 +71,21 @@ export function StudentExamsClient() {
   const locale = useLocale();
   const isAr = locale === "ar";
   const t = useTranslations("studentDashboard.examsPage");
+  const tGeneral = useTranslations("studentDashboard.generalExamsPage");
   const tExams = useTranslations("exams");
 
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // URL state synchronization
+  // URL state synchronization: Default scope is "general"
+  const rawScope = searchParams.get("scope");
+  const activeScope: StudentExamScope = rawScope === "course" ? "course" : "general";
   const searchQuery = searchParams.get("search") || "";
   const activeTab = (searchParams.get("tab") as StudentExamTab) || "required";
   const sortBy = (searchParams.get("sort") as StudentExamSortOption) || "latest";
+  const selectedSubjectId = searchParams.get("subject_id") || "";
+  const selectedCourseId = searchParams.get("course_id") || "";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 10;
 
@@ -81,6 +96,7 @@ export function StudentExamsClient() {
         if (
           value === null ||
           value === "" ||
+          (key === "scope" && value === "general") ||
           (key === "tab" && value === "required") ||
           (key === "sort" && value === "latest") ||
           (key === "page" && value === 1)
@@ -111,14 +127,67 @@ export function StudentExamsClient() {
     return () => clearTimeout(handler);
   }, [searchTerm, searchQuery, updateUrlParams]);
 
-  // Fetch student exams from backend via React Query
-  const { data, isLoading } = useStudentExams({
-    search: searchQuery.trim() || undefined,
-    tab: activeTab,
-    sort: sortBy,
-    page: currentPage,
-    per_page: itemsPerPage,
-  });
+  // Fetch enrolled courses for the student (used for course filter and extracting enrolled subjects)
+  const { data: myCoursesData } = useMyCourses({ per_page: 100 });
+  const myCourses = React.useMemo(() => myCoursesData?.courses || [], [myCoursesData]);
+
+  // Build subject options from enrolled courses
+  const subjectOptions = React.useMemo(() => {
+    const map = new Map<number, string>();
+    myCourses.forEach((c) => {
+      if (c.subject?.id) {
+        const subName =
+          c.subject.name?.[locale] ||
+          c.subject.name?.ar ||
+          c.subject.name?.en ||
+          Object.values(c.subject.name || {})[0] ||
+          "";
+        if (subName) {
+          map.set(c.subject.id, subName);
+        }
+      }
+    });
+    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+  }, [myCourses, locale]);
+
+  // Filter courses by selected subject if one is picked
+  const availableCourses = React.useMemo(() => {
+    if (!selectedSubjectId) return myCourses;
+    const subIdNum = Number(selectedSubjectId);
+    return myCourses.filter((c) => c.subject?.id === subIdNum);
+  }, [myCourses, selectedSubjectId]);
+
+  // Common filter payload
+  const filterPayload = React.useMemo(
+    () => ({
+      search: searchQuery.trim() || undefined,
+      tab: activeTab,
+      sort: sortBy,
+      subject_id: selectedSubjectId ? Number(selectedSubjectId) : undefined,
+      course_id:
+        activeScope === "course" && selectedCourseId ? Number(selectedCourseId) : undefined,
+      page: currentPage,
+      per_page: itemsPerPage,
+    }),
+    [
+      searchQuery,
+      activeTab,
+      sortBy,
+      selectedSubjectId,
+      selectedCourseId,
+      activeScope,
+      currentPage,
+      itemsPerPage,
+    ],
+  );
+
+  // Fetch exams based on activeScope
+  const isGeneralScope = activeScope === "general";
+  const generalExamsQuery = useStudentGeneralExams(filterPayload);
+  const courseExamsQuery = useStudentExams(filterPayload);
+
+  const activeQuery = isGeneralScope ? generalExamsQuery : courseExamsQuery;
+  const { data, isLoading } = activeQuery;
 
   const exams = data?.exams || [];
   const tabCounts = data?.tab_counts || { required: 0, completed: 0 };
@@ -149,6 +218,15 @@ export function StudentExamsClient() {
   };
 
   // Handlers
+  const handleScopeChange = (scope: StudentExamScope) => {
+    // When switching scope, keep subject if applicable, but clear course_id if going to general
+    updateUrlParams({
+      scope: scope === "general" ? null : scope,
+      course_id: null,
+      page: 1,
+    });
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
   };
@@ -156,9 +234,38 @@ export function StudentExamsClient() {
   const handleTabChange = (tab: StudentExamTab) => updateUrlParams({ tab, page: 1 });
   const handleSortChange = (sort: StudentExamSortOption) => updateUrlParams({ sort, page: 1 });
   const handlePageChange = (page: number) => updateUrlParams({ page });
+
+  const handleSubjectChange = (val: string) => {
+    const subjectId = val === "all" ? null : val;
+    // Check if currently selected course belongs to the new subject
+    let nextCourseId: string | null = selectedCourseId || null;
+    if (subjectId && selectedCourseId) {
+      const courseStillValid = myCourses.some(
+        (c) =>
+          String(c.course_id ?? c.id ?? c.enrollment_id) === selectedCourseId &&
+          String(c.subject?.id) === subjectId,
+      );
+      if (!courseStillValid) {
+        nextCourseId = null;
+      }
+    }
+    updateUrlParams({ subject_id: subjectId, course_id: nextCourseId, page: 1 });
+  };
+
+  const handleCourseChange = (val: string) => {
+    const courseId = val === "all" ? null : val;
+    updateUrlParams({ course_id: courseId, page: 1 });
+  };
+
   const handleResetFilters = () => {
     setSearchTerm("");
-    updateUrlParams({ search: null, sort: null, page: 1 });
+    updateUrlParams({
+      search: null,
+      sort: null,
+      subject_id: null,
+      course_id: null,
+      page: 1,
+    });
   };
 
   const isRequiredTab = activeTab === "required";
@@ -185,7 +292,11 @@ export function StudentExamsClient() {
       ];
 
   const currentSortObj = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
-  const isFilterActive = searchQuery.trim() !== "" || sortBy !== "latest";
+  const isFilterActive =
+    searchQuery.trim() !== "" ||
+    sortBy !== "latest" ||
+    Boolean(selectedSubjectId) ||
+    Boolean(selectedCourseId);
 
   const showingText = t("pagination.showing", {
     start: totalItems > 0 ? startIndex + 1 : 0,
@@ -195,7 +306,7 @@ export function StudentExamsClient() {
 
   return (
     <div className="space-y-6 w-full">
-      {/* ── Top Header ──────────────────────────────────────────────────────── */}
+      {/* ── Top Header with 2 Primary Scope Tabs ───────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
@@ -208,27 +319,50 @@ export function StudentExamsClient() {
                 : t("totalCompleted", { count: tabCounts.completed })}
             </span>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">{t("subtitle")}</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {isGeneralScope ? tGeneral("subtitle") : t("subtitle")}
+          </p>
         </div>
 
-        <Button
-          asChild
-          variant="outline"
-          className="gap-2 font-semibold self-start sm:self-auto rounded-xl border-primary/30 text-primary hover:bg-primary/5 hover:text-primary"
-        >
-          <Link href="/student-dashboard/exams/general">
-            <FileQuestion className="h-4 w-4" />
-            <span>{t("viewGeneralExams")}</span>
-          </Link>
-        </Button>
+        {/* Primary Scope Tabs: General Exams (Default) vs Course Exams */}
+        <div className="inline-flex p-1 bg-muted/80 rounded-xl border border-border/60 shadow-xs shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => handleScopeChange("general")}
+            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+              isGeneralScope
+                ? "bg-primary text-white shadow-xs font-bold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileQuestion
+              className={`size-4 shrink-0 ${isGeneralScope ? "text-white" : "text-primary"}`}
+            />
+            <span>{t("scopeTabs.general")}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleScopeChange("course")}
+            className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+              !isGeneralScope
+                ? "bg-primary text-white shadow-xs font-bold"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <BookOpen
+              className={`size-4 shrink-0 ${!isGeneralScope ? "text-white" : "text-primary"}`}
+            />
+            <span>{t("scopeTabs.course")}</span>
+          </button>
+        </div>
       </div>
 
-      {/* ── Filter Bar & Tabs ────────────────────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
-        {/* Search Box & Tab Selector */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1">
+      {/* ── Filter Bar & Sub-Tabs ────────────────────────────────────────────── */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-card p-4 rounded-xl border border-border/60 shadow-xs">
+        {/* Search Box, Dropdown Filters & Status Tabs */}
+        <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2.5 flex-1">
           {/* Search Box */}
-          <div className="relative flex-1 min-w-55">
+          <div className="relative flex-1 min-w-50">
             <Search className="absolute inset-s-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
@@ -239,7 +373,59 @@ export function StudentExamsClient() {
             />
           </div>
 
-          {/* Two Tab Selectors: Required vs Completed */}
+          {/* Subject Filter Dropdown */}
+          <div className="w-full sm:w-44">
+            <Select value={selectedSubjectId || "all"} onValueChange={handleSubjectChange}>
+              <SelectTrigger className="h-9 text-xs sm:text-sm bg-background border-border/80">
+                <div className="flex items-center gap-1.5 truncate">
+                  <Layers className="size-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder={t("filters.allSubjects")} />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("filters.allSubjects")}</SelectItem>
+                {subjectOptions.map((subj) => (
+                  <SelectItem key={subj.id} value={String(subj.id)}>
+                    {subj.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Course Filter Dropdown (Active for Course Exams Scope) */}
+          {!isGeneralScope && (
+            <div className="w-full sm:w-48">
+              <Select value={selectedCourseId || "all"} onValueChange={handleCourseChange}>
+                <SelectTrigger className="h-9 text-xs sm:text-sm bg-background border-border/80">
+                  <div className="flex items-center gap-1.5 truncate">
+                    <BookOpen className="size-3.5 text-muted-foreground shrink-0" />
+                    <SelectValue placeholder={t("filters.allCourses")} />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("filters.allCourses")}</SelectItem>
+                  {availableCourses.map((c, idx) => {
+                    const courseId = c.course_id ?? c.id ?? c.enrollment_id;
+                    if (!courseId) return null;
+                    const cTitle =
+                      c.title?.[locale] ||
+                      c.title?.ar ||
+                      c.title?.en ||
+                      Object.values(c.title || {})[0] ||
+                      String(courseId);
+                    return (
+                      <SelectItem key={`course-filter-${courseId}-${idx}`} value={String(courseId)}>
+                        {cTitle}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Sub-Tab Selectors: Required vs Completed */}
           <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">
             <button
               type="button"
@@ -251,7 +437,7 @@ export function StudentExamsClient() {
               }`}
             >
               <FileQuestion className="size-3.5 shrink-0" />
-              <span>{t("tabs.required")}</span>
+              <span>{isGeneralScope ? t("tabs.available") : t("tabs.required")}</span>
               <span className="opacity-80">({tabCounts.required})</span>
             </button>
             <button
@@ -271,7 +457,7 @@ export function StudentExamsClient() {
         </div>
 
         {/* Sort & Reset Actions */}
-        <div className="flex items-center gap-2 self-end md:self-auto shrink-0">
+        <div className="flex items-center gap-2 self-end lg:self-auto shrink-0">
           {isFilterActive && (
             <Button
               variant="ghost"
@@ -325,7 +511,7 @@ export function StudentExamsClient() {
             </div>
           ) : isRequiredTab ? (
             /* ─────────────────────────────────────────────────────────────────
-               REQUIRED EXAMS TABLE
+               REQUIRED / AVAILABLE EXAMS TABLE
                ───────────────────────────────────────────────────────────────── */
             <table className="w-full text-sm">
               <thead>
@@ -336,9 +522,11 @@ export function StudentExamsClient() {
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {t("table.columns.subjectGrade")}
                   </th>
-                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                    {t("table.columns.sourceCourse")}
-                  </th>
+                  {!isGeneralScope && (
+                    <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                      {t("table.columns.sourceCourse")}
+                    </th>
+                  )}
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {t("table.columns.category")}
                   </th>
@@ -359,16 +547,22 @@ export function StudentExamsClient() {
               <tbody>
                 {exams.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={isGeneralScope ? 7 : 8}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                         <FileQuestion className="size-12 text-muted-foreground/40 mb-3" />
                         <h3 className="text-base font-semibold text-foreground">
-                          {searchQuery.trim() ? t("empty.filteredTitle") : t("empty.requiredTitle")}
+                          {searchQuery.trim() || selectedSubjectId || selectedCourseId
+                            ? t("empty.filteredTitle")
+                            : isGeneralScope
+                              ? tGeneral("empty.title")
+                              : t("empty.requiredTitle")}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                          {searchQuery.trim()
+                          {searchQuery.trim() || selectedSubjectId || selectedCourseId
                             ? t("empty.filteredDescription")
-                            : t("empty.requiredDescription")}
+                            : isGeneralScope
+                              ? tGeneral("empty.description")
+                              : t("empty.requiredDescription")}
                         </p>
                       </div>
                     </td>
@@ -409,18 +603,22 @@ export function StudentExamsClient() {
                           </div>
                         </td>
 
-                        {/* Source Course */}
-                        <td className="px-4 py-3.5 min-w-44">
-                          {exam.scope === "course" && exam.course && (
-                            <Link
-                              href={`/student-dashboard/courses/${exam.course.id}`}
-                              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1 group"
-                            >
-                              <BookOpen className="size-3.5 shrink-0" />
-                              <span className="truncate">{courseTitleStr || exam.course.id}</span>
-                            </Link>
-                          )}
-                        </td>
+                        {/* Source Course (if course scope) */}
+                        {!isGeneralScope && (
+                          <td className="px-4 py-3.5 min-w-44">
+                            {exam.scope === "course" && exam.course ? (
+                              <Link
+                                href={`/student-dashboard/courses/${exam.course.id}`}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1 group"
+                              >
+                                <BookOpen className="size-3.5 shrink-0" />
+                                <span className="truncate">{courseTitleStr || exam.course.id}</span>
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        )}
 
                         {/* Category */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
@@ -473,7 +671,10 @@ export function StudentExamsClient() {
                               <span>
                                 {exam.action === "resume"
                                   ? tExams("actions.resume") || t("table.actions.takeExam")
-                                  : t("table.actions.takeExam")}
+                                  : exam.action === "retry"
+                                    ? tExams("table.actions.retakeExam") ||
+                                      t("table.actions.takeExam")
+                                    : t("table.actions.takeExam")}
                               </span>
                               <ArrowRight className="size-3.5 rtl:rotate-180" />
                             </Link>
@@ -498,9 +699,11 @@ export function StudentExamsClient() {
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {t("table.columns.subjectGrade")}
                   </th>
-                  <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
-                    {t("table.columns.sourceCourse")}
-                  </th>
+                  {!isGeneralScope && (
+                    <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
+                      {t("table.columns.sourceCourse")}
+                    </th>
+                  )}
                   <th className="px-4 py-3.5 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap">
                     {t("table.columns.allowedAttempts")}
                   </th>
@@ -521,18 +724,22 @@ export function StudentExamsClient() {
               <tbody>
                 {exams.length === 0 ? (
                   <tr>
-                    <td colSpan={8}>
+                    <td colSpan={isGeneralScope ? 7 : 8}>
                       <div className="flex flex-col items-center justify-center py-16 text-center px-4">
                         <CheckCircle2 className="size-12 text-muted-foreground/40 mb-3" />
                         <h3 className="text-base font-semibold text-foreground">
-                          {searchQuery.trim()
+                          {searchQuery.trim() || selectedSubjectId || selectedCourseId
                             ? t("empty.filteredTitle")
-                            : t("empty.completedTitle")}
+                            : isGeneralScope
+                              ? tGeneral("empty.completedTitle")
+                              : t("empty.completedTitle")}
                         </h3>
                         <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                          {searchQuery.trim()
+                          {searchQuery.trim() || selectedSubjectId || selectedCourseId
                             ? t("empty.filteredDescription")
-                            : t("empty.completedDescription")}
+                            : isGeneralScope
+                              ? tGeneral("empty.completedDescription")
+                              : t("empty.completedDescription")}
                         </p>
                       </div>
                     </td>
@@ -581,18 +788,22 @@ export function StudentExamsClient() {
                           </div>
                         </td>
 
-                        {/* Source Course */}
-                        <td className="px-4 py-3.5 min-w-44">
-                          {exam.scope === "course" && exam.course && (
-                            <Link
-                              href={`/student-dashboard/courses/${exam.course.id}`}
-                              className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
-                            >
-                              <BookOpen className="size-3.5 shrink-0" />
-                              <span className="truncate">{courseTitleStr || exam.course.id}</span>
-                            </Link>
-                          )}
-                        </td>
+                        {/* Source Course (if course scope) */}
+                        {!isGeneralScope && (
+                          <td className="px-4 py-3.5 min-w-44">
+                            {exam.scope === "course" && exam.course ? (
+                              <Link
+                                href={`/student-dashboard/courses/${exam.course.id}`}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1 group"
+                              >
+                                <BookOpen className="size-3.5 shrink-0" />
+                                <span className="truncate">{courseTitleStr || exam.course.id}</span>
+                              </Link>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </td>
+                        )}
 
                         {/* Attempts Used / Max */}
                         <td className="px-4 py-3.5 whitespace-nowrap">
@@ -612,7 +823,7 @@ export function StudentExamsClient() {
                           <div className="flex flex-col gap-0.5">
                             {isPendingReview ? (
                               <span className="text-xs font-semibold text-amber-600">
-                                {tExams("status.pendingReview") || "قيد التصحيح"}
+                                {t("table.statusPendingReview")}
                               </span>
                             ) : (
                               <>
@@ -666,9 +877,22 @@ export function StudentExamsClient() {
                         {/* Actions */}
                         <td className="px-4 py-3.5 text-end whitespace-nowrap">
                           <div className="flex items-center justify-end gap-2">
+                            {exam.action === "retry" && (
+                              <Button
+                                asChild
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg text-xs font-semibold gap-1.5 h-8"
+                              >
+                                <Link href={`/student-dashboard/exams/${exam.id}`}>
+                                  <RotateCcw className="size-3.5" />
+                                  <span>{t("table.actions.retakeExam")}</span>
+                                </Link>
+                              </Button>
+                            )}
                             <Button
                               asChild
-                              variant="outline"
+                              variant={exam.action === "retry" ? "ghost" : "outline"}
                               size="sm"
                               className="rounded-lg text-xs font-semibold gap-1.5 h-8"
                             >

@@ -1809,6 +1809,8 @@ export interface BackendStudentExam {
 export interface StudentExamsFilterParams {
   search?: string;
   tab?: "required" | "completed";
+  subject_id?: number | string;
+  course_id?: number | string;
   sort?:
     | "latest"
     | "oldest"

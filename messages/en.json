@@ -2967,8 +2967,19 @@
       "viewGeneralExams": "View General Exams",
       "searchPlaceholder": "Search by exam title, course, subject, or teacher...",
       "clearFilters": "Clear Filters",
+      "scopeTabs": {
+        "general": "General Exams",
+        "course": "Course Exams"
+      },
+      "filters": {
+        "allSubjects": "All Subjects",
+        "allCourses": "All Courses",
+        "subject": "Subject",
+        "course": "Course"
+      },
       "tabs": {
         "required": "Required Exams",
+        "available": "Available Exams",
         "completed": "Completed Exams"
       },
       "totalRequired": "{count, plural, =0 {No required exams} one {1 required exam} other {{count} required exams}}",
