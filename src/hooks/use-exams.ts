@@ -285,3 +285,60 @@ export function useCreateExamCategory() {
     },
   });
 }
+
+/**
+ * Hook to attach an exam template to a course lesson
+ */
+export function useAttachExamToLesson(courseId: number | string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      lessonId,
+      templateId,
+      requiresPass,
+    }: {
+      lessonId: number | string;
+      templateId: number;
+      requiresPass?: boolean;
+    }) =>
+      examsService.attachExamToLesson(courseId, lessonId, {
+        template_id: templateId,
+        requires_exam_pass_to_unlock_next_lesson: requiresPass,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.courses.detail(courseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.courses.sections(courseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.exams.all(),
+      });
+    },
+  });
+}
+
+/**
+ * Hook to detach an exam instance from a course lesson
+ */
+export function useDetachExamFromLesson(courseId: number | string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (lessonId: number | string) =>
+      examsService.detachExamFromLesson(courseId, lessonId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.courses.detail(courseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.courses.sections(courseId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.provider.exams.all(),
+      });
+    },
+  });
+}

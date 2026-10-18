@@ -280,4 +280,30 @@ export const examsService = {
       method: "DELETE",
     });
   },
+
+  /**
+   * Course-Level Exam Integration: Attach master template to a course lesson
+   */
+  async attachExamToLesson(
+    courseId: number | string,
+    lessonId: number | string,
+    data: { template_id: number; requires_exam_pass_to_unlock_next_lesson?: boolean },
+  ): Promise<BackendExam> {
+    const response = await api<{ exam: BackendExam }>({
+      url: `/api/dashboard/provider/courses/${courseId}/lessons/${lessonId}/attach-exam`,
+      method: "POST",
+      data,
+    });
+    return response.exam;
+  },
+
+  /**
+   * Course-Level Exam Integration: Detach exam from a course lesson
+   */
+  async detachExamFromLesson(courseId: number | string, lessonId: number | string): Promise<void> {
+    await api<void>({
+      url: `/api/dashboard/provider/courses/${courseId}/lessons/${lessonId}/detach-exam`,
+      method: "DELETE",
+    });
+  },
 };

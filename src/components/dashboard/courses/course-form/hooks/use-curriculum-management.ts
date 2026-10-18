@@ -57,7 +57,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   const isBackendCourseId = Boolean(courseId && !courseId.startsWith("course-"));
   const { data: parentCourse } = useProviderCourse(isBackendCourseId ? courseId : undefined);
   const { data: backendSections } = useCourseSections(isBackendCourseId ? courseId : undefined);
-  const { data: allProviderExamsData } = useProviderExams({ per_page: 100 });
+  const { data: allProviderExamsData } = useProviderExams({ per_page: 100, is_template: true });
   const { data: lessonOptionsData } = useProviderLessonOptions(
     parentCourse?.educational_stage_id || undefined,
   );
@@ -609,30 +609,33 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
 
         const selectedLessonExam = availableExams.find((e) => e.id === savedLesson.linkedExamId);
 
-        // Clone the selected exam into this course unless it's already the lesson's current exam
+        // Attach template to lesson if specified and this is an existing lesson
         const currentLessonExamId = sections
           .flatMap((s) => s.lessons || [])
           .find((l) => l.id === savedLesson.id)?.linkedExamId;
         const isSameAsCurrentLessonExam =
           Boolean(currentLessonExamId) && String(currentLessonExamId) === String(lessonExamId);
-        if (lessonExamId && selectedLessonExam && !isSameAsCurrentLessonExam) {
+
+        if (
+          lessonExamId &&
+          selectedLessonExam &&
+          !isSameAsCurrentLessonExam &&
+          isExistingBackendLesson
+        ) {
           try {
-            const clonedExam = await examsService.createExam({
-              source_exam_id: lessonExamId,
-              course_id: Number(courseId),
-              scope: "course",
+            const attachedExam = await examsService.attachExamToLesson(courseId, savedLesson.id, {
+              template_id: lessonExamId,
+              requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
             });
-            lessonExamId = clonedExam.id;
+            lessonExamId = attachedExam.id;
             finalLesson = {
               ...finalLesson,
-              linkedExamId: String(clonedExam.id),
+              linkedExamId: String(attachedExam.id),
             };
-          } catch (cloneErr) {
-            console.error("Failed to clone exam for lesson:", cloneErr);
+          } catch (attachErr) {
+            console.error("Failed to attach exam to lesson:", attachErr);
             toast.error(
-              locale === "ar"
-                ? "فشل في ربط الامتحان بالدرس (تعذر نسخ الامتحان للدورة)"
-                : "Failed to clone exam for lesson",
+              locale === "ar" ? "فشل في ربط الامتحان بالدرس" : "Failed to attach exam to lesson",
             );
             return;
           }
@@ -741,6 +744,22 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           };
 
           const res = await createLessonMutation.mutateAsync(clonePayload);
+
+          if (lessonExamId && selectedLessonExam) {
+            try {
+              const attachedExam = await examsService.attachExamToLesson(courseId, res.id, {
+                template_id: lessonExamId,
+                requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+              });
+              finalLesson = {
+                ...finalLesson,
+                linkedExamId: String(attachedExam.id),
+              };
+            } catch (attachErr) {
+              console.error("Failed to attach exam to created lesson:", attachErr);
+            }
+          }
+
           finalLesson = {
             ...savedLesson,
             id: String(res.id),

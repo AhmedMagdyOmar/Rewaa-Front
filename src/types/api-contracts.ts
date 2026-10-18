@@ -525,6 +525,9 @@ export interface BackendExam {
   id: number;
   provider_id: number;
   created_by_id: number;
+  template_id?: number | null;
+  is_template?: boolean;
+  is_public?: boolean;
   exam_template_id?: number | null;
   title: Record<string, string>;
   description?: Record<string, string> | null;
@@ -579,6 +582,10 @@ export interface ExamStatusCounts {
 export interface ExamListResponse {
   exams: BackendExam[];
   status_counts: ExamStatusCounts;
+  tab_counts?: {
+    public: number;
+    templates: number;
+  };
   pagination: ApiPaginationMeta;
 }
 
@@ -589,6 +596,8 @@ export interface ExamFilterParams {
   classification?: string;
   course_id?: number | string;
   course_section_id?: number | string;
+  is_template?: boolean;
+  is_public?: boolean;
   sort?: "latest" | "oldest" | string;
   page?: number;
   per_page?: number;
@@ -702,6 +711,9 @@ export interface StoreExamData {
   show_correct_answers_after_submission?: boolean;
   shuffle_questions?: boolean;
   shuffle_answer_options?: boolean;
+  is_template?: boolean;
+  is_public?: boolean;
+  template_id?: number | null;
   is_active?: boolean;
 }
 

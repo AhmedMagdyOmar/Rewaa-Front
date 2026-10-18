@@ -53,15 +53,9 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
   const [randomizeQuestionsOrder, setRandomizeQuestionsOrder] = useState(true);
   const [randomizeMCQChoices, setRandomizeMCQChoices] = useState(false);
 
-  // Classification & Publish Status
-  const [isIndependent, setIsIndependent] = useState<boolean>(true);
-  const [attachmentType, setAttachmentType] = useState<"bank" | "course" | "standalone_lesson">(
-    "bank",
-  );
-  const [courseId, setCourseId] = useState<string>("");
-  const [courseSectionId, setCourseSectionId] = useState<string>("");
-  const [lessonId, setLessonId] = useState<string>("");
-  const [standaloneLessonId, setStandaloneLessonId] = useState<string>("");
+  // Template & Public Status
+  const [isPublic, setIsPublic] = useState<boolean>(false);
+  const [isTemplate, setIsTemplate] = useState<boolean>(true);
   const [coursesCount, setCoursesCount] = useState<number>(0);
   const [performedCount, setPerformedCount] = useState<number>(0);
 
@@ -85,22 +79,7 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setEducationalStageId(newGrade);
     if (newGrade !== grade) {
       setSubject("");
-      setCourseId("");
-      setCourseSectionId("");
-      setLessonId("");
-      setStandaloneLessonId("");
     }
-  };
-
-  const handleCourseChange = (newCourseId: string) => {
-    setCourseId(newCourseId);
-    setCourseSectionId("");
-    setLessonId("");
-  };
-
-  const handleCourseSectionChange = (newSectionId: string) => {
-    setCourseSectionId(newSectionId);
-    setLessonId("");
   };
 
   // Sync initial backend exam data when editing or loaded
@@ -136,30 +115,12 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setRandomizeQuestionsOrder(initialBackendExam.shuffle_questions ?? true);
       setRandomizeMCQChoices(initialBackendExam.shuffle_answer_options ?? false);
 
-      const isStand =
-        initialBackendExam.scope === "general" && Boolean(initialBackendExam.is_standalone);
-      setIsIndependent(isStand);
-      if (initialBackendExam.course_id) {
-        setAttachmentType("course");
-        setCourseId(String(initialBackendExam.course_id));
-        setCourseSectionId(
-          initialBackendExam.course_section_id ? String(initialBackendExam.course_section_id) : "",
-        );
-        setLessonId(initialBackendExam.lesson_id ? String(initialBackendExam.lesson_id) : "");
-        setStandaloneLessonId("");
-      } else if (initialBackendExam.lesson_id) {
-        setAttachmentType("standalone_lesson");
-        setStandaloneLessonId(String(initialBackendExam.lesson_id));
-        setCourseId("");
-        setCourseSectionId("");
-        setLessonId("");
-      } else {
-        setAttachmentType("bank");
-        setCourseId("");
-        setCourseSectionId("");
-        setLessonId("");
-        setStandaloneLessonId("");
-      }
+      setIsPublic(Boolean(initialBackendExam.is_public));
+      setIsTemplate(
+        initialBackendExam.is_template !== undefined
+          ? Boolean(initialBackendExam.is_template)
+          : true,
+      );
 
       setCoursesCount(initialBackendExam.course_id ? 1 : 0);
       setPerformedCount(initialBackendExam.students_count ?? 0);
@@ -179,7 +140,8 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       setShowModelAnswers(initialData.showModelAnswers);
       setRandomizeQuestionsOrder(initialData.randomizeQuestionsOrder);
       setRandomizeMCQChoices(initialData.randomizeMCQChoices);
-      setIsIndependent(initialData.examType === "independent");
+      setIsPublic(initialData.examType === "independent");
+      setIsTemplate(true);
       setCoursesCount(initialData.coursesCount ?? 0);
       setPerformedCount(initialData.numberOfStudents ?? 0);
       setIsLoaded(true);
@@ -207,45 +169,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       full_name: i.full_name,
     }));
   }, [optionsData?.instructors]);
-
-  const mappedCourses = useMemo(() => {
-    return (optionsData?.courses || []).map((c) => ({
-      id: String(c.id),
-      title: locale === "ar" ? c.title?.ar || c.title?.en || "" : c.title?.en || c.title?.ar || "",
-      sections: c.sections || [],
-    }));
-  }, [optionsData?.courses, locale]);
-
-  const mappedSections = useMemo(() => {
-    if (!courseId) return [];
-    const selectedCourse = mappedCourses.find((c) => c.id === courseId);
-    if (!selectedCourse) return [];
-    return selectedCourse.sections.map((s) => ({
-      id: String(s.id),
-      title: locale === "ar" ? s.title?.ar || s.title?.en || "" : s.title?.en || s.title?.ar || "",
-      lessons: s.lessons || [],
-    }));
-  }, [courseId, mappedCourses, locale]);
-
-  const mappedLessons = useMemo(() => {
-    if (!courseSectionId) return [];
-    const selectedSection = mappedSections.find((s) => s.id === courseSectionId);
-    if (!selectedSection) return [];
-    return selectedSection.lessons.map((l) => ({
-      id: String(l.id),
-      title: locale === "ar" ? l.title?.ar || l.title?.en || "" : l.title?.en || l.title?.ar || "",
-    }));
-  }, [courseSectionId, mappedSections, locale]);
-
-  const mappedStandaloneLessons = useMemo(() => {
-    return (optionsData?.standalone_lessons || []).map((l) => ({
-      id: String(l.id),
-      title: locale === "ar" ? l.title?.ar || l.title?.en || "" : l.title?.en || l.title?.ar || "",
-      educational_stage_id: l.educational_stage_id,
-      subject_id: l.subject_id,
-      instructor_id: l.instructor_id,
-    }));
-  }, [optionsData?.standalone_lessons, locale]);
 
   // Exam categories from backend options
   const examCategoryOptions = useMemo(() => {
@@ -291,33 +214,6 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
     const instId = requiresInstructor ? Number(teacherName) || undefined : undefined;
 
-    let payloadCourseId: number | null = null;
-    let payloadCourseSectionId: number | null = null;
-    let payloadLessonId: number | null = null;
-    let payloadScope: "general" | "bank" | "course" | "section" | "lesson" = "general";
-
-    if (isIndependent) {
-      payloadScope = "general";
-    } else {
-      if (attachmentType === "course") {
-        payloadCourseId = Number(courseId) || null;
-        payloadCourseSectionId = Number(courseSectionId) || null;
-        payloadLessonId = Number(lessonId) || null;
-        payloadScope = payloadLessonId ? "lesson" : payloadCourseSectionId ? "section" : "course";
-      } else if (attachmentType === "standalone_lesson") {
-        payloadCourseId = null;
-        payloadCourseSectionId = null;
-        payloadLessonId = Number(standaloneLessonId) || null;
-        payloadScope = "lesson";
-      } else {
-        // "bank"
-        payloadCourseId = null;
-        payloadCourseSectionId = null;
-        payloadLessonId = null;
-        payloadScope = "bank";
-      }
-    }
-
     return {
       title: { ar: title.trim(), en: title.trim() },
       description: description.trim()
@@ -326,10 +222,12 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       educational_stage_id: Number(grade) || 1,
       subject_id: Number(subject) || 1,
       ...(requiresInstructor && instId ? { instructor_id: instId } : {}),
-      course_id: payloadCourseId,
-      course_section_id: payloadCourseSectionId,
-      lesson_id: payloadLessonId,
-      scope: payloadScope,
+      course_id: null,
+      course_section_id: null,
+      lesson_id: null,
+      scope: isPublic ? "general" : "bank",
+      is_template: isTemplate,
+      is_public: isPublic,
       classification: category,
       duration_minutes: Number(durationMinutes) || 30,
       passing_percentage: Number(passingPercentage) || 60,
@@ -449,29 +347,15 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
     setRandomizeQuestionsOrder,
     randomizeMCQChoices,
     setRandomizeMCQChoices,
-    isIndependent,
-    setIsIndependent,
-    attachmentType,
-    setAttachmentType,
-    courseId,
-    setCourseId,
-    handleCourseChange,
-    courseSectionId,
-    setCourseSectionId,
-    handleCourseSectionChange,
-    lessonId,
-    setLessonId,
-    standaloneLessonId,
-    setStandaloneLessonId,
+    isPublic,
+    setIsPublic,
+    isTemplate,
+    setIsTemplate,
     coursesCount,
     performedCount,
     mappedStages,
     mappedSubjects,
     mappedInstructors,
-    mappedCourses,
-    mappedSections,
-    mappedLessons,
-    mappedStandaloneLessons,
     isLoadingOptions,
     optionsData,
     examCategoryOptions,

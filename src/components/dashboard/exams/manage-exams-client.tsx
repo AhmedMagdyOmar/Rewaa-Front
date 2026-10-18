@@ -39,7 +39,7 @@ import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filte
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteExamDialog } from "./delete-exam-dialog";
 
-export type ExamFilterTab = "all" | "published" | "draft" | "scheduled";
+export type ExamFilterTab = "public" | "templates";
 export type ExamSortOption = "latest" | "oldest";
 
 export function ManageExamsClient() {
@@ -52,7 +52,7 @@ export function ManageExamsClient() {
 
   // URL state synchronization
   const searchQuery = searchParams.get("search") || "";
-  const activeTab = (searchParams.get("tab") as ExamFilterTab) || "all";
+  const activeTab = (searchParams.get("tab") as ExamFilterTab) || "public";
   const sortBy = (searchParams.get("sort") as ExamSortOption) || "latest";
   const courseFilter = searchParams.get("course_id") || "all";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
@@ -65,7 +65,7 @@ export function ManageExamsClient() {
         if (
           value === null ||
           value === "" ||
-          (key === "tab" && value === "all") ||
+          (key === "tab" && value === "public") ||
           (key === "sort" && value === "latest") ||
           (key === "course_id" && value === "all") ||
           (key === "page" && value === 1)
@@ -84,15 +84,23 @@ export function ManageExamsClient() {
   // Fetch exam options (for courses list)
   const { data: examOptions } = useProviderExamOptions();
 
+  // Query params according to the active tab:
+  // Public tab: is_public = true
+  // Course Templates tab: is_template = true
+  const queryFilters = React.useMemo(() => {
+    return {
+      search: searchQuery || undefined,
+      is_public: activeTab === "public" ? true : undefined,
+      is_template: activeTab === "templates" ? true : undefined,
+      course_id: activeTab === "public" && courseFilter !== "all" ? courseFilter : undefined,
+      sort: sortBy,
+      page: currentPage,
+      per_page: itemsPerPage,
+    };
+  }, [searchQuery, activeTab, courseFilter, sortBy, currentPage, itemsPerPage]);
+
   // Live Query from backend
-  const { data: examsResponse, isLoading } = useProviderExams({
-    search: searchQuery || undefined,
-    status: activeTab !== "all" ? activeTab : undefined,
-    course_id: courseFilter !== "all" ? courseFilter : undefined,
-    sort: sortBy,
-    page: currentPage,
-    per_page: itemsPerPage,
-  });
+  const { data: examsResponse, isLoading } = useProviderExams(queryFilters);
 
   const deleteExamMutation = useDeleteExam();
   const [examToDelete, setExamToDelete] = React.useState<BackendExam | null>(null);
@@ -148,7 +156,21 @@ export function ManageExamsClient() {
   };
 
   // ─── Tabs & sort options ────────────────────────────────────────────────────
-  const tabs: TabItem<ExamFilterTab>[] = [];
+  const tabCounts = examsResponse?.tab_counts;
+  const tabs: TabItem<ExamFilterTab>[] = [
+    {
+      value: "public",
+      label: t("tabs.publicExams") || (locale === "ar" ? "الامتحانات العامة" : "Public Exams"),
+      count: tabCounts?.public ?? (activeTab === "public" ? totalItems : 0),
+    },
+    {
+      value: "templates",
+      label:
+        t("tabs.courseTemplates") ||
+        (locale === "ar" ? "امتحانات الدورات" : "Course Exams / Templates"),
+      count: tabCounts?.templates ?? (activeTab === "templates" ? totalItems : 0),
+    },
+  ];
 
   const sortOptions: SortOptionItem<ExamSortOption>[] = [
     { value: "latest", label: t("sort.newest") },
@@ -202,7 +224,7 @@ export function ManageExamsClient() {
         tabs={tabs}
         sortBy={sortBy}
         sortOptions={sortOptions}
-        defaultTab="all"
+        defaultTab="public"
         defaultSort="latest"
         clearFiltersLabel={t("clearFilters")}
         isFilterActiveCustom={courseFilter !== "all"}
@@ -240,20 +262,30 @@ export function ManageExamsClient() {
             {/* Table header */}
             <thead>
               <tr className="border-b border-border/60 bg-muted/40">
-                {[
-                  t("table.columns.title"),
-                  t("table.columns.subjectGrade"),
-                  t("table.columns.category"),
-                  t.has("table.columns.courseLesson")
-                    ? t("table.columns.courseLesson")
-                    : locale === "ar"
-                      ? "الدورة / الدرس"
-                      : "Course / Lesson",
-                  t("table.columns.questions"),
-                  t("table.columns.students"),
-                  locale === "ar" ? "عدد المحاولات" : "Attempts",
-                  t("table.columns.actions"),
-                ].map((col) => (
+                {(activeTab === "public"
+                  ? [
+                      t("table.columns.title"),
+                      t("table.columns.subjectGrade"),
+                      t("table.columns.category"),
+                      t.has("table.columns.courseLesson")
+                        ? t("table.columns.courseLesson")
+                        : locale === "ar"
+                          ? "الدورة / الدرس"
+                          : "Course / Lesson",
+                      t("table.columns.questions"),
+                      t("table.columns.students"),
+                      locale === "ar" ? "عدد المحاولات" : "Attempts",
+                      t("table.columns.actions"),
+                    ]
+                  : [
+                      t("table.columns.title"),
+                      t("table.columns.subjectGrade"),
+                      t("table.columns.category"),
+                      t("table.columns.questions"),
+                      locale === "ar" ? "مدة الامتحان" : "Duration",
+                      t("table.columns.actions"),
+                    ]
+                ).map((col) => (
                   <th
                     key={col}
                     className="px-4 py-3 text-start text-xs font-semibold text-muted-foreground whitespace-nowrap"
@@ -269,7 +301,7 @@ export function ManageExamsClient() {
                 Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
               ) : exams.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={activeTab === "public" ? 8 : 6}>
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <FileQuestion className="h-12 w-12 text-muted-foreground/40 mb-3" />
                       <h3 className="text-base font-semibold text-foreground">
@@ -303,20 +335,7 @@ export function ManageExamsClient() {
                           <p className="text-sm font-bold text-foreground hover:text-primary transition-colors leading-relaxed">
                             {examTitle}
                           </p>
-                          {exam.course && exam.lesson ? (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">
-                              {exam.course.title?.[locale] || exam.course.title?.ar} /{" "}
-                              {exam.lesson.title?.[locale] || exam.lesson.title?.ar}
-                            </p>
-                          ) : exam.lesson ? (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">
-                              {exam.lesson.title?.[locale] || exam.lesson.title?.ar}
-                            </p>
-                          ) : exam.course ? (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1">
-                              {exam.course.title?.[locale] || exam.course.title?.ar}
-                            </p>
-                          ) : exam.instructor ? (
+                          {exam.instructor ? (
                             <p className="text-[11px] text-muted-foreground">
                               {exam.instructor.full_name}
                             </p>
@@ -341,91 +360,78 @@ export function ManageExamsClient() {
                         </span>
                       </td>
 
-                      {/* 4. Course / Lesson */}
-                      <td className="px-4 py-3 min-w-44">
-                        {exam.course && exam.lesson ? (
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/90 flex-wrap">
+                      {/* 4. Course / Lesson (Only in Public Tab) */}
+                      {activeTab === "public" && (
+                        <td className="px-4 py-3 min-w-44">
+                          {exam.course && exam.lesson ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5 text-xs font-medium text-foreground/90 flex-wrap">
+                                <Link
+                                  href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
+                                  className="font-semibold text-primary hover:underline underline-offset-2 flex items-center gap-1 shrink-0"
+                                >
+                                  <ExternalLink className="h-3 w-3 shrink-0" />
+                                  <span>{exam.course.title[locale] || exam.course.title.ar}</span>
+                                </Link>
+                                <span className="text-muted-foreground/60 select-none">/</span>
+                                <Link
+                                  href={`/${locale}/dashboard/lessons/${exam.lesson_id}/edit`}
+                                  className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 line-clamp-1"
+                                >
+                                  {exam.lesson.title[locale] || exam.lesson.title.ar}
+                                </Link>
+                              </div>
+                            </div>
+                          ) : exam.course ? (
+                            <div className="flex flex-col gap-1">
                               <Link
                                 href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
-                                className="font-semibold text-primary hover:underline underline-offset-2 flex items-center gap-1 shrink-0"
+                                className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
                               >
-                                <ExternalLink className="h-3 w-3 shrink-0" />
-                                <span>{exam.course.title[locale] || exam.course.title.ar}</span>
-                              </Link>
-                              <span className="text-muted-foreground/60 select-none">/</span>
-                              <Link
-                                href={`/${locale}/dashboard/lessons/${exam.lesson_id}/edit`}
-                                className="font-medium text-foreground/80 hover:text-primary hover:underline underline-offset-2 line-clamp-1"
-                              >
-                                {exam.lesson.title[locale] || exam.lesson.title.ar}
+                                <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
+                                {exam.course.title[locale] || exam.course.title.ar}
                               </Link>
                             </div>
-                          </div>
-                        ) : exam.course ? (
-                          <div className="flex flex-col gap-1">
-                            <Link
-                              href={`/${locale}/dashboard/courses/${exam.course_id}/edit`}
-                              className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
-                            >
-                              <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
-                              {exam.course.title[locale] || exam.course.title.ar}
-                            </Link>
-                          </div>
-                        ) : exam.lesson ? (
-                          <div className="flex flex-col gap-1">
-                            <Link
-                              href={`/${locale}/dashboard/lessons/${exam.lesson_id}/edit`}
-                              className="flex items-start gap-1 text-xs font-semibold text-primary hover:underline underline-offset-2 line-clamp-1"
-                            >
-                              <ExternalLink className="h-3 w-3 shrink-0 mt-0.5" />
-                              {exam.lesson.title[locale] || exam.lesson.title.ar}
-                            </Link>
-                          </div>
-                        ) : exam.scope === "bank" ||
-                          (!exam.is_standalone && !exam.course_id && !exam.lesson_id) ? (
-                          <div className="flex flex-row gap-1 items-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                              {t("table.examBank")}
-                            </span>
-                          </div>
-                        ) : exam.is_standalone && exam.scope === "general" ? (
-                          <div className="flex flex-row gap-1 items-center">
-                            <span className="text-xs font-medium text-primary-dark/80">
-                              {t("table.independent")}
-                            </span>
-                          </div>
-                        ) : (
-                          <div className="flex flex-row gap-1 items-center">
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-muted text-muted-foreground">
-                              {t("table.examBank")}
-                            </span>
-                          </div>
-                        )}
-                      </td>
+                          ) : (
+                            <div className="flex flex-row gap-1 items-center">
+                              <span className="text-xs font-medium text-primary-dark/80">
+                                {t("table.independent")}
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                      )}
 
-                      {/* 5. Questions */}
+                      {/* Questions Count */}
                       <td className="px-4 py-3 whitespace-nowrap">
                         <span className="text-xs font-medium text-foreground">
                           {t("table.questionsCount", { count: exam.questions_count || 0 })}
                         </span>
                       </td>
 
-                      {/* 6. Students */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs font-medium text-foreground">
-                          {t("table.studentsCount", { count: exam.students_count || 0 })}
-                        </span>
-                      </td>
+                      {/* Public-specific: Students & Attempts */}
+                      {activeTab === "public" ? (
+                        <>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-xs font-medium text-foreground">
+                              {t("table.studentsCount", { count: exam.students_count || 0 })}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-xs font-medium text-foreground">
+                              {exam.attempts_count ?? 0} {locale === "ar" ? "محاولة" : "attempts"}
+                            </span>
+                          </td>
+                        </>
+                      ) : (
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <span className="text-xs font-medium text-foreground">
+                            {exam.duration_minutes} {locale === "ar" ? "دقيقة" : "min"}
+                          </span>
+                        </td>
+                      )}
 
-                      {/* 7. Attempts Count */}
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-xs font-medium text-foreground">
-                          {exam.attempts_count ?? 0} {locale === "ar" ? "محاولة" : "attempts"}
-                        </span>
-                      </td>
-
-                      {/* 8. Actions */}
+                      {/* Actions */}
                       <td className="px-4 py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
@@ -439,24 +445,28 @@ export function ManageExamsClient() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/${locale}/dashboard/exams/${exam.id}`}
-                                className="flex items-center gap-2 cursor-pointer"
-                              >
-                                <BarChart3 className="h-4 w-4" />
-                                <span>{t("actions.viewStats")}</span>
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
-                              <Link
-                                href={`/${locale}/dashboard/exams/${exam.id}/complaints`}
-                                className="flex items-center gap-2 cursor-pointer"
-                              >
-                                <CircleAlert className="h-4 w-4" />
-                                <span>{t("actions.viewComplaints")}</span>
-                              </Link>
-                            </DropdownMenuItem>
+                            {activeTab === "public" && (
+                              <>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/${locale}/dashboard/exams/${exam.id}`}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <BarChart3 className="h-4 w-4" />
+                                    <span>{t("actions.viewStats")}</span>
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                  <Link
+                                    href={`/${locale}/dashboard/exams/${exam.id}/complaints`}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <CircleAlert className="h-4 w-4" />
+                                    <span>{t("actions.viewComplaints")}</span>
+                                  </Link>
+                                </DropdownMenuItem>
+                              </>
+                            )}
                             <DropdownMenuItem asChild>
                               <Link
                                 href={`/${locale}/dashboard/exams/${exam.id}/edit`}

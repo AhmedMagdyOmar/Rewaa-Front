@@ -1,16 +1,8 @@
 "use client";
 
-import {
-  CourseSelect,
-  GradeSelect,
-  LessonSelect,
-  SectionSelect,
-  SubjectSelect,
-  TeacherSelect,
-} from "@/components/ui/academic-selects";
+import { GradeSelect, SubjectSelect, TeacherSelect } from "@/components/ui/academic-selects";
 import { Button } from "@/components/ui/button";
 import { FormMarkdownEditor } from "@/components/ui/form-markdown-editor";
-import { FormRadioGroup } from "@/components/ui/form-radio-group";
 import { FormSectionCard } from "@/components/ui/form-section-card";
 import { FormToggleSetting } from "@/components/ui/form-toggle-setting";
 import { Input } from "@/components/ui/input";
@@ -19,7 +11,7 @@ import { SelectWithAdd } from "@/components/ui/select-with-add";
 import {
   BookOpen,
   Eye,
-  FileQuestion,
+  Globe,
   GraduationCap,
   Info,
   ListOrdered,
@@ -237,14 +229,14 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
         />
       </FormSectionCard>
 
-      {/* ── 5. Independent vs Course Exam ─────────────────────────────────── */}
+      {/* ── 5. Public Availability ────────────────────────────────────────── */}
       <FormSectionCard
-        title={tForm("fields.isIndependent")}
-        description={tForm("fields.isIndependentDesc")}
-        icon={FileQuestion}
+        title={tForm("fields.publishToPublic")}
+        description={tForm("fields.publishToPublicDesc")}
+        icon={Globe}
         contentClassName="space-y-4"
       >
-        {mode === "edit" && (
+        {mode === "edit" && form.coursesCount > 0 && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-muted/60 border border-border/60 text-xs text-muted-foreground">
             <Info className="size-3.5 shrink-0 text-primary" />
             <span>{tForm("inCoursesInfo", { count: form.coursesCount })}</span>
@@ -252,98 +244,13 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
         )}
 
         <FormToggleSetting
-          id="is-independent"
-          title={tForm("fields.isIndependent")}
-          subtitle={tForm("fields.isIndependentDesc")}
-          icon={FileQuestion}
-          checked={form.isIndependent}
-          onCheckedChange={form.setIsIndependent}
-        >
-          {!form.isIndependent && (
-            <div className="space-y-4 pt-2 border-t border-border/50 animate-in fade-in duration-300">
-              {/* Attachment Mode Selection */}
-              <FormRadioGroup
-                name="exam-attachment-type"
-                title={tForm("fields.attachmentType")}
-                value={form.attachmentType}
-                onValueChange={(val) =>
-                  form.setAttachmentType(val as "bank" | "course" | "standalone_lesson")
-                }
-                gridClassName="sm:grid-cols-3"
-                options={[
-                  {
-                    id: "bank",
-                    label: tForm("fields.examBank"),
-                    desc: tForm("fields.examBankDesc"),
-                  },
-                  {
-                    id: "course",
-                    label: tForm("fields.courseAttachment"),
-                    desc: tForm("fields.courseAttachmentDesc"),
-                  },
-                  {
-                    id: "standalone_lesson",
-                    label: tForm("fields.standaloneLessonAttachment"),
-                    desc: tForm("fields.standaloneLessonAttachmentDesc"),
-                  },
-                ]}
-              />
-
-              {form.attachmentType === "course" && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 animate-in fade-in duration-200">
-                  <CourseSelect
-                    value={form.courseId}
-                    onValueChange={form.handleCourseChange}
-                    courses={form.mappedCourses}
-                    disabled={Boolean(form.isLoadingOptions)}
-                    label={tForm("fields.linkedCourse")}
-                    placeholder={tForm("fields.selectCourse")}
-                    required
-                  />
-
-                  <SectionSelect
-                    value={form.courseSectionId}
-                    onValueChange={form.handleCourseSectionChange}
-                    sections={form.mappedSections}
-                    disabled={!form.courseId || Boolean(form.isLoadingOptions)}
-                    label={tForm("fields.linkedSection")}
-                    placeholder={
-                      !form.courseId ? tForm("fields.selectCourse") : tForm("fields.selectSection")
-                    }
-                  />
-
-                  <LessonSelect
-                    value={form.lessonId}
-                    onValueChange={form.setLessonId}
-                    lessons={form.mappedLessons}
-                    disabled={!form.courseSectionId || Boolean(form.isLoadingOptions)}
-                    label={tForm("fields.linkedLesson")}
-                    placeholder={
-                      !form.courseSectionId
-                        ? tForm("fields.selectSection")
-                        : tForm("fields.selectLesson")
-                    }
-                  />
-                </div>
-              )}
-
-              {form.attachmentType === "standalone_lesson" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 animate-in fade-in duration-200">
-                  <LessonSelect
-                    id="standalone-lesson-select"
-                    value={form.standaloneLessonId}
-                    onValueChange={form.setStandaloneLessonId}
-                    lessons={form.mappedStandaloneLessons}
-                    disabled={Boolean(form.isLoadingOptions)}
-                    label={tForm("fields.linkedStandaloneLesson")}
-                    placeholder={tForm("fields.selectStandaloneLesson")}
-                    required
-                  />
-                </div>
-              )}
-            </div>
-          )}
-        </FormToggleSetting>
+          id="is-public-toggle"
+          title={tForm("fields.publishToPublic")}
+          subtitle={tForm("fields.publishToPublicDesc")}
+          icon={Globe}
+          checked={form.isPublic}
+          onCheckedChange={form.setIsPublic}
+        />
       </FormSectionCard>
 
       {/* ── Proceed to Step 2 ────────────────────────────────────────────── */}
