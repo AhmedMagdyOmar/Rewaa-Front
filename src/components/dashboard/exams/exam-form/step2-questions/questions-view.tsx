@@ -107,7 +107,7 @@ export function QuestionsView({
           <div className="space-y-4">
             {mgr.sections.map((sec, sIdx) => (
               <ExamSectionItem
-                key={sec.id}
+                key={`${sec.id}-${sIdx}`}
                 section={sec}
                 index={sIdx}
                 locale={locale}

@@ -603,6 +603,8 @@ export interface ExamFilterParams {
   course_section_id?: number | string;
   is_template?: boolean;
   is_public?: boolean;
+  subject_id?: number | string;
+  educational_stage_id?: number | string;
   sort?: "latest" | "oldest" | string;
   page?: number;
   per_page?: number;

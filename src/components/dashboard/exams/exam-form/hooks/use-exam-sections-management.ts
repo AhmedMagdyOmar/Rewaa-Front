@@ -57,7 +57,11 @@ export function useExamSectionsManagement({
   const examIdNum = Number(examId);
   const isBackendExamId = !Number.isNaN(examIdNum) && examIdNum > 0;
   const { data: fetchedBackendExam, isLoading: isExamLoading } = useProviderExam(examId);
-  const { data: allExamsData } = useProviderExams({ per_page: 50 });
+  const examSubjectId = parentExamContext.subject ? Number(parentExamContext.subject) : undefined;
+  const { data: allExamsData } = useProviderExams({
+    per_page: 100,
+    ...(examSubjectId && !Number.isNaN(examSubjectId) ? { subject_id: examSubjectId } : {}),
+  });
 
   const sectionMutations = useExamSectionMutations(examId);
   const createQuestionMutation = useCreateQuestion();
@@ -65,10 +69,10 @@ export function useExamSectionsManagement({
   const updateQuestionMutation = useUpdateQuestion();
   const detachQuestionMutation = useDetachExamQuestion(examId);
 
-  // All available exams for importing
-  const allExams: Exam[] = (allExamsData?.exams || []).map((be) =>
-    mapBackendExamToFrontend(be, locale),
-  );
+  // All available exams for importing (filtered by subject, excluding current exam)
+  const allExams: Exam[] = (allExamsData?.exams || [])
+    .filter((be) => String(be.id) !== String(examId))
+    .map((be) => mapBackendExamToFrontend(be, locale));
 
   // Sync sections from fetched backend exam
   useEffect(() => {
@@ -409,20 +413,43 @@ export function useExamSectionsManagement({
 
   const handleImportSections = async (importedSections: ExamSection[]) => {
     try {
-      for (const impSec of importedSections) {
-        const createdSec = await sectionMutations.createSection.mutateAsync({
-          title: { ar: impSec.title, en: impSec.title },
-          is_active: true,
-        });
+      if (isBackendExamId) {
+        const newlyCreatedSections: ExamSection[] = [];
+        for (const impSec of importedSections) {
+          const createdSec = await sectionMutations.createSection.mutateAsync({
+            title: { ar: impSec.title, en: impSec.title },
+            is_active: true,
+          });
+          const mappedSec = mapBackendSectionToFrontend(createdSec, locale);
+          const savedQuestions: Question[] = [];
 
-        for (const q of impSec.questions) {
-          await handleSaveQuestion(q, String(createdSec.id), true);
+          for (const q of impSec.questions) {
+            try {
+              await handleSaveQuestion(q, String(createdSec.id), true);
+              savedQuestions.push(q);
+            } catch (qErr) {
+              console.error("Failed to import individual question", qErr);
+            }
+          }
+
+          newlyCreatedSections.push({
+            ...mappedSec,
+            questions: savedQuestions,
+          });
         }
+
+        setSections((prev) => [...prev, ...newlyCreatedSections]);
+        await queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+      } else {
+        // Draft / Local state before exam has a backend ID
+        setSections((prev) => [...prev, ...importedSections]);
       }
-      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.detail(examId) });
+
       setActiveDialog(null);
       toast.success(
-        locale === "ar" ? "تم استيراد الأسئلة بنجاح" : "Questions imported successfully",
+        locale === "ar"
+          ? "تم استيراد الأقسام والأسئلة بنجاح"
+          : "Sections and questions imported successfully",
       );
     } catch (err) {
       toast.error(

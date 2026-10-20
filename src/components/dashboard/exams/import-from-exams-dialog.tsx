@@ -188,6 +188,8 @@ export function ImportFromExamsDialog({
           .filter((q) => selectedQIds.includes(q.id))
           .map((q) => ({
             ...q,
+            originalQuestionId:
+              q.originalQuestionId || (!q.id.startsWith("q-") ? Number(q.id) : undefined),
             id: `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
           }));
 
