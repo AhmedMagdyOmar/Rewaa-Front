@@ -8,6 +8,17 @@ import type {
 } from "@/types/api-contracts";
 
 /**
+ * Hook to fetch exam filter options (e.g. subjects) for student
+ */
+export function useStudentExamOptions() {
+  return useQuery({
+    queryKey: queryKeys.student.examOptions(),
+    queryFn: () => studentExamsService.getExamOptions(),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
  * Hook to fetch paginated course-linked exams for student
  */
 export function useStudentExams(filters?: StudentExamsFilterParams) {

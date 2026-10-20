@@ -20,7 +20,11 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyCourses } from "@/hooks/use-my-courses";
-import { useStudentExams, useStudentGeneralExams } from "@/hooks/use-student-exams";
+import {
+  useStudentExamOptions,
+  useStudentExams,
+  useStudentGeneralExams,
+} from "@/hooks/use-student-exams";
 import { Link } from "@/i18n/routing";
 import type { BackendStudentExam } from "@/types/api-contracts";
 import {
@@ -127,15 +131,31 @@ export function StudentExamsClient() {
     return () => clearTimeout(handler);
   }, [searchTerm, searchQuery, updateUrlParams]);
 
+  // Fetch exam options (e.g. subjects) for the student
+  const { data: examOptionsData } = useStudentExamOptions();
+
   // Fetch enrolled courses for the student (used for course filter and extracting enrolled subjects)
   const { data: myCoursesData } = useMyCourses({ per_page: 100 });
   const myCourses = React.useMemo(() => myCoursesData?.courses || [], [myCoursesData]);
 
-  // Build subject options from enrolled courses
+  // Build subject options from dedicated endpoint with fallback to enrolled courses
   const subjectOptions = React.useMemo(() => {
     const map = new Map<number, string>();
+
+    // 1. Add subjects returned from student exam options endpoint
+    if (examOptionsData?.subjects) {
+      examOptionsData.subjects.forEach((s) => {
+        const subName =
+          s.name?.[locale] || s.name?.ar || s.name?.en || Object.values(s.name || {})[0] || "";
+        if (subName) {
+          map.set(s.id, subName);
+        }
+      });
+    }
+
+    // 2. Also ensure subjects from enrolled courses are present
     myCourses.forEach((c) => {
-      if (c.subject?.id) {
+      if (c.subject?.id && !map.has(c.subject.id)) {
         const subName =
           c.subject.name?.[locale] ||
           c.subject.name?.ar ||
@@ -147,8 +167,9 @@ export function StudentExamsClient() {
         }
       }
     });
+
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
-  }, [myCourses, locale]);
+  }, [examOptionsData, myCourses, locale]);
 
   // Filter courses by selected subject if one is picked
   const availableCourses = React.useMemo(() => {

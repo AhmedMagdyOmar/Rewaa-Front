@@ -7,12 +7,24 @@ import type {
   StudentExamAttemptResponse,
   StudentExamAttemptsListResponse,
   StudentExamDetailResponse,
+  StudentExamOptionsResponse,
   StudentExamsFilterParams,
   StudentExamsListResponse,
   SubmitExamAttemptPayload,
 } from "@/types/api-contracts";
 
 export const studentExamsService = {
+  /**
+   * Get filter options (subjects) for current student
+   * GET /api/website/exams/options
+   */
+  async getExamOptions(): Promise<StudentExamOptionsResponse> {
+    return api<StudentExamOptionsResponse>({
+      url: "/api/website/exams/options",
+      method: "GET",
+    });
+  },
+
   /**
    * Get paginated course-linked exams for current student
    * GET /api/website/exams

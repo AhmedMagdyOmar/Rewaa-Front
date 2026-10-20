@@ -1842,6 +1842,13 @@ export interface StudentExamDetailResponse {
   exam: BackendStudentExam;
 }
 
+export interface StudentExamOptionsResponse {
+  subjects: Array<{
+    id: number;
+    name: Record<string, string>;
+  }>;
+}
+
 export interface BackendStudentAttemptQuestionOption {
   id: number;
   position: number;

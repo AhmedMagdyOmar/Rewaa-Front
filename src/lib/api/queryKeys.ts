@@ -138,6 +138,7 @@ export const queryKeys = {
     standaloneLesson: (lessonId: number | string) =>
       [...queryKeys.student.all, "standaloneLesson", lessonId] as const,
     // Exams & Attempts
+    examOptions: () => [...queryKeys.student.all, "exams", "options"] as const,
     exams: (filters?: Record<string, unknown>) =>
       [...queryKeys.student.all, "exams", filters ?? {}] as const,
     generalExams: (filters?: Record<string, unknown>) =>
