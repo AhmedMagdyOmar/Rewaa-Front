@@ -97,6 +97,21 @@ export const examsService = {
   },
 
   /**
+   * Republish an exam under a new title
+   */
+  async republishExam(
+    id: number | string,
+    data: { title: string | Record<string, string> },
+  ): Promise<BackendExam> {
+    const response = await api<{ exam: BackendExam }>({
+      url: `/api/dashboard/provider/exams/${id}/republish`,
+      method: "POST",
+      data,
+    });
+    return response.exam;
+  },
+
+  /**
    * Schedule exam publication
    */
   async scheduleExam(id: number | string, scheduledPublishAt: string): Promise<BackendExam> {

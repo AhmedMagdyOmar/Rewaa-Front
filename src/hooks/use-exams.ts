@@ -105,6 +105,21 @@ export function usePublishExam() {
 }
 
 /**
+ * Hook to republish an exam with a new title
+ */
+export function useRepublishExam() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, title }: { id: number | string; title: string | Record<string, string> }) =>
+      examsService.republishExam(id, { title }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.provider.exams.all() });
+    },
+  });
+}
+
+/**
  * Hook to schedule exam publication
  */
 export function useScheduleExam() {

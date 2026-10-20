@@ -978,8 +978,19 @@
       "viewComplaints": "View Complaints",
       "edit": "Edit",
       "publish": "Publish",
+      "republish": "Re-publish",
       "delete": "Delete",
       "resume": "Resume Exam"
+    },
+    "republishDialog": {
+      "title": "Re-publish Exam",
+      "description": "A new copy of this exam will be created in General Exams with all questions and configurations preserved.",
+      "label": "New Exam Title",
+      "placeholder": "Enter new exam title...",
+      "confirm": "Re-publish",
+      "cancel": "Cancel",
+      "success": "Exam re-published successfully",
+      "error": "Failed to re-publish exam"
     },
     "deleteDialog": {
       "title": "Delete Exam",

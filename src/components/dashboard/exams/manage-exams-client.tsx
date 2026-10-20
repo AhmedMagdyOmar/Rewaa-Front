@@ -3,6 +3,7 @@
 import {
   BarChart3,
   CircleAlert,
+  Copy,
   ExternalLink,
   FileQuestion,
   MoreVertical,
@@ -26,11 +27,12 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 
-import { useDeleteExam, useProviderExams } from "@/hooks/use-exams";
+import { useDeleteExam, useProviderExams, useRepublishExam } from "@/hooks/use-exams";
 import type { BackendExam } from "@/types/api-contracts";
 import { ContentFilters, SortOptionItem, TabItem } from "../common/content-filters";
 import { ContentPagination } from "../common/content-pagination";
 import { DeleteExamDialog } from "./delete-exam-dialog";
+import { RepublishExamDialog } from "./republish-exam-dialog";
 
 export type ExamFilterTab = "public" | "templates";
 export type ExamSortOption = "latest" | "oldest";
@@ -93,6 +95,9 @@ export function ManageExamsClient() {
   const deleteExamMutation = useDeleteExam();
   const [examToDelete, setExamToDelete] = React.useState<BackendExam | null>(null);
 
+  const republishExamMutation = useRepublishExam();
+  const [examToRepublish, setExamToRepublish] = React.useState<BackendExam | null>(null);
+
   const exams: BackendExam[] = examsResponse?.exams || [];
   const pagination = examsResponse?.pagination;
   const totalItems = pagination?.total || 0;
@@ -117,6 +122,23 @@ export function ManageExamsClient() {
         setExamToDelete(null);
       } catch {
         toast.error(locale === "ar" ? "فشل في حذف الامتحان" : "Failed to delete exam");
+      }
+    }
+  };
+
+  const confirmRepublish = async (newTitle: string) => {
+    if (examToRepublish) {
+      try {
+        await republishExamMutation.mutateAsync({
+          id: examToRepublish.id,
+          title: newTitle,
+        });
+        toast.success(
+          locale === "ar" ? "تمت إعادة نشر الامتحان بنجاح" : "Exam re-published successfully",
+        );
+        setExamToRepublish(null);
+      } catch {
+        toast.error(locale === "ar" ? "فشل في إعادة نشر الامتحان" : "Failed to re-publish exam");
       }
     }
   };
@@ -426,6 +448,13 @@ export function ManageExamsClient() {
                                     <span>{t("actions.viewComplaints")}</span>
                                   </Link>
                                 </DropdownMenuItem>
+                                <DropdownMenuItem
+                                  className="flex items-center gap-2 cursor-pointer"
+                                  onClick={() => setExamToRepublish(exam)}
+                                >
+                                  <Copy className="h-4 w-4" />
+                                  <span>{t("actions.republish")}</span>
+                                </DropdownMenuItem>
                               </>
                             )}
                             <DropdownMenuItem asChild>
@@ -475,6 +504,15 @@ export function ManageExamsClient() {
         examToDelete={examToDelete}
         onClose={() => setExamToDelete(null)}
         onConfirm={confirmDelete}
+      />
+
+      {/* ── Republish Confirmation ─────────────────────────────────────────── */}
+      <RepublishExamDialog
+        examToRepublish={examToRepublish}
+        isOpen={Boolean(examToRepublish)}
+        isPending={republishExamMutation.isPending}
+        onClose={() => setExamToRepublish(null)}
+        onConfirm={confirmRepublish}
       />
     </div>
   );
