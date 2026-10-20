@@ -657,7 +657,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               {t("kpi.totalScore")}
             </span>
 
-            <div className="flex items-baseline gap-1 text-3xl sm:text-4xl font-black text-foreground">
+            <div className="flex items-baseline gap-1 text-4xl sm:text-5xl font-black text-foreground">
               {isPendingReview ? (
                 <span className="text-amber-600 text-2xl font-bold">
                   {t("statusPendingReview")}
@@ -667,22 +667,24 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                   <span className={isPassed ? "text-emerald-600" : "text-rose-600"}>
                     {earnedScore ?? 0}
                   </span>
-                  <span className="text-xl text-muted-foreground font-semibold">
+                  <span className="text-2xl text-muted-foreground font-semibold">
                     / {totalScore}
                   </span>
                 </>
               )}
             </div>
 
-            <div className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-muted text-foreground">
+            <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-sm font-bold bg-muted text-foreground">
               {isPendingReview ? (
                 <span>
                   {t("kpi.passingGrade")}: {passingPercentage}%
                 </span>
               ) : (
                 <>
-                  <span>{percentage !== null ? Math.round(percentage) : 0}%</span>
-                  <span className="text-[11px] text-muted-foreground font-normal">
+                  <span className="text-base font-black text-primary">
+                    {percentage !== null ? Math.round(percentage) : 0}%
+                  </span>
+                  <span className="text-xs text-muted-foreground font-medium">
                     ({t("kpi.passingGrade")}: {passingPercentage}%)
                   </span>
                 </>
@@ -705,7 +707,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
           </div>
           <div>
-            <p className="text-2xl font-black text-foreground">{passingPercentage}%</p>
+            <p className="text-2xl sm:text-3xl font-black text-foreground">{passingPercentage}%</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               {isPendingReview
                 ? t("statusPendingReview")
@@ -725,9 +727,11 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
           </div>
           <div>
-            <p className="text-2xl font-black text-foreground">
+            <p className="text-xl sm:text-2xl font-black text-foreground">
               {displayAttempt?.elapsed_seconds
-                ? `${Math.ceil(displayAttempt.elapsed_seconds / 60)} ${isAr ? "دقيقة" : "min"}`
+                ? isAr
+                  ? `${Math.max(1, Math.round(displayAttempt.elapsed_seconds / 60))} من ${exam.duration_minutes || 0} دقيقة`
+                  : `${Math.max(1, Math.round(displayAttempt.elapsed_seconds / 60))} of ${exam.duration_minutes || 0} min`
                 : t("kpi.durationSuffix", { count: exam.duration_minutes })}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">{t("sidebar.duration")}</p>
@@ -767,7 +771,9 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-black text-foreground">{reviewQuestions.length}</p>
+                <p className="text-2xl sm:text-3xl font-black text-foreground">
+                  {reviewQuestions.length}
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isAr ? "سيتم إعلان النتيجة بعد التصحيح" : "Scores revealed after full grading"}
                 </p>
@@ -787,7 +793,9 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-black text-foreground">{reviewQuestions.length}</p>
+                <p className="text-2xl sm:text-3xl font-black text-foreground">
+                  {reviewQuestions.length}
+                </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isAr ? "تم تسليم الامتحان بنجاح" : "Exam submitted successfully"}
                 </p>
@@ -816,8 +824,8 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           </>
         ) : (
           <>
-            {/* Metric 3: Correct Questions Count */}
-            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+            {/* Metric 3: Correct Questions Box without count */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-emerald-500/40 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
                   {t("kpi.questionsAccuracy")}
@@ -827,37 +835,33 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-black text-emerald-600">
-                  {correctCount}{" "}
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    / {reviewQuestions.length}
-                  </span>
+                <p className="text-lg sm:text-xl font-bold text-emerald-600 flex items-center gap-1.5">
+                  <Check className="size-5" />
+                  <span>{isAr ? "إجابات صحيحة" : "Correct Answers"}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {t("kpi.correctCount", { count: correctCount })}
+                  {isAr ? "تمت الإجابة بشكل صحيح" : "Answered correctly"}
                 </p>
               </div>
             </DashboardCard>
 
-            {/* Metric 4: Wrong Questions Count */}
-            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-primary/40 transition-colors">
+            {/* Metric 4: Wrong Questions Box without count */}
+            <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-rose-500/40 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
-                  {t("filters.incorrect", { count: wrongCount })}
+                  {t("kpi.questionsIncorrect")}
                 </span>
                 <div className="size-8 rounded-lg bg-rose-500/10 text-rose-600 flex items-center justify-center">
                   <XCircle className="size-4" />
                 </div>
               </div>
               <div>
-                <p className="text-2xl font-black text-rose-600">
-                  {wrongCount}{" "}
-                  <span className="text-sm font-semibold text-muted-foreground">
-                    / {reviewQuestions.length}
-                  </span>
+                <p className="text-lg sm:text-xl font-bold text-rose-600 flex items-center gap-1.5">
+                  <X className="size-5" />
+                  <span>{isAr ? "إجابات خاطئة" : "Incorrect Answers"}</span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {t("kpi.wrongCount", { count: wrongCount })}
+                  {isAr ? "تمت الإجابة بشكل غير صحيح" : "Answered incorrectly"}
                 </p>
               </div>
             </DashboardCard>

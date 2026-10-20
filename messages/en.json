@@ -3067,10 +3067,12 @@
       },
       "kpi": {
         "totalScore": "Final Score",
-        "passingGrade": "Passing Score",
+        "passingGrade": "Required Passing Percentage",
         "timeSpent": "Time Taken",
+        "timeSpentFraction": "{spent} of {total} min",
         "durationSuffix": "{count} min",
-        "questionsAccuracy": "Questions Accuracy",
+        "questionsAccuracy": "Correct Answers",
+        "questionsIncorrect": "Incorrect Answers",
         "correctCount": "{count, plural, =0 {No correct questions} one {1 correct question} other {{count} correct questions}}",
         "wrongCount": "{count, plural, =0 {No wrong questions} one {1 wrong question} other {{count} wrong questions}}"
       },
