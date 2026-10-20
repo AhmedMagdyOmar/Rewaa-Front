@@ -3227,6 +3227,7 @@
       "title": "Latest Courses",
       "viewAll": "View All",
       "enrollNow": "Enroll Now",
+      "completePayment": "Complete Payment",
       "goToCourse": "Go to Course",
       "underReview": "Under Review",
       "empty": "No new courses available at the moment."
@@ -3299,6 +3300,7 @@
       "free": "Free",
       "originalPrice": "Original Price:",
       "enrollInCourse": "Enroll in Course",
+      "completePayment": "Complete Payment",
       "enrolling": "Enrolling...",
       "enrollSuccess": "Successfully enrolled in the course!",
       "courseContents": "Course Contents",

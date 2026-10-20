@@ -199,7 +199,9 @@ export function StudentAvailableCourseCard({
                 ? "outline"
                 : hasPendingOrder || course.has_pending_order
                   ? "secondary"
-                  : "default"
+                  : course.has_unpaid_order
+                    ? "default"
+                    : "default"
             }
             size="sm"
             className={
@@ -207,7 +209,9 @@ export function StudentAvailableCourseCard({
                 ? "w-full font-bold text-sm py-3.5! cursor-pointer border border-primary! text-primary hover:text-primary"
                 : hasPendingOrder || course.has_pending_order
                   ? "flex-1 font-bold text-sm py-3.5! cursor-pointer bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/30 hover:bg-amber-500/20"
-                  : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
+                  : course.has_unpaid_order
+                    ? "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs bg-amber-600 hover:bg-amber-700 text-white"
+                    : "flex-1 font-bold text-sm py-3.5! cursor-pointer shadow-xs"
             }
           >
             <Link href={targetEnrollHref}>
@@ -218,6 +222,8 @@ export function StudentAvailableCourseCard({
                   <Clock className="size-4 shrink-0 animate-pulse text-amber-500" />
                   <span>{tStudent("underReview")}</span>
                 </span>
+              ) : course.has_unpaid_order ? (
+                tStudent("completePayment")
               ) : (
                 tStudent("enrollNow")
               )}

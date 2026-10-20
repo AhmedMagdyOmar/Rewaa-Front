@@ -288,7 +288,7 @@ export function StudentCoursePreviewView({
                 </div>
               </div>
 
-              {/* 3. CTA Button: Full Width "Enroll in Course" or "Under Review" */}
+              {/* 3. CTA Button: Full Width "Enroll in Course", "Complete Payment", or "Under Review" */}
               {course.has_pending_order ? (
                 <Button
                   type="button"
@@ -300,6 +300,17 @@ export function StudentCoursePreviewView({
                   <span>
                     {locale === "ar" ? "طلب الاشتراك قيد المراجعة" : "Enrollment Under Review"}
                   </span>
+                </Button>
+              ) : course.has_unpaid_order ? (
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={() => onEnroll(course.id)}
+                  disabled={isEnrolling}
+                  className="w-full font-bold text-base py-6 rounded-xl shadow-md cursor-pointer gap-2 bg-amber-600 hover:bg-amber-700 text-white"
+                >
+                  <Sparkles className="size-4.5 fill-current" />
+                  <span>{isEnrolling ? t("enrolling") : t("completePayment")}</span>
                 </Button>
               ) : (
                 <Button
@@ -315,13 +326,13 @@ export function StudentCoursePreviewView({
               )}
 
               {/* Activation Code Prompt */}
-              <div className="text-center pt-1">
+              <div className="text-center pt-2">
                 <button
                   type="button"
                   onClick={() => setRedeemDialogOpen(true)}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 text-sm sm:text-base font-semibold text-muted-foreground hover:text-primary transition-colors cursor-pointer py-1 px-3 rounded-lg hover:bg-muted/50"
                 >
-                  <KeyRound className="size-3.5" />
+                  <KeyRound className="size-4 sm:size-5 text-primary" />
                   <span>{tRedeem("haveCodePrompt")}</span>
                   <span className="text-primary underline font-bold">{tRedeem("redeemHere")}</span>
                 </button>

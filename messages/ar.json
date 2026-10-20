@@ -3228,6 +3228,7 @@
       "title": "أحدث الدورات",
       "viewAll": "عرض الكل",
       "enrollNow": "اشترك الآن",
+      "completePayment": "استكمال الدفع",
       "goToCourse": "الذهاب إلى الدورة",
       "underReview": "قيد المراجعة",
       "empty": "لا توجد دورات جديدة متاحة حالياً."
@@ -3300,6 +3301,7 @@
       "free": "مجاناً",
       "originalPrice": "السعر الأساسي:",
       "enrollInCourse": "الاشتراك في الدورة",
+      "completePayment": "استكمال الدفع",
       "enrolling": "جاري الاشتراك...",
       "enrollSuccess": "تم الاشتراك في الدورة بنجاح!",
       "courseContents": "محتويات الدورة",
