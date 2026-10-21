@@ -1,5 +1,6 @@
 import { api } from "@/lib/apiClient";
 import { authTokens } from "@/lib/auth-token";
+import { getDeviceId } from "@/lib/device";
 import { useAuthStore } from "@/lib/stores/auth-store";
 
 export interface ProviderLoginCredentials {
@@ -47,6 +48,7 @@ export interface StudentRegisterPayload {
   governorate_id: number;
   educational_stage_id: number;
   provider_id?: number;
+  device_id?: string;
 }
 
 export interface RegisterOptionsResponse {
@@ -72,6 +74,7 @@ export interface StudentLoginCredentials {
   login: string; // email, phone, or std-123
   password: string;
   phone_code?: string;
+  device_id?: string;
 }
 
 export interface StudentLoginResponse {
@@ -87,6 +90,8 @@ export interface StudentLoginResponse {
     status?: string;
     courses_count?: number;
     avatar_url?: string | null;
+    is_device_bound?: boolean;
+    device_bound_at?: string | null;
   };
   access_token: string;
   token_type: string;
@@ -172,10 +177,14 @@ export const authService = {
    * Student Website Portal Login
    */
   async studentLogin(credentials: StudentLoginCredentials): Promise<StudentLoginResponse> {
+    const deviceId = credentials.device_id || getDeviceId();
     const data = await api<StudentLoginResponse>({
       url: "/api/website/auth/login",
       method: "POST",
-      data: credentials,
+      data: {
+        ...credentials,
+        device_id: deviceId,
+      },
     });
 
     if (data?.access_token) {
@@ -225,10 +234,14 @@ export const authService = {
    * Student Website Portal Register
    */
   async studentRegister(payload: StudentRegisterPayload): Promise<StudentLoginResponse> {
+    const deviceId = payload.device_id || getDeviceId();
     const data = await api<StudentLoginResponse>({
       url: "/api/website/auth/register",
       method: "POST",
-      data: payload,
+      data: {
+        ...payload,
+        device_id: deviceId,
+      },
     });
 
     if (data?.access_token) {
