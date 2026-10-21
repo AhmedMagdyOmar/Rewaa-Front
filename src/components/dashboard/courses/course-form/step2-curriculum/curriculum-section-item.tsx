@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import { CourseSection, Lesson } from "@/types/course";
 import { Exam } from "@/types/exam";
 import {
@@ -117,11 +117,7 @@ export function CurriculumSectionItem({
                     <span>•</span>
                     <span className="inline-flex items-center gap-1 text-primary">
                       <Clock className="size-3" />
-                      <span>
-                        {secDuration >= 60
-                          ? `${(secDuration / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
-                          : `${secDuration} ${locale === "ar" ? "دقيقة" : "min"}`}
-                      </span>
+                      <span>{formatDuration(secDuration, locale)}</span>
                     </span>
                   </>
                 )}

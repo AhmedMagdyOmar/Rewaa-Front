@@ -25,6 +25,7 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import Link from "next/link";
+import { formatDuration } from "@/lib/utils";
 
 interface CourseCardProps {
   course: Course;
@@ -282,11 +283,11 @@ export function CourseCard({
               >
                 <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="truncate font-medium">
-                  {course.duration_in_minutes && course.duration_in_minutes >= 60
-                    ? `${(course.duration_in_minutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
-                    : course.duration_in_minutes
-                      ? `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة" : "min"}`
-                      : `${course.durationHours} ${locale === "ar" ? "ساعة" : "hr"}`}
+                  {formatDuration(
+                    course.duration_in_minutes ??
+                      (course.durationHours ? Math.round(course.durationHours * 60) : 0),
+                    locale,
+                  )}
                 </span>
               </div>
             ) : null}

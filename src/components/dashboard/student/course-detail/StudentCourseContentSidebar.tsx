@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useRouter } from "@/i18n/routing";
-import { cn } from "@/lib/utils";
+import { cn, formatDuration } from "@/lib/utils";
 import {
   BackendCourseContent,
   BackendCourseContentSection,
@@ -286,11 +286,7 @@ export function StudentCourseContentSidebar({
                               <span>•</span>
                               <span className="inline-flex items-center gap-1">
                                 <Clock className="size-3 text-muted-foreground/80" />
-                                <span>
-                                  {sectionDurationMinutes >= 60
-                                    ? `${(sectionDurationMinutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة" : "hr"}`
-                                    : `${sectionDurationMinutes} ${locale === "ar" ? "دقيقة" : "min"}`}
-                                </span>
+                                <span>{formatDuration(sectionDurationMinutes, locale)}</span>
                               </span>
                             </>
                           )}

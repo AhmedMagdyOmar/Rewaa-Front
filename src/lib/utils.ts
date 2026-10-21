@@ -86,30 +86,58 @@ export function formatEgyptianPhone(phone?: string | null): string {
 }
 
 /**
- * Formats duration in minutes into a concise string (e.g., "45 min" / "45 دقيقة", "2.5 hrs" / "2.5 ساعة").
+ * Formats hours with proper Arabic / English pluralization/grammar.
  */
-export function formatDuration(minutes?: number | null, locale: string = "ar"): string {
-  if (!minutes || minutes <= 0) return "";
-  if (minutes < 60) {
-    return locale === "ar" ? `${minutes} دقيقة` : `${minutes} min`;
+function formatHoursOnly(hrs: number, locale: string): string {
+  if (locale !== "ar") {
+    return hrs === 1 ? "1 hr" : `${hrs} hrs`;
   }
-  const hours = Number((minutes / 60).toFixed(1));
-  return locale === "ar" ? `${hours} ساعة` : `${hours} hrs`;
+  if (hrs === 1) return "ساعة";
+  if (hrs === 2) return "ساعتان";
+  if (hrs >= 3 && hrs <= 10) return `${hrs} ساعات`;
+  return `${hrs} ساعة`;
 }
 
 /**
- * Formats duration in minutes into detailed hours and minutes (e.g., "2 hr 15 min" / "2 ساعة و 15 دقيقة").
+ * Formats minutes with proper Arabic / English pluralization/grammar.
+ */
+function formatMinutesOnly(mins: number, locale: string): string {
+  if (locale !== "ar") {
+    return mins === 1 ? "1 min" : `${mins} mins`;
+  }
+  if (mins === 1) return "دقيقة";
+  if (mins === 2) return "دقيقتان";
+  if (mins >= 3 && mins <= 10) return `${mins} دقائق`;
+  return `${mins} دقيقة`;
+}
+
+/**
+ * Formats duration in minutes into a clean hours & minutes string (no decimals).
+ * Example:
+ *  - 45 -> "45 دقيقة" / "45 mins"
+ *  - 60 -> "ساعة" / "1 hr"
+ *  - 90 -> "ساعة و 30 دقيقة" / "1 hr 30 mins"
+ *  - 135 -> "ساعتان و 15 دقيقة" / "2 hrs 15 mins"
+ */
+export function formatDuration(minutes?: number | null, locale: string = "ar"): string {
+  return formatDurationDetail(minutes, locale);
+}
+
+/**
+ * Formats duration in minutes into detailed hours and minutes (e.g., "ساعتان و 15 دقيقة" / "2 hrs 15 mins").
  */
 export function formatDurationDetail(minutes?: number | null, locale: string = "ar"): string {
   if (!minutes || minutes <= 0) return "";
   const hrs = Math.floor(minutes / 60);
-  const mins = minutes % 60;
+  const mins = Math.round(minutes % 60);
 
   if (hrs > 0 && mins > 0) {
-    return locale === "ar" ? `${hrs} ساعة و ${mins} دقيقة` : `${hrs} hr ${mins} min`;
+    const hoursStr = formatHoursOnly(hrs, locale);
+    const minsStr = formatMinutesOnly(mins, locale);
+    return locale === "ar" ? `${hoursStr} و ${minsStr}` : `${hoursStr} ${minsStr}`;
   }
   if (hrs > 0) {
-    return locale === "ar" ? `${hrs} ساعة` : `${hrs} hr`;
+    return formatHoursOnly(hrs, locale);
   }
-  return locale === "ar" ? `${mins} دقيقة` : `${mins} min`;
+  return formatMinutesOnly(mins, locale);
 }

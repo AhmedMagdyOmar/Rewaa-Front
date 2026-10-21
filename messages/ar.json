@@ -2787,6 +2787,7 @@
       "exams": "الامتحانات",
       "contactUs": "تواصل معنا",
       "discoverCourses": "استكشف الدورات",
+      "activateCode": "تفعيل كود",
       "bgAlt": "خلفية الترحيب"
     },
     "teachers": {
@@ -3338,7 +3339,9 @@
         "requiredExamBadge": "اختبار إلزامي",
         "videoLesson": "درس فيديو",
         "textLesson": "محتوى نصي",
-        "lockedLesson": "يلزم الاشتراك للمشاهدة"
+        "lockedLesson": "يلزم الاشتراك للمشاهدة",
+        "freePreview": "معاينة مجانية",
+        "watchFreePreview": "مشاهدة المعاينة"
       },
       "descriptionTab": {
         "title": "الوصف والمنهج التفصيلي",

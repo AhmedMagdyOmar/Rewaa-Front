@@ -210,18 +210,36 @@ function PlayerControls() {
 
 function CenterPlayOverlay() {
   const isPaused = useMediaState("paused");
+  const controlsVisible = useMediaState("controlsVisible");
   const remote = useMediaRemote();
 
-  if (!isPaused) return null;
+  // Show center button when paused, or when controls are visible (hover/tap on video)
+  const isVisible = isPaused || controlsVisible;
 
   return (
     <button
       type="button"
-      onClick={() => remote.play()}
-      aria-label="تشغيل الفيديو"
-      className="absolute left-1/2 top-1/2 z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary/90 text-white shadow-2xl backdrop-blur-sm transition-transform hover:scale-110 hover:bg-primary active:scale-95"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (isPaused) {
+          remote.play();
+        } else {
+          remote.pause();
+        }
+      }}
+      aria-label={isPaused ? "تشغيل الفيديو" : "إيقاف مؤقت"}
+      className={cn(
+        "absolute left-1/2 top-1/2 z-20 flex h-14 w-14 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-primary/90 text-white shadow-2xl backdrop-blur-sm transition-all duration-200 hover:scale-110 hover:bg-primary active:scale-95",
+        isVisible
+          ? "opacity-100 scale-100 pointer-events-auto cursor-pointer"
+          : "opacity-0 scale-90 pointer-events-none",
+      )}
     >
-      <Play className="ml-0.5 h-6 w-6 fill-current" />
+      {isPaused ? (
+        <Play className="ml-0.5 h-6 w-6 fill-current pointer-events-none" />
+      ) : (
+        <Pause className="h-6 w-6 fill-current pointer-events-none" />
+      )}
     </button>
   );
 }

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 "use client";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,22 +44,40 @@ export function StudentCourseDetailClient({ courseId }: StudentCourseDetailClien
   const expiresAt = backendCourse?.enrollment?.expires_at;
 
   // Track real-time expiration without requiring manual page reload
-  const [isExpiredLocally, setIsExpiredLocally] = React.useState(() => {
-    if (!expiresAt) return false;
-    const expiryTime = new Date(expiresAt).getTime();
-    return !isNaN(expiryTime) && expiryTime <= Date.now();
-  });
+  const parseExpiryTimestamp = (val?: string | null): number | null => {
+    if (!val) return null;
+    const iso = val.includes("T") || val.endsWith("Z") ? val : val.replace(" ", "T") + "Z";
+    const t = new Date(iso).getTime();
+    if (!isNaN(t)) return t;
+    const fallback = new Date(val).getTime();
+    return isNaN(fallback) ? null : fallback;
+  };
+
+  const [isExpiredLocally, setIsExpiredLocally] = React.useState(false);
 
   React.useEffect(() => {
     if (!isEnrolled || !expiresAt) {
+      setIsExpiredLocally(false);
       return;
     }
 
-    const expiryTime = new Date(expiresAt).getTime();
-    if (isNaN(expiryTime)) return;
+    const expiryTime = parseExpiryTimestamp(expiresAt);
+    if (!expiryTime) {
+      setIsExpiredLocally(false);
+      return;
+    }
 
     const remainingMs = expiryTime - Date.now();
     if (remainingMs <= 0) {
+      setIsExpiredLocally(true);
+      return;
+    }
+
+    setIsExpiredLocally(false);
+
+    // setTimeout delay exceeds 32-bit signed integer (approx 24.8 days) → do not schedule immediately
+    const MAX_32_BIT_INT = 2147483647;
+    if (remainingMs > MAX_32_BIT_INT) {
       return;
     }
 

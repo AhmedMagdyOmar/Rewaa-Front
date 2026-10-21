@@ -87,20 +87,31 @@ export function StudentEnrolledCourseCard({
     accessEndDate ??
     legacyCourse?.offerEndDate;
 
+  const parseExpiryTimestamp = (val?: string | null): number | null => {
+    if (!val) return null;
+    const iso = val.includes("T") || val.endsWith("Z") ? val : val.replace(" ", "T") + "Z";
+    const t = new Date(iso).getTime();
+    if (!isNaN(t)) return t;
+    const fallback = new Date(val).getTime();
+    return isNaN(fallback) ? null : fallback;
+  };
+
   const isExpired = React.useSyncExternalStore(
     (onStoreChange) => {
       if (!rawEndDate) return () => {};
-      const end = new Date(rawEndDate).getTime();
-      if (isNaN(end)) return () => {};
+      const end = parseExpiryTimestamp(rawEndDate);
+      if (!end) return () => {};
       const remainingMs = end - Date.now();
       if (remainingMs <= 0) return () => {};
+      const MAX_32_BIT_INT = 2147483647;
+      if (remainingMs > MAX_32_BIT_INT) return () => {};
       const timer = setTimeout(onStoreChange, remainingMs);
       return () => clearTimeout(timer);
     },
     () => {
       if (!rawEndDate) return false;
-      const end = new Date(rawEndDate).getTime();
-      return !isNaN(end) && end <= Date.now();
+      const end = parseExpiryTimestamp(rawEndDate);
+      return Boolean(end && end <= Date.now());
     },
     () => false,
   );

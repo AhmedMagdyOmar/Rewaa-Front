@@ -12,6 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { DashboardCard } from "../overview/dashboard-card";
 import { Course } from "@/types/course";
+import { formatDuration } from "@/lib/utils";
 
 interface CourseSectionsProps {
   course: Course;
@@ -47,9 +48,7 @@ export function CourseSections({ course }: CourseSectionsProps) {
               <span>•</span>
               <span className="text-primary font-semibold inline-flex items-center gap-1">
                 <Clock className="size-3" />
-                {totalDurationMinutes >= 60
-                  ? `${(totalDurationMinutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hrs"}`
-                  : `${totalDurationMinutes} ${locale === "ar" ? "دقيقة إجمالية" : "total mins"}`}
+                {formatDuration(totalDurationMinutes, locale)}
               </span>
             </>
           )}
@@ -128,6 +127,15 @@ export function CourseSections({ course }: CourseSectionsProps) {
                           className="text-[10px] bg-blue-500/10 text-blue-600 border-blue-500/20"
                         >
                           PDF ({lesson.pdfFiles?.length || 1})
+                        </Badge>
+                      )}
+
+                      {lesson.isFree && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] bg-emerald-500/10 text-emerald-600 border-emerald-500/20 font-medium"
+                        >
+                          {locale === "ar" ? "معاينة مجانية" : "Free Preview"}
                         </Badge>
                       )}
 

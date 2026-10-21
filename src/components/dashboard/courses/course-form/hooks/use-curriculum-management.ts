@@ -258,6 +258,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
           linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
           isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
+          isFree: Boolean(l.is_free),
           duration_in_minutes:
             typeof l.duration_in_minutes === "number" ? l.duration_in_minutes : 0,
           duration: typeof l.duration_in_minutes === "number" ? l.duration_in_minutes : 0,
@@ -412,6 +413,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
               linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
               linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
               isRequiredPassExam: Boolean(l.requires_exam_pass_to_unlock_next_lesson),
+              isFree: Boolean(l.is_free),
             })),
           }));
           setAvailableImportSections(secs);
@@ -689,6 +691,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
             exam_id: lessonExamId,
             requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+            is_free: Boolean(savedLesson.isFree),
             is_active: true,
           };
 
@@ -738,6 +741,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             explanatory_images: newImageFiles.length > 0 ? newImageFiles : undefined,
             has_exam: false,
             requires_exam_pass_to_unlock_next_lesson: false,
+            is_free: Boolean(savedLesson.isFree),
             is_active: true,
           };
 
@@ -765,6 +769,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
             has_exam: Boolean(savedLesson.isLinkedToExam && lessonExamId),
             exam_id: lessonExamId,
             requires_exam_pass_to_unlock_next_lesson: Boolean(savedLesson.isRequiredPassExam),
+            is_free: Boolean(savedLesson.isFree),
             is_active: true,
           };
 

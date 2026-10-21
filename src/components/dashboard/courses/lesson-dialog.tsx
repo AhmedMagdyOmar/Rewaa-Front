@@ -121,6 +121,7 @@ export function LessonDialog({
   const [isLinkedToExam, setIsLinkedToExam] = useState(false);
   const [linkedExamId, setLinkedExamId] = useState("");
   const [isRequiredPassExam, setIsRequiredPassExam] = useState(false);
+  const [isFree, setIsFree] = useState(false);
 
   // Bank Form State
   const [bankSectionId, setBankSectionId] = useState("");
@@ -264,6 +265,7 @@ export function LessonDialog({
             linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
             linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
             isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
+            isFree: Boolean(b.is_free),
           })),
       );
     }
@@ -350,6 +352,7 @@ export function LessonDialog({
         setIsLinkedToExam(Boolean(initialLesson.isLinkedToExam));
         setLinkedExamId(initialLesson.linkedExamId || "");
         setIsRequiredPassExam(Boolean(initialLesson.isRequiredPassExam));
+        setIsFree(Boolean(initialLesson.isFree ?? initialLesson.is_free));
         setVideoLinkError(null);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
@@ -373,6 +376,7 @@ export function LessonDialog({
         setIsLinkedToExam(false);
         setLinkedExamId("");
         setIsRequiredPassExam(false);
+        setIsFree(false);
 
         setTargetSectionId(initialSectionId || sections[0]?.id || "");
         setBankSectionId(initialSectionId || sections[0]?.id || "");
@@ -558,6 +562,7 @@ export function LessonDialog({
       linkedExamId: isLinkedToExam ? linkedExamId : undefined,
       linkedExamTitle: isLinkedToExam && selectedExamObj ? selectedExamObj.title : undefined,
       isRequiredPassExam: isLinkedToExam ? isRequiredPassExam : false,
+      isFree,
 
       // Organization
       lessonCategory: "course-dependent",
@@ -1170,6 +1175,19 @@ export function LessonDialog({
                     </div>
                   )}
                 </FormToggleSetting>
+
+                {/* Free Preview Setting */}
+                <FormToggleSetting
+                  id="les-is-free-toggle"
+                  title={isAr ? "درس مجاني (معاينة)" : "Free Preview Lesson"}
+                  subtitle={
+                    isAr
+                      ? "السماح للطلاب غير المشتركين بمشاهدة هذا الدرس كمعاينة تحفيزية للاشتراك"
+                      : "Allow unenrolled students to watch this lesson as a motivational course preview"
+                  }
+                  checked={isFree}
+                  onCheckedChange={setIsFree}
+                />
               </div>
             </div>
           )}

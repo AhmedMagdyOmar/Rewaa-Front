@@ -2786,6 +2786,7 @@
       "exams": "Exams",
       "contactUs": "Contact Us",
       "discoverCourses": "Explore Courses",
+      "activateCode": "Activate Code",
       "bgAlt": "Hero background"
     },
     "teachers": {
@@ -3337,7 +3338,9 @@
         "requiredExamBadge": "Required Exam",
         "videoLesson": "Video Lecture",
         "textLesson": "Reading Material",
-        "lockedLesson": "Enroll to access"
+        "lockedLesson": "Enroll to access",
+        "freePreview": "Free Preview",
+        "watchFreePreview": "Watch Preview"
       },
       "descriptionTab": {
         "title": "Detailed Course Description",

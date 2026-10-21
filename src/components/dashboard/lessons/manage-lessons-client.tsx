@@ -126,6 +126,7 @@ export function ManageLessonsClient() {
     linkedExamId: b.exam_id ? String(b.exam_id) : undefined,
     linkedExamTitle: b.exam?.title?.[locale] || b.exam?.title?.ar || undefined,
     isRequiredPassExam: Boolean(b.requires_exam_pass_to_unlock_next_lesson),
+    isFree: Boolean(b.is_free),
   }));
 
   // Pagination details from backend

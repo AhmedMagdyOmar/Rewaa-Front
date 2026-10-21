@@ -113,6 +113,11 @@ export function LessonCard({ lesson, onDeleteRequest }: LessonCardProps) {
                 {t("card.inactive")}
               </span>
             )}
+            {lesson.isFree && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-600/90 text-white backdrop-blur-md shadow-xs">
+                {isAr ? "معاينة مجانية" : "Free Preview"}
+              </span>
+            )}
           </div>
           <span className="inline-flex items-center justify-center p-1.5 rounded-md bg-black/60 text-white backdrop-blur-md border border-white/10 shadow-xs">
             {lesson.type === "text" ? (

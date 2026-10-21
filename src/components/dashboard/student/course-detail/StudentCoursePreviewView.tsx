@@ -9,12 +9,21 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Link } from "@/i18n/routing";
 import type { BackendStudentCourseDetails } from "@/types/api-contracts";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
   ArrowLeft,
   BookOpen,
   Calendar,
   Clock,
   FileText,
   KeyRound,
+  Lock,
+  PlayCircle,
   Sparkles,
   Tag,
   User,
@@ -22,7 +31,10 @@ import {
 import { useLocale, useTranslations } from "next-intl";
 import Image from "next/image";
 import * as React from "react";
+import { formatDurationDetail } from "@/lib/utils";
 import { StudentRedeemCodeDialog } from "../courses/StudentRedeemCodeDialog";
+import { myCoursesService } from "@/lib/api/my-courses-service";
+import type { BackendStudentLessonDetail } from "@/types/api-contracts";
 
 interface StudentCoursePreviewViewProps {
   course: BackendStudentCourseDetails;
@@ -42,6 +54,29 @@ export function StudentCoursePreviewView({
   const tRedeem = useTranslations("studentDashboard.activationCodeRedemption");
   const [redeemDialogOpen, setRedeemDialogOpen] = React.useState(false);
   const [imageError, setImageError] = React.useState(false);
+
+  // Free Preview Modal State
+  const [previewLessonId, setPreviewLessonId] = React.useState<number | null>(null);
+  const [previewLessonTitle, setPreviewLessonTitle] = React.useState<string>("");
+  const [previewLessonDetail, setPreviewLessonDetail] =
+    React.useState<BackendStudentLessonDetail | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
+
+  const handleOpenFreePreview = async (lessonId: number, lessonTitle: string) => {
+    setPreviewLessonId(lessonId);
+    setPreviewLessonTitle(lessonTitle);
+    setPreviewLessonDetail(null);
+    setIsPreviewLoading(true);
+
+    try {
+      const res = await myCoursesService.getLessonDetail(course.id, lessonId);
+      setPreviewLessonDetail(res.lesson);
+    } catch (err) {
+      console.error("Failed to load free preview lesson:", err);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
 
   // Helper to extract bilingual record
   const resolveText = (field: Record<string, string> | string | null | undefined): string => {
@@ -91,9 +126,9 @@ export function StudentCoursePreviewView({
         {/* 2-Column Responsive Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
           {/* ────────────────────────────────────────────────────────────────────────
-              COLUMN 1: MAIN INFO & TABS (8 Cols on LG)
+              COLUMN 1: MAIN INFO & TABS (7 Cols on LG)
           ──────────────────────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="lg:col-span-7 space-y-6">
             {/* 1. Header Badges, Title & Teacher info */}
             <div className="space-y-4 bg-card p-6 sm:p-8 rounded-2xl sm:rounded-3xl border border-border/80 shadow-xs">
               {/* Badges for Grade, Subject */}
@@ -183,41 +218,125 @@ export function StudentCoursePreviewView({
                     value="sections"
                     className="space-y-4 mt-0 focus-visible:outline-hidden"
                   >
-                    <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-xl space-y-2">
-                      <div className="font-semibold text-foreground">
-                        {course.sections_count > 0 || course.lessons_count > 0 ? (
-                          <div className="flex items-center justify-center gap-3 text-sm flex-wrap">
-                            <span>
-                              {tCourses("details.totalSections", { count: course.sections_count })}
-                            </span>
+                    {/* Header Summary */}
+                    <div className="p-4 sm:p-5 rounded-xl bg-muted/40 border border-border/70 flex items-center justify-between flex-wrap gap-3">
+                      <div className="font-semibold text-foreground text-sm flex items-center gap-3 flex-wrap">
+                        <span>
+                          {tCourses("details.totalSections", { count: course.sections_count })}
+                        </span>
+                        <span>•</span>
+                        <span>
+                          {tCourses("details.totalLessons", { count: course.lessons_count })}
+                        </span>
+                        {Boolean(course.duration_in_minutes && course.duration_in_minutes > 0) && (
+                          <>
                             <span>•</span>
-                            <span>
-                              {tCourses("details.totalLessons", { count: course.lessons_count })}
+                            <span className="inline-flex items-center gap-1.5 text-primary">
+                              <Clock className="size-3.5" />
+                              <span>
+                                {formatDurationDetail(course.duration_in_minutes, locale)}
+                              </span>
                             </span>
-                            {Boolean(
-                              course.duration_in_minutes && course.duration_in_minutes > 0,
-                            ) && (
-                              <>
-                                <span>•</span>
-                                <span className="inline-flex items-center gap-1.5 text-primary">
-                                  <Clock className="size-3.5" />
-                                  <span>
-                                    {course.duration_in_minutes! >= 60
-                                      ? `${(course.duration_in_minutes! / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hours"}`
-                                      : `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة إجمالية" : "total minutes"}`}
-                                  </span>
-                                </span>
-                              </>
-                            )}
-                          </div>
-                        ) : (
-                          tCourses("details.noSections")
+                          </>
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {t("sectionsTab.lockedLesson")}
+                        {t("sectionsTab.previewNotice")}
                       </p>
                     </div>
+
+                    {/* Accordion List */}
+                    {course.sections && course.sections.length > 0 ? (
+                      <Accordion
+                        type="multiple"
+                        defaultValue={course.sections.map((s) => `section-${s.id}`)}
+                        className="space-y-3"
+                      >
+                        {course.sections.map((section, idx) => {
+                          const sectionTitle = resolveText(section.title) || `الفصل ${idx + 1}`;
+                          return (
+                            <AccordionItem
+                              key={section.id}
+                              value={`section-${section.id}`}
+                              className="border border-border/80 rounded-xl overflow-hidden bg-card/60 shadow-xs px-3 sm:px-4"
+                            >
+                              <AccordionTrigger className="py-3 hover:no-underline">
+                                <div className="flex items-center gap-2.5 text-start font-bold text-sm sm:text-base">
+                                  <BookOpen className="size-4 text-primary shrink-0" />
+                                  <span>{sectionTitle}</span>
+                                  <span className="text-xs font-normal text-muted-foreground">
+                                    ({section.lessons?.length || 0} {isRtl ? "دروس" : "lessons"})
+                                  </span>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="pt-1 pb-3 space-y-2 border-t border-border/40">
+                                {section.lessons && section.lessons.length > 0 ? (
+                                  section.lessons.map((lesson) => {
+                                    const lessonTitle = resolveText(lesson.title);
+                                    const isFreeLesson = Boolean(lesson.is_free);
+
+                                    return (
+                                      <div
+                                        key={lesson.id}
+                                        className={`flex items-center justify-between p-2.5 sm:p-3 rounded-lg border transition-colors ${
+                                          isFreeLesson
+                                            ? "bg-emerald-500/5 border-emerald-500/30 hover:bg-emerald-500/10 cursor-pointer"
+                                            : "bg-muted/20 border-border/40 opacity-80"
+                                        }`}
+                                        onClick={() => {
+                                          if (isFreeLesson) {
+                                            handleOpenFreePreview(lesson.id, lessonTitle);
+                                          }
+                                        }}
+                                      >
+                                        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                                          {isFreeLesson ? (
+                                            <PlayCircle className="size-4 text-emerald-600 shrink-0" />
+                                          ) : (
+                                            <Lock className="size-4 text-muted-foreground shrink-0" />
+                                          )}
+                                          <span className="text-xs sm:text-sm font-medium text-foreground truncate">
+                                            {lessonTitle}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-2 shrink-0">
+                                          {Boolean(lesson.duration_in_minutes) && (
+                                            <span className="text-[11px] text-muted-foreground font-medium hidden sm:inline-flex items-center gap-1">
+                                              <Clock className="size-3" />
+                                              {lesson.duration_in_minutes} {isRtl ? "دقيقة" : "min"}
+                                            </span>
+                                          )}
+
+                                          {isFreeLesson ? (
+                                            <Badge className="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-semibold gap-1 py-0.5">
+                                              <Sparkles className="size-3" />
+                                              <span>{t("sectionsTab.freePreview")}</span>
+                                            </Badge>
+                                          ) : (
+                                            <span className="text-[11px] text-muted-foreground font-medium">
+                                              {t("sectionsTab.lockedLesson")}
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                ) : (
+                                  <p className="text-xs text-muted-foreground italic py-2 text-center">
+                                    {tCourses("details.noLessons")}
+                                  </p>
+                                )}
+                              </AccordionContent>
+                            </AccordionItem>
+                          );
+                        })}
+                      </Accordion>
+                    ) : (
+                      <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-xl space-y-2">
+                        <p>{tCourses("details.noSections")}</p>
+                      </div>
+                    )}
                   </TabsContent>
                 </div>
               </Tabs>
@@ -225,9 +344,9 @@ export function StudentCoursePreviewView({
           </div>
 
           {/* ────────────────────────────────────────────────────────────────────────
-              COLUMN 2: PURCHASE & COURSE CONTENTS SIDEBAR (4 Cols on LG)
+              COLUMN 2: PURCHASE & COURSE CONTENTS SIDEBAR (5 Cols on LG)
           ──────────────────────────────────────────────────────────────────────── */}
-          <div className="lg:col-span-4 lg:sticky lg:top-20 space-y-6">
+          <div className="lg:col-span-5 lg:sticky lg:top-20 space-y-6">
             <div className="rounded-2xl sm:rounded-3xl bg-card border border-border/80 shadow-md overflow-hidden p-5 sm:p-6 space-y-6">
               {/* 1. Video Preview or Cover Image */}
               <div className="relative aspect-video w-full rounded-xl sm:rounded-2xl overflow-hidden bg-muted border border-border/60 shadow-xs flex items-center justify-center">
@@ -247,7 +366,7 @@ export function StudentCoursePreviewView({
                       unoptimized
                       onError={() => setImageError(true)}
                       className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 33vw"
+                      sizes="(max-width: 1024px) 100vw, 42vw"
                     />
                     <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
                   </>
@@ -367,9 +486,7 @@ export function StudentCoursePreviewView({
                           <Clock className="size-4" />
                         </div>
                         <span className="font-medium">
-                          {course.duration_in_minutes >= 60
-                            ? `${(course.duration_in_minutes / 60).toFixed(1)} ${locale === "ar" ? "ساعة إجمالية" : "total hours"}`
-                            : `${course.duration_in_minutes} ${locale === "ar" ? "دقيقة إجمالية" : "total minutes"}`}
+                          {formatDurationDetail(course.duration_in_minutes, locale)}
                         </span>
                       </li>
                     )}
@@ -403,6 +520,70 @@ export function StudentCoursePreviewView({
           </div>
         </div>
       </div>
+
+      {/* Free Preview Video & Content Modal */}
+      <Dialog
+        open={previewLessonId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewLessonId(null);
+            setPreviewLessonDetail(null);
+          }
+        }}
+      >
+        <DialogContent className="md:min-w-3xl max-w-5xl w-full p-4 sm:p-6 max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="pb-3 border-b border-border/80">
+            <div className="flex items-center gap-2">
+              <Badge className="bg-emerald-600 text-white text-xs gap-1">
+                <Sparkles className="size-3" />
+                <span>{t("sectionsTab.freePreview")}</span>
+              </Badge>
+              <DialogTitle className="text-base sm:text-lg font-bold">
+                {previewLessonTitle}
+              </DialogTitle>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            {isPreviewLoading ? (
+              <div className="aspect-video w-full rounded-xl bg-muted/60 flex items-center justify-center animate-pulse">
+                <span className="text-xs text-muted-foreground">
+                  {isRtl ? "جاري تحميل الدرس..." : "Loading preview..."}
+                </span>
+              </div>
+            ) : previewLessonDetail?.video_url ? (
+              <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-black shadow-md border border-border/60">
+                <CustomVideoPlayer
+                  url={previewLessonDetail.video_url}
+                  poster={previewLessonDetail.cover_image || course.cover_image || undefined}
+                />
+              </div>
+            ) : previewLessonDetail ? (
+              <div className="p-8 text-center bg-muted/20 border border-dashed rounded-xl">
+                <p className="text-sm text-muted-foreground">
+                  {isRtl
+                    ? "هذا درس قراءة بدون فيديو."
+                    : "This is a reading lesson without a video."}
+                </p>
+              </div>
+            ) : null}
+
+            {previewLessonDetail?.description && (
+              <div className="p-4 rounded-xl bg-muted/30 border border-border/60 space-y-2">
+                <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                  {isRtl ? "وصف الدرس" : "Lesson Overview"}
+                </h4>
+                <div className="prose prose-sm max-w-none text-foreground text-xs sm:text-sm">
+                  <MarkdownViewer
+                    content={resolveText(previewLessonDetail.description)}
+                    isRtl={isRtl}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </TooltipProvider>
   );
 }

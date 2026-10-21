@@ -47,6 +47,8 @@ export interface Lesson {
   linkedExamId?: string; // FK → Exam.id
   linkedExamTitle?: string; // denormalized
   isRequiredPassExam?: boolean;
+  isFree?: boolean;
+  is_free?: boolean;
 
   // Organization and publish status
   classification?: LessonClassification;

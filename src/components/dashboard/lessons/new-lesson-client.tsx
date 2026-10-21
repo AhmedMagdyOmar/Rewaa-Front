@@ -90,8 +90,9 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
   const [subject, setSubject] = useState("");
   const [instructorId, setInstructorId] = useState("");
 
-  // Active Status
+  // Active Status & Free Preview Status
   const [isActive, setIsActive] = useState<boolean>(true);
+  const [isFree, setIsFree] = useState<boolean>(false);
 
   // Attachments
   const [hasPdfAttachments, setHasPdfAttachments] = useState(false);
@@ -164,6 +165,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
     }
 
     setIsActive(initialLesson.is_active ?? true);
+    setIsFree(Boolean(initialLesson.is_free));
 
     // Attachments
     setHasPdfAttachments(Boolean(initialLesson.has_pdf_attachments));
@@ -341,6 +343,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
           has_exam: hasExamFlag,
           exam_id: examIdValue,
           requires_exam_pass_to_unlock_next_lesson: passToUnlockFlag,
+          is_free: isFree,
           cover_image: coverImageFile || undefined,
           remove_cover_image: removeCoverImage || undefined,
           pdf_files: newPdfFiles.length > 0 ? newPdfFiles : undefined,
@@ -375,6 +378,7 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
             : undefined,
           video_url: type === "videoAndText" ? lectureVideoLink.trim() : undefined,
           is_active: isActive,
+          is_free: isFree,
           has_pdf_attachments: hasPdfAttachments && pdfFiles.length > 0,
           has_explanatory_images: hasImageAttachments && imageFiles.length > 0,
           has_exam: hasExamFlag,
@@ -813,6 +817,19 @@ export function NewLessonClient({ initialLessonId }: NewLessonClientProps = {}) 
             }
             checked={isActive}
             onCheckedChange={setIsActive}
+          />
+
+          {/* Free Preview Setting */}
+          <FormToggleSetting
+            id="standalone-is-free-toggle"
+            title={locale === "ar" ? "درس مجاني (معاينة)" : "Free Preview Lesson"}
+            subtitle={
+              locale === "ar"
+                ? "السماح للطلاب غير المشتركين بمشاهدة هذا الدرس كمعاينة تحفيزية للاشتراك في الدورة"
+                : "Allow unenrolled students to watch this lesson as a motivational course preview"
+            }
+            checked={isFree}
+            onCheckedChange={setIsFree}
           />
         </FormSectionCard>
 

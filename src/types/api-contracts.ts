@@ -162,6 +162,7 @@ export interface BackendLessonItem {
     passing_percentage: number;
   } | null;
   requires_exam_pass_to_unlock_next_lesson?: boolean;
+  is_free?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -327,6 +328,7 @@ export interface BackendLesson {
     passing_percentage: number;
   } | null;
   requires_exam_pass_to_unlock_next_lesson: boolean;
+  is_free?: boolean;
   is_active: boolean;
   created_at?: string;
   updated_at?: string;
@@ -419,6 +421,7 @@ export interface StoreLessonData {
   has_exam: boolean;
   exam_id?: number | null;
   requires_exam_pass_to_unlock_next_lesson: boolean;
+  is_free?: boolean;
   is_active: boolean;
 }
 
@@ -1623,6 +1626,29 @@ export interface BackendStudentCourseDetails {
     total_lessons: number;
     percentage: number;
   } | null;
+  sections?: Array<{
+    id: number;
+    title: Record<string, string>;
+    position: number;
+    exam?: {
+      id: number;
+      title: Record<string, string>;
+      passing_percentage: number;
+    } | null;
+    lessons: Array<{
+      id: number;
+      title: Record<string, string>;
+      type: string;
+      duration_in_minutes: number;
+      position: number;
+      is_free?: boolean;
+      exam?: {
+        id: number;
+        title: Record<string, string>;
+        passing_percentage: number;
+      } | null;
+    }>;
+  }> | null;
 }
 
 export interface StudentCourseDetailsResponse {
