@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useTranslations } from "next-intl";
+import { Award, Sparkles } from "lucide-react";
 
 export function AuthBanner() {
   const t = useTranslations("auth.banner");
@@ -16,8 +17,28 @@ export function AuthBanner() {
           </p>
         </div>
 
-        <div className="w-full relative aspect-16/10 overflow-hidden rounded-xl z-20">
-          <Image src="/auth-bg.jpg" alt={t("title")} fill className="object-cover" priority />
+        <div className="relative w-full max-w-[280px] sm:max-w-xs aspect-square rounded-full bg-white/10 flex items-center justify-center p-6 border border-white/15">
+          {/* Top Right Floating Icon (Secondary Themed) */}
+          <div className="absolute -top-3 right-8 sm:right-10 size-10 sm:size-12 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shadow-md shadow-secondary/20 z-30">
+            <Sparkles className="size-5 sm:size-6" />
+          </div>
+
+          {/* Bottom Left Floating Icon (Reverse Primary: White bg, Primary fg) */}
+          <div className="absolute -bottom-3 left-8 sm:left-10 size-10 sm:size-12 rounded-full bg-white text-primary flex items-center justify-center shadow-md shadow-black/5 border border-slate-100 z-30">
+            <Award className="size-5 sm:size-6" />
+          </div>
+
+          {/* Image */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            <Image
+              src="/images/gradcap.png"
+              alt="Graduation Cap"
+              width={200}
+              height={200}
+              className="object-contain max-h-full drop-shadow-sm"
+              priority
+            />
+          </div>
         </div>
       </div>
     </div>
