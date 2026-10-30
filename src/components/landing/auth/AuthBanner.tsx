@@ -17,25 +17,25 @@ export function AuthBanner() {
           </p>
         </div>
 
-        <div className="relative w-full max-w-[280px] sm:max-w-xs aspect-square rounded-full bg-white/10 flex items-center justify-center p-6 border border-white/15">
+        <div className="relative w-full max-w-[340px] sm:max-w-sm aspect-square flex items-center justify-center">
           {/* Top Right Floating Icon (Secondary Themed) */}
-          <div className="absolute -top-3 right-8 sm:right-10 size-10 sm:size-12 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shadow-md shadow-secondary/20 z-30">
+          <div className="absolute top-2 sm:top-3 right-8 sm:right-10 size-10 sm:size-12 rounded-full bg-secondary text-secondary-foreground flex items-center justify-center shadow-md shadow-secondary/20 z-30">
             <Sparkles className="size-5 sm:size-6" />
           </div>
 
           {/* Bottom Left Floating Icon (Reverse Primary: White bg, Primary fg) */}
-          <div className="absolute -bottom-3 left-8 sm:left-10 size-10 sm:size-12 rounded-full bg-white text-primary flex items-center justify-center shadow-md shadow-black/5 border border-slate-100 z-30">
+          <div className="absolute bottom-2 sm:bottom-3 left-8 sm:left-10 size-10 sm:size-12 rounded-full bg-white text-primary flex items-center justify-center shadow-md shadow-black/5 border border-slate-100 z-30">
             <Award className="size-5 sm:size-6" />
           </div>
 
           {/* Image */}
-          <div className="relative w-full h-full flex items-center justify-center">
+          <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center">
             <Image
-              src="/images/gradcap.png"
+              src="/images/new-gradcap.jpeg"
               alt="Graduation Cap"
-              width={200}
-              height={200}
-              className="object-contain max-h-full drop-shadow-sm"
+              width={340}
+              height={340}
+              className="object-cover w-full h-full drop-shadow-sm"
               priority
             />
           </div>
