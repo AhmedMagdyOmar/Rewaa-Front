@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowLeft, Calendar, Receipt } from "lucide-react";
+import { ArrowLeft, Calendar, Receipt, RefreshCw } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import {
   BillingPeriodStatCard,
@@ -29,7 +30,7 @@ export function BillingSummaryClient() {
   const [selectedYear, setSelectedYear] = useState<number>(2026);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
-  const { data: summaryData, isLoading } = useFinanceSummary(selectedYear);
+  const { data: summaryData, isLoading, isFetching, refetch } = useFinanceSummary(selectedYear);
 
   const monthKeys = [
     "jan",
@@ -211,6 +212,25 @@ export function BillingSummaryClient() {
               <SelectItem value="2024">2024</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-9 text-xs font-medium"
+            disabled={isFetching}
+            onClick={async () => {
+              await refetch();
+              toast.success(
+                locale === "ar"
+                  ? "تم تحديث البيانات المالية بنجاح"
+                  : "Financial data refreshed successfully",
+              );
+            }}
+          >
+            <RefreshCw className={`size-3.5 me-1.5 ${isFetching ? "animate-spin" : ""}`} />
+            {locale === "ar" ? "تحديث" : "Refresh"}
+          </Button>
 
           {/* Link to /dashboard/billing */}
           <Button asChild size="sm" className="h-9 text-xs font-semibold">

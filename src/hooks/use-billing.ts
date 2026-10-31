@@ -25,6 +25,8 @@ export function useOrdersList(params?: OrderFilterParams) {
   return useQuery({
     queryKey: billingKeys.ordersList(params),
     queryFn: () => billingService.getOrders(params),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -33,6 +35,7 @@ export function useOrderDetail(orderId: number | string) {
     queryKey: billingKeys.orderDetail(orderId),
     queryFn: () => billingService.getOrder(orderId),
     enabled: Boolean(orderId),
+    staleTime: 0,
   });
 }
 
@@ -41,6 +44,8 @@ export function usePaymentsList(params?: PaymentFilterParams) {
   return useQuery({
     queryKey: billingKeys.paymentsList(params),
     queryFn: () => billingService.getPayments(params),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -49,6 +54,7 @@ export function usePaymentDetail(paymentId: number | string) {
     queryKey: billingKeys.paymentDetail(paymentId),
     queryFn: () => billingService.getPayment(paymentId),
     enabled: Boolean(paymentId),
+    staleTime: 0,
   });
 }
 
@@ -57,9 +63,7 @@ export function useApprovePayment() {
   return useMutation({
     mutationFn: (paymentId: number | string) => billingService.approvePayment(paymentId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: billingKeys.payments() });
-      queryClient.invalidateQueries({ queryKey: billingKeys.orders() });
-      queryClient.invalidateQueries({ queryKey: billingKeys.financeSummary() });
+      queryClient.invalidateQueries({ queryKey: billingKeys.all });
     },
   });
 }
@@ -70,9 +74,7 @@ export function useRejectPayment() {
     mutationFn: ({ paymentId, data }: { paymentId: number | string; data: RejectPaymentData }) =>
       billingService.rejectPayment(paymentId, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: billingKeys.payments() });
-      queryClient.invalidateQueries({ queryKey: billingKeys.orders() });
-      queryClient.invalidateQueries({ queryKey: billingKeys.financeSummary() });
+      queryClient.invalidateQueries({ queryKey: billingKeys.all });
     },
   });
 }
@@ -126,5 +128,7 @@ export function useFinanceSummary(year?: number) {
   return useQuery({
     queryKey: billingKeys.financeSummary(year),
     queryFn: () => billingService.getFinanceSummary(year),
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 }

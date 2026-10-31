@@ -36,6 +36,7 @@ import {
   Eye,
   Loader2,
   Receipt,
+  RefreshCw,
   RotateCcw,
   Search,
   X,
@@ -93,7 +94,12 @@ export function BillingRequestsClient() {
   };
 
   // Queries & Mutations
-  const { data: paymentsData, isLoading } = usePaymentsList({
+  const {
+    data: paymentsData,
+    isLoading,
+    isFetching,
+    refetch,
+  } = usePaymentsList({
     search: searchQuery.trim() || undefined,
     status: statusTab !== "all" ? statusTab : undefined,
     sort:
@@ -263,6 +269,22 @@ export function BillingRequestsClient() {
           <p className="text-sm text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            className="font-semibold"
+            disabled={isFetching}
+            onClick={async () => {
+              await refetch();
+              toast.success(
+                locale === "ar"
+                  ? "تم تحديث طلبات الاشتراك والمدفوعات"
+                  : "Subscription requests refreshed",
+              );
+            }}
+          >
+            <RefreshCw className={`size-3.5 me-1.5 ${isFetching ? "animate-spin" : ""}`} />
+            {locale === "ar" ? "تحديث" : "Refresh"}
+          </Button>
           <Button asChild variant="outline" className="font-semibold">
             <Link href={`/${locale}/dashboard/courses/codes`}>
               <Barcode className="size-3.5 me-1.5" />
