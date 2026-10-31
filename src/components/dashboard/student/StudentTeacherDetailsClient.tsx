@@ -7,6 +7,7 @@ import {
   SortOptionItem,
 } from "@/components/dashboard/student/StudentCourseFilters";
 import { Button } from "@/components/ui/button";
+import { RichText } from "@/components/ui/rich-text";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePublicCourseCategories } from "@/hooks/use-courses";
 import { useExploreCourses } from "@/hooks/use-explore-courses";
@@ -266,9 +267,16 @@ export function StudentTeacherDetailsClient({ teacherId }: StudentTeacherDetails
                 <Skeleton className="h-4 w-3/4 mx-auto" />
               </div>
             ) : teacher ? (
-              <p className="text-sm sm:text-base leading-relaxed text-muted-foreground whitespace-pre-line">
-                {teacher.bio ? teacher.bio : t("noBio")}
-              </p>
+              teacher.bio ? (
+                <RichText
+                  content={teacher.bio}
+                  className="text-sm sm:text-base leading-relaxed text-muted-foreground prose-p:my-1.5 prose-strong:text-foreground text-center prose-ul:text-start prose-ol:text-start prose-ul:block prose-ol:block prose-ul:w-full prose-ol:w-full max-w-full"
+                />
+              ) : (
+                <p className="text-sm sm:text-base leading-relaxed text-muted-foreground whitespace-pre-line text-center">
+                  {t("noBio")}
+                </p>
+              )
             ) : (
               <div className="text-destructive text-sm font-medium">{t("teacherNotFound")}</div>
             )}

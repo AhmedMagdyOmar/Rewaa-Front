@@ -36,6 +36,8 @@ const IS_STRIKETHROUGH = 4;
 const IS_UNDERLINE = 8;
 const IS_CODE = 16;
 
+import DOMPurify from "isomorphic-dompurify";
+
 export interface RichTextProps {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   content: any; // Can accept Lexical JSON structure, raw string, or array
@@ -49,12 +51,48 @@ export interface RichTextProps {
 export const RichText: React.FC<RichTextProps> = ({ content, className }) => {
   if (!content) return null;
 
-  // Fallback: If content is just plain HTML string, render via dangerouslySetInnerHTML
+  // Fallback: If content is just plain HTML string, sanitize and render via dangerouslySetInnerHTML
   if (typeof content === "string") {
+    const cleanHtml = DOMPurify.sanitize(content, {
+      ALLOWED_TAGS: [
+        "p",
+        "strong",
+        "b",
+        "em",
+        "i",
+        "u",
+        "s",
+        "strike",
+        "del",
+        "ul",
+        "ol",
+        "li",
+        "a",
+        "br",
+        "span",
+        "blockquote",
+        "h1",
+        "h2",
+        "h3",
+        "h4",
+        "h5",
+        "h6",
+        "hr",
+      ],
+      ALLOWED_ATTR: ["href", "target", "rel", "dir", "class", "style"],
+    });
+
     return (
       <div
-        className={cn("prose max-w-none", className)}
-        dangerouslySetInnerHTML={{ __html: content }}
+        className={cn(
+          "prose max-w-none text-foreground",
+          "prose-a:text-primary hover:prose-a:underline prose-a:font-medium",
+          "prose-blockquote:text-start prose-blockquote:text-foreground/90 prose-blockquote:border-s-primary prose-blockquote:border-s-4 prose-blockquote:ps-4 prose-blockquote:italic prose-blockquote:my-3",
+          "prose-ul:list-disc prose-ol:list-decimal prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5",
+          "[&_u]:underline [&_[style*='underline']]:underline [&_s]:line-through [&_del]:line-through [&_strike]:line-through",
+          className,
+        )}
+        dangerouslySetInnerHTML={{ __html: cleanHtml }}
       />
     );
   }
