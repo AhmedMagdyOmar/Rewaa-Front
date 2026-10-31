@@ -258,41 +258,56 @@ export function StudentExploreCoursesClient() {
           3. COURSES GRID / SKELETON / EMPTY STATE
       ────────────────────────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, index) => (
             <div
               key={index}
-              className="flex flex-col rounded-xl border border-border/60 bg-card overflow-hidden p-4 space-y-3"
+              className="flex flex-col justify-between rounded-2xl bg-card border border-border/70 shadow-xs overflow-hidden text-right h-full"
             >
-              <Skeleton className="h-44 w-full rounded-lg" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-3 w-1/2" />
+              <div className="aspect-[16/9] w-full bg-muted animate-pulse" />
+              <div className="p-4 pb-3 space-y-2.5">
+                <Skeleton className="h-5 w-3/4 rounded-md" />
+                <Skeleton className="h-3.5 w-full rounded" />
+                <Skeleton className="h-3.5 w-2/3 rounded" />
               </div>
-              <div className="pt-4 flex items-center justify-between border-t border-border/40">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-24 rounded-md" />
+              <div className="p-4 pt-0 mt-auto">
+                <div className="pt-3 border-t border-border/50 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="size-8 rounded-full" />
+                    <div className="space-y-1">
+                      <Skeleton className="h-3 w-16" />
+                      <Skeleton className="h-2.5 w-12" />
+                    </div>
+                  </div>
+                  <Skeleton className="h-5 w-14" />
+                </div>
+                <Skeleton className="mt-3.5 h-9 w-full rounded-xl" />
               </div>
             </div>
           ))}
         </div>
       ) : isInitialEmpty ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-xl border border-dashed border-border/80">
-          <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-3" />
-          <h3 className="text-lg font-semibold text-foreground">{t("empty.title")}</h3>
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border border-dashed border-border/80">
+          <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
+          <h3 className="text-lg font-bold text-foreground">{t("empty.title")}</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md">{t("empty.description")}</p>
         </div>
       ) : isSearchEmpty ? (
-        <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-xl border border-dashed border-border/80">
-          <BookOpen className="h-12 w-12 text-muted-foreground/50 mb-3" />
-          <h3 className="text-lg font-semibold text-foreground">{t("empty.title")}</h3>
+        <div className="flex flex-col items-center justify-center p-12 text-center bg-card rounded-2xl border border-dashed border-border/80">
+          <BookOpen className="h-12 w-12 text-muted-foreground/40 mb-3" />
+          <h3 className="text-lg font-bold text-foreground">{t("empty.title")}</h3>
           <p className="text-sm text-muted-foreground mt-1 max-w-md">{t("empty.description")}</p>
-          <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-4 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetFilters}
+            className="mt-4 gap-2 rounded-xl"
+          >
             <span>{t("clearFilters")}</span>
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {courses.map((course) => (
             <StudentAvailableCourseCard key={course.id} course={course} />
           ))}
