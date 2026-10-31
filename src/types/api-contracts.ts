@@ -120,6 +120,7 @@ export interface BackendCourseSection {
 
 export interface BackendLessonItem {
   id: number;
+  original_lesson_id?: number | null;
   provider_id?: number;
   course_id?: number;
   course_section_id?: number;

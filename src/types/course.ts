@@ -17,6 +17,7 @@ export interface LessonAttachment {
 
 export interface Lesson {
   id: string;
+  original_lesson_id?: number | null;
   type?: LessonType;
   duration_in_minutes?: number;
   duration?: number | string;

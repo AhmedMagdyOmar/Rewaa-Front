@@ -1,9 +1,10 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { BookOpen, CheckCircle2, FolderPlus } from "lucide-react";
+import { BookOpen, CheckCircle2, FolderPlus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormSectionCard } from "@/components/ui/form-section-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { LessonDialog } from "../../lesson-dialog";
 import { CurriculumActionsBar } from "./curriculum-actions-bar";
 import { CurriculumSectionItem } from "./curriculum-section-item";
@@ -53,18 +54,49 @@ export function CurriculumView({
 
       {/* Curriculum View Card */}
       <FormSectionCard
-        title={t("step2.title")}
+        title={
+          <div className="flex items-center gap-2">
+            <span>{t("step2.title")}</span>
+            {curriculum.isSectionsFetching && (
+              <Loader2 className="size-4 animate-spin text-primary" />
+            )}
+          </div>
+        }
         description={t("step2.subtitle")}
         icon={BookOpen}
         contentClassName="space-y-4"
       >
         {curriculum.sections.length === 0 ? (
-          <div className="py-12 px-4 text-center border-2 border-dashed rounded-xl bg-muted/20 space-y-3">
-            <FolderPlus className="size-10 text-muted-foreground mx-auto" />
-            <p className="text-sm font-medium text-muted-foreground max-w-md mx-auto leading-relaxed">
-              {t("step2.noSections")}
-            </p>
-          </div>
+          curriculum.isSectionsLoading || curriculum.isSectionsFetching ? (
+            <div className="space-y-3 py-2">
+              <div className="border rounded-xl p-4 bg-muted/20 space-y-3 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                </div>
+                <div className="space-y-2 pt-2">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              </div>
+              <div className="border rounded-xl p-4 bg-muted/20 space-y-3 animate-pulse">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                </div>
+                <div className="space-y-2 pt-2">
+                  <Skeleton className="h-12 w-full rounded-lg" />
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="py-12 px-4 text-center border-2 border-dashed rounded-xl bg-muted/20 space-y-3">
+              <FolderPlus className="size-10 text-muted-foreground mx-auto" />
+              <p className="text-sm font-medium text-muted-foreground max-w-md mx-auto leading-relaxed">
+                {t("step2.noSections")}
+              </p>
+            </div>
+          )
         ) : (
           <div className="space-y-4">
             {curriculum.sections.map((sec, sIdx) => (

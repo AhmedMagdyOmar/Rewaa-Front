@@ -56,7 +56,12 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
   const queryClient = useQueryClient();
   const isBackendCourseId = Boolean(courseId && !courseId.startsWith("course-"));
   const { data: parentCourse } = useProviderCourse(isBackendCourseId ? courseId : undefined);
-  const { data: backendSections } = useCourseSections(isBackendCourseId ? courseId : undefined);
+  const {
+    data: backendSections,
+    isLoading: isBackendSectionsLoading,
+    isFetching: isBackendSectionsFetching,
+    refetch: refetchBackendSections,
+  } = useCourseSections(isBackendCourseId ? courseId : undefined);
   const { data: allProviderExamsData } = useProviderExams({ per_page: 100, is_template: true });
   const { data: lessonOptionsData } = useProviderLessonOptions(
     parentCourse?.educational_stage_id || undefined,
@@ -409,6 +414,7 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 fileType: "image" as const,
                 sizeInBytes: img.size,
               })),
+              original_lesson_id: l.original_lesson_id ?? Number(l.id),
               isLinkedToExam: Boolean(l.exam_id),
               linkedExamId: l.exam_id ? String(l.exam_id) : undefined,
               linkedExamTitle: l.exam?.title?.[locale] || l.exam?.title?.ar || undefined,
@@ -1005,9 +1011,14 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 course_id: Number(courseId),
                 scope: "course",
               });
-              sectionExamId = clonedSectionExam.id;
+              if (clonedSectionExam && (clonedSectionExam.questions_count ?? 0) > 0) {
+                sectionExamId = clonedSectionExam.id;
+              } else {
+                sectionExamId = null;
+              }
             } catch (cloneErr) {
               console.error("Failed to clone exam for imported section:", cloneErr);
+              sectionExamId = null;
             }
           }
 
@@ -1034,17 +1045,32 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                     course_id: Number(courseId),
                     scope: "course",
                   });
-                  lessonExamId = clonedExam.id;
+                  // If cloned exam has active questions, it can be linked
+                  if (clonedExam && (clonedExam.questions_count ?? 0) > 0) {
+                    lessonExamId = clonedExam.id;
+                  } else {
+                    lessonExamId = null;
+                  }
                 } catch (cloneErr) {
                   console.error("Failed to clone exam for imported lesson:", cloneErr);
+                  lessonExamId = null;
                 }
               }
+
+              const resolvedOriginalLessonId =
+                l.original_lesson_id !== undefined &&
+                l.original_lesson_id !== null &&
+                !Number.isNaN(Number(l.original_lesson_id))
+                  ? Number(l.original_lesson_id)
+                  : !Number.isNaN(Number(l.id)) && !String(l.id).startsWith("les-")
+                    ? Number(l.id)
+                    : undefined;
 
               return createLessonMutation.mutateAsync({
                 classification: "course",
                 course_id: Number(courseId),
                 course_section_id: Number(createdSection.id),
-                original_lesson_id: !Number.isNaN(Number(l.id)) ? Number(l.id) : undefined,
+                original_lesson_id: resolvedOriginalLessonId,
                 type: l.type === "text" ? "text_only" : "video_and_text",
                 duration_in_minutes:
                   l.duration_in_minutes !== undefined &&
@@ -1061,7 +1087,9 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
                 has_explanatory_images: Boolean(l.hasImageAttachments),
                 has_exam: Boolean(l.isLinkedToExam && lessonExamId),
                 exam_id: l.isLinkedToExam && lessonExamId ? lessonExamId : null,
-                requires_exam_pass_to_unlock_next_lesson: Boolean(l.isRequiredPassExam),
+                requires_exam_pass_to_unlock_next_lesson: Boolean(
+                  l.isRequiredPassExam && lessonExamId,
+                ),
                 is_active: true,
               });
             });
@@ -1071,15 +1099,20 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
           }
         }
 
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.provider.courses.sections(courseId),
-        });
-        queryClient.invalidateQueries({
-          queryKey: [...queryKeys.provider.courses.detail(courseId), "content"],
-        });
-        queryClient.invalidateQueries({
-          queryKey: queryKeys.provider.lessons.all(),
-        });
+        // Invalidate relevant queries and wait for course sections to refetch
+        // so the UI doesn't lag behind the closed dialog
+        await Promise.all([
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.provider.courses.sections(courseId),
+          }),
+          queryClient.invalidateQueries({
+            queryKey: [...queryKeys.provider.courses.detail(courseId), "content"],
+          }),
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.provider.lessons.all(),
+          }),
+          refetchBackendSections(),
+        ]);
 
         toast.success(
           locale === "ar"
@@ -1163,6 +1196,8 @@ export function useCurriculumManagement({ courseId, locale }: UseCurriculumManag
     availableImportSections,
     selectedImportSectionsList,
     isImporting,
+    isSectionsLoading: isBackendSectionsLoading,
+    isSectionsFetching: isBackendSectionsFetching,
     isDeletingLesson: deleteLessonMutation.isPending,
     isSavingLesson: createLessonMutation.isPending || updateLessonMutation.isPending,
     // Handlers
