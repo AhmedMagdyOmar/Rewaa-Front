@@ -253,7 +253,9 @@ export function StudentCoursePreviewView({
                         className="space-y-3"
                       >
                         {course.sections.map((section, idx) => {
-                          const sectionTitle = resolveText(section.title) || `الفصل ${idx + 1}`;
+                          const sectionTitle =
+                            resolveText(section.title) ||
+                            (isRtl ? `القسم ${idx + 1}` : `Section ${idx + 1}`);
                           return (
                             <AccordionItem
                               key={section.id}
