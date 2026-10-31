@@ -132,12 +132,7 @@ export function StudentProfileClient() {
   };
 
   const validate = (): boolean => {
-    if (
-      !formData.firstName.trim() ||
-      !formData.familyName.trim() ||
-      !formData.phoneNumber.trim() ||
-      !formData.parentPhoneNumber.trim()
-    ) {
+    if (!formData.firstName.trim() || !formData.familyName.trim()) {
       setErrorMsg(t("requiredFieldsError"));
       return false;
     }
@@ -162,16 +157,12 @@ export function StudentProfileClient() {
     if (!validate()) return;
 
     try {
-      // 1. Update Profile Information
+      // 1. Update Profile Information (phone numbers are not editable by students)
       await updateProfileMutation.mutateAsync({
         first_name: formData.firstName.trim(),
         father_name: formData.fatherName.trim(),
         family_name: formData.familyName.trim(),
         additional_name: formData.additionalName.trim(),
-        phone_code: "+20",
-        phone: formData.phoneNumber.trim(),
-        guardian_phone_code: "+20",
-        guardian_phone: formData.parentPhoneNumber.trim(),
         gender: formData.gender,
         country_id: formData.countryId ? Number(formData.countryId) : undefined,
         governorate_id: formData.governorateId ? Number(formData.governorateId) : undefined,
@@ -325,11 +316,10 @@ export function StudentProfileClient() {
                   id="phoneNumber"
                   type="tel"
                   value={formData.phoneNumber}
-                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
-                  placeholder={t("phoneNumberPlaceholder")}
-                  className="font-mono"
+                  disabled
+                  readOnly
+                  className="font-mono bg-muted/50 cursor-not-allowed opacity-80"
                   dir="ltr"
-                  required
                 />
               </div>
 
@@ -342,12 +332,16 @@ export function StudentProfileClient() {
                   id="parentPhoneNumber"
                   type="tel"
                   value={formData.parentPhoneNumber}
-                  onChange={(e) => handleChange("parentPhoneNumber", e.target.value)}
-                  placeholder={t("parentPhoneNumberPlaceholder")}
-                  className="font-mono"
+                  disabled
+                  readOnly
+                  className="font-mono bg-muted/50 cursor-not-allowed opacity-80"
                   dir="ltr"
-                  required
                 />
+              </div>
+
+              {/* Non-editable Note */}
+              <div className="md:col-span-2 text-xs text-muted-foreground bg-muted/30 p-2.5 rounded-lg border border-border/50">
+                {t("phoneReadOnlyNote")}
               </div>
 
               {/* Gender */}
