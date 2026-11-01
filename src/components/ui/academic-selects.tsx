@@ -59,6 +59,7 @@ export interface ComboboxSelectProps {
   triggerClassName?: string;
   showIcon?: boolean;
   icon?: React.ReactNode;
+  helperText?: React.ReactNode;
   // Quick-Add capability
   allowAdd?: boolean;
   addButtonTooltip?: string;
@@ -84,6 +85,7 @@ export function ComboboxSelect({
   triggerClassName,
   showIcon = false,
   icon,
+  helperText,
   allowAdd = false,
   addButtonTooltip,
   onAddNewOption,
@@ -214,6 +216,8 @@ export function ComboboxSelect({
           </Button>
         )}
       </div>
+
+      {helperText && <p className="text-xs text-muted-foreground mt-0.5">{helperText}</p>}
 
       {allowAdd && (
         <QuickAddDialog
@@ -376,6 +380,7 @@ export interface TeacherSelectProps {
   className?: string;
   triggerClassName?: string;
   showIcon?: boolean;
+  helperText?: React.ReactNode;
   teachers?: (Teacher | { id: number | string; full_name?: string; name?: string })[];
   allowAdd?: boolean;
 }
@@ -391,6 +396,7 @@ export function TeacherSelect({
   className,
   triggerClassName,
   showIcon = false,
+  helperText,
   teachers,
   allowAdd = false,
 }: TeacherSelectProps) {
@@ -420,6 +426,7 @@ export function TeacherSelect({
       className={className}
       triggerClassName={triggerClassName}
       showIcon={showIcon}
+      helperText={helperText}
       allowAdd={allowAdd}
     />
   );

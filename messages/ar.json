@@ -1038,6 +1038,7 @@
         "teacherName": "اسم المعلم / المحاضر",
         "selectTeacher": "اختر المعلم...",
         "teacherNamePlaceholder": "مثال: أ. محمد عبد المعبود",
+        "teacherHelperText": "تعيين هذا الاختبار لمعلم محدد",
         "category": "تصنيف الامتحان",
         "selectCategory": "اختر التصنيف...",
         "showModelAnswers": "إظهار الإجابات النموذجية للطلاب",
@@ -1622,6 +1623,7 @@
       "selectSubjectPlaceholder": "اختر المادة الدراسية...",
       "teacherName": "اسم المعلم / المحاضر",
       "teacherNamePlaceholder": "مثال: أ. محمد أحمد",
+      "teacherHelperText": "تعيين هذا السؤال لمعلم محدد",
       "messages": {
         "createdSuccessfully": "تم إنشاء السؤال بنجاح",
         "createFailed": "فشل في إنشاء السؤال"
@@ -2989,8 +2991,10 @@
       "filters": {
         "allSubjects": "كل المواد",
         "allCourses": "كل الدورات",
+        "allTeachers": "كل المعلمين",
         "subject": "المادة",
-        "course": "الدورة"
+        "course": "الدورة",
+        "teacher": "المعلم"
       },
       "tabs": {
         "required": "الامتحانات المطلوبة",

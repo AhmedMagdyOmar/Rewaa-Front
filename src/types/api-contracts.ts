@@ -1842,6 +1842,7 @@ export interface StudentExamsFilterParams {
   tab?: "required" | "completed";
   subject_id?: number | string;
   course_id?: number | string;
+  instructor_id?: number | string;
   sort?:
     | "latest"
     | "oldest"
@@ -1873,6 +1874,11 @@ export interface StudentExamOptionsResponse {
   subjects: Array<{
     id: number;
     name: Record<string, string>;
+  }>;
+  instructors?: Array<{
+    id: number;
+    name: string;
+    subject_ids?: number[];
   }>;
 }
 

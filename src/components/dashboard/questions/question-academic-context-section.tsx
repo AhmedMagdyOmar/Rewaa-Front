@@ -76,6 +76,7 @@ export const QuestionAcademicContextSection = React.memo(function QuestionAcadem
             teachers={mappedInstructors}
             disabled={isLoadingOptions || requiresInstructorSelection === false}
             required={requiresInstructorSelection !== false}
+            helperText={tNew("teacherHelperText")}
           />
         </div>
       ) : (

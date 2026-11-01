@@ -1038,6 +1038,7 @@
         "teacherName": "Teacher / Instructor Name",
         "selectTeacher": "Select teacher...",
         "teacherNamePlaceholder": "e.g., Mr. Mohamed Abdel Maaboud",
+        "teacherHelperText": "Assign this exam to a specific teacher",
         "category": "Exam Category",
         "selectCategory": "Select category...",
         "showModelAnswers": "Show Model Answers to Students",
@@ -1622,6 +1623,7 @@
       "selectSubjectPlaceholder": "Select subject...",
       "teacherName": "Teacher / Instructor Name",
       "teacherNamePlaceholder": "e.g., Mr. Mohamed Ahmed",
+      "teacherHelperText": "Assign this question to a specific teacher",
       "messages": {
         "createdSuccessfully": "Question created successfully",
         "createFailed": "Failed to create question"
@@ -2988,8 +2990,10 @@
       "filters": {
         "allSubjects": "All Subjects",
         "allCourses": "All Courses",
+        "allTeachers": "All Teachers",
         "subject": "Subject",
-        "course": "Course"
+        "course": "Course",
+        "teacher": "Teacher"
       },
       "tabs": {
         "required": "Required Exams",

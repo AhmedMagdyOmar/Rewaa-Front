@@ -240,6 +240,8 @@ export function ExamSettingsStep({
             placeholder={tForm("fields.selectTeacher")}
             teachers={mappedInstructors}
             disabled={isLoadingOptions || requiresInstructorSelection === false}
+            required={requiresInstructorSelection !== false}
+            helperText={tForm("fields.teacherHelperText")}
           />
 
           {/* Exam Category */}

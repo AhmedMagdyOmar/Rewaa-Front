@@ -100,6 +100,8 @@ export function ExamStep1Form({ form, mode, locale }: ExamStep1FormProps) {
               Boolean(form.isLoadingOptions) ||
               form.optionsData?.requires_instructor_selection === false
             }
+            required={form.optionsData?.requires_instructor_selection !== false}
+            helperText={tForm("fields.teacherHelperText")}
             label={tForm("fields.teacherName")}
             placeholder={tForm("fields.selectTeacher")}
           />

@@ -39,6 +39,7 @@ import {
   RotateCcw,
   Search,
   Timer,
+  User,
   X,
   XCircle,
 } from "lucide-react";
@@ -90,6 +91,7 @@ export function StudentExamsClient() {
   const sortBy = (searchParams.get("sort") as StudentExamSortOption) || "latest";
   const selectedSubjectId = searchParams.get("subject_id") || "";
   const selectedCourseId = searchParams.get("course_id") || "";
+  const selectedInstructorId = searchParams.get("instructor_id") || "";
   const currentPage = parseInt(searchParams.get("page") || "1", 10) || 1;
   const itemsPerPage = 10;
 
@@ -131,7 +133,7 @@ export function StudentExamsClient() {
     return () => clearTimeout(handler);
   }, [searchTerm, searchQuery, updateUrlParams]);
 
-  // Fetch exam options (e.g. subjects) for the student
+  // Fetch exam options (e.g. subjects, instructors) for the student
   const { data: examOptionsData } = useStudentExamOptions();
 
   // Fetch enrolled courses for the student (used for course filter and extracting enrolled subjects)
@@ -171,6 +173,21 @@ export function StudentExamsClient() {
     return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
   }, [examOptionsData, myCourses, locale]);
 
+  // Build and filter instructor options based on selected subject
+  const teacherOptions = React.useMemo(() => {
+    const rawInstructors = examOptionsData?.instructors || [];
+    if (!selectedSubjectId) {
+      return rawInstructors;
+    }
+    const subIdNum = Number(selectedSubjectId);
+    return rawInstructors.filter((inst) => {
+      if (!inst.subject_ids || inst.subject_ids.length === 0) {
+        return true;
+      }
+      return inst.subject_ids.includes(subIdNum);
+    });
+  }, [examOptionsData?.instructors, selectedSubjectId]);
+
   // Filter courses by selected subject if one is picked
   const availableCourses = React.useMemo(() => {
     if (!selectedSubjectId) return myCourses;
@@ -187,6 +204,7 @@ export function StudentExamsClient() {
       subject_id: selectedSubjectId ? Number(selectedSubjectId) : undefined,
       course_id:
         activeScope === "course" && selectedCourseId ? Number(selectedCourseId) : undefined,
+      instructor_id: selectedInstructorId ? Number(selectedInstructorId) : undefined,
       page: currentPage,
       per_page: itemsPerPage,
     }),
@@ -196,6 +214,7 @@ export function StudentExamsClient() {
       sortBy,
       selectedSubjectId,
       selectedCourseId,
+      selectedInstructorId,
       activeScope,
       currentPage,
       itemsPerPage,
@@ -270,7 +289,32 @@ export function StudentExamsClient() {
         nextCourseId = null;
       }
     }
-    updateUrlParams({ subject_id: subjectId, course_id: nextCourseId, page: 1 });
+
+    // Check if currently selected teacher teaches the new subject
+    let nextInstructorId: string | null = selectedInstructorId || null;
+    if (subjectId && selectedInstructorId) {
+      const subIdNum = Number(subjectId);
+      const teacherStillValid = examOptionsData?.instructors?.some(
+        (t) =>
+          String(t.id) === selectedInstructorId &&
+          (!t.subject_ids || t.subject_ids.length === 0 || t.subject_ids.includes(subIdNum)),
+      );
+      if (!teacherStillValid) {
+        nextInstructorId = null;
+      }
+    }
+
+    updateUrlParams({
+      subject_id: subjectId,
+      course_id: nextCourseId,
+      instructor_id: nextInstructorId,
+      page: 1,
+    });
+  };
+
+  const handleTeacherChange = (val: string) => {
+    const instructorId = val === "all" ? null : val;
+    updateUrlParams({ instructor_id: instructorId, page: 1 });
   };
 
   const handleCourseChange = (val: string) => {
@@ -285,6 +329,7 @@ export function StudentExamsClient() {
       sort: null,
       subject_id: null,
       course_id: null,
+      instructor_id: null,
       page: 1,
     });
   };
@@ -317,7 +362,8 @@ export function StudentExamsClient() {
     searchQuery.trim() !== "" ||
     sortBy !== "latest" ||
     Boolean(selectedSubjectId) ||
-    Boolean(selectedCourseId);
+    Boolean(selectedCourseId) ||
+    Boolean(selectedInstructorId);
 
   const showingText = t("pagination.showing", {
     start: totalItems > 0 ? startIndex + 1 : 0,
@@ -445,6 +491,26 @@ export function StudentExamsClient() {
               </Select>
             </div>
           )}
+
+          {/* Teacher Filter Dropdown */}
+          <div className="w-full sm:w-44">
+            <Select value={selectedInstructorId || "all"} onValueChange={handleTeacherChange}>
+              <SelectTrigger className="h-9 text-xs sm:text-sm bg-background border-border/80">
+                <div className="flex items-center gap-1.5 truncate">
+                  <User className="size-3.5 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder={t("filters.allTeachers")} />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("filters.allTeachers")}</SelectItem>
+                {teacherOptions.map((teacher) => (
+                  <SelectItem key={teacher.id} value={String(teacher.id)}>
+                    {teacher.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {/* Sub-Tab Selectors: Required vs Completed */}
           <div className="flex items-center p-1 bg-muted rounded-lg border border-border/40 text-xs font-medium self-start sm:self-auto shrink-0">

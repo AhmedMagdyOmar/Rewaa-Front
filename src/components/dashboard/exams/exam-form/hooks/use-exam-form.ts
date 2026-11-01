@@ -248,6 +248,16 @@ export function useExamForm({ mode, initialExamId, initialData }: UseExamFormPro
       return;
     }
 
+    const requiresInstructor = optionsData?.requires_instructor_selection ?? true;
+    if (requiresInstructor && !teacherName) {
+      toast.error(
+        locale === "ar"
+          ? "يرجى اختيار المعلم المسند إليه الاختبار"
+          : "Please select an instructor for this exam",
+      );
+      return;
+    }
+
     try {
       const payload = buildStorePayload();
       if (!createdExamId) {
