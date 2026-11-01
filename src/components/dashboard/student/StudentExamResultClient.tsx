@@ -81,10 +81,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
   const isCompletedExam =
     exam?.result_status === "passed" ||
     exam?.result_status === "failed" ||
-    exam?.result_status === "pending_review";
+    exam?.result_status === "pending_review" ||
+    exam?.action === "view_result" ||
+    (exam?.attempts_used && exam.attempts_used > 0);
+
+  const shouldFetchResult = Boolean(examId) && Boolean(isCompletedExam) && !activeAttemptId;
 
   const { data: resultAttempt, isLoading: isResultLoading } = useStudentExamResult(
-    isCompletedExam && !activeAttemptId ? examId : undefined,
+    shouldFetchResult ? examId : undefined,
   );
 
   // Mutations
@@ -120,8 +124,12 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
     }
   }, [exam, activeMode]);
 
-  // Current display attempt for Review Mode
-  const displayAttempt = activeAttempt?.status !== "in_progress" ? activeAttempt : resultAttempt;
+  // Current display attempt for Review Mode: prioritize whichever attempt contains questions
+  const displayAttempt =
+    (resultAttempt?.questions && resultAttempt.questions.length > 0 ? resultAttempt : null) ??
+    (activeAttempt?.status !== "in_progress" ? activeAttempt : null) ??
+    resultAttempt ??
+    activeAttempt;
 
   // Start exam handler
   const handleStartExam = async () => {
@@ -333,26 +341,41 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
 
   // ── Mode 3: Completed Exam Results & Review ─────────────────────────────────
   const reviewQuestions = displayAttempt?.questions || [];
+  const totalQuestionsCount =
+    displayAttempt?.result_summary?.questions_count ??
+    (displayAttempt?.questions && displayAttempt.questions.length > 0
+      ? displayAttempt.questions.length
+      : undefined) ??
+    exam.questions_count ??
+    0;
+
   const isPendingReview =
     displayAttempt?.status === "pending_review" ||
-    (!displayAttempt && exam.result_status === "pending_review");
+    (!displayAttempt && exam.result_status === "pending_review") ||
+    (displayAttempt?.result_summary?.pending_review_count ?? 0) > 0;
+  const isUnderReview = isPendingReview;
   const showCorrectAnswers = displayAttempt?.show_correct_answers ?? true;
 
+  const actualCorrectCount = reviewQuestions.filter((q) => q.is_correct === true).length;
+  const actualWrongCount = reviewQuestions.filter((q) => q.is_correct === false).length;
+
   const correctCount =
-    isPendingReview || !showCorrectAnswers
+    isUnderReview || !showCorrectAnswers
       ? 0
-      : (displayAttempt?.result_summary?.correct_answers_count ??
-        reviewQuestions.filter((q) => q.is_correct === true).length);
+      : reviewQuestions.length > 0
+        ? actualCorrectCount
+        : (displayAttempt?.result_summary?.correct_answers_count ?? 0);
   const wrongCount =
-    isPendingReview || !showCorrectAnswers
+    isUnderReview || !showCorrectAnswers
       ? 0
-      : (displayAttempt?.result_summary?.incorrect_answers_count ??
-        reviewQuestions.filter((q) => q.is_correct === false).length);
+      : reviewQuestions.length > 0
+        ? actualWrongCount
+        : (displayAttempt?.result_summary?.incorrect_answers_count ?? 0);
   const totalScore = displayAttempt?.max_score ?? exam.adopted_result?.max_score ?? 100;
   const earnedScore = displayAttempt?.score ?? exam.adopted_result?.score ?? null;
   const percentage = displayAttempt?.percentage ?? exam.adopted_result?.percentage ?? null;
   const passingPercentage = displayAttempt?.passing_percentage ?? exam.passing_percentage ?? 60;
-  const isPassed = isPendingReview
+  const isPassed = isUnderReview
     ? null
     : (displayAttempt?.is_passed ??
       exam.adopted_result?.is_passed ??
@@ -413,14 +436,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               <Badge
                 variant="outline"
                 className={`text-xs font-bold gap-1 px-2.5 py-0.5 ${
-                  isPendingReview
+                  isUnderReview
                     ? "bg-amber-500/10 text-amber-700 border-amber-500/30"
                     : isPassed
                       ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/30"
                       : "bg-rose-500/10 text-rose-700 border-rose-500/30"
                 }`}
               >
-                {isPendingReview ? (
+                {isUnderReview ? (
                   <Clock className="size-3.5 text-amber-600" />
                 ) : isPassed ? (
                   <CheckCircle2 className="size-3.5 text-emerald-600" />
@@ -428,7 +451,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                   <XCircle className="size-3.5 text-rose-600" />
                 )}
                 <span>
-                  {isPendingReview
+                  {isUnderReview
                     ? t("statusPendingReview")
                     : isPassed
                       ? t("statusPassed")
@@ -584,7 +607,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
       {/* ── 2. Hero Results Banner Card ──────────────────────────────────── */}
       <div
         className={`relative overflow-hidden rounded-2xl border p-6 sm:p-8 shadow-xs ${
-          isPendingReview
+          isUnderReview
             ? "bg-linear-to-br from-amber-500/10 via-card to-background border-amber-500/30"
             : isPassed
               ? "bg-linear-to-br from-emerald-500/10 via-card to-background border-emerald-500/30"
@@ -596,7 +619,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           <div className="space-y-2 text-center md:text-start max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-background/80 backdrop-blur-xs border shadow-2xs">
               <Sparkles
-                className={`size-3.5 ${isPendingReview ? "text-amber-600" : isPassed ? "text-emerald-600" : "text-rose-600"}`}
+                className={`size-3.5 ${isUnderReview ? "text-amber-600" : isPassed ? "text-emerald-600" : "text-rose-600"}`}
               />
               <span>
                 {t("attemptInfo", {
@@ -607,7 +630,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
 
             <h2 className="text-xl sm:text-2xl font-black text-foreground">
-              {isPendingReview
+              {isUnderReview
                 ? t("hero.pendingTitle")
                 : isPassed
                   ? t("hero.passedTitle")
@@ -615,7 +638,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </h2>
 
             <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-              {isPendingReview
+              {isUnderReview
                 ? t("hero.pendingSubtitle")
                 : isPassed
                   ? t("hero.passedSubtitle")
@@ -658,7 +681,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </span>
 
             <div className="flex items-baseline gap-1 text-4xl sm:text-5xl font-black text-foreground">
-              {isPendingReview ? (
+              {isUnderReview ? (
                 <span className="text-amber-600 text-2xl font-bold">
                   {t("statusPendingReview")}
                 </span>
@@ -675,7 +698,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
             </div>
 
             <div className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-sm font-bold bg-muted text-foreground">
-              {isPendingReview ? (
+              {isUnderReview ? (
                 <span>
                   {t("kpi.passingGrade")}: {passingPercentage}%
                 </span>
@@ -709,7 +732,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           <div>
             <p className="text-2xl sm:text-3xl font-black text-foreground">{passingPercentage}%</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {isPendingReview
+              {isUnderReview
                 ? t("statusPendingReview")
                 : isPassed
                   ? t("statusPassed")
@@ -738,7 +761,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           </div>
         </DashboardCard>
 
-        {isPendingReview ? (
+        {isUnderReview ? (
           <>
             {/* Metric 3: Pending Review Status */}
             <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-amber-500/40 transition-colors">
@@ -755,7 +778,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                   {t("statusPendingReview")}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {isAr ? "بانتظار مراجعة المعلم" : "Awaiting teacher review"}
+                  {isAr ? "بانتظار مراجعة وتصحيح المعلم" : "Awaiting teacher review"}
                 </p>
               </div>
             </DashboardCard>
@@ -772,7 +795,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-black text-foreground">
-                  {reviewQuestions.length}
+                  {totalQuestionsCount}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isAr ? "سيتم إعلان النتيجة بعد التصحيح" : "Scores revealed after full grading"}
@@ -794,7 +817,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
               </div>
               <div>
                 <p className="text-2xl sm:text-3xl font-black text-foreground">
-                  {reviewQuestions.length}
+                  {totalQuestionsCount}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
                   {isAr ? "تم تسليم الامتحان بنجاح" : "Exam submitted successfully"}
@@ -824,7 +847,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
           </>
         ) : (
           <>
-            {/* Metric 3: Correct Questions Box without count */}
+            {/* Metric 3: Correct Questions Count */}
             <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-emerald-500/40 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -835,17 +858,19 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 </div>
               </div>
               <div>
-                <p className="text-lg sm:text-xl font-bold text-emerald-600 flex items-center gap-1.5">
-                  <Check className="size-5" />
-                  <span>{isAr ? "إجابات صحيحة" : "Correct Answers"}</span>
+                <p className="text-2xl sm:text-3xl font-black text-emerald-600">
+                  {correctCount}
+                  <span className="text-sm font-semibold text-muted-foreground ms-1">
+                    / {totalQuestionsCount}
+                  </span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {isAr ? "تمت الإجابة بشكل صحيح" : "Answered correctly"}
+                  {t("kpi.correctCount", { count: correctCount })}
                 </p>
               </div>
             </DashboardCard>
 
-            {/* Metric 4: Wrong Questions Box without count */}
+            {/* Metric 4: Wrong Questions Count */}
             <DashboardCard className="p-4 flex flex-col justify-between gap-3 bg-card hover:border-rose-500/40 transition-colors">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-muted-foreground">
@@ -856,12 +881,14 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                 </div>
               </div>
               <div>
-                <p className="text-lg sm:text-xl font-bold text-rose-600 flex items-center gap-1.5">
-                  <X className="size-5" />
-                  <span>{isAr ? "إجابات خاطئة" : "Incorrect Answers"}</span>
+                <p className="text-2xl sm:text-3xl font-black text-rose-600">
+                  {wrongCount}
+                  <span className="text-sm font-semibold text-muted-foreground ms-1">
+                    / {totalQuestionsCount}
+                  </span>
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  {isAr ? "تمت الإجابة بشكل غير صحيح" : "Answered incorrectly"}
+                  {t("kpi.wrongCount", { count: wrongCount })}
                 </p>
               </div>
             </DashboardCard>
@@ -895,7 +922,7 @@ export function StudentExamResultClient({ examId }: StudentExamResultClientProps
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  {t("filters.all", { count: reviewQuestions.length })}
+                  {t("filters.all", { count: totalQuestionsCount })}
                 </button>
                 <button
                   type="button"
